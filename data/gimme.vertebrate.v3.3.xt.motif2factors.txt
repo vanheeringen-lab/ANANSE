@@ -1,0 +1,480 @@
+Rel_M5476_1.01	nfatc1,nfatc2,nfatc3,nfatc4
+SMAD_Average_3	nfia,nfib,nfic,nfix
+Homeodomain_POU_Average_32	pou2f1,pou3f1,pou3f2,pou3f4
+Homeodomain_POU_Average_43	pou1f1,pou2f1,pou2f2,pou2f3,pou3f1,pou3f2,pou3f3,pou3f4
+TEA_M6328_1.01	tead4
+MADS_box_M3420_1.01	mef2a,mef2c,mef2d
+MADS_box_Average_21	mef2a,mef2c,mef2d
+MADS_box_M3423_1.01	mef2a,mef2c,mef2d
+CUT_Homeodomain_M2889_1.01	cux1,cux2
+Homeodomain_M6258_1.01	alx1,alx4,arx,phox2a,phox2b,prrx1,prrx2,rax
+Nuclear_receptor_M1843_1.01	nr2e3
+Myb_SANT_M1260_1.01	terf2
+C2H2_ZF_M5930_1.01	zbtb47,znf652
+C2H2_ZF_M6093_1.01	hic1,hic2
+bZIP_M3882_1.01	atf1,creb1
+SAND_M5313_1.01	gmeb2
+Forkhead_Average_20	foxo1,foxo3,foxo4,foxo6
+Forkhead_M6068_1.01	foxp3
+Forkhead_M5271_1.01	foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1
+C2H2_ZF_M5792_1.01	
+Forkhead_Average_14	foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1
+EIN3_Average_2	brca1
+Myb_SANT_M6168_1.01	mybl2
+Mixed_Average_54	pax2,zeb1
+Sox_M3831_1.01	
+Mixed_Average_28	klf10,klf11,klf13,klf9,myb,mybl1,mybl2
+Myb_SANT_Average_6	myb,mybl1,mybl2
+C2H2_ZF_M6221_1.01	ovol1
+Myb_SANT_Average_10	myb,mybl1,mybl2
+Myb_SANT_Average_5	myb,mybl1,mybl2
+Myb_SANT_M1793_1.01	myb
+Myb_SANT_M2938_1.01	myb
+Myb_SANT_Average_9	myb,mybl1,mybl2
+RFX_Average_30	rfx1,rfx2,rfx3,rfx4,rfx5,rfx6,rfx7
+Grainyhead_Average_4	grhl1,tfcp2,ubp1
+Grainyhead_M5316_1.01	grhl1
+Homeodomain_M5349_1.01	homez
+AT_hook_M0127_1.01	
+Forkhead_M6055_1.01	foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1
+C2H2_ZF_M6376_1.01	znf384
+Unknown_Average_6	bptf
+ARID_BRIGHT_Average_4	arid5b
+Nuclear_receptor_Average_171	ar,nr3c1,nr3c2,pgr
+Nuclear_receptor_M1354_1.01	ar,nr3c1,nr3c2,pgr
+Nuclear_receptor_Average_157	ar,nr3c1,nr3c2,pgr
+Homeodomain_Average_372	
+Sox_Average_91	sox1,sox10,sox13,sox14,sox17a,sox17b.1,sox2,sox21,sox5,sox6,sox8,sox9
+Sox_M6309_1.01	
+Sox_Average_82	sox1,sox10,sox11,sox14,sox15,sox2,sox21,sox3,sox4,sox6,sox9
+Sox_M6293_1.01	sox18
+Mixed_Average_51	pax4,pax4
+AT_hook_M0131_1.01	ahctf1
+Forkhead_M0644_1.01	foxm1
+Forkhead_M6063_1.01	foxm1
+Forkhead_Average_98	foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxg1,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxo1,foxo3,foxo4,foxo6,foxp1,foxp2,foxp3,foxp4,foxq1
+Forkhead_Average_104	foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1
+Homeodomain_M3061_1.01	en1,en2
+Homeodomain_M1729_1.01	en1,en2
+Nuclear_receptor_M6157_1.01	ar,nr3c1,nr3c2,pgr
+Sox_Average_46	sox1,sox10,sox11,sox14,sox15,sox17a,sox17b.1,sox18,sox2,sox21,sox3,sox4,sox7,sox8,sox9
+Sox_Average_96	sox1,sox10,sox14,sox15,sox17a,sox17b.1,sox18,sox2,sox21,sox3,sox7,sox8,sox9
+Sox_Average_54	sox10,sox2,sox21,sox7,sox8,sox9
+Sox_M6292_1.01	sox17a,sox17b.1
+C2H2_ZF_Average_220	mecom,prdm16
+C2H2_ZF_M3098_1.01	mecom,prdm16
+Myb_SANT_Average_3	cdc5l
+Rel_Average_25	nfkb1,nfkb2
+C2H2_ZF_M6363_1.01	hivep1,hivep2,hivep3
+Rel_Average_28	nfkb1,rel,rela,relb
+C2H2_ZF_M6364_1.01	hivep1,hivep2,hivep3
+Rel_M6189_1.01	nfkb2
+Mixed_Average_26	
+Unknown_M1803_1.01	
+STAT_Average_23	stat1,stat3.1,stat4,stat5b
+STAT_M3856_1.01	stat5b
+C2H2_ZF_Average_202	bcl6
+STAT_Average_16	stat6
+STAT_Average_22	stat1,stat4,stat5b,stat6
+Ets_Average_109	ehf,elf1,elf2,elf3,elf5,elk1,elk3,elk4,erf,erg,ets1,ets2,etv1,etv2,etv3,etv4,etv6,etv7,fev,fli1,gabpa,spdef
+Nuclear_receptor_Average_20	nr2c1,nr2c2
+Ets_M6024_1.01	ehf,elf3,elf5
+Ets_M1778_1.01	spi1,spib
+Ets_M6042_1.01	elk1,elk3,elk4,erg,ets1,ets2,etv1,etv2,fev,gabpa
+Ets_Average_70	spdef
+C2H2_ZF_Average_185	ikzf1,ikzf4
+CSL_M6318_1.01	rbpj
+C2H2_ZF_Average_181	ikzf1,ikzf4
+TEA_Average_5	tead1,tead4
+TEA_Average_1	tead1
+Rel_Average_30	nfat5
+Rel_M6180_1.01	nfatc1,nfatc2,nfatc3,nfatc4
+Rel_Average_32	nfat5,nfatc1,nfatc2,nfatc3,nfatc4
+Rel_M5475_1.01	nfatc1,nfatc2,nfatc3,nfatc4
+bZIP_Average_145	atf2,atf7,creb5,dbp,hlf,nfil3,tef,thibz
+bZIP_M0309_1.01	nfil3,thibz
+bZIP_Average_153	cebpa,cebpb,cebpd,cebpe,cebpg
+bZIP_M2910_1.01	cebpa,cebpb,cebpd
+Mixed_Average_14	irf5
+Homeodomain_M6344_1.01	tlx1,tlx3
+Homeodomain_M6345_1.01	tlx1,tlx3
+Unknown_M6097_1.01	hltf
+HSF_Average_6	hsf1,hsf2,hsf4
+HSF_Average_8	hsf1,hsf2,hsf4
+C2H2_ZF_M0402_1.01	zbtb12
+C2H2_ZF_M0360_1.01	
+RFX_Average_29	rfx1,rfx2,rfx3,rfx4,rfx5,rfx6,rfx7
+Rel_M5477_1.01	nfatc1,nfatc2,nfatc3,nfatc4
+Mixed_Average_13	sox1,sox14,sox2,sox21,sox3,pou3f1,pou3f4,pou5f3.1,pou5f3.2,pou5f3.3
+Homeodomain_Average_79	irx1,irx2,irx3,irx4,irx5,irx6
+Homeodomain_M5856_1.01	irx1,irx2,irx3,irx4,irx5,irx6
+Homeodomain_M0811_1.01	
+Homeodomain_Average_371	en1,en2,gbx1,gbx2.1,gbx2.2
+Homeodomain_Average_43	emx1,emx1.2,emx2
+Homeodomain_POU_M5566_1.01	pou6f1,pou6f2
+Homeodomain_Average_132	lhx2,lhx9,meox2
+Homeodomain_Average_332	alx1,alx4,arx,crx,dmbx1,drgx,isx,otp,otx2,pax3,phox2a,phox2b,prrx1,prrx2,rax,shox,shox2,uncx,vsx2
+Homeodomain_Average_33	crx,otp,otx1,otx2,phox2a,phox2b
+Homeodomain_M5413_1.01	lbx1
+Homeodomain_M5766_1.01	
+Homeodomain_M3510_1.01	nkx6-1,nkx6-2,nkx6-3
+Homeodomain_M3298_1.01	hoxa1,hoxa2,hoxa3,hoxa5,hoxa6,hoxa7,hoxb2,hoxb3,hoxb4,hoxb5,hoxb7,hoxb8,hoxb9,hoxc3,hoxc4,hoxc5,hoxc6,hoxc8,hoxc9,hoxd3,hoxd4,hoxd8,pdx1
+Mixed_Average_25	hmg20b,znf333
+Homeodomain_Average_385	alx1,alx4,arx,crx,dmbx1,gsc,gsc2,otp,otx1,otx2,phox2a,phox2b,pitx1,pitx2,pitx3,rax
+Homeodomain_Average_280	
+Mixed_Average_44	crx,otx2,phox2a,phox2b,rax,gata1,gata2,gata3,gata4,gata5,gata6
+Mixed_Average_38	arid3a,arid3b,lhx1,lhx3,lhx4,lhx5,tlx1,tlx2,tlx3
+Homeodomain_M0858_1.01	hoxa10,hoxa11,hoxa9,hoxb9,hoxc10,hoxc9,hoxd10
+Mixed_Average_36	pax4,pax6,lbx1,lhx2,lhx9,alx1,alx4,arx,barx1,bsx,dbx1,dbx2,dlx1,dlx2,dlx3,dlx4,dlx5,dlx6,dmbx1,emx1,emx1.2,emx2,en1,en2,evx1,evx2,gbx1,gbx2.1,gbx2.2,gsx1,gsx2,hesx1,hoxa1,hoxa10,hoxa2,hoxa3,hoxa5,hoxa6,hoxa7,hoxa9,hoxb1,hoxb2,hoxb3,hoxb4,hoxb5,hoxb7,hoxb8,hoxb9,hoxc10,hoxc3,hoxc4,hoxc5,hoxc6,hoxc8,hoxc9,hoxd1,hoxd10,hoxd3,hoxd4,hoxd8,hoxd9,isx,lbx1,lhx1,lhx2,lhx3,lhx4,lhx5,lhx6,lhx8,lhx9,lmx1a,lmx1b.1,lmx1b.2,meox2,mixl1,mnx1,msx1,msx2,nkx2-1,nkx2-2,nkx2-3,nkx2-4,nkx2-5,nkx2-6,nkx2-8,nkx3-1,nkx3-2,otp,pax3,pdx1,phox2a,phox2b,pou6f1,prrx1,prrx2,rax,rax2,sebox,shox,shox2,uncx,vax1,vax2,vsx1,vsx2,vtn,zfhx2
+Homeodomain_POU_Average_48	pou4f1,pou4f1.2,pou4f2,pou6f1,pou6f2
+ARID_BRIGHT_Average_1	arid3a,arid3b
+Homeodomain_Average_395	isl1,isl2
+Homeodomain_M5976_1.01	barx1,barx2
+Homeodomain_POU_M1143_1.01	pou2f1
+Homeodomain_Average_349	barhl1,barhl2,nkx2-1,nkx2-2,nkx2-3,nkx2-4,nkx2-5,nkx2-6,nkx2-8,nkx3-1,nkx3-2
+Homeodomain_Paired_box_M3586_1.01	pax4
+Homeodomain_POU_M3945_1.01	pou3f1,pou3f4
+AT_hook_M6098_1.01	
+Homeodomain_Average_41	hesx1,lhx2,lhx9
+Homeodomain_Average_261	barx1,msx1,msx2
+Homeodomain_Average_34	barhl1,barhl2
+Homeodomain_Average_314	hoxa2,hoxa3,hoxa5,hoxa6,hoxa7,hoxb2,hoxb3,hoxb4,hoxb5,hoxb7,hoxc3,hoxc4,hoxc5,hoxd3,hoxd4,lhx6,lhx8,pdx1
+Homeodomain_POU_M2879_1.01	pou3f1,pou3f2,pou3f4
+Homeodomain_M6007_1.01	dlx1,dlx2,dlx3,dlx4,dlx5,dlx6
+Homeodomain_Average_289	nkx2-3,nkx3-1,nkx3-2
+Homeodomain_POU_M1137_1.01	pou2f1,pou3f4
+Homeodomain_M5336_1.01	hmbox1
+Mixed_Average_47	arid5b,foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1
+Forkhead_M3127_1.01	foxa1,foxa2,foxa4,foxb1,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2
+AT_hook_M6099_1.01	hmga2
+Homeodomain_M6257_1.01	
+AT_hook_M0133_1.01	phf21a
+Homeodomain_POU_M6236_1.01	pou1f1
+Homeodomain_POU_Average_46	pou2f1,pou2f2,pou2f3,pou3f1,pou3f3,pou3f4
+Homeodomain_POU_Average_45	pou1f1,pou3f1,pou3f2,pou3f3,pou3f4,pou4f1,pou4f1.2,pou4f2,pou4f3
+ARID_BRIGHT_M5966_1.01	arid3a,arid3b
+Homeodomain_M6123_1.01	hoxa10,hoxa5,hoxa6,hoxa7,hoxa9,hoxb5,hoxb7,hoxb9,hoxc10,hoxc5,hoxc6,hoxc9,hoxd10,hoxd9
+Homeodomain_M6108_1.01	hoxa10,hoxa6,hoxa7,hoxa9,hoxb7,hoxb9,hoxc10,hoxc6,hoxc9,hoxd10,hoxd9
+Homeodomain_M0992_1.01	pbx1,pbx2,pbx3
+TBP_M3884_1.01	tbp,tbpl2
+TBP_Average_1	tbp,tbpl2
+Mixed_Average_45	cpeb1,tbp,tbpl2,cdx1,cdx2,cdx4,hoxa10,hoxa11,hoxa13,hoxa5,hoxa6,hoxa7,hoxa9,hoxb5,hoxb7,hoxb9,hoxc10,hoxc11,hoxc12,hoxc13,hoxc5,hoxc6,hoxc9,hoxd10,hoxd11,hoxd13,hoxd9
+Homeodomain_Average_386	cdx1,cdx2,cdx4
+Homeodomain_Average_238	barhl1,barhl2
+Homeodomain_M6121_1.01	hoxa13,hoxd13
+Homeodomain_M2900_1.01	cdx1,cdx2,cdx4
+bZIP_M6329_1.01	dbp,hlf,tef
+TEA_M6327_1.01	
+Forkhead_M1735_1.01	foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1
+GATA_M3198_1.01	gata1,gata2,gata3,gata4,gata5,gata6
+Homeodomain_POU_M3550_1.01	pou2f1,pou3f4
+Mixed_Average_31	nfya,cebpz,nfyb,nfyc,pbx1,pbx2,pbx3,foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1,fos,fosb,fosl1,fosl2
+CSD_M6356_1.01	ybx1,ybx2
+Homeodomain_M6112_1.01	hoxa3,hoxa5,hoxa6,hoxa7,hoxa9,hoxb3,hoxb4,hoxb5,hoxb7,hoxb8,hoxb9,hoxc3,hoxc4,hoxc5,hoxc6,hoxc8,hoxc9,hoxd3,hoxd4,hoxd8,pdx1
+C2H2_ZF_Average_174	gfi1,gfi1b
+Homeodomain_Average_28	lhx6,lhx8
+bZIP_M6006_1.01	ddit3
+Homeodomain_M6365_1.01	zfhx3
+Homeodomain_Average_355	hnf1a,hnf1b
+Forkhead_Average_103	foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1
+Homeodomain_M5445_1.01	meox2
+Homeodomain_M2886_1.01	alx1,alx4,arx,dmbx1,otp,pax3,phox2a,phox2b,prrx1,prrx2,rax,vsx2
+Homeodomain_M6120_1.01	hoxa10,hoxa11,hoxa9,hoxb9,hoxc10,hoxc9,hoxd10
+Homeodomain_Average_101	pou6f1,pou6f2
+Homeodomain_M6118_1.01	hoxa3,hoxa5,hoxa6,hoxa7,hoxa9,hoxb3,hoxb4,hoxb5,hoxb7,hoxb8,hoxb9,hoxc4,hoxc5,hoxc6,hoxc8,hoxc9,hoxd3,hoxd4,hoxd8
+Mixed_Average_49	gata1,gata2,gata3,gata4,gata5,gata6,lmo2
+Homeodomain_M0848_1.01	six3,six6
+GATA_Average_33	gata1,gata2,gata3,gata4,gata5,gata6
+GATA_M4535_1.01	gata1,gata2,gata3,gata4,gata5,gata6
+DM_Average_5	dmrt1,dmrt3
+HSF_M5388_1.01	
+HSF_Average_3	
+CxC_M0529_1.01	lin54
+Mixed_Average_37	cux1,cux2,pax3,pax7
+DM_M0564_1.01	dmrt2,dmrta1
+CUT_Homeodomain_Average_10	cux1,cux2
+Homeodomain_POU_M6245_1.01	pou3f1,pou3f2,pou3f4
+CUT_Homeodomain_Average_9	onecut1,onecut1.2,onecut2,onecut3
+CUT_Homeodomain_Average_5	cux1,cux2
+Homeodomain_Average_142	hoxa1,hoxa2,hoxb1,hoxb2,hoxd1
+CUT_Homeodomain_M5151_1.01	cux1,cux2
+Sox_Average_95	bbx,hbp1
+Unknown_M6070_1.01	fubp1
+CUT_Homeodomain_M2892_1.01	cux1,cux2
+Ets_Average_53	spdef
+Mixed_Average_43	elf1,elf2,spi1,spib,spic,prdm1
+Ets_M5244_1.01	etv6
+Mixed_Average_30	bcl11a,bcl11b,irf4
+Mixed_Average_12	irf1,irf2,irf3,irf4,irf5,irf7,irf8,irf9,stat2
+IRF_M5396_1.01	irf7
+IRF_M6130_1.01	irf5
+bZIP_M5973_1.01	atf5,atf5.2
+Sox_M5909_1.01	sox1,sox14,sox2,sox21
+Sox_Average_55	sox10,sox8,sox9
+Homeodomain_M5767_1.01	
+Prospero_M5572_1.01	prox1
+Homeodomain_POU_M3642_1.01	pou3f1,pou3f2,pou3f4
+Nuclear_receptor_Average_85	nr6a1
+E2F_Average_24	e2f3,e2f4,e2f5,e2f7,e2f8
+Unknown_M3394_1.01	topors
+Unknown_Average_5	nrf1
+T-box_M6030_1.01	eomes,tbr1,tbx21,t,vegt
+Forkhead_Average_66	foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxg1,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1
+Forkhead_M5254_1.01	foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1
+C2H2_ZF_M5841_1.01	hic1,hic2
+C2H2_ZF_Average_166	osr1,osr2
+C2H2_ZF_M6359_1.01	
+C2H2_ZF_Average_184	
+C2H2_ZF_M0367_1.01	
+bHLH_Average_160	ahr,ahrr,arnt,arnt2,hif1a,npas3,sim1
+Paired_box_M3590_1.01	pax1,pax5,pax8,pax9
+Forkhead_M1734_1.01	foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1
+C2H2_ZF_M0407_1.01	
+C2H2_ZF_M0397_1.01	
+C2H2_ZF_M0366_1.01	
+Homeodomain_M2172_1.01	nkx2-1,nkx2-2,nkx2-3,nkx2-4,nkx2-5,nkx2-6,nkx2-8,nkx3-1,nkx3-2
+Homeodomain_Average_72	nkx2-1,nkx2-2,nkx2-3,nkx2-4,nkx2-6,nkx2-8
+Homeodomain_M6196_1.01	nkx2-1,nkx2-2,nkx2-3,nkx2-4,nkx2-6,nkx2-8
+Homeodomain_M6193_1.01	nkx2-1,nkx2-2,nkx2-3,nkx2-4,nkx2-6,nkx2-8
+Homeodomain_Average_394	hmx1,hmx2,hmx3,isl1,isl2,nkx2-1,nkx2-2,nkx2-3,nkx2-4,nkx2-5,nkx2-6,nkx2-8,nkx3-1,nkx3-2
+C2H2_ZF_M2812_1.01	klf12,klf17,klf2,klf3,klf4,klf5,klf6,klf7,klf8
+C2H2_ZF_M0411_1.01	zbtb3
+Unknown_M3565_1.01	ep300
+C2H2_ZF_M0364_1.01	
+C2H2_ZF_M4475_1.01	
+C2H2_ZF_Average_190	
+C2H2_ZF_M6145_1.01	klf12,klf17,klf2,klf3,klf4,klf5,klf6,klf7,klf8
+C2H2_ZF_M5800_1.01	
+Homeodomain_M3271_1.01	hmx1,hmx2,hmx3
+C2H2_ZF_M5793_1.01	znf524
+C2H2_ZF_M5794_1.01	znf524
+HSF_M4439_1.01	hsf1,hsf4
+Ndt80_PhoG_M1320_1.01	
+Mixed_Average_11	tbx2,tbx3,tbx4,tbx5,mga
+Mixed_Average_6	eomes,tbx21,mga,t,vegt
+Mixed_Average_5	mga,eomes,tbr1,tbx1,tbx15,tbx18,tbx2,tbx20,tbx21,tbx22,tbx3,tbx4,tbx5,t,vegt
+Homeodomain_M0985_1.01	
+T-box_M6322_1.01	tbx2,tbx3
+T-box_M1713_1.01	t,eomes,vegt
+T-box_Average_31	t,eomes,vegt
+T-box_Average_1	tbx1,tbx20
+T-box_M5216_1.01	eomes,tbr1,tbx21,t,vegt
+T-box_Average_26	eomes,tbx1,tbx20,tbx21,t,vegt
+C2H2_ZF_M6142_1.01	klf12,klf17,klf2,klf3,klf4,klf5,klf6,klf7,klf8
+T-box_M6323_1.01	tbx2,tbx3
+Myb_SANT_M1261_1.01	mypop
+E2F_Average_32	e2f1,e2f3,e2f4,e2f5
+Mixed_Average_41	e2f1,e2f3,e2f4,e2f5,e2f6,tfdp1,tfdp2
+E2F_Average_31	e2f1,e2f3,e2f4,e2f5,e2f7
+E2F_Average_33	e2f3
+E2F_Average_27	e2f1,e2f3
+CxxC_M0548_1.01	mbd1
+Mixed_Average_1	zbtb33,brca1
+Unknown_M5777_1.01	zbed1
+C2H2_ZF_M0392_1.01	znf410
+C2H2_ZF_M5791_1.01	znf410
+C2H2_ZF_Average_191	znf143
+C2H2_ZF_M5789_1.01	znf282
+Mixed_Average_8	smarcc1,smarcc2,elk1,elk3,elk4,erf,erg,ets1,ets2,etv1,etv2,etv3,fev,gabpa,tbx2,tbx3,znf143
+C2H2_ZF_Average_206	rreb1
+SMAD_Average_7	nfia,nfib,nfic,nfix
+C2H2_ZF_Average_177	hic1,hic2
+THAP_finger_M2259_1.01	thap1
+C2H2_ZF_Average_137	zfx
+C2H2_ZF_Average_167	zfx
+C2H2_ZF_Average_194	mbtps2,yy1
+C2H2_ZF_Average_209	mbtps2,yy1
+C2H2_ZF_M5776_1.01	mbtps2,yy1
+THAP_finger_M4506_1.01	thap1
+Mixed_Average_59	mbtps2,yy1
+Runt_Average_1	runx1,runx2,runx3
+SAND_M5959_1.01	aire
+Mixed_Average_17	cbfb,runx1,runx2,runx3
+Runt_Average_10	runx1,runx2,runx3
+bHLH_M0210_1.01	bhlhe23,olig1,olig2,olig3,olig4
+bZIP_M2901_1.01	cebpa,cebpb,cebpd
+C2H2_ZF_M1820_1.01	
+Forkhead_M2151_1.01	foxh1,foxh1.2
+Mixed_Average_63	mtf1,mtf1
+Mixed_Average_55	foxo1,foxo3,foxo4,foxo6
+bHLH_M6031_1.01	epas1,hif1a,npas3
+C2H2_ZF_M6019_1.01	egr1,egr2,egr3,egr4
+C2H2_ZF_Average_180	egr1,egr2,egr3,egr4
+C2H2_ZF_Average_216	egr1,egr2,egr3,egr4
+Unknown_M6200_1.01	nr0b1
+bHLH_M5969_1.01	arnt,arnt2
+C2H2_ZF_Average_204	gli1,gli2,gli3,zbtb7b,zbtb7c
+C2H2_ZF_M5308_1.01	gli1,gli2,gli3
+C2H2_ZF_Average_124	insm1
+C2H2_ZF_Average_200	ctcf
+C2H2_ZF_M6020_1.01	egr1,egr2,egr4
+C2H2_ZF_M6155_1.01	maz
+C2H2_ZF_M6140_1.01	klf15,klf15.2
+C2H2_ZF_Average_222	
+Unknown_M6261_1.01	pura
+Rel_M5957_1.01	rel,rela
+C2H2_ZF_M5955_1.01	bcl6
+C2H2_ZF_Average_179	mzf1
+C2H2_ZF_M6239_1.01	plag1
+C2H2_ZF_M6358_1.01	zbtb7b
+C2H2_ZF_M6302_1.01	sp1,sp2,sp3,sp4,sp5,sp6,sp7,sp8,sp9
+C2H2_ZF_M6372_1.01	znf219
+C2H2_ZF_Average_122	znf148,znf281
+C2H2_ZF_Average_221	klf10,klf11,klf12,klf13,klf17,klf2,klf3,klf4,klf5,klf6,klf7,klf8,klf9,sp1,sp2,sp3,sp4,sp5,sp6,sp7,sp8,sp9,wt1
+Mixed_Average_50	znf148,znf281,znf740,glis2,glis3,patz1,zic1,zic2,zic3,zic4,zic5
+Unknown_M3812_1.01	
+C2H2_ZF_M6241_1.01	
+C2H2_ZF_M4510_1.01	zbtb7c
+C2H2_ZF_Average_205	zbtb7b
+C2H2_ZF_M6240_1.01	plag1
+SAND_M1429_1.01	sp110
+C2H2_ZF_Average_210	mzf1
+C2H2_ZF_Average_207	zic1,zic2,zic3,zic4,zic5
+Homeodomain_Paired_box_M3587_1.01	pax4
+C2H2_ZF_M6357_1.01	zbtb7c
+C2H2_ZF_M6144_1.01	klf12,klf17,klf2,klf3,klf4,klf5,klf6,klf7,klf8
+Unknown_M6375_1.01	znf350
+GCM_Average_9	gcm1,gcm2
+GCM_Average_8	gcm1,gcm2
+GCM_M5304_1.01	gcm1,gcm2
+CENPB_M5139_1.01	
+C2H2_ZF_Average_217	znf423
+C2H2_ZF_M1842_1.01	plag1
+AP-2_Average_26	tfap2a,tfap2b,tfap2c,tfap2e
+AP-2_Average_17	tfap2a,tfap2c,tfap2e
+AP-2_Average_27	tfap2a,tfap2b,tfap2c,tfap2e
+AP-2_Average_15	tfap2a,tfap2b,tfap2c,tfap2e
+THAP_finger_M1541_1.01	
+bHLH_Average_143	ebf1
+AP-2_M5965_1.01	tfap2a,tfap2c,tfap2d,tfap2e
+MBD_Average_1	mbd2,mecp2
+THAP_finger_M1539_1.01	
+SAND_Average_9	gmeb1,gmeb2
+Mixed_Average_23	zbtb1,prdm11
+C2H2_ZF_M0395_1.01	
+CxxC_M6004_1.01	cxxc1
+p53_Average_10	tp53,tp63,tp73
+p53_Average_8	tp53,tp63,tp73
+Grainyhead_Average_6	tfcp2,ubp1
+Grainyhead_M6333_1.01	tfcp2
+Grainyhead_M2949_1.01	tfcp2
+C2H2_ZF_Average_123	zic1,zic2,zic3,zic4,zic5
+C2H2_ZF_Average_141	glis1,glis2,glis3
+C2H2_ZF_M5569_1.01	prdm4
+C2H2_ZF_M5122_1.01	
+RFX_Average_9	rfx1,rfx2,rfx3,rfx4,rfx5,rfx6,rfx7
+C2H2_ZF_M5795_1.01	
+Ets_Average_39	elk1,elk3,elk4,erf,erg,ets1,ets2,etv1,etv2,etv3,fev,fli1,gabpa
+Ets_Average_72	ets1
+Ets_M5201_1.01	elk1,elk3,elk4,erf,erg,ets1,ets2,etv1,etv2,etv3,fev,gabpa
+C2H2_ZF_M5333_1.01	hinfp
+C2H2_ZF_M5334_1.01	hinfp
+C2H2_ZF_M4537_1.01	rest
+C2H2_ZF_Average_154	rest
+Ets_Average_34	spdef
+Sox_Average_97	lef1,tcf7,tcf7l1,tcf7l2
+Sox_M6295_1.01	sox11,sox4
+Sox_Average_48	lef1,tcf7,tcf7l1,tcf7l2
+Nuclear_receptor_M6202_1.01	nr1h2
+Nuclear_receptor_M6210_1.01	nr2e3
+Nuclear_receptor_Average_170	hnf4a,hnf4b,hnf4g,nr2c2,nr2f1,nr2f2,nr2f5,nr2f6,ppara,ppard,pparg,rxra,rxrb,rxrg
+Nuclear_receptor_Average_172	nr2f1,nr2f2,nr2f5,nr2f6,rara,rarb,rarg,rora,rorb.2,rorc
+Nuclear_receptor_Average_73	nr2e1
+Nuclear_receptor_M2830_1.01	nr2f1,nr2f2,nr2f5,nr2f6
+C2H2_ZF_Average_187	hinfp
+bZIP_M5866_1.01	maf,mafa,mafb
+Mixed_Average_18	maf,mafa,mafb,maff,mafg,mafk,nrl,cic
+bZIP_M6149_1.01	maf,mafa,nrl
+Paired_box_M6228_1.01	pax1,pax5,pax8,pax9
+Nuclear_receptor_M6352_1.01	nr1i2,vdr
+Nuclear_receptor_Average_58	nr1i2,vdr
+Nuclear_receptor_M6203_1.01	nr1h2,nr1h4,nr1h5
+Nuclear_receptor_M5757_1.01	thra,thrb
+Nuclear_receptor_M5758_1.01	thra,thrb
+Nuclear_receptor_Average_154	thra,thrb
+Nuclear_receptor_Average_175	esrra,esrrb,esrrg,esrrgr,nr1i2,nr1i3,rara,rarb,rarg
+Nuclear_receptor_M6263_1.01	rara,rarb,rarg
+Nuclear_receptor_Average_144	esrra,esrrb,esrrg,esrrgr,rara,rarb,rarg,rora,rorb.2,rorc
+Nuclear_receptor_M6265_1.01	rara,rarb,rarg
+Nuclear_receptor_M5504_1.01	nr4a1,nr4a2,nr4a3
+Nuclear_receptor_Average_176	esr1,esr2,esrra,esrrb,esrrg,esrrgr,ppara,ppard,pparg
+Nuclear_receptor_Average_174	esr1,esr2,esrra,esrrb,esrrg,esrrgr,nr1i2,nr1i3,nr2c1,nr2c2,nr2e1,nr2f1,nr2f2,nr2f5,nr2f6,nr4a1,nr4a2,nr4a3,nr5a1,nr5a2,ppara,ppard,pparg,rara,rarb,rarg,rora,rorb,rorb.2,rorc,rxra,rxrb,rxrg,thra,thrb,vdr
+Nuclear_receptor_Average_151	nr1d1,nr1d2,rora,rorb.2,rorc
+Nuclear_receptor_Average_63	nr2e1
+bZIP_Average_117	atf3
+bZIP_Average_146	atf3,fos,fosb,fosl1,fosl2,jun,junb,jund,jund.2,mafg,mafk,nfe2l1,nfe2l3
+Homeodomain_Paired_box_Average_6	pax2
+bZIP_Average_134	atf1,atf2,atf7,creb1,creb5
+bZIP_M0304_1.01	jun,junb,jund.2
+Mixed_Average_40	meis1,meis2,meis3,pknox1,pknox2,snai1,snai3,meis1,meis2,meis3,pknox2,tgif1,tgif2
+Homeodomain_Paired_box_M3583_1.01	pax3,pax7
+Paired_box_M3591_1.01	pax1,pax5,pax8,pax9
+Mixed_Average_16	pax2,pax6,pax1,pax5,pax8,pax9
+Paired_box_Average_6	pax1,pax5,pax8,pax9
+Homeodomain_Paired_box_Average_10	pax2
+Homeodomain_Paired_box_M3585_1.01	pax4
+bHLH_M0187_1.01	srebf2
+bHLH_M2787_1.01	ahr,ahrr
+C2H2_ZF_M6139_1.01	zbtb33
+bHLH_Average_139	srebf1,srebf2
+bHLH_Average_115	srebf1,srebf2
+Mixed_Average_9	smarcc1,smarcc2,atf3,bach1,bach2,batf,batf3,fos,fosb,fosl1,fosl2,jun,junb,jund,jund.2,nfe2,nfe2l2
+IRF_M4333_1.01	irf4
+bZIP_Average_148	bach1,bach2,maf,mafa,mafb,maff,mafg,mafk,nfe2,nfe2l2,nfe2l3
+bZIP_M4371_1.01	jun,junb,jund.2
+Homeodomain_Average_399	hoxa1,hoxa10,hoxa2,hoxa3,hoxa5,hoxa6,hoxa7,hoxa9,hoxb2,hoxb3,hoxb4,hoxb5,hoxb6,hoxb7,hoxb8,hoxb9,hoxc10,hoxc3,hoxc4,hoxc5,hoxc6,hoxc8,hoxc9,hoxd10,hoxd3,hoxd4,hoxd8,hoxd9,pbx1,pbx2,pbx3,pdx1
+Homeodomain_M6238_1.01	pknox1,pknox2
+Homeodomain_Average_305	
+Paired_box_M6230_1.01	pax1,pax5,pax8,pax9
+Homeodomain_Average_200	meis1,meis2,meis3,pknox1,pknox2,tgif1,tgif2
+Homeodomain_Average_139	hoxa10,hoxa6,hoxa7,hoxa9,hoxb7,hoxb9,hoxc10,hoxc6,hoxc9,hoxd10,hoxd9,meis1,meis2,meis3,pknox2
+bZIP_M3883_1.01	atf1,creb1
+bZIP_Average_67	atf4,atf5,atf5.2
+Grainyhead_M6348_1.01	tfcp2,ubp1
+SMAD_M6282_1.01	smad1,smad9
+SMAD_Average_5	smad2,smad3,smad9
+bHLH_M6087_1.01	hand1,hand2
+SMAD_M6283_1.01	smad2
+SMAD_M5627_1.01	smad2,smad3,smad9
+Nuclear_receptor_Average_62	rxra,rxrb,rxrg
+bZIP_Average_150	atf1,atf2,atf3,atf7,batf,batf3,creb1,creb3,creb3l3,creb3l4,creb5,crem,jun,junb,jund,jund.2,xbp1
+C2H2_ZF_M6016_1.01	e4f1
+Homeodomain_M0986_1.01	
+Mixed_Average_65	crebzf,gmeb2
+bZIP_Average_142	atf6,atf6b,creb3,creb3l1,creb3l2,creb3l3,creb3l4,xbp1
+SAND_M5314_1.01	gmeb2
+Homeodomain_Average_268	hoxa10,hoxa11,hoxa13,hoxa5,hoxa6,hoxa7,hoxa9,hoxb5,hoxb7,hoxb9,hoxc10,hoxc11,hoxc12,hoxc13,hoxc5,hoxc6,hoxc9,hoxd10,hoxd11,hoxd13,hoxd9
+C2H2_ZF_Average_83	zbtb6
+C2H2_ZF_M4502_1.01	sp1,sp2,sp3,sp4,sp5,sp6,sp7,sp8,sp9
+C2H2_ZF_M5778_1.01	zbtb49
+T-box_Average_6	tbx1,tbx15,tbx18,tbx20,tbx22
+T-box_M5698_1.01	tbx1,tbx20
+T-box_M5694_1.01	tbx1,tbx20
+C2H2_ZF_M5799_1.01	
+C2H2_ZF_M6360_1.01	
+p53_M5923_1.01	
+p53_M5922_1.01	
+bHLH_M2134_1.01	atoh1,atoh7,neurod1,neurod4,neurod6
+C2H2_ZF_Average_77	znf238.2
+bHLH_Average_145	msc,neurod1,neurod2,neurod4,neurod6,neurog1,neurog2,neurog3,tcf15,tcf21,tcf23
+bHLH_Average_140	atoh1,atoh7,atoh8,bhlha15,bhlhe22,bhlhe23,msc,neurod1,neurod2,neurod4,neurod6,neurog1,neurog2,neurog3,olig1,olig2,olig3,olig4,scx,tal2,tcf15,tcf21,tcf23,twist1,twist2
+bHLH_Average_151	myf5,myf6,myod1,myog
+Mixed_Average_58	hes3.1,hes3.3,hes5.1,hes5.2,hes9.1,creb3,creb3l1,creb3l2,creb3l3,atf3,creb3,creb3l2,creb3l3,arnt,arnt2,arntl,arntl2
+Mixed_Average_53	max,arnt,arnt2,arntl,arntl2,bhlhe40,bhlhe41,clock,hey1,hey2,id2,id3,id4,mitf,mlx,mlxip,mlxipl,mnt,mxi1,myc,mycn,npas2,pasd1,srebf1,srebf2,tfe3,tfeb,tfec,usf1,usf2,eno1,bhlhe40,bhlhe41,clock,hes1,hes2,hes3.1,hes3.3,hes4,hes5.1,hes5.2,hes9.1,max,mitf,mlx,mnt,npas2,pasd1,tcfl5,tfeb,tfec
+Mixed_Average_35	ascl1,ascl2,atoh1,atoh7,atoh8,figla,id2,id3,id4,lyl1,mesp2,mespa,mespb,msc,msgn1,myf5,myf6,myod1,myog,neurod1,neurod2,neurod4,neurod6,neurog1,neurog2,neurog3,nhlh1,scx,tal1,tal2,tcf12,tcf15,tcf21,tcf23,tcf3,tcf4,tfap4,twist1,twist2,lmo2,zeb1,snai1,snai2,snai3
+bHLH_M5980_1.01	bhlhe40,bhlhe41
+bHLH_M0177_1.01	arnt,arnt2
+bHLH_Average_154	hes1,hes2,hes4,hey1,hey2
+Homeodomain_M6091_1.01	hesx1
+Homeodomain_M6338_1.01	tgif1,tgif2
+bHLH_M6260_1.01	ptf1a
+bHLH_M6165_1.01	mlxipl
+bHLH_bZIP_M5432_1.01	max
+C2H2_ZF_Average_82	scrt2
+C2H2_ZF_M5786_1.01	
+Forkhead_Average_1	foxa1,foxa2,foxa4,foxb1,foxb2,foxc1,foxc2,foxd1,foxd2,foxd3,foxd4l1.1,foxd4l1.2,foxe1,foxe3,foxf1,foxf2,foxg1,foxi1,foxi2,foxi4.1,foxi4.2,foxj1,foxj1.2,foxj2,foxj3,foxk2,foxl1,foxl2,foxq1
+MADS_box_Average_20	srf
+MADS_box_M3822_1.01	srf
+Nuclear_receptor_Average_167	nr4a1,nr4a2,nr4a3,thra,thrb
+C2H2_ZF_M5790_1.01	
+p53_M3568_1.01	tp53
