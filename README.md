@@ -1,14 +1,13 @@
 # XXX Network
 
-## Prediction of key transcription factors in cell fate determination using enhancer networks
+### Prediction of key transcription factors in cell fate determination using enhancer networks
 
 ![](/pic/Fig2.jpg)
-### An overview workflow for the XXX method
 `(A), Illustration of all the data used to predict key TFs in cell conversion. Those data include the enhancer database from ATAC-seq, DNase-seq or p300 ChIP-seq, the motif score of all TFs and the gene expression data of each cell type from RNA-seq. (B), The predicted cell-type specific TF binding profiles from enhancer database and TF's motif score in each cell type. (C), The predicted cell-type specific GRN based on TF/Gene binding, TF/Gene expression and its' distance. (D), The GRN difference between two interested cell types. (E), The ranked influence score of all TFs calculated from GRN.`
 
-# Quick start
+## Quick start
 
-## Dependencies
+### Dependencies
 * Install Anaconda and activate bioconda channels.
 
 ```
@@ -37,7 +36,7 @@ $ genomepy install Xenopus_tropicalis_v9.1 NCBI
 ```
 
 
-## Built binding network
+### Built binding network
 
 * Example:
 ```
@@ -59,7 +58,7 @@ $ python ../grns/binding.py -r data/krt_enhancer.bed \
 -d Keep temporary files, input should be either 'True' or 'False'. (Default setting: True)
 ```
 
-## Built interaction network
+### Built interaction network
 
 * Example:
 ```
@@ -82,7 +81,7 @@ $ python ../grns/interaction.py -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
 -p motifs file (optional; if provided there should also be a motif2factors.txt).
 ```
 
-## Built GRN
+### Built GRN
 
 * Example:
 ```
@@ -94,5 +93,5 @@ $ python ../grns/builtnetwork.py -f results/full_features.h5 -o results
 -o The folder to save results.
 ```
 
-# Help
+## Help
 
