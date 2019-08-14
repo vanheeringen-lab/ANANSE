@@ -362,7 +362,7 @@ def calculate_binding(fin_rpkm, gene_bed, outdir, genome="hg19", pwmfile=None, f
     pbar = ProgressBar()
     pbar.register()
     if not os.path.exists(binding):
-        model = "/home/qxu/git/network/db/dream_model.txt"
+        model = "/home/qxu/git/network2/db/dream_model.txt"
         get_binding_score(pwm_weight, peak_weight, pwmfile, factortable, model, outdir)
 
 if __name__ == "__main__":

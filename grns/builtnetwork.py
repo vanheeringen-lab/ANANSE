@@ -39,7 +39,7 @@ def create_network(featurefile, outdir, impute=False):
     bpd=bpd.rename(columns={0:"binding"})
     bpd['prob'] = minmax_scale(rankdata(bpd['binding'], method='dense'))
     
-    bpd.to_csv(os.path.join(outdir, "final_network.txt"), sep="\t")  
+    bpd.to_csv(os.path.join(outdir, "full_network.txt"), sep="\t")  
     
 
 
