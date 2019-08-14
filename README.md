@@ -5,8 +5,7 @@ Prediction of key transcription factors in cell fate determination using enhance
 # Quick start
 
 ## Dependencies
-
-### Install Anaconda and activate bioconda channels.
+* Install Anaconda and activate bioconda channels.
 
 ```
 # Install all dependencies
@@ -19,15 +18,15 @@ $ conda activate regnetwork
 $ pip install adjustText
 ```
 
-### Run `gimme` to create a new GimmeMotifs config.
+* Run `gimme` to create a new GimmeMotifs config.
 
 ```
 $ gimme
 ```
 
-### Edit the file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
+* Edit the file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
 
-### Download the genome of interest.
+* Download the genome of interest.
 
 ```
 $ genomepy install Xenopus_tropicalis_v9.1 NCBI
