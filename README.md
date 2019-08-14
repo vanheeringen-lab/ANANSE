@@ -45,7 +45,9 @@ python ../grns/binding.py   -r data/krt_enhancer.bed \
 -o The folder to save results;
 -a 12 columns BED file with gene annotation;
 -g Genome;
--p motifs file (optional; if provided there should also be a motif2factors.txt).
+-p Motifs file (optional; if provided there should also be a motif2factors.txt).
+-f Filter promoters, input should be either 'True' or 'False'. (optional;Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.)
+-d Keep temporary files, input should be either 'True' or 'False'. (optional;Default setting: True)
 ```
 
 # Built interaction network
