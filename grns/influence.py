@@ -164,8 +164,8 @@ def inflscore_plot(infile, outfile):
     xcol = "factor_fc"
     plt.figure(figsize=(8,6))
     sns.regplot(data=mogrify, x=xcol, y="sumScaled", fit_reg=False, 
-           scatter_kws={'s':mogrify["directTargets"]/10, 'alpha':0.5},
-           )
+                scatter_kws={'s':mogrify["directTargets"]/10, 'alpha':0.5},
+                )
     x =  mogrify.loc[factors, xcol]
     y =  mogrify.loc[factors, "sumScaled"]    
     texts = []
@@ -178,12 +178,12 @@ def inflscore_plot(infile, outfile):
 
 def runinfluence(Gbf,Gaf,expression,outfile,max_degree=3):
 
-    if Gaf:
+    if Gbf:
         G1 = read_network(Gbf)
         G2 = read_network(Gaf)
         G = difference(G2, G1)
     else:
-        G = read_network(Gbf)
+        G = read_network(Gaf)
 
     with open(outfile.replace(".txt","_network.txt"), "w") as nw:
         for (u, v, d) in G.edges(data=True):
@@ -255,12 +255,12 @@ def filter_TF(scores_df, network=None, tpmfile= None, tpm=20, overlap=0.98):
 
 def rank_TF(Gbf,Gaf, tpmfile, outfile):
 
-    if Gaf:
+    if Gbf:
         G1 = read_network(Gbf)
         G2 = read_network(Gaf)
         G = difference(G2, G1)
     else:
-        G = read_network(Gbf)
+        G = read_network(Gaf)
 
     scores_df = pd.read_table(outfile, index_col=0)
     scores_df['influenceScaled'] = minmax_scale(rankdata(scores_df['inflscore'], method='dense'))
@@ -331,7 +331,6 @@ if __name__ == "__main__":
         metavar="FILE",
     )
     
-   
     parser.add_argument(
         "-o",
         required=True,
@@ -348,13 +347,6 @@ if __name__ == "__main__":
     fin_expression = args.fin_expression
     Gbf=args.Gbf
     Gaf=args.Gaf
-
-    print(Gbf)
-    print(Gaf)
-    print(expression)
-    print(outfile)
-    print(fin_expression)
-
 
     run(Gbf, Gaf, expression, outfile, fin_expression)
 

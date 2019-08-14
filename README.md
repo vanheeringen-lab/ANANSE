@@ -46,7 +46,7 @@ $ python ../grns/binding.py -r data/krt_enhancer.bed \
                             -g hg38 \
                             -p ../data/gimme.vertebrate.v5.1.pfm
 ```
-* input
+* Input
 
 ```
 -r The enhancer BED file with enhancers (200bp) with RPKM (or equivalent) value in 4th column;
@@ -70,7 +70,7 @@ $ python ../grns/interaction.py -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                                 -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
                                 -p ../data/gimme.vertebrate.v5.1.pfm
 ```
-* input
+* Input
 ```
 -e One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM; 
 -o The folder to save results;
@@ -87,10 +87,29 @@ $ python ../grns/interaction.py -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
 ```
 $ python ../grns/builtnetwork.py -f results/full_features.h5 -o results
 ```
-* input
+* Input
 ```
 -f The interaction network from interaction.py;
 -o The folder to save results.
+```
+
+### Infer influence score
+
+* Example:
+```
+python ../grns/influence.py -a results/full_network.txt \
+                            -e data/FB_rep1_TPM.txt \
+                            -d data/FB2KRT_degenes.csv \
+                            -o results/FB2KRT.txt
+```
+* Input
+```
+-b The network in first cell (optional);
+-a The network in second cell;
+-e The gene expression in first cell (optional);
+-d The differential expression table between two cells; 
+-o The result file.
+
 ```
 
 ## Help

@@ -15,5 +15,9 @@ python ../grns/interaction.py  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
 
 python ../grns/builtnetwork.py -f results/full_features.h5 -o results
 
+python ../grns/influence.py -a results/full_network.txt \
+                            -e data/FB_rep1_TPM.txt \
+                            -d data/FB2KRT_degenes.csv \
+                            -o results/FB2KRT.txt
 
 
