@@ -1,6 +1,12 @@
-# Dependencies
+# XXX Network
 
-* Install Anaconda and activate bioconda channels.
+Prediction of key transcription factors in cell fate determination using enhancer networks
+
+# Quick start
+
+## Dependencies
+
+### Install Anaconda and activate bioconda channels.
 
 ```
 # Install all dependencies
@@ -13,23 +19,23 @@ $ conda activate regnetwork
 $ pip install adjustText
 ```
 
-* Run `gimme` to create a new GimmeMotifs config.
+### Run `gimme` to create a new GimmeMotifs config.
 
 ```
 $ gimme
 ```
 
-* Edit the file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
+### Edit the file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
 
-* Download the genome of interest.
+### Download the genome of interest.
 
 ```
 $ genomepy install Xenopus_tropicalis_v9.1 NCBI
 ```
 
-# Built binding network
+## Built binding network
 
-* Example:
+### Example:
 ```
 $ python ../grns/binding.py -r data/krt_enhancer.bed \
                             -o results \
@@ -37,7 +43,7 @@ $ python ../grns/binding.py -r data/krt_enhancer.bed \
                             -g hg38 \
                             -p ../data/gimme.vertebrate.v5.1.pfm
 ```
-* input
+### input
 
 ```
 -r The enhancer BED file with enhancers (200bp) with RPKM (or equivalent) value in 4th column;
@@ -49,9 +55,9 @@ $ python ../grns/binding.py -r data/krt_enhancer.bed \
 -d Keep temporary files, input should be either 'True' or 'False'. (Default setting: True)
 ```
 
-# Built interaction network
+## Built interaction network
 
-* Example:
+### Example:
 ```
 $ python ../grns/interaction.py -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                                 -o results \
@@ -61,7 +67,7 @@ $ python ../grns/interaction.py -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                                 -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
                                 -p ../data/gimme.vertebrate.v5.1.pfm
 ```
-* input
+### input
 ```
 -e One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM; 
 -o The folder to save results;
@@ -72,16 +78,17 @@ $ python ../grns/interaction.py -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
 -p motifs file (optional; if provided there should also be a motif2factors.txt).
 ```
 
-# Built GRN
+## Built GRN
 
-* Example:
+### Example:
 ```
 $ python ../grns/builtnetwork.py -f results/full_features.h5 -o results
 ```
-* input
+### input
 ```
 -f The interaction network from interaction.py;
 -o The folder to save results.
 ```
 
+# Help
 
