@@ -13,7 +13,7 @@ python ../grns/interaction.py  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                             -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
                             -p ../data/gimme.vertebrate.v5.1.pfm
 
-python ../grns/builtnetwork.py -f results/full_features.h5 -o results
+python ../grns/network.py -f results/full_features.h5 -o results
 
 python ../grns/influence.py -a results/full_network.txt \
                             -e data/FB_rep1_TPM.txt \
