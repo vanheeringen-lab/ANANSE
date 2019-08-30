@@ -19,6 +19,12 @@ $ conda activate regnetwork
 
 # install dependency via pip
 $ pip install adjustText
+
+# Uninstall stable versions of gimmemotifs and genomepy
+$ conda uninstall gimmemotifs
+
+# Upgrade genomepy and gimmemotifs to development version
+$ pip install http://github.com/simonvh/gimmemotifs/tarball/develop
 ```
 
 * Run `gimme` to create a new GimmeMotifs config.
