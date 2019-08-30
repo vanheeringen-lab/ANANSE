@@ -120,3 +120,5 @@ $ python ../grns/influence.py -a results/full_network.txt \
 
 ## Help
 
+* The preferred way to get support is through the Github issues page
+
