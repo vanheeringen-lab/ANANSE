@@ -33,6 +33,7 @@ warnings.filterwarnings('ignore')
 
 
 def clear_peaks(gene_bed, peak_bed, filter_promoter=True, up=2000, down=2000):
+    """Filter the enhancer peaks in promoter range."""
     #all overlap Enh-TSS(up8000 to down2000) pair
     g = Genome(genome)
     gsize = g.props["sizes"]["sizes"]
@@ -46,7 +47,7 @@ def clear_peaks(gene_bed, peak_bed, filter_promoter=True, up=2000, down=2000):
         gene = f[3]
         peak_start, peak_end = int(f[13]), int(f[14])
         vals.append(chrom+":"+str(peak_start)+"-"+str(peak_end))
-        
+
     fl2=open(os.path.join(outdir, "filtered_enahncers.txt"),"w")
     with open(peak_bed) as pbed:
         for line in pbed:
@@ -56,48 +57,36 @@ def clear_peaks(gene_bed, peak_bed, filter_promoter=True, up=2000, down=2000):
             else:
                 fl2.write(line)
 
-def get_motif_distribution(outname, genome, nregions=10000, length=200, pwmfile=None, force=False):
+def get_motif_distribution(outname, genome, normalize='gcbins', nregions=10000, length=200, pwmfile=None, force=False):
     """Calculate mean and sd of motif scores.""" 
     if os.path.exists(outname) and not force:
         sys.stderr.write("File {} already exists!\n".format(outname))
         sys.stderr.write("Set force to True to overwrite!\n".format(outname))
         return
 
-    # Create bed file with random regions
-    config = MotifConfig()
-    tmp = NamedTemporaryFile(suffix=".bed")
-    create_random_genomic_bedfile(tmp.name, genome, length, nregions)
-    
-    if pwmfile is None:
-        params = config.get_default_params()
-        pwmfile = os.path.join(config.get_motif_dir(), params["motif_db"])
-    result = scan_to_best_match(tmp.name, pwmfile, genome=genome, score=True)
-    
+    if normalize == 'gcbins':
+        # Create bed file with random regions
+        config = MotifConfig()
+        tmp = NamedTemporaryFile(suffix=".bed")
+        create_random_genomic_bedfile(tmp.name, genome, length, nregions)
+        
+        if pwmfile is None:
+            params = config.get_default_params()
+            pwmfile = os.path.join(config.get_motif_dir(), params["motif_db"])
+        result = scan_to_best_match(tmp.name, pwmfile, genome=genome, score=True)
+    elif normalize == 'gc':
+        bg = MatchedGcFasta(fin_regions_fa, genome=genome, number=nregions)
+        if pwmfile is None:
+            params = config.get_default_params()
+            pwmfile = os.path.join(config.get_motif_dir(), params["motif_db"])
+        result = scan_to_best_match(bg, pwmfile, genome=genome, score=True)
+
     with open(outname, "w") as f:
         f.write("motif\tmean\tstd\n")
         for motif, scores in result.items():
             f.write("{}\t{}\t{}\n".format(motif, np.mean(scores), np.std(scores)))
 
-def comput_peak_background(fin_regions_fa, outname, genome, nregions=10000, length=200, pwmfile=None, force=False):
-    """Calculate mean and sd of motif scores.""" 
-    if os.path.exists(outname) and not force:
-        sys.stderr.write("File {} already exists!\n".format(outname))
-        sys.stderr.write("Set force to True to overwrite!\n".format(outname))
-        return
-
-    # seqs = [s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=genome).ids]
-    bg = MatchedGcFasta(fin_regions_fa, genome=genome, number=nregions)
-    if pwmfile is None:
-        params = config.get_default_params()
-        pwmfile = os.path.join(config.get_motif_dir(), params["motif_db"])
-
-    result = scan_to_best_match(bg, pwmfile, genome=genome, score=True)
-    with open(outname, "w") as f:
-        f.write("motif\tmean\tstd\n")
-        for motif, scores in result.items():
-            f.write("{}\t{}\t{}\n".format(motif, np.mean(scores), np.std(scores)))
-
-def get_PWMScore(fin_regions_fa, fin_pwm, outdir, genome="hg19", gcbins=True):
+def get_PWMScore(fin_regions_fa, fin_pwm, outdir, genome="hg19", normalize='gcbins'):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
     # read motifs
@@ -113,7 +102,7 @@ def get_PWMScore(fin_regions_fa, fin_pwm, outdir, genome="hg19", gcbins=True):
         for motif in motifs:
             if motif.factors:
                 fout.write("{}\n".format(motif.to_pwm()))
-    if gcbins:
+    if normalize == 'gcbins':
         seqs = [s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=genome).ids]    
         s = Scanner()
         s.set_motifs(pwmfile)
@@ -128,7 +117,7 @@ def get_PWMScore(fin_regions_fa, fin_pwm, outdir, genome="hg19", gcbins=True):
                 chunk_seqs = seqs[chunk:chunk+chunksize]
                 print(chunk, "-", chunk + chunksize)
                 pwm_score = []
-                it = s.best_score(chunk_seqs,zscore=True,gc=True)
+                it = s.best_score(chunk_seqs, zscore=True, gc=True)
                 for seq,scores in zip(chunk_seqs, it):
                     for motif, score in zip(motifs, scores):
                         pwm_score.append([motif.id, seq, score])
@@ -142,7 +131,7 @@ def get_PWMScore(fin_regions_fa, fin_pwm, outdir, genome="hg19", gcbins=True):
                 if chunk == 0:
                     write_header = True
                 pwm_score[cols].to_csv(fout, sep='\t', header=write_header)
-    else:
+    elif normalize == 'gc':
         print("Motif background distribution")
         motif_stats = os.path.join(outdir, "motif_distribution.txt")
         comput_peak_background(fin_regions_fa, motif_stats, genome, pwmfile=pwmfile)
@@ -179,6 +168,47 @@ def get_PWMScore(fin_regions_fa, fin_pwm, outdir, genome="hg19", gcbins=True):
                 pwm_score = pwm_score.join(pd.read_table(motif_stats, index_col=0))
                 # scale motif score
                 pwm_score["zscore"] = (pwm_score["score"] - pwm_score["mean"]) / pwm_score["std"] 
+                pwm_score["zscoreRank"] = minmax_scale(rankdata(pwm_score["zscore"]))
+                cols = ["enhancer", "score", "zscore", "zscoreRank"]
+                write_header = False
+                if chunk == 0:
+                    write_header = True
+                pwm_score[cols].to_csv(fout, sep='\t',
+                        header=write_header)
+    elif normalize == 'nogc' :
+        print("Motif background distribution")
+        motif_stats = os.path.join(outdir, "motif_distribution.txt")
+        get_motif_distribution(motif_stats, genome, pwmfile=pwmfile)
+        motif_bg = pd.read_table(motif_stats, index_col=0)
+        
+        print("Motif scan")
+        seqs = [s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=genome).ids]
+        
+        s = Scanner()
+        s.set_motifs(pwmfile)
+        s.set_threshold(threshold=0.0)
+        s.set_genome(genome)
+        with open(pwmfile) as f:
+            motifs = read_motifs(f)
+        
+        chunksize = 10000
+        with open('{}/pwmScore.txt'.format(outdir), "w") as fout:
+            for chunk in range(0, len(seqs), chunksize):
+                chunk_seqs = seqs[chunk:chunk+chunksize]
+                print(chunk, "-", chunk + chunksize)
+                pwm_score = []
+                it = s.best_score(chunk_seqs)
+                for seq,scores in zip(chunk_seqs, it):
+                    for motif, score in zip(motifs, scores):
+                        pwm_score.append([motif.id, seq, score])
+        
+                pwm_score = pd.DataFrame(pwm_score, columns=["motif", "enhancer", "score"])
+                pwm_score = pwm_score.set_index("motif")
+            
+                print("Combine")
+                pwm_score = pwm_score.join(pd.read_table(motif_stats, index_col=0))
+                # scale motif score
+                pwm_score["zscore"] = (pwm_score["score"] - pwm_score["mean"]) / pwm_score["std"]
                 pwm_score["zscoreRank"] = minmax_scale(rankdata(pwm_score["zscore"]))
                 cols = ["enhancer", "score", "zscore", "zscoreRank"]
                 write_header = False
@@ -352,7 +382,7 @@ def calculate_binding(fin_rpkm, gene_bed, outdir, genome="hg19", pwmfile=None, f
     binding = os.path.join(outdir, "binding.predicted.h5")
     nfin_rpkm=os.path.join(outdir, "filtered_enahncers.txt")
     if not os.path.exists(nfin_rpkm):
-        clear_peaks(gene_bed, fin_rpkm, fpomoter=fpomoter)
+        clear_peaks(gene_bed, fin_rpkm)
 
     if not os.path.exists(pwm_weight):
         get_PWMScore(nfin_rpkm, pwmfile, outdir, genome=genome)
