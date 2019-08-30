@@ -288,7 +288,7 @@ def run(Gbf, Gaf, expression, outfile, fin_expression=None):
 
     rank_TF(Gbf, Gaf, fin_expression,outfile)
     print("step3")
-    inflscore_plot(outfile.replace(".txt","_rank.txt"), outfile.split(".")[0]+"_rank.jpg")
+    inflscore_plot(outfile.replace(".txt","_rank.txt"), outfile.replace(".txt","_rank_plot.jpg"))
 
 if __name__ == "__main__":
     description = ""

@@ -6,9 +6,7 @@ import subprocess
 import sys
 import math
 import ast
-
 import warnings
-warnings.filterwarnings('ignore')
 from tempfile import NamedTemporaryFile
 
 import numpy as np
@@ -31,8 +29,10 @@ from gimmemotifs.background import create_random_genomic_bedfile
 from gimmemotifs.scanner import scan_to_best_match
 from gimmemotifs.background import MatchedGcFasta
 
+warnings.filterwarnings('ignore')
 
-def filter_promoter_peaks(gene_bed, peak_bed, fpomoter=True, up=2000, down=2000):
+
+def clear_peaks(gene_bed, peak_bed, filter_promoter=True, up=2000, down=2000):
     #all overlap Enh-TSS(up8000 to down2000) pair
     g = Genome(genome)
     gsize = g.props["sizes"]["sizes"]
@@ -46,10 +46,11 @@ def filter_promoter_peaks(gene_bed, peak_bed, fpomoter=True, up=2000, down=2000)
         gene = f[3]
         peak_start, peak_end = int(f[13]), int(f[14])
         vals.append(chrom+":"+str(peak_start)+"-"+str(peak_end))
+        
     fl2=open(os.path.join(outdir, "filtered_enahncers.txt"),"w")
     with open(peak_bed) as pbed:
         for line in pbed:
-            if fpomoter:
+            if filter_promoter:
                 if line.split()[0]+":"+line.split()[1]+"-"+line.split()[2] not in vals:
                     fl2.write(line)
             else:
@@ -351,7 +352,7 @@ def calculate_binding(fin_rpkm, gene_bed, outdir, genome="hg19", pwmfile=None, f
     binding = os.path.join(outdir, "binding.predicted.h5")
     nfin_rpkm=os.path.join(outdir, "filtered_enahncers.txt")
     if not os.path.exists(nfin_rpkm):
-        filter_promoter_peaks(gene_bed, fin_rpkm, fpomoter=fpomoter)
+        clear_peaks(gene_bed, fin_rpkm, fpomoter=fpomoter)
 
     if not os.path.exists(pwm_weight):
         get_PWMScore(nfin_rpkm, pwmfile, outdir, genome=genome)
