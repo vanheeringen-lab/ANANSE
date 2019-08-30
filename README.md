@@ -24,7 +24,7 @@ $ pip install adjustText
 $ conda uninstall gimmemotifs
 
 # Upgrade genomepy and gimmemotifs to development version
-$ pip install http://github.com/simonvh/gimmemotifs/tarball/develop
+$ pip install git+https://github.com/vanheeringen-lab/gimmemotifs.git@develop
 ```
 
 * Run `gimme` to create a new GimmeMotifs config.
