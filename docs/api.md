@@ -1,7 +1,7 @@
 ## Working with binding
 The `Binding` class include all functions used to infer TF-binding site for all enhancer peaks.
 
-```
+```python
 import sys 
 import importlib
 sys.path.append('../')
@@ -12,14 +12,13 @@ import dask.dataframe as dd
 import grns.binding
 ```
 
-```
+```python
 gene_bed = "/home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed"
 peak_bed = "data/krt_enhancer.bed"
 pwmfile = "../data/gimme.vertebrate.v5.1.pfm"
 
 
-a=grns.binding.Binding(genome="hg38", 
-                        gene_bed= gene_bed, pwmfile=pwmfile)
+a=grns.binding.Binding(genome="hg38", gene_bed= gene_bed, pwmfile=pwmfile)
 
 
 filter_bed = a.clear_peaks(peak_bed)
@@ -32,4 +31,8 @@ peak = dd.read_csv(peak_weight.name, sep="\t")
 
 table=a.get_binding_score(pwm, peak)
 
+```
+
+```python
+xxx=a.run_binding(peak_bed,"./")
 ```
