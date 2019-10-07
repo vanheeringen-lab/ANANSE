@@ -27,6 +27,11 @@ $ conda uninstall gimmemotifs
 $ pip install git+https://github.com/vanheeringen-lab/gimmemotifs.git@develop
 ```
 
+* Install `network2` development version package from github
+```bash
+$ pip install git+https://github.com/vanheeringen-lab/network2.git@develop
+```
+
 * Run `gimme` to create a new GimmeMotifs config.
 
 ```
