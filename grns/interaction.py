@@ -24,6 +24,173 @@ from genomepy import Genome
 
 from gimmemotifs.config import MotifConfig
 
+from grns import mytmpdir
+
+class Interaction(object):
+
+    def __init__(self, genome="hg19", gene_bed=None, pwmfile=None):
+        
+        self.genome=genome
+        g = Genome(self.genome)
+        self.gsize = g.props["sizes"]["sizes"]
+
+        self.motifs2factors = pwmfile.replace(".pfm", ".motif2factors.txt")
+        self.factortable= pwmfile.replace(".pfm", ".factortable.txt")
+
+        self.gene_bed=gene_bed
+
+        # # read motifs
+        # with open(pwmfile) as pwm_in:
+        #     motifs = read_motifs(pwm_in)
+
+        # self.pwmfile = NamedTemporaryFile(mode="w", dir=mytmpdir())
+        # for motif in motifs:
+        #     if motif.factors:
+        #         self.pwmfile.write("{}\n".format(motif.to_pwm()))
+        
+    def get_promoter_dataframe(self, peak_bed, up=2000, down=2000):
+        #all overlap Enh-TSS(up8000 to down2000) pair
+        peaks = BedTool(peak_bed)
+        b = BedTool(self.gene_bed)
+        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(l=up, r=down, g=self.gsize, s=True)
+        vals = []
+        for f in b.intersect(peaks, wo=True, nonamecheck=True):
+            chrom = f[0]
+            gene = f[3]
+            peak_start, peak_end = int(f[13]), int(f[14])
+            vals.append([chrom, gene, peak_start, peak_end])
+        prom = pd.DataFrame(vals, columns=["chrom", "gene", "peak_start", "peak_end"])
+        prom["loc"] = prom["chrom"] + ":" + prom["peak_start"].astype(str) + "-" + prom["peak_end"].astype(str)
+        prom.gene=[i.upper() for i in list(prom.gene)]
+        return (prom)
+
+    def get_gene_dataframe(self, peak_bed, up=100000, down=100000):
+        #all overlap Enh-TSS(100000-tss-100000) pair distance
+
+        peaks = BedTool(peak_bed)
+        b = BedTool(self.gene_bed)
+        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(l=up, r=down, g=self.gsize, s=True)
+        #bedtools flank  -r 0 -l 1 -i b.bed -g 
+        ##all gene upstream 1bp position (TSS), Chr01 12800   12801   in Chr01    4170    12800   Xetrov90000001m.g   0   -   
+        
+        #bedtools slop  -r down -l up -i b.bed -g 
+        ## |100000--TSS--100000|
+
+        vals = []
+        for f in b.intersect(peaks, wo=True, nonamecheck=True):
+            #bedtools intersect -wo -nonamecheck -b peaks.bed -a b.bed
+            ##
+            chrom = f[0]
+            strand = f[5]
+            if strand == "+":
+                tss = f.start + up
+            else:
+                tss = f.start + down
+            gene = f[3]
+            peak_start, peak_end = int(f[13]), int(f[14])
+            vals.append([chrom, tss, gene, peak_start, peak_end])
+        p = pd.DataFrame(vals, columns=["chrom", "tss", "gene", "peak_start", "peak_end"])
+        p["peak"] = [int(i) for i in (p["peak_start"] + p["peak_end"]) / 2]
+        #peak with int function, let distance int
+        p["dist"] = np.abs(p["tss"] - p["peak"])
+        p["loc"] = p["chrom"] + ":" + p["peak_start"].astype(str) + "-" + p["peak_end"].astype(str)
+        p = p.sort_values("dist").drop_duplicates(["loc", "gene"], keep="first")[["gene", "loc", "dist"]] 
+
+        p=p[p["dist"] < up-1]
+        # remove distance more than 100k interaction, for weight calculate
+        p.gene=[i.upper() for i in list(p.gene)]
+
+        return (p)
+
+    def distance_weight(self, alpha=1e5, padding=int(2e5), keep1=5000, remove=2000):
+        u = -math.log(1.0/3.0)*1e5/alpha
+        weight1  = pd.DataFrame({"weight": [0 for z in range(1, remove+1)], "dist" : range(1, remove+1)})
+        weight2  = pd.DataFrame({"weight": [1 for z in range(remove+1,keep1+1)], "dist" : range(remove+1,keep1+1)})
+        weight3  = pd.DataFrame({"weight": [2.0*math.exp(-u*math.fabs(z)/1e5)/(1.0+math.exp(-u*math.fabs(z)/1e5)) for z in range( 1,padding-keep1+1)], 
+                                "dist" : range(keep1+1, padding+1)})
+        weight = pd.concat([weight1, weight2, weight3])
+
+        weightfile = NamedTemporaryFile(mode="w", dir=mytmpdir())
+        weight.to_csv(weightfile)
+        return(weightfile)
+
+    def aggregate_binding(self, binding, prom, p, weight):
+
+        ddf = dd.read_hdf(binding, key="/binding")[["factor", "enhancer", "binding"]]
+
+        prom_table = ddf.merge(prom, left_on="enhancer", right_on="loc")
+        prom_table = prom_table.groupby(["factor", "gene"])[["binding"]].max()
+        prom_table = prom_table.rename(columns={"binding":"max_binding_in_promoter"})
+        prom_table = prom_table.reset_index()
+        prom_table["source_target"] = prom_table["factor"].map(str) + "_" + prom_table["gene"].map(str)
+
+        f_table = ddf.merge(p, left_on="enhancer", right_on="loc")
+        sum_enh = f_table.groupby(["factor", "gene"])[["binding"]].count()
+        f_table["sum_weighted_logodds"] = f_table["binding"].div(f_table["binding"].mean()).apply(np.log, meta=('binding', np.float64)).rmul(50000).div(f_table["dist"])
+        f_table["sum_logodds"] = f_table["binding"].div(f_table["binding"].mean()).apply(np.log, meta=('binding', np.float64))
+
+        weight=dd.read_csv(os.path.join(outdir, "weight.csv"))
+        f_table=f_table.merge(weight,how='left',on='dist')
+        f_table['sum_dist_weight'] = f_table['binding'] * f_table['weight']
+
+        # f_table['sun_dist_weight'] = distance_weight(f_table['binding'], f_table['dist'])
+
+        #f_table = f_table.drop(['temp'], axis=1)
+
+        f_table_sum = f_table.groupby(["factor", "gene"]).sum()[["sum_weighted_logodds", "sum_logodds", "binding", "sum_dist_weight"]]
+        # f_table_max = f_table.groupby(["factor", "gene"]).max()[["binding", "sum_dist_weight"]]
+
+        f_table_max = f_table.groupby(["factor", "gene"])[["binding","sum_dist_weight"]].max()
+
+        f_table_sum = f_table_sum.rename(columns={"binding":"sum_binding"})
+        f_table_max = f_table_max.rename(columns={"binding":"max_binding"})
+        f_table_max = f_table_max.rename(columns={"sum_dist_weight":"max_sum_dist_weight"})
+
+        sum_enh = sum_enh.rename(columns={"binding":"enhancers"})
+        f_table_sum = f_table_sum.reset_index()
+        f_table_max = f_table_max.reset_index()
+
+        f_table = f_table.reset_index()
+        sum_enh = sum_enh.reset_index()
+
+        f_table_sum["source_target"] = f_table_sum["factor"] + "_" + f_table_sum["gene"]
+        f_table_max["source_target"] = f_table_max["factor"] + "_" + f_table_max["gene"]
+
+        f_table["source_target"] = f_table["factor"] + "_" + f_table["gene"]
+        sum_enh["source_target"] = sum_enh["factor"] + "_" + sum_enh["gene"]
+        f_table_max = f_table_max.rename(columns={"factor":"factor2"})    
+        f_table_max = f_table_max.rename(columns={"gene":"gene2"})
+
+        f_table = f_table_sum.merge(f_table_max, left_on="source_target", right_on="source_target", how="outer")
+        f_table = f_table.merge(sum_enh, left_on="source_target", right_on="source_target", how="outer")
+        f_table = f_table.merge(prom_table, left_on="source_target", right_on="source_target", how="outer")
+        f_table = f_table[["source_target", "factor", "gene", "sum_weighted_logodds", "sum_dist_weight", "sum_logodds", "sum_binding", "enhancers", 
+                        "max_binding_in_promoter","max_binding","max_sum_dist_weight"]]
+        f_table["log_sum_binding"] = f_table["sum_binding"].add(1e-5).apply(np.log, meta=('sum_binding', np.float64))
+        f_table["log_enhancers"] = f_table["enhancers"].add(1).apply(np.log, meta=('enhancers', np.float64))
+        f_table["factor"] = f_table["source_target"].str.replace("_.*", '')
+        f_table["gene"] = f_table["source_target"].str.replace(".*_", '')
+        f_table["max_binding_in_promoter"] = f_table["max_binding_in_promoter"].fillna(0)
+
+        outfile = os.path.join(outdir, "features.h5")
+        print("computing, output file {}".format(outfile))
+        f_table.to_hdf(outfile, key="/features")
+        # f_table.to_csv(outfile.replace("h5","txt"), sep="\t", index=False)
+
+def main():
+    gene_bed="/home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed"
+    peak_bed="data/krt_enhancer.bed"
+    pwmfile="../data/gimme.vertebrate.v5.1.pfm"
+    binding="results/binding.predicted.h5"
+
+    b=grns.interaction.Interaction(genome="hg38", gene_bed= gene_bed, pwmfile=pwmfile)
+    prom=b.get_promoter_dataframe(peak_bed)
+    p=b.get_gene_dataframe(peak_bed)
+    weight=b.distance_weight()
+
+    b.aggregate_binding(binding, prom, p, weight)
+
+
 
 def get_expression(fin_expression, features, outdir, min_tpm=1e-10, column="tpm"):
     df = pd.read_hdf(features)
@@ -57,7 +224,7 @@ def get_expression(fin_expression, features, outdir, min_tpm=1e-10, column="tpm"
                 axis=1).mean(1), 
             columns=[column])
     expression.index=[i.upper() for i in list(expression.index)]
-   # print(expression)
+    # print(expression)
     expression[column] = np.log2(expression[column] + 1e-5)
     df = df.join(expression, on="factor")
     df = df.rename(columns={column:"factor_expression"})
@@ -148,58 +315,6 @@ def get_peakRPKM(fin_rpkm, outdir):
     outname = os.path.join(outdir, "peakRPKM.txt")
     peaks[cols].to_csv(outname, sep="\t", index=False)
 
-def get_promoter_dataframe(gene_bed, peak_bed, genome, up=2000, down=2000):
-    #all overlap Enh-TSS(up8000 to down2000) pair
-    g = Genome(genome)
-    gsize = g.props["sizes"]["sizes"]
-    
-    peaks = BedTool(peak_bed)
-    b = BedTool(gene_bed)
-    b = b.flank(l=1, r=0, s=True, g=gsize).slop(l=up, r=down, g=gsize, s=True)
-    vals = []
-    for f in b.intersect(peaks, wo=True, nonamecheck=True):
-        chrom = f[0]
-        gene = f[3]
-        peak_start, peak_end = int(f[13]), int(f[14])
-        vals.append([chrom, gene, peak_start, peak_end])
-    prom = pd.DataFrame(vals, columns=["chrom", "gene", "peak_start", "peak_end"])
-    prom["loc"] = prom["chrom"] + ":" + prom["peak_start"].astype(str) + "-" + prom["peak_end"].astype(str)
-    return prom
-
-def get_gene_dataframe(gene_bed, peak_bed, genome, up=100000, down=100000):
-    #all overlap Enh-TSS(100000-tss-100000) pair distance
-    g = Genome(genome)
-    gsize = g.props["sizes"]["sizes"]
-
-    peaks = BedTool(peak_bed)
-    b = BedTool(gene_bed)
-    b = b.flank(l=1, r=0, s=True, g=gsize).slop(l=up, r=down, g=gsize, s=True)
-    #bedtools flank  -r 0 -l 1 -i b.bed -g 
-    ##all gene upstream 1bp position (TSS), Chr01 12800   12801   in Chr01    4170    12800   Xetrov90000001m.g   0   -   
-    
-    #bedtools slop  -r down -l up -i b.bed -g 
-    ## |100000--TSS--100000|
-
-    vals = []
-    for f in b.intersect(peaks, wo=True, nonamecheck=True):
-        #bedtools intersect -wo -nonamecheck -b peaks.bed -a b.bed
-        ##
-        chrom = f[0]
-        strand = f[5]
-        if strand == "+":
-            tss = f.start + up
-        else:
-            tss = f.start + down
-        gene = f[3]
-        peak_start, peak_end = int(f[13]), int(f[14])
-        vals.append([chrom, tss, gene, peak_start, peak_end])
-    p = pd.DataFrame(vals, columns=["chrom", "tss", "gene", "peak_start", "peak_end"])
-    p["peak"] = [int(i) for i in (p["peak_start"] + p["peak_end"]) / 2]
-    #peak with int function, let distance int
-    p["dist"] = np.abs(p["tss"] - p["peak"])
-    p["loc"] = p["chrom"] + ":" + p["peak_start"].astype(str) + "-" + p["peak_end"].astype(str)
-    p = p.sort_values("dist").drop_duplicates(["loc", "gene"], keep="first")[["gene", "loc", "dist"]] 
-    return p
 
 def distance_weight(binding,distance,alpha=1e5,padding=int(2e5)):
     print (binding,distance)
@@ -220,98 +335,6 @@ def distance_weight(binding,distance,alpha=1e5,padding=int(2e5)):
     wbinding= np.dot( binding, weight[distance])
     return(wbinding)
 
-def aggregate_binding(binding, gene_bed, peak_bed, genome, outdir, window_up=100000, window_down=100000, alpha=1e4, padding=int(1e5), keep1=5000, remove=2000):
-    # Overlaps
-    g = Genome(genome)
-    gsize = g.props["sizes"]["sizes"]
-    
-    print("promoter_overlap")
-    prom = get_promoter_dataframe(gene_bed, peak_bed, genome)
-    prom.gene=[i.upper() for i in list(prom.gene)]
-
-    print("gene overlap")
-    p = get_gene_dataframe(gene_bed, peak_bed, genome, window_up, window_down)
-    p=p[p["dist"]<99999]
-    # remove distance more than 100k interaction, for weight calculate
-    p.gene=[i.upper() for i in list(p.gene)]
-
-    ddf = dd.read_hdf(binding, key="/binding")[["factor", "enhancer", "binding"]]
-
-    prom_table = ddf.merge(prom, left_on="enhancer", right_on="loc")
-    prom_table = prom_table.groupby(["factor", "gene"])[["binding"]].max()
-    prom_table = prom_table.rename(columns={"binding":"max_binding_in_promoter"})
-    prom_table = prom_table.reset_index()
-    prom_table["source_target"] = prom_table["factor"].map(str) + "_" + prom_table["gene"].map(str)
-
-    f_table = ddf.merge(p, left_on="enhancer", right_on="loc")
-    sum_enh = f_table.groupby(["factor", "gene"])[["binding"]].count()
-    f_table["sum_weighted_logodds"] = f_table["binding"].div(f_table["binding"].mean()).apply(np.log, meta=('binding', np.float64)).rmul(50000).div(f_table["dist"])
-    f_table["sum_logodds"] = f_table["binding"].div(f_table["binding"].mean()).apply(np.log, meta=('binding', np.float64))
-    
-    #f_table["tmp"] = f_table["binding"].div(f_table["binding"].mean())
-    #f_table['sun_dist_weight'] = f_table.apply(lambda row: distance_weight(row['binding'], row['dist']), axis=1)
-    
-    # f_table=f_table.compute()
-    # sum_enh=sum_enh.compute()
-    # prom_table=prom_table.compute()
-
-    u = -math.log(1.0/3.0)*1e5/alpha
-    weight1  = pd.DataFrame({"weight": [0 for z in range(1, remove+1)], "dist" : range(1, remove+1)})
-    weight2  = pd.DataFrame({"weight": [1 for z in range(remove+1,keep1+1)], "dist" : range(remove+1,keep1+1)})
-    weight3  = pd.DataFrame({"weight": [2.0*math.exp(-u*math.fabs(z)/1e5)/(1.0+math.exp(-u*math.fabs(z)/1e5)) for z in range( 1,padding-keep1+1)], 
-                            "dist" : range(keep1+1, padding+1)})
-
-    weight = pd.concat([weight1, weight2, weight3])
-    
-    weight.to_csv(os.path.join(outdir, "weight.csv"))
-
-    weight=dd.read_csv(os.path.join(outdir, "weight.csv"))
-    f_table=f_table.merge(weight,how='left',on='dist')
-    f_table['sum_dist_weight'] = f_table['binding'] * f_table['weight']
-
-    # f_table['sun_dist_weight'] = distance_weight(f_table['binding'], f_table['dist'])
-
-    #f_table = f_table.drop(['temp'], axis=1)
-
-    f_table_sum = f_table.groupby(["factor", "gene"]).sum()[["sum_weighted_logodds", "sum_logodds", "binding", "sum_dist_weight"]]
-    # f_table_max = f_table.groupby(["factor", "gene"]).max()[["binding", "sum_dist_weight"]]
-
-    f_table_max = f_table.groupby(["factor", "gene"])[["binding","sum_dist_weight"]].max()
-
-    f_table_sum = f_table_sum.rename(columns={"binding":"sum_binding"})
-    f_table_max = f_table_max.rename(columns={"binding":"max_binding"})
-    f_table_max = f_table_max.rename(columns={"sum_dist_weight":"max_sum_dist_weight"})
-
-    sum_enh = sum_enh.rename(columns={"binding":"enhancers"})
-    f_table_sum = f_table_sum.reset_index()
-    f_table_max = f_table_max.reset_index()
-
-    f_table = f_table.reset_index()
-    sum_enh = sum_enh.reset_index()
-
-    f_table_sum["source_target"] = f_table_sum["factor"] + "_" + f_table_sum["gene"]
-    f_table_max["source_target"] = f_table_max["factor"] + "_" + f_table_max["gene"]
-
-    f_table["source_target"] = f_table["factor"] + "_" + f_table["gene"]
-    sum_enh["source_target"] = sum_enh["factor"] + "_" + sum_enh["gene"]
-    f_table_max = f_table_max.rename(columns={"factor":"factor2"})    
-    f_table_max = f_table_max.rename(columns={"gene":"gene2"})
-
-    f_table = f_table_sum.merge(f_table_max, left_on="source_target", right_on="source_target", how="outer")
-    f_table = f_table.merge(sum_enh, left_on="source_target", right_on="source_target", how="outer")
-    f_table = f_table.merge(prom_table, left_on="source_target", right_on="source_target", how="outer")
-    f_table = f_table[["source_target", "factor", "gene", "sum_weighted_logodds", "sum_dist_weight", "sum_logodds", "sum_binding", "enhancers", 
-                       "max_binding_in_promoter","max_binding","max_sum_dist_weight"]]
-    f_table["log_sum_binding"] = f_table["sum_binding"].add(1e-5).apply(np.log, meta=('sum_binding', np.float64))
-    f_table["log_enhancers"] = f_table["enhancers"].add(1).apply(np.log, meta=('enhancers', np.float64))
-    f_table["factor"] = f_table["source_target"].str.replace("_.*", '')
-    f_table["gene"] = f_table["source_target"].str.replace(".*_", '')
-    f_table["max_binding_in_promoter"] = f_table["max_binding_in_promoter"].fillna(0)
-
-    outfile = os.path.join(outdir, "features.h5")
-    print("computing, output file {}".format(outfile))
-    f_table.to_hdf(outfile, key="/features")
-    # f_table.to_csv(outfile.replace("h5","txt"), sep="\t", index=False)
 
 def join_features(features, other, outfile):
     network = pd.read_hdf(features)
