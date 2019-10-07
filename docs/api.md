@@ -32,16 +32,17 @@ The `get_PWMScore()` function, calculate the motif z-score of all TFs in all pea
 ```python
 pwm_weight = a.get_PWMScore(filter_bed.name)
 pwm = dd.read_csv(pwm_weight.name, sep="\t")
+```
 
 Load enhancer peak intensity.
 ```python
 peak_weight = a.get_peakRPKM(filter_bed.name)
 peak = dd.read_csv(peak_weight.name, sep="\t")
+```
 
 Infer the TF-binding score.
 ```python
 table=a.get_binding_score(pwm, peak)
-
 ```
 
 The `peak_bed` file is the enhancer peak file, and `"./"` is the output dir. With `run_binding()` function, we can infer the binding sites of all TFs in `peak_bed` enhancer ranges.
