@@ -9,7 +9,7 @@ sys.path.append('../')
 import pandas as pd
 import dask.dataframe as dd
 
-import grns.binding
+from grns import binding
 ```
 
 ```python
@@ -18,9 +18,9 @@ peak_bed = "data/krt_enhancer.bed"
 pwmfile = "../data/gimme.vertebrate.v5.1.pfm"
 ```
 
-A new Binding object `a`
+A new `Binding` object `a`
 ```python
-a=grns.binding.Binding(genome="hg38", gene_bed= gene_bed, pwmfile=pwmfile)
+a=binding.Binding(genome="hg38", gene_bed= gene_bed, pwmfile=pwmfile)
 ```
 
 Using `clear_peaks()` function, we can filter the peaks in promoter ranges. 
