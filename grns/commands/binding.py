@@ -23,7 +23,7 @@ def binding(args):
     params = {
         "pwmfile": args.pwmfile,
         "fin_rpkm": args.fin_rpkm,
-        "outdir": args.outdir,
+        "outfile": args.outfile,
         "genome": args.genome,
         "gene_bed": args.annotation,
         "fpomoter": args.fpomoter,

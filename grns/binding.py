@@ -41,6 +41,9 @@ class Binding(object):
         g = Genome(self.genome)
         self.gsize = g.props["sizes"]["sizes"]
 
+        if pwmfile is None:
+            pwmfile = "../data/gimme.vertebrate.v5.1.pfm"
+
         self.motifs2factors = pwmfile.replace(".pfm", ".motif2factors.txt")
         self.factortable= pwmfile.replace(".pfm", ".factortable.txt")
 
@@ -263,15 +266,14 @@ class Binding(object):
         r = r.dropna().reset_index()
 
         cache = Chest(available_memory=20e9)
-        print("combining tables")
         table = r.compute()
-        print("predict")
+        print("Predict TF binding")
         table["binding"] = clf.predict_proba(table[["zscore", "peakRPKMScale"]])[:,1]
-        print("save results")
+        print("Save results")
 
         return(table)
 
-    def run_binding(self, peak_bed, outdir):
+    def run_binding(self, peak_bed, outfile):
         filter_bed = self.clear_peaks(peak_bed)
 
         pwm_weight = self.get_PWMScore(filter_bed)
@@ -282,6 +284,6 @@ class Binding(object):
 
         table=self.get_binding_score(pwm, peak)
 
-        outfile = os.path.join(outdir, "binding.predicted.txt")
+        # outfile = os.path.join(outdir, "binding.predicted.txt")
         table.to_csv(outfile, sep="\t", index=False)
 
