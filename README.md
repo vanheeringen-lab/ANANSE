@@ -84,13 +84,13 @@ $ gnetwork binding  -r data/krt_enhancer.bed \
 
 * Example:
 ```
-$ python ../grns/interaction.py -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                                -o results \
-                                -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
-                                -g hg38 \
-                                -b results/binding.predicted.h5 \
-                                -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
-                                -p ../data/gimme.vertebrate.v5.1.pfm
+$ gnetwork interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
+                        -o results \
+                        -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
+                        -g hg38 \
+                        -b results/binding.predicted.h5 \
+                        -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
+                        -p ../data/gimme.vertebrate.v5.1.pfm
 ```
 * Input
 ```
@@ -107,7 +107,7 @@ $ python ../grns/interaction.py -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
 
 * Example:
 ```
-$ python ../grns/network.py -f results/full_features.h5 -o results
+$ gnetwork network -f results/full_features.h5 -o results
 ```
 * Input
 ```
@@ -119,10 +119,10 @@ $ python ../grns/network.py -f results/full_features.h5 -o results
 
 * Example:
 ```
-$ python ../grns/influence.py -a results/full_network.txt \
-                            -e data/FB_rep1_TPM.txt \
-                            -d data/FB2KRT_degenes.csv \
-                            -o results/FB2KRT.txt
+$ gnetwork influence    -a results/full_network.txt \
+                        -e data/FB_rep1_TPM.txt \
+                        -d data/FB2KRT_degenes.csv \
+                        -o results/FB2KRT.txt
 ```
 * Input
 ```
