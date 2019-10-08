@@ -50,7 +50,7 @@ class Binding(object):
         with open(pwmfile) as pwm_in:
             motifs = read_motifs(pwm_in)
 
-        self.pwmfile = NamedTemporaryFile(mode="w", dir=mytmpdir())
+        self.pwmfile = NamedTemporaryFile(mode="w", dir=mytmpdir(),delete=False)
         for motif in motifs:
             if motif.factors:
                 self.pwmfile.write("{}\n".format(motif.to_pwm()))
@@ -74,7 +74,7 @@ class Binding(object):
             gene = f[3]
             peak_start, peak_end = int(f[13]), int(f[14])
             vals.append(chrom+":"+str(peak_start)+"-"+str(peak_end))
-        fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
+        fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir(),delete=False)
         with open(peak_bed) as pbed:
             for line in pbed:
                 if filter_promoter:
