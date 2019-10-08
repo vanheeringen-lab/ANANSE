@@ -6,6 +6,7 @@
 # distribution.
 import os
 import sys
+import ast
 import argparse
 from grns.config import MotifConfig, BG_TYPES, BED_VALID_BGS
 from grns import commands, __version__
