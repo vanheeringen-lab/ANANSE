@@ -67,9 +67,9 @@ class Binding(object):
         b = BedTool(self.gene_bed)
         b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(l=up, r=down, g=self.gsize, s=True)
         vals = []
-        print(peaks)
-        for f in b.intersect(peaks, wo=True, nonamecheck=True):
-        # for f in b.intersect(peaks, wo=True):
+        # print(peaks)
+        # for f in b.intersect(peaks, wo=True, nonamecheck=True):
+        for f in b.intersect(peaks, wo=True):
             chrom = f[0]
             gene = f[3]
             peak_start, peak_end = int(f[13]), int(f[14])
@@ -82,7 +82,7 @@ class Binding(object):
                         fl2.write(line)
                 else:
                     fl2.write(line)
-        return(fl2)
+        return(fl2.name)
 
     def get_motif_distribution(self, normalize='gcbins', nregions=10000, length=200, pwmfile=None, force=False):
         """Calculate mean and sd of motif scores.""" 
@@ -126,7 +126,7 @@ class Binding(object):
         # outname = os.path.join(outdir, "peakRPKM.txt")
         peakrpkmfile = NamedTemporaryFile(mode="w", dir=mytmpdir())
         peaks[cols].to_csv(peakrpkmfile, sep="\t", index=False)
-        return(peakrpkmfile)
+        return(peakrpkmfile.name)
 
     def get_PWMScore(self, fin_regions_fa, normalize='gcbins'):
 
@@ -246,7 +246,7 @@ class Binding(object):
                     write_header = True
                 pwm_score[cols].to_csv(pwmscorefile, sep='\t', header=write_header)
         
-        return(pwmscorefile)
+        return(pwmscorefile.name)
 
     def get_binding_score(self, pwm, peak):
         
@@ -274,11 +274,11 @@ class Binding(object):
     def run_binding(self, peak_bed, outdir):
         filter_bed = self.clear_peaks(peak_bed)
 
-        pwm_weight = self.get_PWMScore(filter_bed.name)
-        pwm = dd.read_csv(pwm_weight.name, sep="\t")
+        pwm_weight = self.get_PWMScore(filter_bed)
+        pwm = dd.read_csv(pwm_weight, sep="\t")
 
-        peak_weight = self.get_peakRPKM(filter_bed.name)
-        peak = dd.read_csv(peak_weight.name, sep="\t")
+        peak_weight = self.get_peakRPKM(filter_bed)
+        peak = dd.read_csv(peak_weight, sep="\t")
 
         table=self.get_binding_score(pwm, peak)
 
