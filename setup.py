@@ -101,14 +101,11 @@ setup (
         download_url = 'https://github.com/vanheeringen-lab/network2/' + versioneer.get_version(),
         license = 'MIT',
         packages=find_packages(),
-        # scripts=[
-        #     'scripts/track2fasta.py',
-        #     'scripts/gimme',
-        #     'scripts/combine_peaks',
-        #     'scripts/coverage_table',
-        #     ],
+        scripts=[
+            'scripts/gnetwork',
+            ],
         include_package_data = True,
-        ext_modules = [module1],
+        # ext_modules = [module1],
         cmdclass = cmdclass,
         classifiers=[
             'Development Status :: 4 - Beta',
