@@ -67,7 +67,7 @@ class Binding(object):
         b = BedTool(self.gene_bed)
         b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(l=up, r=down, g=self.gsize, s=True)
         vals = []
-        print(b)
+        print(peaks)
         for f in b.intersect(peaks, wo=True, nonamecheck=True):
             chrom = f[0]
             gene = f[3]
