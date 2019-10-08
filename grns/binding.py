@@ -125,13 +125,13 @@ class Binding(object):
         
         cols = ["peak", "peakRPKM", "log10_peakRPKM", "peakRPKMScale", "peakRPKMRank"]
         # outname = os.path.join(outdir, "peakRPKM.txt")
-        peakrpkmfile = NamedTemporaryFile(mode="w", dir=mytmpdir())
+        peakrpkmfile = NamedTemporaryFile(mode="w", dir=mytmpdir(),delete=False)
         peaks[cols].to_csv(peakrpkmfile, sep="\t", index=False)
         return(peakrpkmfile.name)
 
     def get_PWMScore(self, fin_regions_fa, normalize='gcbins'):
 
-        pwmscorefile=NamedTemporaryFile(mode="w", dir=mytmpdir())
+        pwmscorefile=NamedTemporaryFile(mode="w", dir=mytmpdir(),delete=False)
         if normalize == 'gcbins':
             seqs = [s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=self.genome).ids]    
             s = Scanner()
