@@ -55,7 +55,7 @@ class Binding(object):
             if motif.factors:
                 self.pwmfile.write("{}\n".format(motif.to_pwm()))
         
-        self.model = "db/dream_model.txt"
+        self.model = "../db/dream_model.txt"
 
     def clear_peaks(self, peak_bed, filter_promoter=True, up=2000, down=2000):
         """Filter the enhancer peaks in promoter range.
