@@ -82,6 +82,7 @@ class Binding(object):
                         fl2.write(line)
                 else:
                     fl2.write(line)
+        print(fl2.name)
         return(fl2.name)
 
     def get_motif_distribution(self, normalize='gcbins', nregions=10000, length=200, pwmfile=None, force=False):
