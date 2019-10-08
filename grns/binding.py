@@ -74,7 +74,7 @@ class Binding(object):
             gene = f[3]
             peak_start, peak_end = int(f[13]), int(f[14])
             vals.append(chrom+":"+str(peak_start)+"-"+str(peak_end))
-        fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir())
+        fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
         with open(peak_bed) as pbed:
             for line in pbed:
                 if filter_promoter:
