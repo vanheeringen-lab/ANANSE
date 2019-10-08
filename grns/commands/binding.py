@@ -16,8 +16,8 @@ def binding(args):
     config = cfg.MotifConfig()
     params = config.get_default_params()
 
-    if not os.path.exists(args.inputfile):
-        print("File %s does not exist!" % args.inputfile)
+    if not os.path.exists(args.fin_rpkm):
+        print("File %s does not exist!" % args.fin_rpkm)
         sys.exit(1)
     
     params = {
