@@ -12,10 +12,10 @@
 
 ```
 # Install all dependencies
-$ conda create -n regnetwork python=3 gimmemotifs genomepy networkx chest dask pytables
+$ conda create -n network python=3 gimmemotifs genomepy networkx chest dask pytables
 
 # Activate the environment
-$ conda activate regnetwork
+$ conda activate network
 
 # install dependency via pip
 $ pip install adjustText
@@ -25,11 +25,6 @@ $ conda uninstall gimmemotifs
 
 # Upgrade genomepy and gimmemotifs to development version
 $ pip install git+https://github.com/vanheeringen-lab/gimmemotifs.git@develop
-```
-
-* Install `network2` development version package from github
-```bash
-$ pip install git+https://github.com/vanheeringen-lab/network2.git@develop
 ```
 
 * Run `gimme` to create a new GimmeMotifs config.
@@ -45,6 +40,22 @@ $ gimme
 ```
 $ genomepy install Xenopus_tropicalis_v9.1 NCBI
 ```
+
+### Easy installation
+
+
+* Activate the environment
+
+```
+$ conda activate network
+```
+
+* Install `network2` development version package from github
+```bash
+$ pip install git+https://github.com/vanheeringen-lab/network2.git@develop
+```
+Python 3 is the required. Don't forget to activate the environment with conda activate network whenever you want to use `grns`.
+
 
 
 ### Built binding network
