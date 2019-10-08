@@ -2,9 +2,6 @@
 The `Binding` class include all functions used to infer TF-binding site for all enhancer peaks.
 
 ```python
-import sys 
-import importlib
-sys.path.append('../')
 
 import pandas as pd
 import dask.dataframe as dd
