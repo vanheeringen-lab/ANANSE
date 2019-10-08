@@ -6,11 +6,11 @@ import logging
 
 def mytmpdir():
     if not hasattr(mytmpdir, 'dir') or not mytmpdir.dir:
-        mytmpdir.dir = mkdtemp(prefix="gimmemotifs.{0}.".format(getpid()))
+        mytmpdir.dir = mkdtemp(prefix="grns.{0}.".format(getpid()))
         atexit.register(shutil.rmtree, mytmpdir.dir)
     return mytmpdir.dir
 
-logger = logging.getLogger('gimme')
+logger = logging.getLogger('gnetwork')
 logger.setLevel(logging.DEBUG)
 logger.propagate = 0
 
