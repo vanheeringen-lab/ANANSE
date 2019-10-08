@@ -67,14 +67,13 @@ class Binding(object):
         b = BedTool(self.gene_bed)
         b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(l=up, r=down, g=self.gsize, s=True)
         vals = []
+        print(b)
         for f in b.intersect(peaks, wo=True, nonamecheck=True):
             chrom = f[0]
             gene = f[3]
             peak_start, peak_end = int(f[13]), int(f[14])
             vals.append(chrom+":"+str(peak_start)+"-"+str(peak_end))
-        print("ttt")
         fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir())
-        print(fl2)
         with open(peak_bed) as pbed:
             for line in pbed:
                 if filter_promoter:
