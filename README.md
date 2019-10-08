@@ -62,11 +62,11 @@ Python 3 is the required. Don't forget to activate the environment with conda ac
 
 * Example:
 ```
-$ python ../grns/binding.py -r data/krt_enhancer.bed \
-                            -o results \
-                            -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
-                            -g hg38 \
-                            -p ../data/gimme.vertebrate.v5.1.pfm
+$ gnetwork binding  -r data/krt_enhancer.bed \
+                    -o results \
+                    -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
+                    -g hg38 \
+                    -p ../data/gimme.vertebrate.v5.1.pfm
 ```
 * Input
 
