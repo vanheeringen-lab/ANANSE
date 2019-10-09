@@ -64,24 +64,55 @@ Python 3 is the required. Don't forget to activate the environment with conda ac
 
 ### Built binding network
 
+In this command, the `-r/--fin_rpkm` and `-o/--outfile` is the required arguments. The `-r` input is a enhancer peak bed file. This is the example of this file:
+```bash
+chr2	148881617	148881817	7
+chr7	145997204	145997404	4
+chr13	109424160	109424360	20
+chr14	32484901	32485101	2
+chr3	93470526	93470726	315
+chrY	56728139	56728339	50
+chr15	82513939	82514139	36
+chr2	49229595	49229795	3
+chr12	41363656	41363856	2
+chr8	69689994	69690194	13
+```
+The first column is chromosome name, the second and third column is the start and end point of peaks. We recommend all peaks have 200bp. The fourth column is intensity of the peak.
+
 * Example:
 ```
 $ gnetwork binding  -r data/krt_enhancer.bed \
-                    -o results \
+                    -o results/binding.txt \
                     -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
                     -g hg38 \
                     -p ../data/gimme.vertebrate.v5.1.pfm
 ```
-* Input
 
+* All the optional arguments:
 ```
--r The enhancer BED file with enhancers (200bp) with RPKM (or equivalent) value in 4th column;
--o The folder to save results;
--a 12 columns BED file with gene annotation;
--g Genome;
--p Motifs file (optional; if provided there should also be a motif2factors.txt).
--f Filter promoters, input should be either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.)
--d Keep temporary files, input should be either 'True' or 'False'. (Default setting: True)
+$ gnetwork binding -h
+
+usage: gnetwork [-h] <subcommand> [options] binding [-h] [-p FILE] -r FILE
+                                                    [-a BED] [-g GENOME] -o
+                                                    FILE [-f NAME] [-d NAME]
+optional arguments:
+  -h, --help            show this help message and exit
+  -p FILE, --pwmfile FILE
+                        PWM
+  -r FILE, --fin_rpkm FILE
+                        BED file with RPKM (or equivalent) value on the 4th column
+  -a BED, --annotation BED
+                        Gene annotation in BED12 format
+  -g GENOME, --genome GENOME
+                        Genome
+  -o FILE, --outfile FILE
+                        Output file
+  -f NAME, --filter_promoter NAME
+                        Filter promoters, True or False, input should be
+                        either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.)
+  -d NAME, --keep_detail NAME
+                        Keep detail files, True or False, input should be
+                        either 'True' or 'False'. (Default setting: True)
 ```
 
 ### Built interaction network
