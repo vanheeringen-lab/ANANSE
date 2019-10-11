@@ -316,7 +316,7 @@ class Interaction(object):
         network.to_csv(outfile, sep="\t", index=False)
         # network.to_hdf(outfile, key="/features")
 
-    def run_interaction(self, peak_bed, binding, outfile):
+    def run_interaction(self, peak_bed, binding, fin_expression, corrfiles, outfile):
         # gene_bed="/home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed"
         # peak_bed="data/krt_enhancer.bed"
         # pwmfile="../data/gimme.vertebrate.v5.1.pfm"

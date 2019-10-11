@@ -41,4 +41,4 @@ def interaction(args):
     }
 
     b = grns.interaction.Interaction(genome = args.genome, gene_bed = args.annotation, pwmfile = args.pwmfile)
-    b.run_interaction(args.fin_rpkm, args.binding, args.outfile)
+    b.run_interaction(args.fin_rpkm, args.binding, args.fin_expression, args.corrfiles, args.outfile)
