@@ -143,7 +143,7 @@ $ gnetwork interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
 
 * Example:
 ```
-$ gnetwork network -f results/full_features.h5 -o results
+$ gnetwork network -f results/full_features.txt -o results/full_network.txt
 ```
 * Input
 ```

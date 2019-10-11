@@ -38,9 +38,9 @@ def network(args):
         # "corrfiles": args.corrfiles,
         # "binding": args.binding,
         
-        "featurefile": args.features
-        "outdir": args.outdir
-        "impute": args.impute
+        "featurefile": args.features,
+        "outfile": args.outfile,
+        "impute": args.impute,
 
     }
 
