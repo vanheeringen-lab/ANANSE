@@ -15,7 +15,7 @@ warnings.filterwarnings('ignore')
 class Network(object):
 
     def __init__(self):
-
+        pass
     def create_network(self, featurefile, outfile, impute=False): 
 
         # network = pd.read_hdf(featurefile, key="/features")
