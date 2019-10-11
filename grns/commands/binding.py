@@ -31,4 +31,4 @@ def binding(args):
     }
 
     a = grns.binding.Binding(genome = args.genome, gene_bed = args.annotation, pwmfile = args.pwmfile)
-    a.run_binding(args.fin_rpkm, args.file)
+    a.run_binding(args.fin_rpkm, args.outfile)
