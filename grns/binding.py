@@ -146,7 +146,7 @@ class Binding(object):
             chunksize = 10000
             for chunk in range(0, len(seqs), chunksize):
                 chunk_seqs = seqs[chunk:chunk+chunksize]
-                print(chunk, "-", chunk + chunksize)
+                print("\t\t", chunk, "-", chunk + chunksize, "enhancers")
                 pwm_score = []
                 it = s.best_score(chunk_seqs, zscore=True, gc=True)
                 for seq,scores in zip(chunk_seqs, it):
@@ -155,7 +155,7 @@ class Binding(object):
                 pwm_score = pd.DataFrame(pwm_score, columns=["motif", "enhancer", "zscore"])
                 pwm_score = pwm_score.set_index("motif")
             
-                print("Combine")
+                print("\t\tCombine")
                 pwm_score["zscoreRank"] = minmax_scale(rankdata(pwm_score["zscore"]))
                 cols = ["enhancer", "zscore", "zscoreRank"]
                 write_header = False
@@ -267,7 +267,7 @@ class Binding(object):
 
         cache = Chest(available_memory=20e9)
         table = r.compute()
-        print("Predict TF binding")
+        print("Predicting TF binding sites")
         table["binding"] = clf.predict_proba(table[["zscore", "peakRPKMScale"]])[:,1]
         print("Save results")
 
@@ -276,6 +276,7 @@ class Binding(object):
     def run_binding(self, peak_bed, outfile):
         filter_bed = self.clear_peaks(peak_bed)
 
+        print("Motif scanning")
         pwm_weight = self.get_PWMScore(filter_bed)
         pwm = dd.read_csv(pwm_weight, sep="\t")
 
