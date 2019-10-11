@@ -118,7 +118,8 @@ class Interaction(object):
 
     def aggregate_binding(self, binding, prom, p, weight):
 
-        ddf = dd.read_hdf(binding, key="/binding")[["factor", "enhancer", "binding"]]
+        # ddf = dd.read_hdf(binding, key="/binding")[["factor", "enhancer", "binding"]]
+        ddf = dd.read_csv(binding, key="/binding")[["factor", "enhancer", "binding"]]
 
         prom_table = ddf.merge(prom, left_on="enhancer", right_on="loc")
         prom_table = prom_table.groupby(["factor", "gene"])[["binding"]].max()
