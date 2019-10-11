@@ -330,7 +330,7 @@ class Interaction(object):
         features = self.aggregate_binding(binding, prom, p, weight)
 
         expression_file = self.get_expression(fin_expression, features)
-        factors_expression_file = self.get_factorExpression(fin_expression)
+        # factors_expression_file = self.get_factorExpression(fin_expression)
 
         corr_file = self.get_correlation(corrfiles, features)
 

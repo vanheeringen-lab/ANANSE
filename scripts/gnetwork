@@ -130,6 +130,36 @@ if __name__ == "__main__":
         default=None)
     p.set_defaults(func=commands.interaction)
 
+    # network.py
+    p = subparsers.add_parser('network')
+
+    p.add_argument(
+        "-f", "--features",
+        dest="features",
+        help="HDF5 file with features",
+        metavar="FILE",
+        default=None,
+        required=True,
+    )
+    p.add_argument(
+        "-o",
+        required=True,
+        dest="outdir",
+        help="Output directory",
+        metavar="DIR",
+        default=None
+    )
+    
+    p.add_argument(
+        "-i", "--impute",
+        dest="impute",
+        help="Impute missing values",
+        default=False,
+        action="store_true",
+    )
+    p.set_defaults(func=commands.network)
+
+
 
     if len(sys.argv) == 1:
         parser.print_help()
