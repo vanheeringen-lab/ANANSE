@@ -77,7 +77,7 @@ chr2	49229595	49229795	3
 chr12	41363656	41363856	2
 chr8	69689994	69690194	13
 ```
-The first column is chromosome name, the second and third column is the start and end point of peaks. We recommend all peaks have 200bp. The fourth column is intensity of the peak.
+The first column is chromosome name, the second and third column is the start and end point of peak. We recommend all peaks have 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value.
 
 * Example:
 ```
