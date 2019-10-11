@@ -319,24 +319,24 @@ class Interaction(object):
         # pwmfile="../data/gimme.vertebrate.v5.1.pfm"
         # binding="results/binding.predicted.h5"
 
-        b=grns.interaction.Interaction(genome=self.genome, gene_bed= self.gene_bed, pwmfile=self.pwmfile)
-        prom=b.get_promoter_dataframe(peak_bed)
-        p=b.get_gene_dataframe(peak_bed)
-        weight = b.distance_weight()
+        # b=self.interaction.Interaction(genome=self.genome, gene_bed= self.gene_bed, pwmfile=self.pwmfile)
+        prom=self.get_promoter_dataframe(peak_bed)
+        p=self.get_gene_dataframe(peak_bed)
+        weight = self.distance_weight()
 
-        features = b.aggregate_binding(binding, prom, p, weight)
+        features = self.aggregate_binding(binding, prom, p, weight)
 
-        expression_file = b.get_expression(fin_expression, features)
-        factors_expression_file = b.get_factorExpression(fin_expression)
+        expression_file = self.get_expression(fin_expression, features)
+        factors_expression_file = self.get_factorExpression(fin_expression)
 
-        corr_file = b.get_correlation(corrfiles, features)
+        corr_file = self.get_correlation(corrfiles, features)
 
         other = [
             expression_file,
             corr_file,
         ]
         # outfile = 'full_features.h5'
-        b.join_features(features, other, outfile) 
+        self.join_features(features, other, outfile) 
 
 
 
