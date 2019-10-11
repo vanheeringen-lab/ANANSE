@@ -54,7 +54,8 @@ class Interaction(object):
         b = BedTool(self.gene_bed)
         b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(l=up, r=down, g=self.gsize, s=True)
         vals = []
-        for f in b.intersect(peaks, wo=True, nonamecheck=True):
+        # for f in b.intersect(peaks, wo=True, nonamecheck=True):
+        for f in b.intersect(peaks, wo=True):
             chrom = f[0]
             gene = f[3]
             peak_start, peak_end = int(f[13]), int(f[14])
@@ -77,7 +78,8 @@ class Interaction(object):
         ## |100000--TSS--100000|
 
         vals = []
-        for f in b.intersect(peaks, wo=True, nonamecheck=True):
+        # for f in b.intersect(peaks, wo=True, nonamecheck=True):
+        for f in b.intersect(peaks, wo=True):
             #bedtools intersect -wo -nonamecheck -b peaks.bed -a b.bed
             ##
             chrom = f[0]
