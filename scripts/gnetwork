@@ -85,7 +85,52 @@ if __name__ == "__main__":
         default=True)
     p.set_defaults(func=commands.binding)
 
-    
+    # interaction.py
+    p = subparsers.add_parser('interaction')
+
+    p.add_argument("-p", "--pwmfile",
+        dest="pwmfile",
+        help="PWM",
+        metavar="FILE",
+        default=None)
+    p.add_argument("-r", "--fin_rpkm",
+        required=True,
+        dest="fin_rpkm",
+        help="BED file with RPKM on the 4th column",
+        metavar="FILE")
+    p.add_argument("-e",
+        dest="fin_expression",
+        help="Expression scores",
+        metavar="FILE",
+        nargs='*')   
+    p.add_argument("-c",
+        dest="corrfiles",
+        help="Files with correlation",
+        metavar="FILE",
+        nargs='*')   
+    p.add_argument("-b",
+        dest="binding",
+        help="All TFs binding file",
+        metavar="FILE",
+        nargs='*')
+    p.add_argument("-a",
+        dest="annotation",
+        help="Gene annotation in BED12 format",
+        metavar="BED",)    
+    p.add_argument("-g",
+        dest="genome",
+        help="Genome",
+        metavar="NAME",
+        default="hg19",)    
+    p.add_argument("-o", "--outfile",
+        required=True,
+        dest="outfile",
+        help="Output file",
+        metavar="FILE",
+        default=None)
+    p.set_defaults(func=commands.interaction)
+
+
     if len(sys.argv) == 1:
         parser.print_help()
     else:
