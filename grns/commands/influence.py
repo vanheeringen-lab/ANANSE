@@ -16,8 +16,8 @@ def influence(args):
     config = cfg.MotifConfig()
     params = config.get_default_params()
 
-    if not os.path.exists(args.fin_rpkm):
-        print("File %s does not exist!" % args.fin_rpkm)
+    if not os.path.exists(args.Gbf) and not os.path.exists(args.Gaf):
+        print("At list need one network file")
         sys.exit(1)
     
     params = {

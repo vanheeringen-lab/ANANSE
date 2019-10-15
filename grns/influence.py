@@ -236,7 +236,7 @@ class Influence(object):
             scores_df2=filter_TF(network = self.G, scores_df = scores_df1, tpmfile = fin_expression)
             scores_df2.to_csv( ".".join(self.outfile.split(".")[:-1])+"_filtered.txt", sep='\t')
 
-    def run_influence(plot=True, fin_expression=None):
+    def run_influence(self, plot=True, fin_expression=None):
 
         print("step1")
         influence_file = run_influence_score()
