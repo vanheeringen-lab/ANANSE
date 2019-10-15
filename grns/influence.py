@@ -18,6 +18,8 @@ warnings.filterwarnings('ignore')
 
 from tempfile import NamedTemporaryFile
 
+from grns import mytmpdir
+
 
 def read_network(fname, edges=100000):
     """Read network file and return networkx DiGraph."""
