@@ -170,7 +170,7 @@ def plot_influscore(infile, outfile):
 
 
 class Influence(object):
-    def __init__(Gbf = None, Gaf = None, outfile= None, expression=None, edges=10000):
+    def __init__(self, Gbf = None, Gaf = None, outfile= None, expression=None, edges=10000):
 
         # Load GRNs
         if Gbf is None and Gaf is not None:
