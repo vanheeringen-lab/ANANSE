@@ -14,6 +14,10 @@ import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
 
+class Influence(object):
+    def __init__():
+        pass
+    
 
 def read_network(fname,edges=100000):
     """Read network file and return networkx DiGraph."""
