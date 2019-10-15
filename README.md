@@ -159,6 +159,7 @@ $ gnetwork influence    -a results/full_network.txt \
                         -e data/FB_rep1_TPM.txt \
                         -d data/FB2KRT_degenes.csv \
                         -o results/FB2KRT.txt
+                        -p False
 ```
 * Input
 ```
@@ -167,6 +168,7 @@ $ gnetwork influence    -a results/full_network.txt \
 -e The gene expression in first cell (optional);
 -d The differential expression table between two cells; 
 -o The result file.
+-p Plot influence.
 
 ```
 
