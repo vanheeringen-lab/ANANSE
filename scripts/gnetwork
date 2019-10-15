@@ -45,7 +45,6 @@ if __name__ == "__main__":
     
     # binding.py
     p = subparsers.add_parser('binding')
-
     p.add_argument("-p", "--pwmfile",
         dest="pwmfile",
         help="PWM",
@@ -87,7 +86,6 @@ if __name__ == "__main__":
 
     # interaction.py
     p = subparsers.add_parser('interaction')
-
     p.add_argument("-p", "--pwmfile",
         dest="pwmfile",
         help="PWM",
@@ -132,31 +130,58 @@ if __name__ == "__main__":
 
     # network.py
     p = subparsers.add_parser('network')
-
-    p.add_argument(
-        "-f", "--features",
+    p.add_argument("-f", "--features",
         dest="features",
         help="HDF5 file with features",
         metavar="FILE",
         default=None,
-        required=True,
-    )
+        required=True,)
     p.add_argument("-o", "--outfile",
         required=True,
         dest="outfile",
         help="Output file",
         metavar="FILE",
         default=None)
-    
-    p.add_argument(
-        "-i", "--impute",
+    p.add_argument("-i", "--impute",
         dest="impute",
         help="Impute missing values",
         default=False,
-        action="store_true",
-    )
+        action="store_true",)
     p.set_defaults(func=commands.network)
 
+    # influence.py
+    p = subparsers.add_parser('influence')
+    p.add_argument("-b", "--bnetwork",
+        dest="Gbf",
+        help="network in first cell",
+        metavar="FILE",
+        default=None)
+    p.add_argument("-a", "--anetwork",
+        dest="Gaf",
+        help="network in second cell",
+        metavar="FILE",
+        default=None)
+    p.add_argument("-e",
+        dest="fin_expression",
+        help="Expression scores in first cell",
+        metavar="FILE",)
+    p.add_argument("-d",
+        dest="expression",
+        help="DE genes file",
+        metavar="FILE",)
+    p.add_argument("-o",
+        required=True,
+        dest="outfile",
+        help="Output file",
+        metavar="FILE",
+        default=None)
+    p.add_argument("-p", "--plot_influence",
+        dest="plot",
+        help="Plot influence, True or False, input should be either 'True' or 'False'.",
+        metavar="NAME",
+        type=ast.literal_eval,
+        default=True)
+    p.set_defaults(func=commands.influence)
 
 
     if len(sys.argv) == 1:
