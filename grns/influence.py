@@ -240,7 +240,7 @@ class Influence(object):
 
     def run_influence(self, plot=True, filter = None, fin_expression=None):
         influence_file = self.run_influence_score()
-        rank_TF(influence_file, filter = None, fin_expression=None)
+        self.rank_TF(influence_file, filter = None, fin_expression=None)
 
         if plot is True:
             plot_influscore(self.outfile, ".".join(self.outfile.split(".")[:-1])+".jpg")
