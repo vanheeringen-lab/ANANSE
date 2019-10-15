@@ -216,11 +216,11 @@ class Influence(object):
 
         pool.close()
 
-        print(influence_file)
-        scores_df = pd.read_table(influence_file, index_col=0)
+        # print(influence_file)
+        scores_df = pd.read_table(influence_file.name, index_col=0)
         scores_df['influenceScaled'] = minmax_scale(rankdata(scores_df['inflscore'], method='dense'))
         scores_df.sort_values("influenceScaled",inplace=True,ascending=False)
-        scores_df.to_csv(influence_file, sep='\t')
+        # scores_df.to_csv(influence_file.name, sep='\t')
 
         return(influence_file.name)
 
