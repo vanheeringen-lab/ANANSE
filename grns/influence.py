@@ -212,7 +212,7 @@ class Influence(object):
         influence_file.write('factor\tdirectTargets\ttotalTargets\tinflscore\tGscore\tfactor_fc\tpval\ttarget_fc\n')
         for j in jobs:
             factor, score, direct_targets, total_targets, factor_fc, pval, target_fc = j.get()
-            print(factor, direct_targets, total_targets, score, expression_change['score'][factor], factor_fc, pval, target_fc, file=influence_file, sep="\t")
+            print(factor, direct_targets, total_targets, score, self.expression_change['score'][factor], factor_fc, pval, target_fc, file=influence_file, sep="\t")
 
         pool.close()
 
