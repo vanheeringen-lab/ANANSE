@@ -216,7 +216,6 @@ class Influence(object):
 
         pool.close()
 
-        # print(influence_file)
         scores_df = pd.read_table(influence_file.name, index_col=0)
         scores_df['influenceScaled'] = minmax_scale(rankdata(scores_df['inflscore'], method='dense'))
         scores_df.sort_values("influenceScaled",inplace=True,ascending=False)
@@ -239,7 +238,7 @@ class Influence(object):
             scores_df2=filter_TF(network = self.G, scores_df = scores_df1, tpmfile = fin_expression)
             scores_df2.to_csv( ".".join(self.outfile.split(".")[:-1])+"_filtered.txt", sep='\t')
 
-    def run_influence(self, plot=True, fin_expression=None):
+    def run_influence(self, plot=True, fin_expression=None, filter = None):
         influence_file = self.run_influence_score()
         rank_TF(influence_file, filter = None, fin_expression=None)
 
