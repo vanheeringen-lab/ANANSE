@@ -239,7 +239,7 @@ class Influence(object):
     def run_influence(self, plot=True, fin_expression=None):
 
         print("step1")
-        influence_file = run_influence_score()
+        influence_file = self.run_influence_score()
         rank_TF(influence_file, filter = None, fin_expression=None)
 
         if plot is True:
