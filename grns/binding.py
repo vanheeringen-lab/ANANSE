@@ -1,24 +1,27 @@
 #!/usr/bin/env python
-# import argparse
-# import os
+
+# Copyright (c) 2009-2016 Quan Xu <qxuchn@gmail.com>
+#
+# This module is free software. You can redistribute it and/or modify it under
+# the terms of the MIT License, see the file COPYING included with this
+# distribution.
+"""Predict TF binding site"""
+
+# Python imports
+import argparse
 import pickle
-# import sys
-# import math
-# import ast
 import warnings
 from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pandas as pd
-from scipy.stats import rankdata
-from sklearn.preprocessing import minmax_scale
 from chest import Chest
 import dask.dataframe as dd
-
+from scipy.stats import rankdata
+from sklearn.preprocessing import minmax_scale
 
 from pybedtools import BedTool
 from genomepy import Genome
-
 from gimmemotifs.scanner import Scanner
 from gimmemotifs.motif import read_motifs
 from gimmemotifs.utils import as_fasta
@@ -31,7 +34,6 @@ warnings.filterwarnings('ignore')
 class Binding(object):
 
     def __init__(self, genome="hg19", gene_bed=None, pwmfile=None):
-        
         self.genome=genome
         g = Genome(self.genome)
         self.gsize = g.props["sizes"]["sizes"]
