@@ -20,7 +20,7 @@ A new `Binding` object `a`
 a=binding.Binding(genome="hg38", gene_bed= gene_bed, pwmfile=pwmfile)
 ```
 
-Using `clear_peaks()` function, we can filter the peaks in promoter ranges. 
+Using `clear_peak()` function, we can filter the peaks in promoter ranges. 
 ```python
 filter_bed = a.clear_peaks(peak_bed)
 ```
