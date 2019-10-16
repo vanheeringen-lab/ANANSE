@@ -2,7 +2,7 @@
 import argparse
 import os
 import pickle
-import subprocess
+# import subprocess
 import sys
 import math
 import ast
@@ -17,6 +17,8 @@ from sklearn.preprocessing import minmax_scale
 from chest import Chest
 import dask.dataframe as dd
 # from dask.diagnostics import ProgressBar
+
+
 from pybedtools import BedTool
 from genomepy import Genome
 
@@ -105,10 +107,10 @@ class Binding(object):
         pwmscorefile=NamedTemporaryFile(mode="w", dir=mytmpdir(),delete=False)
         seqs = [s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=self.genome).ids]    
         s = Scanner()
-        s.set_motifs(self.pwmfile.name)
+        s.set_motifs(self.pwmfile)
         s.set_threshold(threshold=0.0)
         s.set_genome(self.genome)
-        with open(self.pwmfile.name) as f:
+        with open(self.pwmfile) as f:
             motifs = read_motifs(f)
         
         chunksize = 10000
