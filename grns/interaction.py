@@ -34,20 +34,14 @@ class Interaction(object):
         g = Genome(self.genome)
         self.gsize = g.props["sizes"]["sizes"]
 
+        if pwmfile is None:
+            pwmfile = "../data/gimme.vertebrate.v5.1.pfm"
+        # Motif information file
         self.motifs2factors = pwmfile.replace(".pfm", ".motif2factors.txt")
         self.factortable= pwmfile.replace(".pfm", ".factortable.txt")
 
         self.gene_bed=gene_bed
 
-        # # read motifs
-        # with open(pwmfile) as pwm_in:
-        #     motifs = read_motifs(pwm_in)
-
-        # self.pwmfile = NamedTemporaryFile(mode="w", dir=mytmpdir())
-        # for motif in motifs:
-        #     if motif.factors:
-        #         self.pwmfile.write("{}\n".format(motif.to_pwm()))
-        
     def get_promoter_dataframe(self, peak_bed, up=2000, down=2000):
         #all overlap Enh-TSS(up8000 to down2000) pair
         peaks = BedTool(peak_bed)
@@ -67,21 +61,18 @@ class Interaction(object):
 
     def get_gene_dataframe(self, peak_bed, up=100000, down=100000):
         #all overlap Enh-TSS(100000-tss-100000) pair distance
-
         peaks = BedTool(peak_bed)
         b = BedTool(self.gene_bed)
         b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(l=up, r=down, g=self.gsize, s=True)
-        #bedtools flank  -r 0 -l 1 -i b.bed -g 
-        ##all gene upstream 1bp position (TSS), Chr01 12800   12801   in Chr01    4170    12800   Xetrov90000001m.g   0   -   
-        
-        #bedtools slop  -r down -l up -i b.bed -g 
-        ## |100000--TSS--100000|
+        # bedtools flank  -r 0 -l 1 -i b.bed -g 
+        # #all gene upstream 1bp position (TSS), Chr01 12800   12801   in Chr01    4170    12800   Xetrov90000001m.g   0   -   
+        # bedtools slop  -r down -l up -i b.bed -g 
+        # # |100000--TSS--100000|
 
         vals = []
         # for f in b.intersect(peaks, wo=True, nonamecheck=True):
         for f in b.intersect(peaks, wo=True):
             #bedtools intersect -wo -nonamecheck -b peaks.bed -a b.bed
-            ##
             chrom = f[0]
             strand = f[5]
             if strand == "+":
@@ -93,7 +84,7 @@ class Interaction(object):
             vals.append([chrom, tss, gene, peak_start, peak_end])
         p = pd.DataFrame(vals, columns=["chrom", "tss", "gene", "peak_start", "peak_end"])
         p["peak"] = [int(i) for i in (p["peak_start"] + p["peak_end"]) / 2]
-        #peak with int function, let distance int
+        # peak with int function, let distance int
         p["dist"] = np.abs(p["tss"] - p["peak"])
         p["loc"] = p["chrom"] + ":" + p["peak_start"].astype(str) + "-" + p["peak_end"].astype(str)
         p = p.sort_values("dist").drop_duplicates(["loc", "gene"], keep="first")[["gene", "loc", "dist"]] 
@@ -105,6 +96,14 @@ class Interaction(object):
         return (p)
 
     def distance_weight(self, alpha=1e5, padding=int(2e5), keep1=5000, remove=2000):
+        """
+        Built weight distribution from TSS.
+        """
+        # alpha is half site, default setting is 1e5, which means at 1e5 position weight is 0.5
+        # padding is the full range we used
+        # remove is promoter removed range
+        # keep1 is keep full binding score range
+
         u = -math.log(1.0/3.0)*1e5/alpha
         weight1  = pd.DataFrame({"weight": [0 for z in range(1, remove+1)], "dist" : range(1, remove+1)})
         weight2  = pd.DataFrame({"weight": [1 for z in range(remove+1,keep1+1)], "dist" : range(remove+1,keep1+1)})
@@ -136,13 +135,7 @@ class Interaction(object):
         f_table=f_table.merge(weight,how='left',on='dist')
         f_table['sum_dist_weight'] = f_table['binding'] * f_table['weight']
 
-        # f_table['sun_dist_weight'] = distance_weight(f_table['binding'], f_table['dist'])
-
-        #f_table = f_table.drop(['temp'], axis=1)
-
         f_table_sum = f_table.groupby(["factor", "gene"]).sum()[["sum_weighted_logodds", "sum_logodds", "binding", "sum_dist_weight"]]
-        # f_table_max = f_table.groupby(["factor", "gene"]).max()[["binding", "sum_dist_weight"]]
-
         f_table_max = f_table.groupby(["factor", "gene"])[["binding","sum_dist_weight"]].max()
 
         f_table_sum = f_table_sum.rename(columns={"binding":"sum_binding"})
@@ -175,7 +168,6 @@ class Interaction(object):
         f_table["gene"] = f_table["source_target"].str.replace(".*_", '')
         f_table["max_binding_in_promoter"] = f_table["max_binding_in_promoter"].fillna(0)
 
-        # outfile = os.path.join(outdir, "features.h5")
         features_file = NamedTemporaryFile(mode="w", dir=mytmpdir(),delete=False)
         print("computing, output file {}".format(features_file.name))
         f_table.to_hdf(features_file.name, key="/features")
@@ -341,161 +333,3 @@ class Interaction(object):
         # outfile = 'full_features.h5'
         self.join_features(features, other, outfile) 
 
-
-
-def get_peakRPKM(fin_rpkm, outdir):
-    peaks = pd.read_table(fin_rpkm, 
-            names=["chrom", "start", "end", "peakRPKM"])
-    peaks["peak"] = peaks["chrom"] + ":" + peaks["start"].astype(str) +  "-" + peaks["end"].astype(str)
-    add = peaks["peakRPKM"][peaks["peakRPKM"] > 0].min()
-    peaks["log10_peakRPKM"] = np.log10(peaks["peakRPKM"] + add)
-    peaks["peakRPKMScale"] = minmax_scale(peaks["log10_peakRPKM"])
-    peaks["peakRPKMRank"] = minmax_scale(rankdata(peaks["log10_peakRPKM"]))
-    
-    cols = ["peak", "peakRPKM", "log10_peakRPKM", "peakRPKMScale", "peakRPKMRank"]
-
-    outname = os.path.join(outdir, "peakRPKM.txt")
-    peaks[cols].to_csv(outname, sep="\t", index=False)
-
-
-def distance_weight(binding,distance,alpha=1e5,padding=int(2e5)):
-    print (binding,distance)
-
-    # alpha is the effect of distance on regulatory potential. Distance at which regulatory potential is 1/2, (default=10kb)' 
-    # u = -math.log(1.0/3.0)*1e5/alpha
-    # weight  = np.array( [ 2.0*math.exp(-u*math.fabs(z)/1e5)/(1.0+math.exp(-u*math.fabs(z)/1e5))  for z in range( -padding,padding+1) ] )
-    # wbinding=binding*weight[distance]
-
-    # u = -math.log(1.0/3.0)*1e5/alpha
-    # weight  = np.array( [ 2.0*math.exp(-u*math.fabs(z)/1e5)/(1.0+math.exp(-u*math.fabs(z)/1e5))  for z in range( 0,padding+1) ] )
-    # wbinding=binding*weight[distance]
-    # print (wbinding)
-    # return(wbinding)
-
-    u = -math.log(1.0/3.0)*1e5/alpha
-    weight  = np.array( [ 2.0*math.exp(-u*math.fabs(z)/1e5)/(1.0+math.exp(-u*math.fabs(z)/1e5))  for z in range( 1,padding+1) ] )
-    wbinding= np.dot( binding, weight[distance])
-    return(wbinding)
-
-
-def calculate_features(gene_bed, outdir, binding, genome="hg19", pwmfile=None, fin_expression=None, corrfiles=None):
-    if not os.path.exists(outdir):
-        os.mkdir(outdir)
-
-    config = MotifConfig()
-    if pwmfile is None:
-        params = config.get_default_params() 
-        pwmfile = os.path.join(config.get_motif_dir(), params["motif_db"])
-    
-    motifs2factors = pwmfile.replace(".pfm", ".motif2factors.txt")
-    factortable= pwmfile.replace(".pfm", ".factortable.txt")
-
-    features = os.path.join(outdir, "features.h5")
-    nfin_rpkm=os.path.join(outdir, "filtered_enahncers.txt")
-    if not os.path.exists(features):
-        aggregate_binding(binding, gene_bed, nfin_rpkm, genome, outdir, window_up=50000, window_down=50000)
-        
-    if fin_expression is not None:
-        get_expression(fin_expression, features, outdir)
-
-    if not os.path.exists(os.path.join(outdir, "factorExpression.txt")):
-        get_factorExpression(fin_expression, motifs2factors, outdir)
-
-
-    if not os.path.exists(os.path.join(outdir, "correlation.txt")):
-        if corrfiles is not None: 
-            get_correlation(corrfiles, features, outdir)
-
-    other = [
-        os.path.join(outdir, "expression.txt"),
-        os.path.join(outdir, "correlation.txt"),
-    ]
-    outfile = os.path.join(outdir, 'full_features.h5')
-    join_features(features, other, outfile) 
-
-
-if __name__ == "__main__":
-    description = ""
-    usage = "%(prog)s [-h] [options]"
-    parser = argparse.ArgumentParser(usage=usage,
-    description=description,
-    #epilog=epilog,
-    formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "-p", "--pwmfile",
-        dest="pwmfile",
-        help="PWM",
-        metavar="FILE",
-        default=None
-    )
-    
-    parser.add_argument(
-        "-e",
-        dest="fin_expression",
-        help="Expression scores",
-        metavar="FILE",
-        nargs='*'
-    )
-    
-    parser.add_argument(
-        "-c",
-        dest="corrfiles",
-        help="Files with correlation",
-        metavar="FILE",
-        nargs='*'
-    )
-    
-    parser.add_argument(
-        "-b",
-        dest="binding",
-        help="All TFs binding file",
-        metavar="FILE",
-        nargs='*'
-    )
-
-    parser.add_argument(
-        "-a",
-        dest="annotation",
-        help="Gene annotation in BED12 format",
-        metavar="BED",
-    )
-    
-    parser.add_argument(
-        "-g",
-        dest="genome",
-        help="Genome",
-        metavar="NAME",
-        default="hg19",
-    )
-    
-    parser.add_argument(
-        "-o",
-        required=True,
-        dest="outdir",
-        help="Output directory",
-        metavar="DIR",
-        default=None
-    )
-    
-    args = parser.parse_args()
-    pwmfile = args.pwmfile
-    fin_expression = args.fin_expression
-    outdir = args.outdir
-    genome = args.genome
-    gene_bed = args.annotation
-    corrfiles = args.corrfiles
-    binding = args.binding
-    
-    calculate_features(
-            gene_bed, 
-            outdir,
-            binding=binding,
-            genome=genome,
-            pwmfile=pwmfile,
-            fin_expression=fin_expression,
-            corrfiles=corrfiles
-            )  

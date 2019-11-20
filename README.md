@@ -1,4 +1,4 @@
-# XXX Network
+# **ANANSE** (**A**lgorithm for **N**etwork **AN**alysi**S** of **E**nhancers)
 
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
 
@@ -81,7 +81,7 @@ The first column is chromosome name, the second and third column is the start an
 
 * Example:
 ```
-$ gnetwork binding  -r data/krt_enhancer.bed \
+$ ananse binding  -r data/krt_enhancer.bed \
                     -o results/binding.txt \
                     -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
                     -g hg38 \
@@ -90,9 +90,9 @@ $ gnetwork binding  -r data/krt_enhancer.bed \
 
 * All the optional arguments:
 ```
-$ gnetwork binding -h
+$ ananse binding -h
 
-usage: gnetwork [-h] <subcommand> [options] binding [-h] [-p FILE] -r FILE
+usage: ananse [-h] <subcommand> [options] binding [-h] [-p FILE] -r FILE
                                                     [-a BED] [-g GENOME] -o
                                                     FILE [-f NAME] [-d NAME]
 optional arguments:
@@ -119,7 +119,7 @@ optional arguments:
 
 * Example:
 ```
-$ gnetwork interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
+$ ananse interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                         -r data/krt_enhancer.bed \
                         -o results/full_features.txt \
                         -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
@@ -143,7 +143,7 @@ $ gnetwork interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
 
 * Example:
 ```
-$ gnetwork network -f results/full_features.txt -o results/full_network.txt
+$ ananse network -f results/full_features.txt -o results/full_network.txt
 ```
 * Input
 ```
@@ -155,7 +155,7 @@ $ gnetwork network -f results/full_features.txt -o results/full_network.txt
 
 * Example:
 ```
-$ gnetwork influence    -a results/full_network.txt \
+$ ananse influence    -a results/full_network.txt \
                         -e data/FB_rep1_TPM.txt \
                         -d data/FB2KRT_degenes.csv \
                         -o results/FB2KRT.txt
