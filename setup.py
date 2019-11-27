@@ -8,7 +8,6 @@ import os
 import glob
 import sys
 from io import open
-from compile_externals import compile_all
 import versioneer
 
 CONFIG_NAME = "gimmemotifs.cfg" 
@@ -19,16 +18,6 @@ with open('README.md', encoding='utf-8') as f:
 
 # are we in the conda build environment?
 conda_build = os.environ.get("CONDA_BUILD")
-
-# module1 = Extension('gimmemotifs.c_metrics', sources = ['gimmemotifs/c_metrics.c'])
-
-MOTIF_BINS = {
-    "MDmodule": ["src/MDmodule/MDmodule"],
-    "BioProspector": ["src/BioProspector/BioProspector"],
-    "Posmo": ["src/posmo/posmo", "src/posmo/clusterwd"],
-    "AMD": ["src/AMD/AMD.bin"],
-}
-
 
 cmdclass = versioneer.get_cmdclass()
 my_build_py = cmdclass["build_py"]
