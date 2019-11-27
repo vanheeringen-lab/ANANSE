@@ -28,10 +28,7 @@ $ conda create -n regnetwork python=3 gimmemotifs genomepy networkx chest dask p
 # Activate the environment
 $ conda activate regnetwork
 
-# Uninstall stable versions of gimmemotifs and genomepy
-$ conda uninstall gimmemotifs
-
-# Upgrade genomepy and gimmemotifs to development version
+# Upgrade gimmemotifs to development version
 $ pip install git+https://github.com/vanheeringen-lab/gimmemotifs.git@develop
 ```
 
