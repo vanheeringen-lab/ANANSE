@@ -1,4 +1,4 @@
-# XXX Network
+# ANANSE: ANalysis Algorithm for Networks Specified by Enhancers
 
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
 
@@ -7,18 +7,26 @@
 
 ## Quick start
 
-### Dependencies
-* Install Anaconda and activate bioconda channels.
+### Installation
+
+The most straightforward way to install ANANSE is by using [bioconda](https://bioconda.github.io/).
+
+If you have not used bioconda before, first install [conda](https://docs.continuum.io/anaconda/) and then set up the necessary channels (in this order!). You only have to do this once.
+
+```
+$ conda config --add channels defaults
+$ conda config --add channels bioconda
+$ conda config --add channels conda-forge
+```
+
+Now you can install ANANSE:
 
 ```
 # Install all dependencies
-$ conda create -n regnetwork python=3 gimmemotifs genomepy networkx chest dask pytables
+$ conda create -n regnetwork python=3 gimmemotifs genomepy networkx chest dask pytables adjusttext
 
 # Activate the environment
 $ conda activate regnetwork
-
-# install dependency via pip
-$ pip install adjustText
 
 # Uninstall stable versions of gimmemotifs and genomepy
 $ conda uninstall gimmemotifs
@@ -27,22 +35,24 @@ $ conda uninstall gimmemotifs
 $ pip install git+https://github.com/vanheeringen-lab/gimmemotifs.git@develop
 ```
 
-* Run `gimme` to create a new GimmeMotifs config.
+For most of the analyses it is beneficial to use as many threads as possible for the motif analysis. This is configured by the GimmeMotifs config file. If you haven't done so, run `gimme`, which will create a new GimmeMotifs config.
 
 ```
 $ gimme
 ```
 
-* Edit the file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
+Now edit the file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
 
-* Download the genome of interest.
+### Data files.
+
+You need to download the genome of interest.
 
 ```
-$ genomepy install Xenopus_tropicalis_v9.1 NCBI
+$ genomepy install hg38 UCSC --annotation
 ```
 
 
-### Built binding network
+### Build binding network
 
 * Example:
 ```
