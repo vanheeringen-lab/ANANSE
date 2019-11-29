@@ -54,12 +54,40 @@ class Binding(object):
         self.model = "../db/dream_model.txt"
         # dream_model.txt is the logistic regression model. 
 
+    def set_peak_size(self, peaks, seqlen=200):
+
+        gsizedic={}
+        with open(self.gsize) as gsizefile:
+            for chrom in gsizefile:
+                gsizedic[chrom.split()[0]] = int(chrom.split()[1])
+
+        s=''
+        for peak in peaks:
+            
+            if peak.length < seqlen or peak.length > seqlen:
+                # get the summit and the flanking low and high sequences
+                summit = (peak.start + peak.end) // 2
+                start, end = summit - seqlen // 2, summit + seqlen // 2
+            else:
+                start, end = peak.start, peak.start
+
+            # remove seq which langer than chromosome length or smaller than 0
+            if start > 0 and end < gsizedic[peak.chrom]:
+                s+=(str(peak.chrom)+"\t"+str(start)+"\t"+str(end)+"\t"+str(peak.fields[-1])+"\n")
+
+        npeaks = BedTool(s, from_string=True) 
+
+        return(npeaks)
+
     def clear_peak(self, peak_bed, filter_promoter=True, up=2000, down=2000):
         """
         Filter the enhancer peaks in promoter range.
         """
-        # remove all peaks that overlap with TSS(up2000 to down2000).
+        # set all seq to 200bp
         peaks = BedTool(peak_bed)
+        peaks = self.set_peak_size(peaks, 200)
+
+        # remove all peaks that overlap with TSS(up2000 to down2000).
         b = BedTool(self.gene_bed)
         b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(l=up, r=down, g=self.gsize, s=True)
         vals = []
