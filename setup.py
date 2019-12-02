@@ -36,15 +36,15 @@ class build_tools(my_build_py):
 
     def run(self): 
         if not self.dry_run:
-            src_dir = os.path.join(self.build_base, "src")
+            # src_dir = os.path.join(self.build_base, "src")
             target_dir = os.path.join(self.build_lib, 'gimmemotifs/included_tools')
         #package_data={'gimmemotifs.data':['data/cfg/*']},
             
-            self.copy_tree("src/", src_dir)
+            # self.copy_tree("src/", src_dir)
             # mkpath is a distutils helper to create directories
             self.mkpath(target_dir)
             
-            compile_all(src_dir=src_dir)
+            # compile_all(src_dir=src_dir)
 
             for exes in MOTIF_BINS.values():
                 for exe in exes:
@@ -54,32 +54,32 @@ class build_tools(my_build_py):
                     if os.path.exists(exe):
                         self.copy_file(exe, target_dir)
             
-            self.copy_tree(
-                    os.path.join(src_dir,  "ChIPMunk"), 
-                    os.path.join(target_dir, "ChIPMunk"))
-            self.copy_tree(
-                    os.path.join(src_dir,"HMS"), 
-                    os.path.join(target_dir, "HMS"))
-            self.copy_file(
-                    os.path.join(src_dir,"MotifSampler/MotifSampler_x86_64"), 
-                    os.path.join(target_dir, "MotifSampler"))
-            self.copy_file(
-                    os.path.join(src_dir,"MotifSampler/CreateBackgroundModel_x86_64"), 
-                    os.path.join(target_dir, "CreateBackgroundModel"))
-            self.copy_file(
-                    os.path.join(src_dir,"Improbizer/ameme_x86_64"), 
-                    os.path.join(target_dir, "ameme"))
+            # self.copy_tree(
+            #         os.path.join(src_dir,  "ChIPMunk"), 
+            #         os.path.join(target_dir, "ChIPMunk"))
+            # self.copy_tree(
+            #         os.path.join(src_dir,"HMS"), 
+            #         os.path.join(target_dir, "HMS"))
+            # self.copy_file(
+            #         os.path.join(src_dir,"MotifSampler/MotifSampler_x86_64"), 
+            #         os.path.join(target_dir, "MotifSampler"))
+            # self.copy_file(
+            #         os.path.join(src_dir,"MotifSampler/CreateBackgroundModel_x86_64"), 
+            #         os.path.join(target_dir, "CreateBackgroundModel"))
+            # self.copy_file(
+            #         os.path.join(src_dir,"Improbizer/ameme_x86_64"), 
+            #         os.path.join(target_dir, "ameme"))
        
-            if os.path.exists("src/weblogo"):
-                self.copy_tree("src/weblogo", 
-                        os.path.join(target_dir, "weblogo"))
+            # if os.path.exists("src/weblogo"):
+            #     self.copy_tree("src/weblogo", 
+            #             os.path.join(target_dir, "weblogo"))
 
         my_build_py.run(self)
 
 cmdclass["build_py"] = build_tools
 
 setup (
-        name = 'grns',
+        name = 'ananse',
         version = versioneer.get_version(),
         long_description = long_description,
         long_description_content_type = 'text/markdown',
