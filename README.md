@@ -71,10 +71,6 @@ $ genomepy install hg38 UCSC --annotation
 
 ### Build binding network
 
-In this command, the `-r/--fin_rpkm` and `-o/--outfile` is the required arguments.  
-The `-r` input is a enhancer peak bed file. It should include 4 columns. The first column is chromosome name, the second and third column is the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value.  
-The `-a` option is a 12 columns BED file with gene annotation in your genome version, [***this***](/data/hg38_genes.bed) is the example file of human hg38.
-
 * Example:
 ```
 $ ananse binding  -r data/krt_enhancer.bed \
@@ -85,31 +81,24 @@ $ ananse binding  -r data/krt_enhancer.bed \
 ```
 
 * All the optional arguments:
-```
-$ ananse binding -h
+  * `-h, --help`  
+    show this help message and exit.
+  * `-r FILE, --fin_rpkm FILE`  
+    `-r` is the required arguments. It is the input enhancer peak file. It is a BED format file, which include 4 columns. The first column is chromosome name, the second and third column is the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](/test/data/krt_enhancer.bed) is the example enhancer BED file.
+  * `-g GENOME, --genome GENOME`  
+    The genome of your data. For example, hg38.
+  * `-a BED, --annotation BED`  
+    The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is the example BED annotation file of human hg38.
+  * `-p FILE, --pwmfile FILE`  
+    The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is the example Motif file in vertebrate.
+  * `-f NAME, --filter_promoter`  
+    Filter promoters, True or False, input should be
+    either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.)
+  * `-d NAME, --keep_detail`  
+    Keep detail files, True or False, input should be either 'True' or 'False'. (Default setting: True)  
+  * `-o FILE, --outfile`  
+    Output file. `-o` is the required arguments. 
 
-usage: ananse [-h] <subcommand> [options] binding [-h] [-p FILE] -r FILE
-                                                    [-a BED] [-g GENOME] -o
-                                                    FILE [-f NAME] [-d NAME]
-optional arguments:
-  -h, --help            show this help message and exit
-  -p FILE, --pwmfile FILE
-                        PWM
-  -r FILE, --fin_rpkm FILE
-                        BED file with RPKM (or equivalent) value on the 4th column
-  -a BED, --annotation BED
-                        Gene annotation in BED12 format
-  -g GENOME, --genome GENOME
-                        Genome
-  -o FILE, --outfile FILE
-                        Output file
-  -f NAME, --filter_promoter NAME
-                        Filter promoters, True or False, input should be
-                        either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.)
-  -d NAME, --keep_detail NAME
-                        Keep detail files, True or False, input should be
-                        either 'True' or 'False'. (Default setting: True)
-```
 
 ### Built interaction network
 
