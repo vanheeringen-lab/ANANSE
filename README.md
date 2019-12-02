@@ -119,9 +119,11 @@
     $ ananse network  -f results/full_features.txt 
                       -o results/full_network.txt
     ```
-  * All the optional arguments
+  * All the optional arguments:
+    * `-h, --help`  
+    show this help message and exit.
     * `-f`  
-    The interaction network from interaction.py;
+    The interaction network. It is the result from `Built interaction network` step.
     * `-o`  
     The folder to save results.  
   ---
@@ -136,10 +138,12 @@
                         -p False
     ```
   * All the optional arguments:
-    * `-b`  
-    The network in first cell (optional);
-    * `-a`  
-    The network in second cell;
+    * `-h, --help`  
+      show this help message and exit.
+    * `-b --bnetwork`  
+    The network in first cell (optional). It is the result from `Built GRN` step.
+    * `-a --anetwork`  
+    The network in second cell. It is the result from `Built GRN` step.  
     * `-e`  
     The gene expression in first cell (optional). One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/KRT_rep1_TPM.txt) is an example of expression file. 
     * `-d`  
