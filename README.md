@@ -24,8 +24,7 @@ Now you can install ANANSE:
 
 ```
 # Install all dependencies
-$ conda create -n ananse python=3 gimmemotifs networkx chest dask pytables
-adjusttext
+$ conda create -n ananse python=3 gimmemotifs networkx chest dask pytables adjusttext
 
 # Activate the environment
 $ source activate ananse 
@@ -35,20 +34,6 @@ $ pip install git+https://github.com/vanheeringen-lab/gimmemotifs.git@develop
 ```
 
 For most of the analyses it is beneficial to use as many threads as possible for the motif analysis. This is configured by the GimmeMotifs config file. If you haven't done so, run `gimme`, which will create a new GimmeMotifs config.
-
-```
-$ gimme
-```
-
-Now edit the file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
-
-### Data files.
-
-You need to download the genome of interest.
-
-```
-$ genomepy install hg38 UCSC --annotation
-```
 
 ### Easy installation
 
@@ -65,6 +50,20 @@ $ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@develop
 
 Python 3 is the required. Don't forget to activate the environment with `conda activate ananse` whenever you want to use `grns`.
 
+```
+$ gimme
+```
+
+Now edit the file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
+
+### Data files.
+
+You need to download the genome of interest.
+
+```
+$ genomepy install hg38 UCSC --annotation
+```
+
 ### API documentation
 
 * The ***python API documentation*** of this package can be found [***here***](/docs/api.md).
@@ -72,28 +71,17 @@ Python 3 is the required. Don't forget to activate the environment with `conda a
 
 ### Build binding network
 
-In this command, the `-r/--fin_rpkm` and `-o/--outfile` is the required arguments. The `-r` input is a enhancer peak bed file. This is the example of this file:
-```bash
-chr2	148881617	148881817	7
-chr7	145997204	145997404	4
-chr13	109424160	109424360	20
-chr14	32484901	32485101	2
-chr3	93470526	93470726	315
-chrY	56728139	56728339	50
-chr15	82513939	82514139	36
-chr2	49229595	49229795	3
-chr12	41363656	41363856	2
-chr8	69689994	69690194	13
-```
-The first column is chromosome name, the second and third column is the start and end point of peak. We recommend all peaks have 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value.
+In this command, the `-r/--fin_rpkm` and `-o/--outfile` is the required arguments.  
+The `-r` input is a enhancer peak bed file. It should include 4 columns. The first column is chromosome name, the second and third column is the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value.  
+The `-a` option is a 12 columns BED file with gene annotation in your genome version, [***this***](/data/hg38_genes.bed) is the example file of human hg38.
 
 * Example:
 ```
 $ ananse binding  -r data/krt_enhancer.bed \
-                    -o results/binding.txt \
-                    -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
-                    -g hg38 \
-                    -p ../data/gimme.vertebrate.v5.1.pfm
+                  -o results/binding.txt \
+                  -a /data/hg38_genes.bed \
+                  -g hg38 \
+                  -p /data/gimme.vertebrate.v5.1.pfm
 ```
 
 * All the optional arguments:
