@@ -27,7 +27,7 @@ from gimmemotifs.motif import read_motifs
 from gimmemotifs.utils import as_fasta
 from gimmemotifs.scanner import scan_to_best_match
 
-from grns import mytmpdir
+from ananse import mytmpdir
 
 warnings.filterwarnings('ignore')
 

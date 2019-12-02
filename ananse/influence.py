@@ -18,7 +18,7 @@ warnings.filterwarnings('ignore')
 
 from tempfile import NamedTemporaryFile
 
-from grns import mytmpdir
+from ananse import mytmpdir
 
 
 def read_network(fname, edges=100000):
