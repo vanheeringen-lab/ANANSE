@@ -166,7 +166,7 @@ $ ananse network -f results/full_features.txt -o results/full_network.txt
 $ ananse influence    -a results/full_network.txt \
                         -e data/FB_rep1_TPM.txt \
                         -d data/FB2KRT_degenes.csv \
-                        -o results/FB2KRT.txt
+                        -o results/FB2KRT.txt \
                         -p False
 ```
 * Input
