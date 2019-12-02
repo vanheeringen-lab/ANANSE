@@ -69,28 +69,28 @@ $ genomepy install hg38 UCSC --annotation
 * The ***python API documentation*** of this package can be found [***here***](/docs/api.md).
 
 
-### Build binding network
+> ### ***Build binding network***
 
 * Example:
-```
-$ ananse binding  -r data/krt_enhancer.bed \
-                  -o results/binding.txt \
-                  -a /data/hg38_genes.bed \
-                  -g hg38 \
-                  -p /data/gimme.vertebrate.v5.1.pfm
-```
+  ```
+  $ ananse binding  -r data/krt_enhancer.bed \
+                    -o results/binding.txt \
+                    -a /data/hg38_genes.bed \
+                    -g hg38 \
+                    -p /data/gimme.vertebrate.v5.1.pfm
+  ```
 
 * All the optional arguments:
   * `-h, --help`  
     show this help message and exit.
   * `-r FILE, --fin_rpkm FILE`  
-    `-r` is the required arguments. It is the input enhancer peak file. It is a BED format file, which include 4 columns. The first column is chromosome name, the second and third column is the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](/test/data/krt_enhancer.bed) is the example enhancer BED file.
+    `-r` is the required arguments. It is the input enhancer peak file. It is a BED format file, which include 4 columns. The first column is chromosome name, the second and third column is the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](/test/data/krt_enhancer.bed) is an example enhancer BED file.
   * `-g GENOME, --genome GENOME`  
     The genome of your data. For example, hg38.
   * `-a BED, --annotation BED`  
-    The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is the example BED annotation file of human hg38.
+    The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
   * `-p FILE, --pwmfile FILE`  
-    The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is the example Motif file in vertebrate.
+    The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.
   * `-f NAME, --filter_promoter`  
     Filter promoters, True or False, input should be
     either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.)
@@ -100,31 +100,38 @@ $ ananse binding  -r data/krt_enhancer.bed \
     Output file. `-o` is the required arguments. 
 
 
-### Built interaction network
+> ### ***Built interaction network***
 
 * Example:
-```
-$ ananse interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                        -r data/krt_enhancer.bed \
-                        -o results/full_features.txt \
-                        -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
-                        -g hg38 \
-                        -b results/binding.txt \
-                        -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
-                        -p ../data/gimme.vertebrate.v5.1.pfm
-```
-* Input
-```
--e One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM; 
--o The folder to save results;
--a 12 columns BED file with gene annotation;
--g Genome;
--b The binding network from binding.py;
--c All gene correlation file;
--p motifs file (optional; if provided there should also be a motif2factors.txt).
-```
+  ```
+  $ ananse interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
+                          -r data/krt_enhancer.bed \
+                          -o results/full_features.txt \
+                          -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
+                          -g hg38 \
+                          -b results/binding.txt \
+                          -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
+                          -p ../data/gimme.vertebrate.v5.1.pfm
+  ```
+* All the optional arguments:
+  * `-h, --help`  
+    show this help message and exit.
+  * `-e`  
+    One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM;   
+  * `-o`  
+    The folder to save results;
+  * `-a BED, --annotation BED`  
+    The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
+  * `-g GENOME, --genome GENOME`  
+    The genome of your data. For example, hg38.
+  * `-b`  
+    The binding network from binding.py;
+  * `-c`  
+    All gene correlation file;
+  * `-p FILE, --pwmfile FILE`  
+    The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.
 
-### Built GRN
+> ### ***Built GRN***
 
 * Example:
 ```
