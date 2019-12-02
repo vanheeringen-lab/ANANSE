@@ -35,39 +35,33 @@ $ pip install git+https://github.com/vanheeringen-lab/gimmemotifs.git@develop
 
 For most of the analyses it is beneficial to use as many threads as possible for the motif analysis. This is configured by the GimmeMotifs config file. If you haven't done so, run `gimme`, which will create a new GimmeMotifs config.
 
-### Easy installation
-
-* Activate the environment
-
-```
-$ source activate ananse 
-```
-
-* Install `ananse` development version package from github
-```bash
-$ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@develop
-```
-
-Python 3 is the required. Don't forget to activate the environment with `conda activate ananse` whenever you want to use `grns`.
-
 ```
 $ gimme
 ```
 
 Now edit the file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
 
-### Data files.
-
 You need to download the genome of interest.
+
+
+
+* Install `ananse` development version package from github
+```bash
+$ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@develop
+```
+
+Python 3 is the required. Don't forget to activate the environment with `conda activate ananse` whenever you want to use `ananse`.
+
 
 ```
 $ genomepy install hg38 UCSC --annotation
 ```
 
-### API documentation
+### **API documentation**
 
 * The ***python API documentation*** of this package can be found [***here***](/docs/api.md).
 
+### **Usage**
 
 > ### ***Build binding network***
 
@@ -134,35 +128,40 @@ $ genomepy install hg38 UCSC --annotation
 > ### ***Built GRN***
 
 * Example:
-```
-$ ananse network -f results/full_features.txt -o results/full_network.txt
-```
-* Input
-```
--f The interaction network from interaction.py;
--o The folder to save results.
-```
+  ```
+  $ ananse network -f results/full_features.txt -o results/full_network.txt
+  ```
+* All the optional arguments
+  * `-f`  
+  The interaction network from interaction.py;
+  * `-o`  
+  The folder to save results.
+  
 
-### Infer influence score
+> ### ***Infer influence score***
 
 * Example:
-```
-$ ananse influence    -a results/full_network.txt \
-                        -e data/FB_rep1_TPM.txt \
-                        -d data/FB2KRT_degenes.csv \
-                        -o results/FB2KRT.txt \
-                        -p False
-```
-* Input
-```
--b The network in first cell (optional);
--a The network in second cell;
--e The gene expression in first cell (optional);
--d The differential expression table between two cells; 
--o The result file.
--p Plot influence.
+  ```
+  $ ananse influence    -a results/full_network.txt \
+                          -e data/FB_rep1_TPM.txt \
+                          -d data/FB2KRT_degenes.csv \
+                          -o results/FB2KRT.txt \
+                          -p False
+  ```
+* All the optional arguments:
+  * `-b`  
+  The network in first cell (optional);
+  * `-a`  
+  The network in second cell;
+  * `-e`  
+  The gene expression in first cell (optional);
+  * `-d`  
+  The differential expression table between two cells; 
+  * `-o`  
+  The result file.
+  * `-p`  
+  Plot influence.
 
-```
 
 ## Help
 
