@@ -91,9 +91,8 @@
     * `-d NAME, --keep_detail`  
       Keep detail files, True or False, input should be either 'True' or 'False'. (Default setting: True)  
     * `-o FILE, --outfile`  
-      Output file. `-o` is the required arguments. 
-
-
+      Output file. `-o` is the required arguments.  
+  ---
   > ### ***Built interaction network***
 
   * Example:
@@ -123,8 +122,8 @@
     * `-c`  
       All gene correlation file;
     * `-p FILE, --pwmfile FILE`  
-      The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.
-
+      The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.  
+  ---
   > ### ***Built GRN***
 
   * Example:
@@ -135,9 +134,8 @@
     * `-f`  
     The interaction network from interaction.py;
     * `-o`  
-    The folder to save results.
-    
-
+    The folder to save results.  
+  ---
   > ### ***Infer influence score***
 
   * Example:
@@ -160,10 +158,27 @@
     * `-o`  
     The result file.
     * `-p`  
-    Plot influence.
-
-
+    Plot influence.  
+  
+---
 ## Help
 
-* The preferred way to get support is through the Github issues page
+  * The preferred way to get support is through the Github issues page
 
+---
+
+## Support
+
+  Reach out to me at one of the following places!
+
+  - Website at <a href="https://github.com/vanheeringen-lab" target="_blank">`vanheeringen-lab`</a>
+  - Email to <a href="qxuchn@gmail.com" target="_blank">`Quan Xu`</a>
+
+---
+
+## License
+
+  [![License](pic/_license-mit-blue.svg)](http://badges.mit-license.org)
+
+  - **[MIT license](http://opensource.org/licenses/mit-license.php)**
+  - Copyright 2019 © <a href="https://github.com/vanheeringen-lab" target="_blank">vanheeringen-lab</a>.
