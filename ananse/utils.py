@@ -30,8 +30,8 @@ from genomepy import Genome
 # gimme imports
 # from gimmemotifs.fasta import Fasta
 # from gimmemotifs.plot import plot_histogram
-from grns.rocmetrics import ks_pvalue
-from grns.config import MotifConfig
+from ananse.rocmetrics import ks_pvalue
+from ananse.config import MotifConfig
 
 lgam = special.gammaln
 

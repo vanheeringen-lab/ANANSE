@@ -8,9 +8,9 @@ import os
 import sys
 import ast
 import argparse
-from grns.config import MotifConfig, BG_TYPES, BED_VALID_BGS
-from grns import commands, __version__
-from grns.utils import check_genome
+from ananse.config import MotifConfig, BG_TYPES, BED_VALID_BGS
+from ananse import commands, __version__
+from ananse.utils import check_genome
 
 if __name__ == "__main__":
 
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     default_pwm = params["motif_db"]
     
     description = """
-    gnetwork v{0}
+    ananse v{0}
     """.format(__version__)
     
     epilog = """   
@@ -30,7 +30,7 @@ if __name__ == "__main__":
         network     built network for each sample
         influence   infer key TFs between two samples
     
-    type `gnetwork <command> -h` for more details
+    type `ananse <command> -h` for more details
     """
     
     usage = "%(prog)s [-h] <subcommand> [options]"

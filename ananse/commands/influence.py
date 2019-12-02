@@ -9,8 +9,8 @@ from __future__ import print_function
 import sys
 import os
 
-import grns.influence 
-import grns.config as cfg
+import ananse.influence 
+import ananse.config as cfg
 
 def influence(args):
     config = cfg.MotifConfig()
@@ -29,5 +29,5 @@ def influence(args):
         "plot": args.plot,
     }
 
-    a = grns.influence.Influence(Gbf = args.Gbf, Gaf = args.Gaf, outfile= args.outfile, expression=args.expression, edges=10000)    
+    a = ananse.influence.Influence(Gbf = args.Gbf, Gaf = args.Gaf, outfile= args.outfile, expression=args.expression, edges=10000)    
     a.run_influence(args.plot, args.fin_expression)

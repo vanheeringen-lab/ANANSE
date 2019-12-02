@@ -28,7 +28,7 @@ $ conda create -n ananse python=3 gimmemotifs networkx chest dask pytables
 adjusttext
 
 # Activate the environment
-$ conda activate ananse 
+$ source activate ananse 
 
 # Upgrade gimmemotifs to development version
 $ pip install git+https://github.com/vanheeringen-lab/gimmemotifs.git@develop
@@ -55,7 +55,7 @@ $ genomepy install hg38 UCSC --annotation
 * Activate the environment
 
 ```
-$ conda activate ananse 
+$ source activate ananse 
 ```
 
 * Install `ananse` development version package from github

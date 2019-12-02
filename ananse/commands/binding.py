@@ -9,8 +9,8 @@ from __future__ import print_function
 import sys
 import os
 
-import grns.binding 
-import grns.config as cfg
+import ananse.binding 
+import ananse.config as cfg
 
 def binding(args):
     config = cfg.MotifConfig()
@@ -30,5 +30,5 @@ def binding(args):
         "detail": args.detail,
     }
 
-    a = grns.binding.Binding(genome = args.genome, gene_bed = args.annotation, pwmfile = args.pwmfile)
+    a = ananse.binding.Binding(genome = args.genome, gene_bed = args.annotation, pwmfile = args.pwmfile)
     a.run_binding(args.fin_rpkm, args.outfile)

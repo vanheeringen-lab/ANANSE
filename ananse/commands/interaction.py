@@ -9,15 +9,15 @@ from __future__ import print_function
 import sys
 import os
 
-import grns.network 
-import grns.config as cfg
+import ananse.interaction 
+import ananse.config as cfg
 
-def network(args):
+def interaction(args):
     config = cfg.MotifConfig()
     params = config.get_default_params()
 
-    if not os.path.exists(args.features):
-        print("File %s does not exist!" % args.features)
+    if not os.path.exists(args.fin_rpkm):
+        print("File %s does not exist!" % args.fin_rpkm)
         sys.exit(1)
     
     params = {
@@ -29,20 +29,16 @@ def network(args):
         # "fpomoter": args.fpomoter,
         # "detail": args.detail,
         
-        # "fin_rpkm": args.fin_rpkm,
-        # "pwmfile": args.pwmfile,
-        # "fin_expression": args.fin_expression,
-        # "outfile": args.outfile,
-        # "genome": args.genome,
-        # "gene_bed": args.annotation,
-        # "corrfiles": args.corrfiles,
-        # "binding": args.binding,
-        
-        "featurefile": args.features,
+        "fin_rpkm": args.fin_rpkm,
+        "pwmfile": args.pwmfile,
+        "fin_expression": args.fin_expression,
         "outfile": args.outfile,
-        "impute": args.impute,
-
+        "genome": args.genome,
+        "gene_bed": args.annotation,
+        "corrfiles": args.corrfiles,
+        "binding": args.binding,
+        
     }
 
-    b = grns.network.Network()
-    b.run_network(args.features, args.outfile)
+    b = ananse.interaction.Interaction(genome = args.genome, gene_bed = args.annotation, pwmfile = args.pwmfile)
+    b.run_interaction(args.fin_rpkm, args.binding, args.fin_expression, args.corrfiles, args.outfile)

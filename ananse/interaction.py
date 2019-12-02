@@ -24,7 +24,7 @@ from genomepy import Genome
 
 from gimmemotifs.config import MotifConfig
 
-from grns import mytmpdir
+from ananse import mytmpdir
 
 class Interaction(object):
 

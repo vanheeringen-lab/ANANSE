@@ -12,7 +12,7 @@ import sys
 import logging
 import pkg_resources
 import inspect
-from grns.shutils import which
+from ananse.shutils import which
 
 logger = logging.getLogger("gimme.config")
 
