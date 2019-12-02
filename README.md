@@ -3,9 +3,6 @@
 
 [![bioconda-badge](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io)
 [![PyPI version](https://badge.fury.io/py/genomepy.svg)](https://badge.fury.io/py/ANANSE)
-[![star this repo](http://githubbadges.com/star.svg?user=vanheeringen-lab&repo=ANANSE&style=flat)](https://github.com/vanheeringen-lab/ANANSE)
-
-
 
 
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
@@ -108,17 +105,17 @@
     $ ananse interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                           -r data/krt_enhancer.bed \
                           -o results/full_features.txt \
-                          -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
+                          -a /data/hg38_genes.bed \
                           -g hg38 \
                           -b results/binding.txt \
-                          -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
+                          -c http://geek.science.ru.nl/share/_ananse/expressioncorrelation.txt \
                           -p ../data/gimme.vertebrate.v5.1.pfm
     ```
   * All the optional arguments:
     * `-h, --help`  
       show this help message and exit.
     * `-e`  
-      One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM;   
+      One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/KRT_rep1_TPM.txt) is an example of expression file.     
     * `-o`  
       The folder to save results;
     * `-a BED, --annotation BED`  
@@ -126,9 +123,9 @@
     * `-g GENOME, --genome GENOME`  
       The genome of your data. For example, hg38.
     * `-b`  
-      The binding network from binding.py;
+      The binding network from `Build binding network` step.
     * `-c`  
-      All gene correlation file;
+      All gene correlation file, the human gene expression correlation can be found at [***here***](http://geek.science.ru.nl/share/_ananse/expressioncorrelation.txt)
     * `-p FILE, --pwmfile FILE`  
       The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.  
   ---
@@ -161,13 +158,13 @@
     * `-a`  
     The network in second cell;
     * `-e`  
-    The gene expression in first cell (optional);
+    The gene expression in first cell (optional). One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/KRT_rep1_TPM.txt) is an example of expression file. 
     * `-d`  
-    The differential expression table between two cells; 
+    The differential expression table between two cells. [***This***](/test/data/FB2KRT_degenes.csv) is an example of differential expression file.  
     * `-o`  
     The result file.
     * `-p`  
-    Plot influence.  
+    Plot influence. True or False, input should be either 'True' or 'False'. (Default setting: True)  
   
 ---
 ## Help
