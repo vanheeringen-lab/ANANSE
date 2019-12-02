@@ -8,159 +8,159 @@
 
 ## Quick start
 
-### Installation
+* ### **Installation**
 
-The most straightforward way to install ANANSE is by using [bioconda](https://bioconda.github.io/).
+  The most straightforward way to install ANANSE is by using [bioconda](https://bioconda.github.io/).
 
-If you have not used bioconda before, first install [conda](https://docs.continuum.io/anaconda/) and then set up the necessary channels (in this order!). You only have to do this once.
+  If you have not used bioconda before, first install [conda](https://docs.continuum.io/anaconda/) and then set up the necessary channels (in this order!). You only have to do this once.
 
-```
-$ conda config --add channels defaults
-$ conda config --add channels bioconda
-$ conda config --add channels conda-forge
-```
-
-Now you can install ANANSE:
-
-```
-# Install all dependencies
-$ conda create -n ananse python=3 gimmemotifs networkx chest dask pytables adjusttext
-
-# Activate the environment
-$ source activate ananse 
-
-# Upgrade gimmemotifs to development version
-$ pip install git+https://github.com/vanheeringen-lab/gimmemotifs.git@develop
-```
-
-For most of the analyses it is beneficial to use as many threads as possible for the motif analysis. This is configured by the GimmeMotifs config file. If you haven't done so, run `gimme`, which will create a new GimmeMotifs config.
-
-```
-$ gimme
-```
-
-Now edit the file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
-
-You need to download the genome of interest.
-
-
-
-* Install `ananse` development version package from github
-```bash
-$ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@develop
-```
-
-Python 3 is the required. Don't forget to activate the environment with `conda activate ananse` whenever you want to use `ananse`.
-
-
-```
-$ genomepy install hg38 UCSC --annotation
-```
-
-### **API documentation**
-
-* The ***python API documentation*** of this package can be found [***here***](/docs/api.md).
-
-### **Usage**
-
-> ### ***Build binding network***
-
-* Example:
   ```
-  $ ananse binding  -r data/krt_enhancer.bed \
-                    -o results/binding.txt \
-                    -a /data/hg38_genes.bed \
-                    -g hg38 \
-                    -p /data/gimme.vertebrate.v5.1.pfm
+  $ conda config --add channels defaults
+  $ conda config --add channels bioconda
+  $ conda config --add channels conda-forge
   ```
 
-* All the optional arguments:
-  * `-h, --help`  
-    show this help message and exit.
-  * `-r FILE, --fin_rpkm FILE`  
-    `-r` is the required arguments. It is the input enhancer peak file. It is a BED format file, which include 4 columns. The first column is chromosome name, the second and third column is the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](/test/data/krt_enhancer.bed) is an example enhancer BED file.
-  * `-g GENOME, --genome GENOME`  
-    The genome of your data. For example, hg38.
-  * `-a BED, --annotation BED`  
-    The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
-  * `-p FILE, --pwmfile FILE`  
-    The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.
-  * `-f NAME, --filter_promoter`  
-    Filter promoters, True or False, input should be
-    either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.)
-  * `-d NAME, --keep_detail`  
-    Keep detail files, True or False, input should be either 'True' or 'False'. (Default setting: True)  
-  * `-o FILE, --outfile`  
-    Output file. `-o` is the required arguments. 
+  Now you can install ANANSE:
 
-
-> ### ***Built interaction network***
-
-* Example:
   ```
-  $ ananse interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                          -r data/krt_enhancer.bed \
-                          -o results/full_features.txt \
-                          -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
-                          -g hg38 \
-                          -b results/binding.txt \
-                          -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
-                          -p ../data/gimme.vertebrate.v5.1.pfm
-  ```
-* All the optional arguments:
-  * `-h, --help`  
-    show this help message and exit.
-  * `-e`  
-    One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM;   
-  * `-o`  
-    The folder to save results;
-  * `-a BED, --annotation BED`  
-    The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
-  * `-g GENOME, --genome GENOME`  
-    The genome of your data. For example, hg38.
-  * `-b`  
-    The binding network from binding.py;
-  * `-c`  
-    All gene correlation file;
-  * `-p FILE, --pwmfile FILE`  
-    The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.
+  # Install all dependencies
+  $ conda create -n ananse python=3 gimmemotifs networkx chest dask pytables adjusttext
 
-> ### ***Built GRN***
+  # Activate the environment
+  $ source activate ananse 
 
-* Example:
+  # Upgrade gimmemotifs to development version
+  $ pip install git+https://github.com/vanheeringen-lab/gimmemotifs.git@develop
   ```
-  $ ananse network -f results/full_features.txt -o results/full_network.txt
-  ```
-* All the optional arguments
-  * `-f`  
-  The interaction network from interaction.py;
-  * `-o`  
-  The folder to save results.
-  
 
-> ### ***Infer influence score***
+  For most of the analyses it is beneficial to use as many threads as possible for the motif analysis. This is configured by the GimmeMotifs config file. If you haven't done so, run `gimme`, which will create a new GimmeMotifs config.
 
-* Example:
   ```
-  $ ananse influence    -a results/full_network.txt \
-                          -e data/FB_rep1_TPM.txt \
-                          -d data/FB2KRT_degenes.csv \
-                          -o results/FB2KRT.txt \
-                          -p False
+  $ gimme
   ```
-* All the optional arguments:
-  * `-b`  
-  The network in first cell (optional);
-  * `-a`  
-  The network in second cell;
-  * `-e`  
-  The gene expression in first cell (optional);
-  * `-d`  
-  The differential expression table between two cells; 
-  * `-o`  
-  The result file.
-  * `-p`  
-  Plot influence.
+
+  Now edit the file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
+
+  You need to download the genome of interest.
+
+
+
+  * Install `ananse` development version package from github
+  ```bash
+  $ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@develop
+  ```
+
+  Python 3 is the required. Don't forget to activate the environment with `conda activate ananse` whenever you want to use `ananse`.
+
+
+  ```
+  $ genomepy install hg38 UCSC --annotation
+  ```
+
+* ### **API documentation**
+
+  * The ***python API documentation*** of this package can be found [***here***](/docs/api.md).
+
+* ### **Usage**
+
+  > ### ***Build binding network***
+
+  * Example:
+    ```
+    $ ananse binding  -r data/krt_enhancer.bed \
+                      -o results/binding.txt \
+                      -a /data/hg38_genes.bed \
+                      -g hg38 \
+                      -p /data/gimme.vertebrate.v5.1.pfm
+    ```
+
+  * All the optional arguments:
+    * `-h, --help`  
+      show this help message and exit.
+    * `-r FILE, --fin_rpkm FILE`  
+      `-r` is the required arguments. It is the input enhancer peak file. It is a BED format file, which include 4 columns. The first column is chromosome name, the second and third column is the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](/test/data/krt_enhancer.bed) is an example enhancer BED file.
+    * `-g GENOME, --genome GENOME`  
+      The genome of your data. For example, hg38.
+    * `-a BED, --annotation BED`  
+      The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
+    * `-p FILE, --pwmfile FILE`  
+      The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.
+    * `-f NAME, --filter_promoter`  
+      Filter promoters, True or False, input should be
+      either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.)
+    * `-d NAME, --keep_detail`  
+      Keep detail files, True or False, input should be either 'True' or 'False'. (Default setting: True)  
+    * `-o FILE, --outfile`  
+      Output file. `-o` is the required arguments. 
+
+
+  > ### ***Built interaction network***
+
+  * Example:
+    ```
+    $ ananse interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
+                            -r data/krt_enhancer.bed \
+                            -o results/full_features.txt \
+                            -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
+                            -g hg38 \
+                            -b results/binding.txt \
+                            -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
+                            -p ../data/gimme.vertebrate.v5.1.pfm
+    ```
+  * All the optional arguments:
+    * `-h, --help`  
+      show this help message and exit.
+    * `-e`  
+      One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM;   
+    * `-o`  
+      The folder to save results;
+    * `-a BED, --annotation BED`  
+      The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
+    * `-g GENOME, --genome GENOME`  
+      The genome of your data. For example, hg38.
+    * `-b`  
+      The binding network from binding.py;
+    * `-c`  
+      All gene correlation file;
+    * `-p FILE, --pwmfile FILE`  
+      The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.
+
+  > ### ***Built GRN***
+
+  * Example:
+    ```
+    $ ananse network -f results/full_features.txt -o results/full_network.txt
+    ```
+  * All the optional arguments
+    * `-f`  
+    The interaction network from interaction.py;
+    * `-o`  
+    The folder to save results.
+    
+
+  > ### ***Infer influence score***
+
+  * Example:
+    ```
+    $ ananse influence    -a results/full_network.txt \
+                            -e data/FB_rep1_TPM.txt \
+                            -d data/FB2KRT_degenes.csv \
+                            -o results/FB2KRT.txt \
+                            -p False
+    ```
+  * All the optional arguments:
+    * `-b`  
+    The network in first cell (optional);
+    * `-a`  
+    The network in second cell;
+    * `-e`  
+    The gene expression in first cell (optional);
+    * `-d`  
+    The differential expression table between two cells; 
+    * `-o`  
+    The result file.
+    * `-p`  
+    Plot influence.
 
 
 ## Help
