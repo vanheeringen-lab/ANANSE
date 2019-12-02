@@ -1,5 +1,13 @@
 # ANANSE: ANalysis Algorithm for Networks Specified by Enhancers
 
+
+[![bioconda-badge](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io)
+[![PyPI version](https://badge.fury.io/py/genomepy.svg)](https://badge.fury.io/py/ANANSE)
+[![star this repo](http://githubbadges.com/star.svg?user=vanheeringen-lab&repo=ANANSE&style=flat)](https://github.com/vanheeringen-lab/ANANSE)
+
+
+
+
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
 
 ![](/pic/Fig2.jpg)
@@ -98,13 +106,13 @@
   * Example:
     ```
     $ ananse interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                            -r data/krt_enhancer.bed \
-                            -o results/full_features.txt \
-                            -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
-                            -g hg38 \
-                            -b results/binding.txt \
-                            -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
-                            -p ../data/gimme.vertebrate.v5.1.pfm
+                          -r data/krt_enhancer.bed \
+                          -o results/full_features.txt \
+                          -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
+                          -g hg38 \
+                          -b results/binding.txt \
+                          -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
+                          -p ../data/gimme.vertebrate.v5.1.pfm
     ```
   * All the optional arguments:
     * `-h, --help`  
@@ -128,7 +136,8 @@
 
   * Example:
     ```
-    $ ananse network -f results/full_features.txt -o results/full_network.txt
+    $ ananse network  -f results/full_features.txt 
+                      -o results/full_network.txt
     ```
   * All the optional arguments
     * `-f`  
@@ -140,11 +149,11 @@
 
   * Example:
     ```
-    $ ananse influence    -a results/full_network.txt \
-                            -e data/FB_rep1_TPM.txt \
-                            -d data/FB2KRT_degenes.csv \
-                            -o results/FB2KRT.txt \
-                            -p False
+    $ ananse influence  -a results/full_network.txt \
+                        -e data/FB_rep1_TPM.txt \
+                        -d data/FB2KRT_degenes.csv \
+                        -o results/FB2KRT.txt \
+                        -p False
     ```
   * All the optional arguments:
     * `-b`  
