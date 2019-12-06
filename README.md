@@ -52,7 +52,8 @@
   * The ***python API documentation*** of this package can be found [***here***](/docs/api.md).
 
 * ### **Usage**
-
+  > All the example dataset and result files are able to find at [***http://mbdata.science.ru.nl/qxu/ananse/ananse.html***](http://mbdata.science.ru.nl/qxu/ananse/ananse.html).
+  ---
   > ### ***Build binding network***
 
   * Example:
@@ -93,7 +94,7 @@
                           -a /data/hg38_genes.bed \
                           -g hg38 \
                           -b results/binding.txt \
-                          -c http://geek.science.ru.nl/share/_ananse/expressioncorrelation.txt \
+                          -c expressioncorrelation.txt \
                           -p ../data/gimme.vertebrate.v5.1.pfm
     ```
   * All the optional arguments:
@@ -108,9 +109,9 @@
     * `-g, --genome`  
       The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`.
     * `-b, --binding`  
-      The binding network from `Build binding network` step. One of the example `binding network` could be found at [***here***](http://geek.science.ru.nl/share/_ananse/results/binding.txt).
+      The binding network from `Build binding network` step. One of the example `binding network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/binding.txt).
     * `-c, --corrfiles`  
-      All gene correlation file, the human gene expression correlation can be found at [***here***](http://geek.science.ru.nl/share/_ananse/data/expressioncorrelation.txt).
+      All gene correlation file, the human gene expression correlation can be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/data/expressioncorrelation.txt).
     * `-o, --output`  
       The folder to save results, `-o` is the required arguments. 
   ---
@@ -125,7 +126,7 @@
     * `-h, --help`  
     show this help message and exit.
     * `-f, --interaction`  
-    The interaction network. It is the result from `Built interaction network` step. One of the example `interaction network` could be found at [***here***](http://geek.science.ru.nl/share/_ananse/results/full_features.txt).
+    The interaction network. It is the result from `Built interaction network` step. One of the example `interaction network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_features.txt).
     * `-o, --output`  
     The folder to save results, `-o` is the required arguments.  
   ---
@@ -143,9 +144,9 @@
     * `-h, --help`  
       show this help message and exit.
     * `-b, --bnetwork`  
-    The network in first cell (optional). It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://geek.science.ru.nl/share/_ananse/results/full_network.txt).  
+    The network in first cell (optional). It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).  
     * `-a, --anetwork`  
-    The network in second cell. It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://geek.science.ru.nl/share/_ananse/results/full_network.txt).   
+    The network in second cell. It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).   
     * `-e, --expression`  
     The gene expression in first cell (optional). One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/FB_rep1_TPM.txt) is an example of expression file. 
     * `-d, --degenes`  
