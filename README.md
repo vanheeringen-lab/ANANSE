@@ -68,7 +68,7 @@
 
   * All the optional arguments:
     * `-h, --help`  
-      show this help message and exit.
+      Show the help message and exit.
     * `-r, --enhancers`  
       `-r` is the required arguments. It is the input enhancer peak file. It is a BED format file, which include 4 columns. The first column is chromosome name, the second and third column is the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](/test/data/krt_enhancer.bed) is an example enhancer BED file.
     * `-g, --genome`  
@@ -100,7 +100,7 @@
     ```
   * All the optional arguments:
     * `-h, --help`  
-      show this help message and exit.
+      Show the help message and exit.
     * `-p, --motifs`  
       The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file. 
     * `-e, --expression`  
@@ -125,7 +125,7 @@
     ```
   * All the optional arguments:
     * `-h, --help`  
-    show this help message and exit.
+    Show the help message and exit.
     * `-f, --interaction`  
     The interaction network. It is the result from `Built interaction network` step. One of the example `interaction network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_features.txt).
     * `-o, --output`  
@@ -143,7 +143,7 @@
     ```
   * All the optional arguments:
     * `-h, --help`  
-      show this help message and exit.
+      Show the help message and exit.
     * `-b, --bnetwork`  
     The network in first cell (optional). It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).  
     * `-a, --anetwork`  
