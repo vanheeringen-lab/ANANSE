@@ -45,12 +45,12 @@ if __name__ == "__main__":
     
     # binding.py
     p = subparsers.add_parser('binding')
-    p.add_argument("-p", "--pwmfile",
+    p.add_argument("-p", "--motifs",
         dest="pwmfile",
         help="PWM",
         metavar="FILE",
         default=None)
-    p.add_argument("-r", "--fin_rpkm",
+    p.add_argument("-r", "--enhancers",
         required=True,
         dest="fin_rpkm",
         help="BED file with RPKM on the 4th column",
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         help="Genome",
         metavar="GENOME",
         default="hg19")
-    p.add_argument("-o", "--outfile",
+    p.add_argument("-o", "--output",
         required=True,
         dest="outfile",
         help="Output file",
@@ -86,41 +86,41 @@ if __name__ == "__main__":
 
     # interaction.py
     p = subparsers.add_parser('interaction')
-    p.add_argument("-p", "--pwmfile",
+    p.add_argument("-p", "--motifs",
         dest="pwmfile",
         help="PWM",
         metavar="FILE",
         default=None)
-    p.add_argument("-r", "--fin_rpkm",
+    p.add_argument("-r", "--enhancers",
         required=True,
         dest="fin_rpkm",
         help="BED file with RPKM on the 4th column",
         metavar="FILE")
-    p.add_argument("-e",
+    p.add_argument("-e", "--expression",
         dest="fin_expression",
         help="Expression scores",
         metavar="FILE",
         nargs='*')   
-    p.add_argument("-c",
+    p.add_argument("-c", "--corrfiles",
         dest="corrfiles",
         help="Files with correlation",
         metavar="FILE",
         nargs='*')   
-    p.add_argument("-b",
+    p.add_argument("-b", "--binding",
         dest="binding",
         help="All TFs binding file",
         metavar="FILE",
         nargs='*')
-    p.add_argument("-a",
+    p.add_argument("-a", "--annotation",
         dest="annotation",
         help="Gene annotation in BED12 format",
         metavar="BED",)    
-    p.add_argument("-g",
+    p.add_argument("-g", "--genome",
         dest="genome",
         help="Genome",
         metavar="NAME",
         default="hg19",)    
-    p.add_argument("-o", "--outfile",
+    p.add_argument("-o", "--output",
         required=True,
         dest="outfile",
         help="Output file",
@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
     # network.py
     p = subparsers.add_parser('network')
-    p.add_argument("-f", "--features",
+    p.add_argument("-f", "--interaction",
         dest="features",
         help="HDF5 file with features",
         metavar="FILE",
@@ -161,21 +161,21 @@ if __name__ == "__main__":
         help="network in second cell",
         metavar="FILE",
         default=None)
-    p.add_argument("-e",
+    p.add_argument("-e", "--expression",
         dest="fin_expression",
         help="Expression scores in first cell",
         metavar="FILE",)
-    p.add_argument("-d",
+    p.add_argument("-d", "--degenes",
         dest="expression",
         help="DE genes file",
         metavar="FILE",)
-    p.add_argument("-o",
+    p.add_argument("-o", "--outfile",
         required=True,
         dest="outfile",
         help="Output file",
         metavar="FILE",
         default=None)
-    p.add_argument("-p", "--plot_influence",
+    p.add_argument("-p", "--plot",
         dest="plot",
         help="Plot influence, True or False, input should be either 'True' or 'False'.",
         metavar="NAME",
