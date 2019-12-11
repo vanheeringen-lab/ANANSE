@@ -10,25 +10,12 @@ import sys
 import os
 
 import ananse.influence
-import ananse.config as cfg
 
 
 def influence(args):
-    config = cfg.MotifConfig()
-    params = config.get_default_params()
-
     if not os.path.exists(args.outfile):
         print("File %s does not exist!" % args.outfile)
         sys.exit(1)
-
-    params = {
-        "outfile": args.outfile,
-        "expression": args.expression,
-        "fin_expression": args.fin_expression,
-        "Gbf": args.Gbf,
-        "Gaf": args.Gaf,
-        "plot": args.plot,
-    }
 
     a = ananse.influence.Influence(
         Gbf=args.Gbf,

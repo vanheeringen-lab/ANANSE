@@ -1,17 +1,6 @@
 #!/usr/bin/env python
 import pandas as pd
-from sklearn.metrics import (
-    roc_auc_score,
-    average_precision_score,
-    precision_recall_curve,
-    roc_curve,
-)
-import numpy as np
 from scipy.stats import rankdata
-import dask.dataframe as dd
-import sys
-import os
-import argparse
 from sklearn.preprocessing import minmax_scale
 import warnings
 
@@ -67,52 +56,3 @@ class Network(object):
 
     def run_network(self, featurefile, outfile):
         self.create_network(featurefile, outfile)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-f",
-        "--features",
-        dest="features",
-        help="HDF5 file with features",
-        metavar="FILE",
-        default=None,
-        required=True,
-    )
-    parser.add_argument(
-        "-o",
-        required=True,
-        dest="outdir",
-        help="Output directory",
-        metavar="DIR",
-        default=None,
-    )
-
-    parser.add_argument(
-        "-i",
-        "--impute",
-        dest="impute",
-        help="Impute missing values",
-        default=False,
-        action="store_true",
-    )
-
-    args = parser.parse_args()
-
-    featurefile = args.features
-    outdir = args.outdir
-    impute = args.impute
-
-    create_network(
-        featurefile, outdir, impute,
-    )
-
-
-# featurefile="../results/full_features.h5"
-# outfile="../results/logistic_regression_network.txt"
-# network = pd.read_hdf(featurefile, key="/features")
-
-
-# ##python edge_sumlearn.py -f ../results/full_features.h5 \
-#                                          -o ../results

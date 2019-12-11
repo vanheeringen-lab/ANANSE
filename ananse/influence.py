@@ -1,7 +1,6 @@
 # imports
 from __future__ import print_function
 import sys
-import argparse
 
 import numpy as np
 import pandas as pd
@@ -45,7 +44,7 @@ def read_network(fname, edges=100000):
             else:
                 weight = 0
             G.add_edge(source, target, weight=weight, n=1)
-        except:
+        except Exception:
             sys.stderr.write("could not parse edge weight\n")
             raise
     return G
@@ -103,7 +102,7 @@ def influenceScore(node, G, max_degree=3, expression=None):
     for target in targets:
         path = paths[target]
         # outdegree of parent node of the target
-        d = np.log(G.out_degree(path[-2]) + 1)
+        # d = np.log(G.out_degree(path[-2]) + 1)
         # d = G.out_degree(path[-2])
         # expression score of the target
         g = expression["score"].get(target, 1)

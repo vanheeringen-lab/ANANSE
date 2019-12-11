@@ -1,11 +1,4 @@
-#!/usr/bin/env python
-import argparse
-import os
-import pickle
-import subprocess
-import sys
 import math
-import ast
 
 import warnings
 
@@ -16,14 +9,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
-from sklearn import preprocessing
-from chest import Chest
 import dask.dataframe as dd
-from dask.diagnostics import ProgressBar
 from pybedtools import BedTool
 from genomepy import Genome
-
-from gimmemotifs.config import MotifConfig
 
 from ananse import mytmpdir
 
@@ -47,8 +35,8 @@ class Interaction(object):
         # all overlap Enh-TSS(up8000 to down2000) pair
         peaks = BedTool(peak_bed)
         b = BedTool(self.gene_bed)
-        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(
-            l=up, r=down, g=self.gsize, s=True
+        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(  # noqa: E741
+            l=up, r=down, g=self.gsize, s=True  # noqa: E741
         )
         vals = []
         # for f in b.intersect(peaks, wo=True, nonamecheck=True):
@@ -72,8 +60,8 @@ class Interaction(object):
         # all overlap Enh-TSS(100000-tss-100000) pair distance
         peaks = BedTool(peak_bed)
         b = BedTool(self.gene_bed)
-        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(
-            l=up, r=down, g=self.gsize, s=True
+        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(  # noqa: E741
+            l=up, r=down, g=self.gsize, s=True  # noqa: E741
         )
         # bedtools flank  -r 0 -l 1 -i b.bed -g
         # #all gene upstream 1bp position (TSS), Chr01 12800   12801   in Chr01    4170    12800   Xetrov90000001m.g   0   -
@@ -116,7 +104,7 @@ class Interaction(object):
 
         return p
 
-    def distance_weight(self, alpha=1e5, padding=int(2e5), keep1=5000, remove=2000):
+    def distance_weight(self, alpha=1e5, padding=200000, keep1=5000, remove=2000):
         """
         Built weight distribution from TSS.
         """
@@ -317,9 +305,8 @@ class Interaction(object):
 
         warnings.filterwarnings("ignore")
         factorsExpression = {}
-        # for line in open('/home/george/data/cis-bp.vertebrate.clusters.v3.0.motif2factors.txt'):
+
         for line in open(self.motifs2factors):
-            motif = line.split("\t")[0].upper()
             if not line.split("\t")[1].strip().split(",") == [""]:
                 for factor in line.split("\t")[1].strip().split(","):
                     factorsExpression[factor.upper()] = []

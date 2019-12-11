@@ -15,7 +15,6 @@ from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pandas as pd
-from chest import Chest
 import dask.dataframe as dd
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
@@ -45,15 +44,11 @@ class Binding(object):
         self.motifs2factors = pfmfile.replace(".pfm", ".motif2factors.txt")
         self.factortable = pfmfile.replace(".pfm", ".factortable.txt")
 
-        # read motifs
-        with open(pfmfile) as pfm_in:
-            motifs = read_motifs(pfm_in)
-
         self.gene_bed = gene_bed
 
         package_dir = os.path.dirname(ananse.__file__)
         self.model = os.path.join(package_dir, "db", "dream_model.txt")
-        
+
         # dream_model.txt is the logistic regression model.
 
     def set_peak_size(self, peaks, seqlen=200):
@@ -100,15 +95,14 @@ class Binding(object):
 
         # remove all peaks that overlap with TSS(up2000 to down2000).
         b = BedTool(self.gene_bed)
-        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(
-            l=up, r=down, g=self.gsize, s=True
+        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(  # noqa: E741
+            l=up, r=down, g=self.gsize, s=True  # noqa: E741
         )
         vals = []
         # for f in b.intersect(peaks, wo=True, nonamecheck=True):
         # Bedtools don't have nonamecheck option now?
         for f in b.intersect(peaks, wo=True):
             chrom = f[0]
-            gene = f[3]
             peak_start, peak_end = int(f[13]), int(f[14])
             vals.append(chrom + ":" + str(peak_start) + "-" + str(peak_end))
         fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
@@ -200,7 +194,6 @@ class Binding(object):
         r = r.groupby(["factor", "enhancer"])[["zscore", "peakRPKMScale"]].max()
         r = r.dropna().reset_index()
 
-        cache = Chest(available_memory=20e9)
         table = r.compute()
         print("Predicting TF binding sites")
         table["binding"] = clf.predict_proba(table[["zscore", "peakRPKMScale"]])[:, 1]

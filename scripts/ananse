@@ -1,202 +1,255 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 # Copyright (c) 2013-2016 Quan Xu <qxuchn@gmail.com>
 #
-# This module is free software. You can redistribute it and/or modify it under 
-# the terms of the MIT License, see the file COPYING included with this 
+# This module is free software. You can redistribute it and/or modify it under
+# the terms of the MIT License, see the file COPYING included with this
 # distribution.
-import os
 import sys
 import ast
 import argparse
-from ananse.config import MotifConfig, BG_TYPES, BED_VALID_BGS
 from ananse import commands, __version__
-from ananse.utils import check_genome
+from genomepy import Genome
 
 if __name__ == "__main__":
-
-    config = MotifConfig()
-    params = config.get_default_params()
-    default_pwm_file = os.path.join(config.get_motif_dir(), params["motif_db"])
-    default_pwm = params["motif_db"]
-    
     description = """
     ananse v{0}
-    """.format(__version__)
-    
-    epilog = """   
+    """.format(
+        __version__
+    )
+
+    epilog = """
     commands:
         binding     infer TF binding sites in enhancer peaks
         interaction link TF binding sites to genes
         network     built network for each sample
         influence   infer key TFs between two samples
-    
+
     type `ananse <command> -h` for more details
     """
-    
     usage = "%(prog)s [-h] <subcommand> [options]"
-    
+
     parser = argparse.ArgumentParser(
-                                    usage=usage, 
-                                    description=description, 
-                                    epilog=epilog,
-                                    formatter_class=argparse.RawDescriptionHelpFormatter
-                                    )
-    subparsers = parser.add_subparsers()#title='subcommands', metavar="<command>")
-    
+        usage=usage,
+        description=description,
+        epilog=epilog,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    subparsers = parser.add_subparsers()
+
     # binding.py
-    p = subparsers.add_parser('binding')
-    p.add_argument("-p", "--motifs",
-        dest="pwmfile",
-        help="PWM",
+    p = subparsers.add_parser("binding")
+    p.add_argument(
+        "-p",
+        "--pfmfile",
+        dest="pfmfile",
+        help="PFM file with motifs",
         metavar="FILE",
-        default=None)
-    p.add_argument("-r", "--enhancers",
+        default=None,
+    )
+    p.add_argument(
+        "-r",
+        "--enhancers",
         required=True,
         dest="fin_rpkm",
         help="BED file with RPKM on the 4th column",
-        metavar="FILE")
-    p.add_argument("-a", "--annotation",
+        metavar="FILE",
+    )
+    p.add_argument(
+        "-a",
+        "--annotation",
         dest="annotation",
         help="Gene annotation in BED12 format",
-        metavar="BED")
-    p.add_argument("-g", "--genome",
-        dest="genome",
-        help="Genome",
-        metavar="GENOME",
-        default="hg19")
-    p.add_argument("-o", "--output",
+        metavar="BED",
+    )
+    p.add_argument(
+        "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg19"
+    )
+    p.add_argument(
+        "-o",
+        "--output",
         required=True,
         dest="outfile",
         help="Output file",
         metavar="FILE",
-        default=None)
-    p.add_argument("-f", "--filter_promoter",
+        default=None,
+    )
+    p.add_argument(
+        "-f",
+        "--filter_promoter",
         dest="fpomoter",
         help="Filter promoters, True or False, input should be either 'True' or 'False'.",
         metavar="NAME",
         type=ast.literal_eval,
-        default=True)
-    p.add_argument("-d", "--keep_detail",
+        default=True,
+    )
+    p.add_argument(
+        "-d",
+        "--keep_detail",
         dest="detail",
         help="Keep detail files, True or False, input should be either 'True' or 'False'.",
         metavar="NAME",
         type=ast.literal_eval,
-        default=True)
+        default=True,
+    )
     p.set_defaults(func=commands.binding)
 
     # interaction.py
-    p = subparsers.add_parser('interaction')
-    p.add_argument("-p", "--motifs",
-        dest="pwmfile",
-        help="PWM",
-        metavar="FILE",
-        default=None)
-    p.add_argument("-r", "--enhancers",
+    p = subparsers.add_parser("interaction")
+    p.add_argument(
+        "-p", "--motifs", dest="pfmfile", help="PWM", metavar="FILE", default=None
+    )
+    p.add_argument(
+        "-r",
+        "--enhancers",
         required=True,
         dest="fin_rpkm",
         help="BED file with RPKM on the 4th column",
-        metavar="FILE")
-    p.add_argument("-e", "--expression",
+        metavar="FILE",
+    )
+    p.add_argument(
+        "-e",
+        "--expression",
         dest="fin_expression",
         help="Expression scores",
         metavar="FILE",
-        nargs='*')   
-    p.add_argument("-c", "--corrfiles",
+        nargs="*",
+    )
+    p.add_argument(
+        "-c",
+        "--corrfiles",
         dest="corrfiles",
         help="Files with correlation",
         metavar="FILE",
-        nargs='*')   
-    p.add_argument("-b", "--binding",
+        nargs="*",
+    )
+    p.add_argument(
+        "-b",
+        "--binding",
         dest="binding",
         help="All TFs binding file",
         metavar="FILE",
-        nargs='*')
-    p.add_argument("-a", "--annotation",
+        nargs="*",
+    )
+    p.add_argument(
+        "-a",
+        "--annotation",
         dest="annotation",
         help="Gene annotation in BED12 format",
-        metavar="BED",)    
-    p.add_argument("-g", "--genome",
-        dest="genome",
-        help="Genome",
-        metavar="NAME",
-        default="hg19",)    
-    p.add_argument("-o", "--output",
+        metavar="BED",
+    )
+    p.add_argument(
+        "-g", "--genome", dest="genome", help="Genome", metavar="NAME", default="hg19",
+    )
+    p.add_argument(
+        "-o",
+        "--output",
         required=True,
         dest="outfile",
         help="Output file",
         metavar="FILE",
-        default=None)
+        default=None,
+    )
     p.set_defaults(func=commands.interaction)
 
     # network.py
-    p = subparsers.add_parser('network')
-    p.add_argument("-f", "--interaction",
+    p = subparsers.add_parser("network")
+    p.add_argument(
+        "-f",
+        "--interaction",
         dest="features",
         help="HDF5 file with features",
         metavar="FILE",
         default=None,
-        required=True,)
-    p.add_argument("-o", "--outfile",
+        required=True,
+    )
+    p.add_argument(
+        "-o",
+        "--outfile",
         required=True,
         dest="outfile",
         help="Output file",
         metavar="FILE",
-        default=None)
-    p.add_argument("-i", "--impute",
+        default=None,
+    )
+    p.add_argument(
+        "-i",
+        "--impute",
         dest="impute",
         help="Impute missing values",
         default=False,
-        action="store_true",)
+        action="store_true",
+    )
     p.set_defaults(func=commands.network)
 
     # influence.py
-    p = subparsers.add_parser('influence')
-    p.add_argument("-b", "--bnetwork",
+    p = subparsers.add_parser("influence")
+    p.add_argument(
+        "-b",
+        "--bnetwork",
         dest="Gbf",
         help="network in first cell",
         metavar="FILE",
-        default=None)
-    p.add_argument("-a", "--anetwork",
+        default=None,
+    )
+    p.add_argument(
+        "-a",
+        "--anetwork",
         dest="Gaf",
         help="network in second cell",
         metavar="FILE",
-        default=None)
-    p.add_argument("-e", "--expression",
+        default=None,
+    )
+    p.add_argument(
+        "-e",
+        "--expression",
         dest="fin_expression",
         help="Expression scores in first cell",
-        metavar="FILE",)
-    p.add_argument("-d", "--degenes",
-        dest="expression",
-        help="DE genes file",
-        metavar="FILE",)
-    p.add_argument("-o", "--outfile",
+        metavar="FILE",
+    )
+    p.add_argument(
+        "-d", "--degenes", dest="expression", help="DE genes file", metavar="FILE",
+    )
+    p.add_argument(
+        "-o",
+        "--outfile",
         required=True,
         dest="outfile",
         help="Output file",
         metavar="FILE",
-        default=None)
-    p.add_argument("-p", "--plot",
+        default=None,
+    )
+    p.add_argument(
+        "-p",
+        "--plot",
         dest="plot",
         help="Plot influence, True or False, input should be either 'True' or 'False'.",
         metavar="NAME",
         type=ast.literal_eval,
-        default=True)
+        default=True,
+    )
     p.set_defaults(func=commands.influence)
-
 
     if len(sys.argv) == 1:
         parser.print_help()
     else:
         if len(sys.argv) == 2:
-            print("\033[93mtype `grns {} -h` for more details\033[0m\n".format(sys.argv[-1]))
+            print(
+                "\033[93mtype `grns {} -h` for more details\033[0m\n".format(
+                    sys.argv[-1]
+                )
+            )
         args = parser.parse_args()
-        
+
         if hasattr(args, "genome"):
             if args.genome is not None:
-                if not check_genome(args.genome):
-                    print("Genome not found. Have you installed your genome with genomepy?")
+                try:
+                    Genome(args.genome)
+                except Exception:
+                    print(
+                        "Genome not found. Have you installed your genome with genomepy?"
+                    )
                     print("See https://github.com/simonvh/genomepy for details.")
                     print("Alternatively, you can specify a FASTA file.")
                     exit(1)
-        
+
         args.func(args)
