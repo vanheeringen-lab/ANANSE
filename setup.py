@@ -25,7 +25,7 @@ setup(
     packages=find_packages(),
     scripts=["scripts/ananse"],
     include_package_data=True,
-    # ext_modules = [module1],
+    zip_safe=False,  # This is necessary, otherwise files won't be installed
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",

@@ -8,7 +8,7 @@
 """Predict TF binding site"""
 
 # Python imports
-import argparse
+import os
 import pickle
 import warnings
 from tempfile import NamedTemporaryFile
@@ -25,9 +25,9 @@ from genomepy import Genome
 from gimmemotifs.scanner import Scanner
 from gimmemotifs.motif import read_motifs
 from gimmemotifs.utils import as_fasta, pfmfile_location
-from gimmemotifs.scanner import scan_to_best_match
 
 from ananse import mytmpdir
+import ananse
 
 warnings.filterwarnings("ignore")
 
@@ -51,7 +51,9 @@ class Binding(object):
 
         self.gene_bed = gene_bed
 
-        self.model = "../db/dream_model.txt"
+        package_dir = os.path.dirname(ananse.__file__)
+        self.model = os.path.join(package_dir, "db", "dream_model.txt")
+        
         # dream_model.txt is the logistic regression model.
 
     def set_peak_size(self, peaks, seqlen=200):
