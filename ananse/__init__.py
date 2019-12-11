@@ -4,13 +4,15 @@ import shutil
 from tempfile import mkdtemp
 import logging
 
+
 def mytmpdir():
-    if not hasattr(mytmpdir, 'dir') or not mytmpdir.dir:
+    if not hasattr(mytmpdir, "dir") or not mytmpdir.dir:
         mytmpdir.dir = mkdtemp(prefix="grns.{0}.".format(getpid()))
         atexit.register(shutil.rmtree, mytmpdir.dir)
     return mytmpdir.dir
 
-logger = logging.getLogger('gnetwork')
+
+logger = logging.getLogger("gnetwork")
 logger.setLevel(logging.DEBUG)
 logger.propagate = 0
 
@@ -24,5 +26,6 @@ sh.setFormatter(screen_formatter)
 logger.addHandler(sh)
 
 from ._version import get_versions
-__version__ = get_versions()['version']
+
+__version__ = get_versions()["version"]
 del get_versions

@@ -1,16 +1,17 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 # Copyright (c) 2009-2019 Quan Xu <qxuchn@gmail.com>
 #
-# This module is free software. You can redistribute it and/or modify it under 
-# the terms of the MIT License, see the file COPYING included with this 
+# This module is free software. You can redistribute it and/or modify it under
+# the terms of the MIT License, see the file COPYING included with this
 # distribution.
 
 from __future__ import print_function
 import sys
 import os
 
-import ananse.network 
+import ananse.network
 import ananse.config as cfg
+
 
 def network(args):
     config = cfg.MotifConfig()
@@ -19,29 +20,26 @@ def network(args):
     if not os.path.exists(args.features):
         print("File %s does not exist!" % args.features)
         sys.exit(1)
-    
+
     params = {
-        # "pwmfile": args.pwmfile,
+        # "pfmfile": args.pfmfile,
         # "fin_rpkm": args.fin_rpkm,
         # "outfile": args.outfile,
         # "genome": args.genome,
         # "gene_bed": args.annotation,
         # "fpomoter": args.fpomoter,
         # "detail": args.detail,
-        
         # "fin_rpkm": args.fin_rpkm,
-        # "pwmfile": args.pwmfile,
+        # "pfmfile": args.pfmfile,
         # "fin_expression": args.fin_expression,
         # "outfile": args.outfile,
         # "genome": args.genome,
         # "gene_bed": args.annotation,
         # "corrfiles": args.corrfiles,
         # "binding": args.binding,
-        
         "featurefile": args.features,
         "outfile": args.outfile,
         "impute": args.impute,
-
     }
 
     b = ananse.network.Network()
