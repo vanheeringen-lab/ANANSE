@@ -1,0 +1,5 @@
+include README.md
+include LICENSE
+include scripts/**
+include ananse/db/dream_model.txt
+include versioneer.py
