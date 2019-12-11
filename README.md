@@ -38,7 +38,7 @@
     $ genomepy install hg38 UCSC --annotation
     
     # Install ANANSE development version package from github
-    $ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@cleanup
+    $ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@develop
     ```
 
   * For most of the analyses it is beneficial to use as many threads as possible for the motif analysis. This is configured by the GimmeMotifs config file. If you haven't done so, run `gimme`, which will create a new GimmeMotifs config file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
