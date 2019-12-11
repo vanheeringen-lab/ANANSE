@@ -29,19 +29,16 @@
 
     ```
     # Install all dependencies, and Python 3 is the required.
-    $ conda create -n ananse python=3 gimmemotifs networkx chest dask pytables adjusttext
+    $ conda create -n ananse python=3 gimmemotifs=0.14.0 networkx chest dask pytables adjusttext
 
     # Activate the environment
-    $ source activate ananse 
-
-    # Upgrade gimmemotifs to development version
-    $ pip install git+https://github.com/vanheeringen-lab/gimmemotifs.git@develop
+    $ conda activate ananse 
 
     # Download the genome of interest.
     $ genomepy install hg38 UCSC --annotation
     
-    # Install `ananse` development version package from github
-    $ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@develop
+    # Install ANANSE development version package from github
+    $ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@cleanup
     ```
 
   * For most of the analyses it is beneficial to use as many threads as possible for the motif analysis. This is configured by the GimmeMotifs config file. If you haven't done so, run `gimme`, which will create a new GimmeMotifs config file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
@@ -66,11 +63,15 @@
                       -p /data/gimme.vertebrate.v5.1.pfm
     ```
 
-  * All the optional arguments:
-    * `-h, --help`  
-      Show the help message and exit.
+  * Required arguments:
     * `-r, --enhancers`  
-      `-r` is the required arguments. It is the input enhancer peak file. It is a BED format file, which include 4 columns. The first column is chromosome name, the second and third column is the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](/test/data/krt_enhancer.bed) is an example enhancer BED file.
+      The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](/test/data/krt_enhancer.bed) is an example enhancer BED file.
+    * `-o, --output`  
+      The name of the output file.
+
+
+  * Optional arguments
+    
     * `-g, --genome`  
       The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`.
     * `-a, --annotation`  
@@ -82,8 +83,9 @@
       either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.).
     * `-d, --keep_detail`  
       Keep detail files, True or False, input should be either 'True' or 'False'. (Default setting: True).  
-    * `-o, --output`  
-      The folder to save results. `-o` is the required arguments.  
+    * `-h, --help`  
+      Show the help message and exit.
+
   ---
   > ### ***Built interaction network***
 
