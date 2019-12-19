@@ -42,15 +42,23 @@ class Binding(object):
         # Motif information file
         if pfmfile is None:
             self.pfmfile = "../data/gimme.vertebrate.v5.1.pfm"
-            # self.motifs2factors = pfmfile.replace(".pfm", ".motif2factors.txt")
-            # self.factortable = pfmfile.replace(".pfm", ".factortable.txt")
         else:
             self.pfmfile = pfmfile
 
         self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
         self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
 
-        self.gene_bed = gene_bed
+        # Gene information file
+        if self.genome == "hg38":
+            if gene_bed is None:
+                self.gene_bed = "../data/hg38_genes.bed"
+            else:
+                self.gene_bed = gene_bed
+        else:
+            try:
+                self.gene_bed = gene_bed
+            except ValueError:
+                print("Please provide a gene bed file with -a argument.")
 
         package_dir = os.path.dirname(ananse.__file__)
         self.model = os.path.join(package_dir, "db", "dream_model.txt")
