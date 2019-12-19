@@ -107,6 +107,15 @@ if __name__ == "__main__":
         metavar="FILE",
     )
     p.add_argument(
+        "-f",
+        "--filter_promoter",
+        dest="fpomoter",
+        help="Filter promoters, True or False, input should be either 'True' or 'False'.",
+        metavar="NAME",
+        type=ast.literal_eval,
+        default=True,
+    )
+    p.add_argument(
         "-e",
         "--expression",
         dest="fin_expression",

@@ -93,10 +93,10 @@
     ```
     $ ananse interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                           -r data/krt_enhancer.bed \
+                          -b results/binding.txt \
                           -o results/full_features.txt \
                           -a /data/hg38_genes.bed \
                           -g hg38 \
-                          -b results/binding.txt \
                           -c expressioncorrelation.txt \
                           -p ../data/gimme.vertebrate.v5.1.pfm
     ```
@@ -104,6 +104,8 @@
   * Required arguments:
     * `-e, --expression`  
       The expression file of your interested cell type or tissue. It could have one or more gene expression file(s). In this file, the 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/KRT_rep1_TPM.txt) is an example of expression file.   
+    * `-r, --enhancers`  
+      The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](/test/data/krt_enhancer.bed) is an example enhancer BED file.
     * `-b, --binding`  
       The binding network from `Build binding network` step. One of the example `binding network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/binding.txt).  
     * `-o, --output`  
@@ -116,6 +118,9 @@
       The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file. 
     * `-a, --annotation`  
       The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
+    * `-f, --filter_promoter`  
+      Filter promoters, True or False, input should be
+      either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.).
     * `-c, --corrfiles`  
       All gene correlation file, the human gene expression correlation can be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/data/expressioncorrelation.txt).
     * `-h, --help`  
@@ -152,7 +157,7 @@
                         -o results/FB2KRT.txt \
                         -p False
     ```
-    
+
   * Required arguments:
   
     * `-a, --anetwork`  

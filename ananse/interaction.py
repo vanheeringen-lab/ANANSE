@@ -14,7 +14,7 @@ from pybedtools import BedTool
 from genomepy import Genome
 
 from ananse import mytmpdir
-
+from ananse import 
 
 class Interaction(object):
     def __init__(self, genome="hg19", gene_bed=None, pfmfile=None):
@@ -42,6 +42,39 @@ class Interaction(object):
         else:
             if gene_bed is None:
                 raise TypeError("Please provide a gene bed file with -a argument.")
+
+    def clear_peak(self, peak_bed, filter_promoter=True, up=2000, down=2000):
+        """
+        Filter the enhancer peaks in promoter range.
+        """
+        # set all seq to 200bp
+        peaks = BedTool(peak_bed)
+        peaks = self.set_peak_size(peaks, 200)
+
+        # remove all peaks that overlap with TSS(up2000 to down2000).
+        b = BedTool(self.gene_bed)
+        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(  # noqa: E741
+            l=up, r=down, g=self.gsize, s=True  # noqa: E741
+        )
+        vals = []
+        # for f in b.intersect(peaks, wo=True, nonamecheck=True):
+        # Bedtools don't have nonamecheck option now?
+        for f in b.intersect(peaks, wo=True):
+            chrom = f[0]
+            peak_start, peak_end = int(f[13]), int(f[14])
+            vals.append(chrom + ":" + str(peak_start) + "-" + str(peak_end))
+        fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
+        with open(peak_bed) as pbed:
+            for line in pbed:
+                if filter_promoter:
+                    if (
+                        line.split()[0] + ":" + line.split()[1] + "-" + line.split()[2]
+                        not in vals
+                    ):
+                        fl2.write(line)
+                else:
+                    fl2.write(line)
+        return fl2.name
 
     def get_promoter_dataframe(self, peak_bed, up=2000, down=2000):
         # all overlap Enh-TSS(up8000 to down2000) pair
@@ -407,8 +440,11 @@ class Interaction(object):
         # binding="results/binding.predicted.h5"
 
         # b=self.interaction.Interaction(genome=self.genome, gene_bed= self.gene_bed, pfmfile=self.pfmfile)
-        prom = self.get_promoter_dataframe(peak_bed)
-        p = self.get_gene_dataframe(peak_bed)
+
+        filter_bed = self.clear_peak(peak_bed)
+
+        prom = self.get_promoter_dataframe(filter_bed)
+        p = self.get_gene_dataframe(filter_bed)
         weight = self.distance_weight()
 
         features = self.aggregate_binding(binding, prom, p, weight)
