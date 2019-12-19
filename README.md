@@ -73,7 +73,7 @@
   * Optional arguments
     
     * `-g, --genome`  
-      The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`.
+      The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`. The default setting is hg19.
     * `-a, --annotation`  
       The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
     * `-p, --motifs`  
