@@ -12,7 +12,7 @@ import os
 import ananse.network
 
 
-def run_network(args):
+def network(args):
     if not os.path.exists(args.fin_rpkm):
         print("File %s does not exist!" % args.fin_rpkm)
         sys.exit(1)

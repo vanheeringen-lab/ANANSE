@@ -20,7 +20,6 @@ if __name__ == "__main__":
     epilog = """
     commands:
         binding     infer TF binding sites in enhancer peaks
-        interaction link TF binding sites to genes
         network     built network for each sample
         influence   infer key TFs between two samples
 
@@ -251,7 +250,7 @@ if __name__ == "__main__":
     else:
         if len(sys.argv) == 2:
             print(
-                "\033[93mtype `grns {} -h` for more details\033[0m\n".format(
+                "\033[93mtype `ananse {} -h` for more details\033[0m\n".format(
                     sys.argv[-1]
                 )
             )
