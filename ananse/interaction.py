@@ -416,11 +416,15 @@ class Interaction(object):
         expression_file = self.get_expression(fin_expression, features)
         # factors_expression_file = self.get_factorExpression(fin_expression)
 
-        corr_file = self.get_correlation(corrfiles, features)
-
-        other = [
-            expression_file,
-            corr_file,
-        ]
+        if corrfiles is None:
+            other = [
+                expression_file,
+            ]
+        else:
+            corr_file = self.get_correlation(corrfiles, features)
+            other = [
+                expression_file,
+                corr_file,
+            ]
         # outfile = 'full_features.h5'
         self.join_features(features, other, outfile)
