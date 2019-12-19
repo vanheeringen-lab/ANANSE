@@ -1,8 +1,16 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2009-2019 Quan Xu <qxuchn@gmail.com>
+#
+# This module is free software. You can redistribute it and/or modify it under
+# the terms of the MIT License, see the file COPYING included with this
+# distribution.
+
+"""Built gene regulatory network"""
+
+# Python imports
 import math
-
 import warnings
-
-warnings.filterwarnings("ignore")
 from tempfile import NamedTemporaryFile
 
 import numpy as np
@@ -10,10 +18,14 @@ import pandas as pd
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
 import dask.dataframe as dd
+
 from pybedtools import BedTool
 from genomepy import Genome
 
 from ananse import mytmpdir
+
+warnings.filterwarnings("ignore")
+
 
 class Network(object):
     def __init__(self, genome="hg19", gene_bed=None, pfmfile=None):

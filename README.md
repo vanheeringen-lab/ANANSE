@@ -44,10 +44,6 @@
   * For most of the analyses it is beneficial to use as many threads as possible for the motif analysis. This is configured by the GimmeMotifs config file. If you haven't done so, run `gimme`, which will create a new GimmeMotifs config file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
 
 
-* ### **API documentation**
-
-  * The ***python API documentation*** of this package can be found [***here***](/docs/api.md).
-
 * ### **Usage**
   
   * **All the example dataset and result files are able to find at [***http://mbdata.science.ru.nl/qxu/ananse/ananse.html***](http://mbdata.science.ru.nl/qxu/ananse/ananse.html).**
@@ -157,6 +153,14 @@
     Plot influence. True or False, input should be either 'True' or 'False'. (Default setting: True)  
     * `-h, --help`  
     Show the help message and exit.
+
+
+* ### **API documentation**
+
+  * The ***python API documentation*** of this package can be found here:  
+    * [`Binding` class](/docs/api_binding.md).
+    * [`Network` class](/docs/api_network.md).
+    * [`Influence` class](/docs/api_influence.md).
 
 ---
 ## Help
