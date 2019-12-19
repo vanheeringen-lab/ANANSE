@@ -23,13 +23,25 @@ class Interaction(object):
         g = Genome(self.genome)
         self.gsize = g.props["sizes"]["sizes"]
 
-        if pfmfile is None:
-            pfmfile = "../data/gimme.vertebrate.v5.1.pfm"
         # Motif information file
-        self.motifs2factors = pfmfile.replace(".pfm", ".motif2factors.txt")
-        self.factortable = pfmfile.replace(".pfm", ".factortable.txt")
+        if pfmfile is None:
+            self.pfmfile = "../data/gimme.vertebrate.v5.1.pfm"
+        else:
+            self.pfmfile = pfmfile
 
-        self.gene_bed = gene_bed
+        self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
+        self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
+
+        # Gene information file
+        if self.genome == "hg38":
+            if gene_bed is None:
+                self.gene_bed = "../data/hg38_genes.bed"
+            else:
+                self.gene_bed = gene_bed
+            
+        else:
+            if gene_bed is None:
+                raise TypeError("Please provide a gene bed file with -a argument.")
 
     def get_promoter_dataframe(self, peak_bed, up=2000, down=2000):
         # all overlap Enh-TSS(up8000 to down2000) pair
