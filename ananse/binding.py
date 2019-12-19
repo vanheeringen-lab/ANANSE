@@ -58,10 +58,9 @@ class Binding(object):
             if gene_bed is None:
                 raise TypeError("Please provide a gene bed file with -a argument.")
 
+        # dream_model.txt is the logistic regression model.
         package_dir = os.path.dirname(ananse.__file__)
         self.model = os.path.join(package_dir, "db", "dream_model.txt")
-
-        # dream_model.txt is the logistic regression model.
 
     def set_peak_size(self, peaks, seqlen=200):
 
