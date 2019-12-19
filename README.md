@@ -157,7 +157,7 @@
 
 * ### **API documentation**
 
-  * The ***python API documentation*** of this package can be found here:  
+  * The ***python API documentation*** of this package can be found at here:  
     * [`Binding` class](/docs/api_binding.md).
     * [`Network` class](/docs/api_network.md).
     * [`Influence` class](/docs/api_influence.md).
