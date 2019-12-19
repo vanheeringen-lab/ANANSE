@@ -87,18 +87,18 @@
       Show the help message and exit.
 
   ---
-  > ### ***Built interaction network***
+  > ### ***Built GRN***
 
   * Example:
     ```
-    $ ananse interaction  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                          -r data/krt_enhancer.bed \
-                          -b results/binding.txt \
-                          -o results/full_features.txt \
-                          -a /data/hg38_genes.bed \
-                          -g hg38 \
-                          -c expressioncorrelation.txt \
-                          -p ../data/gimme.vertebrate.v5.1.pfm
+    $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
+                      -r data/krt_enhancer.bed \
+                      -b results/binding.txt \
+                      -o results/full_features.txt \
+                      -a /data/hg38_genes.bed \
+                      -g hg38 \
+                      -c expressioncorrelation.txt \
+                      -p ../data/gimme.vertebrate.v5.1.pfm
     ```
 
   * Required arguments:
@@ -125,26 +125,6 @@
       All gene correlation file, the human gene expression correlation can be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/data/expressioncorrelation.txt).
     * `-h, --help`  
       Show the help message and exit.
-  ---
-  > ### ***Built GRN***
-
-  * Example:
-    ```
-    $ ananse network  -f results/full_features.txt 
-                      -o results/full_network.txt
-    ```
-
-  * Required arguments:
-
-    * `-f, --interaction`  
-    The interaction network. It is the result from `Built interaction network` step. One of the example `interaction network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_features.txt).
-    * `-o, --output`  
-    The folder to save results, `-o` is the required arguments.  
-
-  * Optional arguments:
-
-    * `-h, --help`  
-    Show the help message and exit.
 
   ---
   > ### ***Infer influence score***
