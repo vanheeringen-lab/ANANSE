@@ -12,14 +12,11 @@ import os
 import ananse.network
 
 
-def run_network(args):
-    if not os.path.exists(args.fin_rpkm):
-        print("File %s does not exist!" % args.fin_rpkm)
+def network(args):
+
+    if not os.path.exists(args.features):
+        print("File %s does not exist!" % args.features)
         sys.exit(1)
 
-    b = ananse.network.Network(
-        genome=args.genome, gene_bed=args.annotation, pfmfile=args.pfmfile
-    )
-    b.run_network(
-        args.fin_rpkm, args.binding, args.fin_expression, args.corrfiles, args.outfile
-    )
+    b = ananse.network.Network()
+    b.run_network(args.features, args.outfile)
