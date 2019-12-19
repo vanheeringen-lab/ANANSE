@@ -43,12 +43,13 @@ class Binding(object):
         if pfmfile is None:
             print("xx")
             self.pfmfile = "../data/gimme.vertebrate.v5.1.pfm"
-            self.motifs2factors = pfmfile.replace(".pfm", ".motif2factors.txt")
-            self.factortable = pfmfile.replace(".pfm", ".factortable.txt")
+            # self.motifs2factors = pfmfile.replace(".pfm", ".motif2factors.txt")
+            # self.factortable = pfmfile.replace(".pfm", ".factortable.txt")
         else:
             self.pfmfile = pfmfile
-            self.motifs2factors = pfmfile.replace(".pfm", ".motif2factors.txt")
-            self.factortable = pfmfile.replace(".pfm", ".factortable.txt")
+
+        self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
+        self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
 
         self.gene_bed = gene_bed
 
