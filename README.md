@@ -170,7 +170,7 @@
   Reach out to me at one of the following places!
 
   - Website at <a href="https://github.com/vanheeringen-lab" target="_blank">`vanheeringen-lab`</a>
-  - Email to <a href="mailto:qxuchn@gmail.com" target="_blank">`Quan Xu`</a>
+  - Email to <a href="mailto:qxuchn@gmail.com" target="_blank">`Quan Xu`</a> or <a href="simon.vanheeringen@gmail.com" target="_blank">`Simon J. van Heeringen`</a>
 
 ---
 
