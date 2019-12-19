@@ -55,10 +55,8 @@ class Binding(object):
             else:
                 self.gene_bed = gene_bed
         else:
-            try:
-                self.gene_bed = gene_bed
-            except ValueError:
-                print("Please provide a gene bed file with -a argument.")
+            if gene_bed is None:
+                raise TypeError("Please provide a gene bed file with -a argument.")
 
         package_dir = os.path.dirname(ananse.__file__)
         self.model = os.path.join(package_dir, "db", "dream_model.txt")
