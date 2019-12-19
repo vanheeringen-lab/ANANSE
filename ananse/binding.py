@@ -41,6 +41,7 @@ class Binding(object):
 
         # Motif information file
         if pfmfile is None:
+            print("xx")
             self.pfmfile = "../data/gimme.vertebrate.v5.1.pfm"
             self.motifs2factors = pfmfile.replace(".pfm", ".motif2factors.txt")
             self.factortable = pfmfile.replace(".pfm", ".factortable.txt")
