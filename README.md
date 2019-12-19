@@ -110,14 +110,12 @@
       The folder to save results, `-o` is the required arguments. 
 
   * Optional arguments:
-    * `-p, --motifs`  
-      The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file. 
-    * `-e, --expression`  
-      The expression file of your interested cell type or tissue. It could have one or more gene expression file(s). In this file, the 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/KRT_rep1_TPM.txt) is an example of expression file.     
-    * `-a, --annotation`  
-      The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
     * `-g, --genome`  
       The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`.
+    * `-p, --motifs`  
+      The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file. 
+    * `-a, --annotation`  
+      The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
     * `-c, --corrfiles`  
       All gene correlation file, the human gene expression correlation can be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/data/expressioncorrelation.txt).
     * `-h, --help`  
@@ -130,13 +128,19 @@
     $ ananse network  -f results/full_features.txt 
                       -o results/full_network.txt
     ```
-  * All the optional arguments:
-    * `-h, --help`  
-    Show the help message and exit.
+
+  * Required arguments:
+
     * `-f, --interaction`  
     The interaction network. It is the result from `Built interaction network` step. One of the example `interaction network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_features.txt).
     * `-o, --output`  
     The folder to save results, `-o` is the required arguments.  
+
+  * Optional arguments:
+
+    * `-h, --help`  
+    Show the help message and exit.
+
   ---
   > ### ***Infer influence score***
 
@@ -148,22 +152,27 @@
                         -o results/FB2KRT.txt \
                         -p False
     ```
-  * All the optional arguments:
-    * `-h, --help`  
-      Show the help message and exit.
-    * `-b, --bnetwork`  
-    The network in first cell (optional). It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).  
+    
+  * Required arguments:
+  
     * `-a, --anetwork`  
     The network in second cell. It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).   
-    * `-e, --expression`  
-    The gene expression in first cell (optional). One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/FB_rep1_TPM.txt) is an example of expression file. 
     * `-d, --degenes`  
     The differential expression table between two cells. [***This***](/test/data/FB2KRT_degenes.csv) is an example of differential expression file.  
-    * `-p, --plot`  
-    Plot influence. True or False, input should be either 'True' or 'False'. (Default setting: True)  
-results/full_features.txt).
     * `-o, --output`  
     The folder to save results, `-o` is the required arguments.   
+
+  * Optional arguments:
+
+    * `-b, --bnetwork`  
+    The network in first cell (optional). It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).  
+    * `-e, --expression`  
+    The gene expression in first cell (optional). One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/FB_rep1_TPM.txt) is an example of expression file. 
+    * `-p, --plot`  
+    Plot influence. True or False, input should be either 'True' or 'False'. (Default setting: True)  
+    * `-h, --help`  
+    Show the help message and exit.
+
 ---
 ## Help
 
