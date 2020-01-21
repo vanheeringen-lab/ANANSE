@@ -140,7 +140,7 @@ if __name__ == "__main__":
         nargs="*",
     )
     p.add_argument(
-        "-c",
+        "-x",
         "--promoter",
         dest="promoter",
         help="Calculate promoter and expression network",
