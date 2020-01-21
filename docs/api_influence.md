@@ -1,11 +1,11 @@
-## Working with `Network` class
-The `Network` class include all functions used to infer cell type specific gene regulatory network.
+## Working with `Influence` class
+The `Influence` class include all functions used to infer TF influence score.
 
 ```python
 import pandas as pd
 import dask.dataframe as dd
 
-from ananse import network
+from ananse import influence
 ```
 
 ```python
@@ -17,10 +17,20 @@ pfmfile = "/data/gimme.vertebrate.v5.1.pfm"
 corrfiles = "expressioncorrelation.txt"
 ```
 
-A new `Network` object `net`
+G1 = read_network(Gbf, edges=edges)
+G2 = read_network(Gaf, edges=edges)
+self.G = difference(G2, G1)
+
+
+
+A new `Network` object `infl`
 ```python
-net=network.Network(genome="hg38", gene_bed= gene_bed, pfmfile=pfmfile)
+infl=influence.Influence(genome="hg38", gene_bed= gene_bed, pfmfile=pfmfile)
 ```
+
+
+
+
 
 Using `clear_peak()` function, we can filter the peaks in promoter ranges. 
 ```python
