@@ -197,7 +197,7 @@ def plot_influscore(infile, outfile):
     adjust_text(texts, arrowprops=dict(arrowstyle="-", color="black"))
     plt.xlabel("Log2 fold change of TF")
     plt.ylabel("Influence score")
-    plt.savefig(outfile, dpi=300)
+    plt.save(outfile, dpi=300)
 
 
 class Influence(object):
@@ -326,5 +326,5 @@ class Influence(object):
 
         if plot is True:
             plot_influscore(
-                self.outfile, ".".join(self.outfile.split(".")[:-1]) + ".jpg"
+                self.outfile, ".".join(self.outfile.split(".")[:-1]) + ".pdf"
             )
