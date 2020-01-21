@@ -10,7 +10,7 @@
 
 # Python imports
 from __future__ import print_function
-import sys
+import sys, os
 import warnings
 from tempfile import NamedTemporaryFile
 
@@ -275,6 +275,7 @@ class Influence(object):
 
         pool.close()
         print(influence_file.name)
+        os.system("cp influence_file.name ./")
         scores_df = pd.read_table(influence_file.name, index_col=0)
         scores_df["influenceScaled"] = minmax_scale(
             rankdata(scores_df["inflscore"], method="dense")
