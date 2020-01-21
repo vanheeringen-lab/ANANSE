@@ -229,7 +229,7 @@ class Influence(object):
 
     def run_influence_score(self, max_degree=3):
         pool = mp.Pool()
-
+        print(self.expression_change)
         jobs = []
         tfs = [node for node in self.G.nodes() if self.G.out_degree(node) > 0]
         detfs = [
@@ -275,10 +275,6 @@ class Influence(object):
 
         pool.close()
 
-        with open(influence_file.name) as ttt:
-            for i in ttt:
-                print(t)
-                
         scores_df = pd.read_table(influence_file.name, index_col=0)
         scores_df["influenceScaled"] = minmax_scale(
             rankdata(scores_df["inflscore"], method="dense")
