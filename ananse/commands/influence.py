@@ -13,9 +13,9 @@ import ananse.influence
 
 
 def influence(args):
-    if not os.path.exists(args.outfile):
-        print("File %s does not exist!" % args.outfile)
-        sys.exit(1)
+    # if not os.path.exists(args.outfile):
+    #     print("File %s does not exist!" % args.outfile)
+    #     sys.exit(1)
 
     a = ananse.influence.Influence(
         Gbf=args.Gbf,
