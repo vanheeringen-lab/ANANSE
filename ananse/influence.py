@@ -274,8 +274,11 @@ class Influence(object):
             )
 
         pool.close()
-        print(influence_file.name)
-        os.system("cp influence_file.name ./")
+
+        with open(influence_file.name) as ttt:
+            for i in ttt:
+                print(t)
+                
         scores_df = pd.read_table(influence_file.name, index_col=0)
         scores_df["influenceScaled"] = minmax_scale(
             rankdata(scores_df["inflscore"], method="dense")
