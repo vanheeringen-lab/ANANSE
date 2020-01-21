@@ -113,12 +113,12 @@ def influenceScore(node, G, max_degree=3, expression=None):
         # d = np.log(G.out_degree(path[-2]) + 1)
         # d = G.out_degree(path[-2])
         # expression score of the target
-        # g = expression["score"].get(target, 1)
-        g = expression["score"].get(target, 0)
+        g = expression["score"].get(target, 1)
+        # g = expression["score"].get(target, 0)
         # Weight is cumulative product of probabilities
         # weight is a list of all path node one by one weight
-        # weight = [1 - G[s][t]["weight"] for s, t in zip(path[:-1], path[1:])]
-        weight = [G[s][t]["weight"] for s, t in zip(path[:-1], path[1:])]
+        weight = [1 - G[s][t]["weight"] for s, t in zip(path[:-1], path[1:])]
+        # weight = [G[s][t]["weight"] for s, t in zip(path[:-1], path[1:])]
         # cumulative sum of weight
         weight = np.cumprod(weight)[-1]
         # score = g / len(path) / d * weight
