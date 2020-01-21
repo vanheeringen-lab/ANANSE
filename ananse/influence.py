@@ -310,8 +310,9 @@ class Influence(object):
                 "factor_fc",
             ]
         ]
+        print("!!!")
         scores_df1.to_csv(self.outfile, sep="\t")
-
+        print('###')
         if filter:
             scores_df2 = filter_TF(
                 network=self.G, scores_df=scores_df1, tpmfile=fin_expression
