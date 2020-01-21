@@ -18,7 +18,10 @@ def network(args):
         sys.exit(1)
 
     b = ananse.network.Network(
-        genome=args.genome, gene_bed=args.annotation, pfmfile=args.pfmfile
+        genome=args.genome, 
+        gene_bed=args.annotation, 
+        pfmfile=args.pfmfile,
+        promoter=args.promoter
     )
     b.run_network(
         args.fin_rpkm, args.binding, args.fin_expression, args.corrfiles, args.outfile

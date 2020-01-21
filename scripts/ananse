@@ -140,6 +140,13 @@ if __name__ == "__main__":
         nargs="*",
     )
     p.add_argument(
+        "-c",
+        "--promoter",
+        dest="promoter",
+        help="Calculate promoter and expression network",
+        default=False,
+    )
+    p.add_argument(
         "-a",
         "--annotation",
         dest="annotation",

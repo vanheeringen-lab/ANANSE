@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 
 class Network(object):
-    def __init__(self, genome="hg19", gene_bed=None, pfmfile=None):
+    def __init__(self, genome="hg19", gene_bed=None, pfmfile=None, promoter=False):
 
         self.genome = genome
         g = Genome(self.genome)
@@ -53,6 +53,8 @@ class Network(object):
         else:
             if gene_bed is None:
                 raise TypeError("Please provide a gene bed file with -a argument.")
+        
+        self.promoter = promoter
 
     def set_peak_size(self, peaks, seqlen=200):
 
@@ -522,6 +524,92 @@ class Network(object):
 
         bpd.to_csv(outfile, sep="\t")
 
+    def create_promoter_network(self, featurefile, outfile, impute=False):
+
+        # network = pd.read_hdf(featurefile, key="/features")
+        network = pd.read_csv(featurefile, sep="\t")
+
+        exclude_cols = [
+            "sum_weighted_logodds",
+            "enhancers",
+            "log_enhancers",
+            "sum_binding",
+            "sum_logodds",
+            "log_sum_binding",
+            "factorExpression",
+            "targetExpression",
+            "factor",
+            "gene",
+            "factor_expression",
+            "target_expression",
+            "factor_expression.scale",
+            "target_expression.scale",
+            # "factor_expression.rank.scale", "target_expression.rank.scale",
+            "corr_file1",
+            "correlation",
+            "correlationRank",
+            # "max_binding_in_promoter",
+            "max_binding",
+            "max_sum_dist_weight",
+            "sum_dist_weight"
+        ]
+        network = network[[c for c in network.columns if c not in exclude_cols]]
+        network = network.set_index("source_target")
+        network["binding"] = minmax_scale(
+            rankdata(network["sum_dist_weight"], method="dense")
+        )
+        network.drop(["sum_dist_weight"], axis=1, inplace=True)
+
+        bp = network.mean(axis=1)
+        bpd = pd.DataFrame(bp)
+        bpd = bpd.rename(columns={0: "binding"})
+        bpd["prob"] = minmax_scale(rankdata(bpd["binding"], method="dense"))
+
+        bpd.to_csv(outfile, sep="\t")
+
+    def create_expression_network(self, featurefile, outfile, impute=False):
+
+        # network = pd.read_hdf(featurefile, key="/features")
+        network = pd.read_csv(featurefile, sep="\t")
+
+        exclude_cols = [
+            "sum_weighted_logodds",
+            "enhancers",
+            "log_enhancers",
+            "sum_binding",
+            "sum_logodds",
+            "log_sum_binding",
+            "factorExpression",
+            "targetExpression",
+            "factor",
+            "gene",
+            "factor_expression",
+            "target_expression",
+            "factor_expression.scale",
+            "target_expression.scale",
+            # "factor_expression.rank.scale", "target_expression.rank.scale",
+            "corr_file1",
+            "correlation",
+            "correlationRank",
+            "max_binding_in_promoter",
+            "max_binding",
+            "max_sum_dist_weight",
+            "sum_dist_weight"
+        ]
+        network = network[[c for c in network.columns if c not in exclude_cols]]
+        network = network.set_index("source_target")
+        network["binding"] = minmax_scale(
+            rankdata(network["sum_dist_weight"], method="dense")
+        )
+        network.drop(["sum_dist_weight"], axis=1, inplace=True)
+
+        bp = network.mean(axis=1)
+        bpd = pd.DataFrame(bp)
+        bpd = bpd.rename(columns={0: "binding"})
+        bpd["prob"] = minmax_scale(rankdata(bpd["binding"], method="dense"))
+
+        bpd.to_csv(outfile, sep="\t")
+
     def run_network(self, peak_bed, binding, fin_expression, corrfiles, outfile):
         # gene_bed="/home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed"
         # peak_bed="data/krt_enhancer.bed"
@@ -555,3 +643,6 @@ class Network(object):
         featurefile = self.join_features(features, other)
 
         self.create_network(featurefile, outfile)
+        if self.promoter:
+            self.create_promoter_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter."+outfile.split(".")[-1])
+            self.create_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_expression."+outfile.split(".")[-1])
