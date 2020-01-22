@@ -216,10 +216,10 @@ class Influence(object):
             G1 = read_network(Gbf, edges=edges)
             G2 = read_network(Gaf, edges=edges)
             self.G = difference(G2, G1)
-            
-        with open(self.outfile, ".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt") as diffnet:
-            for (u, v, d) in G.edges(data=True):
-                diffnet.write(u +"\t"+ v + "\t"+ d[0]+"\n")
+
+        # with open(self.outfile, ".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt") as diffnet:
+        #     for (u, v, d) in G.edges(data=True):
+        #         diffnet.write(u +"\t"+ v + "\t"+ d[0]+"\n")
 
 
         # Load expression file
@@ -330,6 +330,8 @@ class Influence(object):
         influence_file = self.run_influence_score()
         self.rank_TF(influence_file, filter=None, fin_expression=None)
 
+        self.save_reg_network(self.outfile, ".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt")
+        
         if plot is True:
             plot_influscore(
                 self.outfile, ".".join(self.outfile.split(".")[:-1]) + ".pdf"
