@@ -86,8 +86,8 @@ def read_expression(fname):
             #     padj=1e-300
             # gscore =foldchange * (-np.log10(padj))
             if padj < 0.05:
-                gscore = np.log2(foldchange+1)
-                # gscore = foldchange
+                # gscore = np.log2(foldchange+1)
+                gscore = foldchange
             else:
                 gscore = 0
             expression_change["score"][gene] = gscore
