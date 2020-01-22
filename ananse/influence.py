@@ -66,7 +66,7 @@ def difference(S, R):
             DIF.add_edge(u, v, weight=d["weight"], n=1)
         elif S.edges[u, v]["weight"] - R.edges[u, v]["weight"] >= 0.3:
             DIF.add_edge(
-                u, v, weight=R.edges[u, v]["weight"] - R.edges[u, v]["weight"], n=1
+                u, v, weight=S.edges[u, v]["weight"] - R.edges[u, v]["weight"], n=1
             )
 
     return DIF
