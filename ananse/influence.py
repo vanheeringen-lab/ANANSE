@@ -216,6 +216,11 @@ class Influence(object):
             G1 = read_network(Gbf, edges=edges)
             G2 = read_network(Gaf, edges=edges)
             self.G = difference(G2, G1)
+            
+        with open(self.outfile, ".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt") as diffnet:
+            for (u, v, d) in G.edges(data=True):
+                diffnet.write(u +"\t"+ v + "\t"+ d[0]+"\n")
+
 
         # Load expression file
         self.expression_change = read_expression(expression)
