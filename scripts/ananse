@@ -235,7 +235,7 @@ if __name__ == "__main__":
         "--edges",
         dest="edges",
         help="Number of top edges used",
-        # metavar="FILE",
+        type=int,
     )
     p.add_argument(
         "-d", "--degenes", dest="expression", help="DE genes file", metavar="FILE",
