@@ -45,7 +45,7 @@ def read_network(fname, edges=100000):
         try:
             if len(vals[1]) > 1:
                 # weight = 1 - float(vals[1])
-                weight = float(vals[1][1])
+                weight = float(vals[1][2])
                 # if weight < 0 or weight > 1:
                 #    sys.stderr.write("expect weight between 0 and 1")
                 #    sys.exit(1)
