@@ -22,6 +22,6 @@ def influence(args):
         Gaf=args.Gaf,
         outfile=args.outfile,
         expression=args.expression,
-        edges=100000,
+        edges=args.edges,
     )
     a.run_influence(args.plot, args.fin_expression)
