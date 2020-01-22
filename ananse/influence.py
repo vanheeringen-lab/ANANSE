@@ -330,8 +330,8 @@ class Influence(object):
         influence_file = self.run_influence_score()
         self.rank_TF(influence_file, filter=None, fin_expression=None)
 
-        self.save_reg_network(self.outfile, ".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt")
-        
+        self.save_reg_network(".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt")
+
         if plot is True:
             plot_influscore(
                 self.outfile, ".".join(self.outfile.split(".")[:-1]) + ".pdf"
