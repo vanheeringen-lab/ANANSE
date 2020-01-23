@@ -556,9 +556,9 @@ class Network(object):
         network = network[[c for c in network.columns if c not in exclude_cols]]
         network = network.set_index("source_target")
         network["binding"] = minmax_scale(
-            rankdata(network["sum_dist_weight"], method="dense")
+            rankdata(network["max_binding_in_promoter"], method="dense")
         )
-        network.drop(["sum_dist_weight"], axis=1, inplace=True)
+        network.drop(["max_binding_in_promoter"], axis=1, inplace=True)
 
         bp = network.mean(axis=1)
         bpd = pd.DataFrame(bp)
@@ -598,10 +598,10 @@ class Network(object):
         ]
         network = network[[c for c in network.columns if c not in exclude_cols]]
         network = network.set_index("source_target")
-        network["binding"] = minmax_scale(
-            rankdata(network["sum_dist_weight"], method="dense")
-        )
-        network.drop(["sum_dist_weight"], axis=1, inplace=True)
+        # network["binding"] = minmax_scale(
+        #     rankdata(network["sum_dist_weight"], method="dense")
+        # )
+        # network.drop(["sum_dist_weight"], axis=1, inplace=True)
 
         bp = network.mean(axis=1)
         bpd = pd.DataFrame(bp)
