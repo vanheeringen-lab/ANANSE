@@ -218,11 +218,6 @@ class Influence(object):
             G2 = read_network(Gaf, edges=edges)
             self.G = difference(G2, G1)
 
-        # with open(self.outfile, ".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt") as diffnet:
-        #     for (u, v, d) in G.edges(data=True):
-        #         diffnet.write(u +"\t"+ v + "\t"+ d[0]+"\n")
-
-
         # Load expression file
         self.expression_change = read_expression(expression)
 
@@ -252,7 +247,9 @@ class Influence(object):
             )
 
         # Get results and write to file
-        influence_file = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
+        # influence_file = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
+        influence_file = open(self.outfile,"w")
+
         influence_file.write(
             "factor\tdirectTargets\ttotalTargets\tinflscore\tGscore\tfactor_fc\tpval\ttarget_fc\n"
         )
@@ -288,7 +285,8 @@ class Influence(object):
         scores_df.sort_values("influenceScaled", inplace=True, ascending=False)
         # scores_df.to_csv(influence_file.name, sep='\t')
 
-        return influence_file.name
+        # return influence_file.name
+        return self.outfile
 
     def rank_TF(self, influence_file, filter=None, fin_expression=None):
 

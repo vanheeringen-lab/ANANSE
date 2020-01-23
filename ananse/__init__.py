@@ -7,7 +7,7 @@ import logging
 
 def mytmpdir():
     if not hasattr(mytmpdir, "dir") or not mytmpdir.dir:
-        mytmpdir.dir = mkdtemp(prefix="grns.{0}.".format(getpid()))
+        mytmpdir.dir = mkdtemp(prefix="ananse.{0}.".format(getpid()))
         atexit.register(shutil.rmtree, mytmpdir.dir)
     return mytmpdir.dir
 
