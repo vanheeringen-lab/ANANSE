@@ -18,8 +18,8 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import multiprocessing as mp
-from scipy.stats import rankdata, mannwhitneyu
 from sklearn.preprocessing import minmax_scale
+from scipy.stats import rankdata, mannwhitneyu
 from adjustText import adjust_text
 import matplotlib.pyplot as plt
 import seaborn as sns
