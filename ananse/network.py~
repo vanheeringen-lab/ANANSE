@@ -544,7 +544,7 @@ class Network(object):
             "target_expression",
             "factor_expression.scale",
             "target_expression.scale",
-            "factor_expression.rank.scale", "target_expression.rank.scale",
+            # "factor_expression.rank.scale", "target_expression.rank.scale",
             "corr_file1",
             "correlation",
             "correlationRank",
