@@ -83,14 +83,14 @@ def read_expression(fname):
             foldchange = abs(float(line.split("\t")[1]))
             realFC = float(line.split("\t")[1])
             padj = float(line.split("\t")[2])
-            # if padj==0:
-            #     padj=1e-300
-            # gscore =foldchange * (-np.log10(padj))
-            if padj < 0.05:
-                # gscore = np.log2(foldchange+1)
-                gscore = foldchange
-            else:
-                gscore = 0
+            if padj==0:
+                padj=1e-300
+            gscore =foldchange * (-np.log10(padj))
+            # if padj < 0.05:
+            #     # gscore = np.log2(foldchange+1)
+            #     gscore = foldchange
+            # else:
+            #     gscore = 0
             expression_change["score"][gene] = gscore
             expression_change["fc"][gene] = foldchange
             expression_change["realfc"][gene] = realFC
