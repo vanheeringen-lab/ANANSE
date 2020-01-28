@@ -47,11 +47,13 @@ class Network(object):
         if self.genome == "hg38":
             if gene_bed is None:
                 self.gene_bed = "../data/hg38_genes.bed"
-            elif self.genome == "hg19":
-                self.gene_bed = "../data/hg19_genes.bed"
             else:
                 self.gene_bed = gene_bed
-            
+        elif self.genome == "hg19":
+            if gene_bed is None:
+                self.gene_bed = "../data/hg19_genes.bed"
+            else:
+                self.gene_bed = gene_bed            
         else:
             if gene_bed is None:
                 raise TypeError("Please provide a gene bed file with -a argument.")
