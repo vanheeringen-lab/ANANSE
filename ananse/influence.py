@@ -10,16 +10,15 @@
 
 # Python imports
 from __future__ import print_function
-import sys, os
-from sklearn.preprocessing import minmax_scale
-
+import sys
+import os
 import warnings
-from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pandas as pd
 import networkx as nx
 import multiprocessing as mp
+from sklearn.preprocessing import minmax_scale
 from scipy.stats import rankdata, mannwhitneyu
 from adjustText import adjust_text
 import matplotlib.pyplot as plt
@@ -32,6 +31,7 @@ warnings.filterwarnings("ignore")
 
 def read_network(fname, edges=100000):
     """Read network file and return networkx DiGraph."""
+
     G = nx.DiGraph()
 
     rnet = pd.read_csv(fname, sep="\t")
@@ -60,6 +60,7 @@ def read_network(fname, edges=100000):
 
 
 def difference(S, R):
+    """Calculate the network different between two cell types."""
     DIF = nx.create_empty_copy(R)
     for (u, v, d) in S.edges(data=True):
 
@@ -75,8 +76,10 @@ def difference(S, R):
 
 def read_expression(fname):
     """Read kallisto output, return dictionary with abs fold change."""
+
     # Expression change
     expression_change = {"score": {}, "fc": {}, "realfc": {}}
+
     for line in open(fname):
         if not line.startswith("resid"):
             gene = line.split("\t")[0].strip().upper()
@@ -94,58 +97,68 @@ def read_expression(fname):
             expression_change["score"][gene] = gscore
             expression_change["fc"][gene] = foldchange
             expression_change["realfc"][gene] = realFC
+
     return expression_change
 
 
-def influenceScore(node, G, max_degree=3, expression=None):
+def targetScore(node, G, max_degree=3, expression=None):
     """Calculate the influence score."""
+
     if expression is None:
         expression = {"score": {}, "fc": {}}
+
     total_score = 0
+
     # get all targets up to max_degree degree
     lengths, paths = nx.single_source_dijkstra(G, node, weight="n")
     targets = [t for t in lengths if 0 < lengths[t] <= max_degree]
+
     # get shortest paths based on edge weight
     lengths, paths = nx.single_source_dijkstra(G, node, weight="weight")
+
     # calculate influence score
     for target in targets:
         path = paths[target]
         # outdegree of parent node of the target
-        # d = np.log(G.out_degree(path[-2]) + 1)
+        d = np.log(G.out_degree(path[-2]) + 1)
         # d = G.out_degree(path[-2])
+
+        # the level (or the number of steps) that gene is away from transcription factor
+        l = len(path) 
+        
         # expression score of the target
-        # g = expression["score"].get(target, 1)
         g = expression["score"].get(target, 0)
-        # Weight is cumulative product of probabilities
-        # weight is a list of all path node one by one weight
-        # weight = [1 - G[s][t]["weight"] for s, t in zip(path[:-1], path[1:])]
+        
+        # weight is cumulative product of probabilities
         weight = [G[s][t]["weight"] for s, t in zip(path[:-1], path[1:])]
+
         # cumulative sum of weight
         weight = np.cumprod(weight)[-1]
+
         # score = g / len(path) / d * weight
-        score = g / len(path) * weight
+        score = g / l * weight
         total_score += score
+
     # Get Mann-Whitney U p-value of direct targets vs. non-direct targets
     direct_targets = [n for n in G[node] if n in expression["fc"]]
-    non_direct_targets = [
-        n for n in list(G.nodes) if n in expression["fc"] and n not in direct_targets
-    ]
+    non_direct_targets = [n for n in list(G.nodes) if n in expression["fc"] and n not in direct_targets]
+
     target_fc = [expression["fc"][t] for t in direct_targets]
     non_target_fc = [expression["fc"][t] for t in non_direct_targets]
+
     pval = mannwhitneyu(target_fc, non_target_fc)[1]
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
-    return (
-        node,
-        total_score,
-        G.out_degree(node),
-        len(targets),
-        expression["fc"].get(node, 0),
-        pval,
-        target_fc_diff,
-    )
+
+    # factor, targetScore, directTargets, totalTargets, Gscore, pval, target_fc
+    return (node, total_score, G.out_degree(node), len(targets), expression["fc"].get(node, 0), pval, target_fc_diff)
 
 
 def filter_TF(scores_df, network=None, tpmfile=None, tpm=20, overlap=0.98):
+    """Filter TFs:
+        1) it have high expression in origin cell type;
+        2) 98% of its target genes are also regulated by previous TFs. 
+    """
+
     tpmscore = {}
     with open(tpmfile) as tpf:
         next(tpf)
@@ -177,6 +190,8 @@ def filter_TF(scores_df, network=None, tpmfile=None, tpm=20, overlap=0.98):
 
 
 def plot_influscore(infile, outfile):
+    """Plot TF influence score to expression."""
+
     mogrify = pd.read_table(infile, index_col="factor")
     mogrify = mogrify.dropna()
     factors = list(mogrify.sort_values("sumScaled").tail(20).index)
@@ -202,7 +217,7 @@ def plot_influscore(infile, outfile):
 
 
 class Influence(object):
-    def __init__(self, Gbf=None, Gaf=None, outfile=None, expression=None, edges=100000):
+    def __init__(self, Gbf=None, Gaf=None, outfile=None, expression=None, edges=100000, filter=False):
 
         # Load GRNs
         if Gbf is None and Gaf is not None:
@@ -223,116 +238,72 @@ class Influence(object):
 
         self.outfile = outfile
 
+        # Filter TFs
+        self.filter = filter
+
     def save_reg_network(self, filename):
+        """Save the network difference between two cell types to a file."""
+
         with open(filename, "w") as nw:
             for (u, v, d) in self.G.edges(data=True):
                 nw.write(u + "\t" + v + "\t" + str(d["weight"]) + "\n")
 
-    def run_influence_score(self, max_degree=3):
+    def run_target_score(self, max_degree=3):
+        """Run target score for all TFs."""
+        
         pool = mp.Pool()
-
         jobs = []
+
         tfs = [node for node in self.G.nodes() if self.G.out_degree(node) > 0]
-        detfs = [
-            g
-            for g in tfs
-            if g in self.expression_change["score"]
-            and self.expression_change["realfc"][g] < 0
-        ]
+        
+        # differentiatal expression TFs
+        detfs = [ g for g in tfs if g in self.expression_change["score"] and self.expression_change["realfc"][g]<0 ]
+        
         for tf in detfs:
-            jobs.append(
-                pool.apply_async(
-                    influenceScore, (tf, self.G, max_degree, self.expression_change)
-                )
-            )
+            jobs.append(pool.apply_async(targetScore, (tf, self.G, max_degree, self.expression_change)))
 
         # Get results and write to file
-        # influence_file = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
         influence_file = open(self.outfile,"w")
+        influence_file.write("factor\tdirectTargets\ttotalTargets\ttargetsore\tGscore\tfactor_fc\tpval\ttarget_fc\n")
 
-        influence_file.write(
-            "factor\tdirectTargets\ttotalTargets\tinflscore\tGscore\tfactor_fc\tpval\ttarget_fc\n"
-        )
         for j in jobs:
-            (
-                factor,
-                score,
-                direct_targets,
-                total_targets,
-                factor_fc,
-                pval,
-                target_fc,
-            ) = j.get()
-            print(
-                factor,
-                direct_targets,
-                total_targets,
-                score,
-                self.expression_change["score"][factor],
-                factor_fc,
-                pval,
-                target_fc,
-                file=influence_file,
-                sep="\t",
-            )
+            (factor, score, direct_targets, total_targets, factor_fc, pval, target_fc) = j.get()
+            print(factor, direct_targets, total_targets, score, self.expression_change["score"][factor],
+                    factor_fc, pval, target_fc, file=influence_file, sep="\t")
 
         pool.close()
-
         influence_file.close()
-        scores_df = pd.read_table(self.outfile, index_col=0)
-        scores_df["influenceScaled"] = minmax_scale(
-            rankdata(scores_df["inflscore"], method="dense")
-        )
-        scores_df.sort_values("influenceScaled", inplace=True, ascending=False)
-        # scores_df.to_csv(influence_file.name, sep='\t')
 
-        # return influence_file.name
+        scores_df = pd.read_table(self.outfile, index_col=0)
+        scores_df["targetScaled"] = minmax_scale(rankdata(scores_df["targetsore"], method="dense"))
+        scores_df.sort_values("targetScaled", inplace=True, ascending=False)
+
         return self.outfile
 
-    def rank_TF(self, influence_file, filter=None, fin_expression=None):
+    def run_influence_score(self, influence_file, filter=None, fin_expression=None):
+        """Calculate influence score from target score and gscore"""
 
-        scores_df1 = pd.read_table(influence_file, index_col=0)
-        scores_df1["influenceScaled"] = minmax_scale(
-            rankdata(scores_df1["inflscore"], method="dense")
-        )
-        scores_df1["GscoreScaled"] = minmax_scale(
-            rankdata(scores_df1["Gscore"], method="dense")
-        )
-        scores_df1["sumScaled"] = minmax_scale(
-            rankdata(
-                scores_df1.influenceScaled + scores_df1.GscoreScaled, method="dense"
-            )
-        )
+        scores_df = pd.read_table(influence_file, index_col=0)
 
-        scores_df1.sort_values("sumScaled", inplace=True, ascending=False)
-        scores_df1 = scores_df1[
-            [
-                "influenceScaled",
-                "GscoreScaled",
-                "sumScaled",
-                "directTargets",
-                "inflscore",
-                "factor_fc",
-            ]
-        ]
+        scores_df["targetScaled"] = minmax_scale(rankdata(scores_df["targetsore"], method="dense"))
+        scores_df["GscoreScaled"] = minmax_scale(rankdata(scores_df["Gscore"], method="dense"))
+        scores_df["sumScaled"] = minmax_scale(rankdata(scores_df.targetScaled + scores_df.GscoreScaled, method="dense"))
 
-        scores_df1.to_csv(self.outfile, sep="\t")
+        scores_df.sort_values("sumScaled", inplace=True, ascending=False)
+        scores_df = scores_df[["targetScaled", "GscoreScaled", "sumScaled", "directTargets", "targetsore", "factor_fc"]]
 
-        if filter:
-            scores_df2 = filter_TF(
-                network=self.G, scores_df=scores_df1, tpmfile=fin_expression
-            )
-            scores_df2.to_csv(
-                ".".join(self.outfile.split(".")[:-1]) + "_filtered.txt", sep="\t"
-            )
+        scores_df.to_csv(self.outfile, sep="\t")
+
+        if self.filter:
+            scores_df2 = filter_TF(network=self.G, scores_df=scores_df, tpmfile=fin_expression)
+            scores_df2.to_csv(".".join(self.outfile.split(".")[:-1]) + "_filtered.txt", sep="\t")
 
     def run_influence(self, plot=True, filter=None, fin_expression=None):
-        influence_file = self.run_influence_score()
-        self.rank_TF(influence_file, filter=None, fin_expression=None)
+
+        influence_file = self.run_target_score()
+        self.run_influence_score(influence_file, filter=None, fin_expression=None)
 
         self.save_reg_network(".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt")
 
         if plot is True:
-            plot_influscore(
-                self.outfile, ".".join(self.outfile.split(".")[:-1]) + ".pdf"
-            )
+            plot_influscore(self.outfile, ".".join(self.outfile.split(".")[:-1]) + ".pdf")
