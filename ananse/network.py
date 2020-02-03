@@ -57,6 +57,8 @@ class Network(object):
         else:
             if gene_bed is None:
                 raise TypeError("Please provide a gene bed file with -a argument.")
+            else:
+                self.gene_bed = gene_bed
         
         self.promoter = promoter
 
@@ -690,6 +692,7 @@ class Network(object):
         featurefile = self.join_features(features, other)
 
         self.create_network(featurefile, outfile)
+
         if self.promoter:
             self.create_promoter_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter."+outfile.split(".")[-1])
             self.create_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_expression."+outfile.split(".")[-1])

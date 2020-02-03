@@ -34,6 +34,7 @@ warnings.filterwarnings("ignore")
 
 class Binding(object):
     def __init__(self, genome="hg19", gene_bed=None, pfmfile=None):
+
         self.genome = genome
         g = Genome(self.genome)
         self.gsize = g.props["sizes"]["sizes"]
@@ -63,6 +64,8 @@ class Binding(object):
         else:
             if gene_bed is None:
                 raise TypeError("Please provide a gene bed file with -a argument.")
+            else:
+                self.gene_bed = gene_bed
 
         # dream_model.txt is the logistic regression model.
         package_dir = os.path.dirname(ananse.__file__)
@@ -153,6 +156,7 @@ class Binding(object):
         peakrpkmfile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
         cols = ["peak", "peakRPKM", "log10_peakRPKM", "peakRPKMScale", "peakRPKMRank"]
         peaks[cols].to_csv(peakrpkmfile, sep="\t", index=False)
+
         return peakrpkmfile.name
 
     def get_PWMScore(self, fin_regions_fa):
@@ -160,13 +164,13 @@ class Binding(object):
         Scan motif in every peak.
         """
         pfmscorefile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        seqs = [
-            s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=self.genome).ids
-        ]
+        seqs = [s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=self.genome).ids]
+
         s = Scanner()
         s.set_motifs(self.pfmfile)
         s.set_threshold(threshold=0.0)
         s.set_genome(self.genome)
+
         with open(self.pfmfile) as f:
             motifs = read_motifs(f)
 
@@ -193,12 +197,14 @@ class Binding(object):
             if chunk == 0:
                 write_header = True
             pfm_score[cols].to_csv(pfmscorefile, sep="\t", header=write_header)
+
         return pfmscorefile.name
 
     def get_binding_score(self, pfm, peak):
         """
         Infer TF binding score from motif z-score and peak intensity.
         """
+
         # Load model
         with open(self.model, "rb") as f:
             clf = pickle.load(f)
@@ -215,13 +221,17 @@ class Binding(object):
         print("Predicting TF binding sites")
         table["binding"] = clf.predict_proba(table[["zscore", "peakRPKMScale"]])[:, 1]
         print("Save results")
+
         return table
 
     def run_binding(self, peak_bed, outfile):
+
         filter_bed = self.clear_peak(peak_bed)
+
         print("Motif scanning")
         pfm_weight = self.get_PWMScore(filter_bed)
         pfm = dd.read_csv(pfm_weight, sep="\t")
+
         peak_weight = self.get_peakRPKM(filter_bed)
         peak = dd.read_csv(peak_weight, sep="\t")
         table = self.get_binding_score(pfm, peak)
