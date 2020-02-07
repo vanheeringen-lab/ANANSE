@@ -1,10 +1,5 @@
 # ANANSE: ANalysis Algorithm for Networks Specified by Enhancers
 
-
-[![bioconda-badge](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io)
-[![PyPI version](https://badge.fury.io/py/genomepy.svg)](https://badge.fury.io/py/ANANSE)
-
-
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
 
 ![](/pic/Fig2.jpg)
