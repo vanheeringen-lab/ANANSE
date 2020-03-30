@@ -62,72 +62,22 @@ class Network(object):
         
         self.promoter = promoter
 
-    def set_peak_size(self, peaks, seqlen=200):
 
-        gsizedic = {}
-        with open(self.gsize) as gsizefile:
-            for chrom in gsizefile:
-                gsizedic[chrom.split()[0]] = int(chrom.split()[1])
-
-        s = ""
-        for peak in peaks:
-
-            if peak.length < seqlen or peak.length > seqlen:
-                # get the summit and the flanking low and high sequences
-                summit = (peak.start + peak.end) // 2
-                start, end = summit - seqlen // 2, summit + seqlen // 2
-            else:
-                start, end = peak.start, peak.start
-
-            # remove seq which langer than chromosome length or smaller than 0
-            if start > 0 and end < gsizedic[peak.chrom]:
-                s += (
-                    str(peak.chrom)
-                    + "\t"
-                    + str(start)
-                    + "\t"
-                    + str(end)
-                    + "\t"
-                    + str(peak.fields[-1])
-                    + "\n"
-                )
-
-        npeaks = BedTool(s, from_string=True)
-
-        return npeaks
-
-    def clear_peak(self, peak_bed, filter_promoter=True, up=2000, down=2000):
+    def clear_peak(self, ddf):
         """
         Filter the enhancer peaks in promoter range.
         """
-        # set all seq to 200bp
-        peaks = BedTool(peak_bed)
-        peaks = self.set_peak_size(peaks, 200)
+        ddf = ddf.compute()
+        enhancerbed = pd.DataFrame(set(ddf.enhancer))
+        enhancerbed[["chr","site"]]=enhancerbed[0].str.split(":",expand=True)
+        enhancerbed[["start","end"]]=enhancerbed.site.str.split("-",expand=True)
+        enhancerbed.drop(columns=[0,"site"], inplace=True)
 
-        # remove all peaks that overlap with TSS(up2000 to down2000).
-        b = BedTool(self.gene_bed)
-        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(  # noqa: E741
-            l=up, r=down, g=self.gsize, s=True  # noqa: E741
-        )
-        vals = []
-        # for f in b.intersect(peaks, wo=True, nonamecheck=True):
-        # Bedtools don't have nonamecheck option now?
-        for f in b.intersect(peaks, wo=True):
-            chrom = f[0]
-            peak_start, peak_end = int(f[13]), int(f[14])
-            vals.append(chrom + ":" + str(peak_start) + "-" + str(peak_end))
-        fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        with open(peak_bed) as pbed:
-            for line in pbed:
-                if filter_promoter:
-                    if (
-                        line.split()[0] + ":" + line.split()[1] + "-" + line.split()[2]
-                        not in vals
-                    ):
-                        fl2.write(line)
-                else:
-                    fl2.write(line)
-        return fl2.name
+        enhancerfile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
+        enhancerbed.to_csv(enhancerfile, sep="\t", header=False, index=False)
+        # print(enhancerfile.name)
+        return enhancerfile.name
+
 
     def get_promoter_dataframe(self, peak_bed, up=2000, down=2000):
         # all overlap Enh-TSS(up8000 to down2000) pair
@@ -238,10 +188,10 @@ class Network(object):
         weight.to_csv(weightfile)
         return weightfile.name
 
-    def aggregate_binding(self, binding, prom, p, weight):
+    def aggregate_binding(self, ddf, prom, p, weight):
 
         # ddf = dd.read_hdf(binding, key="/binding")[["factor", "enhancer", "binding"]]
-        ddf = dd.read_csv(binding, sep="\t")[["factor", "enhancer", "binding"]]
+        # ddf = dd.read_csv(binding, sep="\t")[["factor", "enhancer", "binding"]]
 
         prom_table = ddf.merge(prom, left_on="enhancer", right_on="loc")
         prom_table = prom_table.groupby(["factor", "gene"])[["binding"]].max()
@@ -660,7 +610,7 @@ class Network(object):
 
         bpd.to_csv(outfile, sep="\t")
 
-    def run_network(self, peak_bed, binding, fin_expression, corrfiles, outfile):
+    def run_network(self, binding, fin_expression, corrfiles, outfile):
         # gene_bed="/home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed"
         # peak_bed="data/krt_enhancer.bed"
         # pfmfile="../data/gimme.vertebrate.v5.1.pfm"
@@ -668,13 +618,17 @@ class Network(object):
 
         # b=self.interaction.Interaction(genome=self.genome, gene_bed= self.gene_bed, pfmfile=self.pfmfile)
 
-        filter_bed = self.clear_peak(peak_bed)
+        ddf = dd.read_csv(binding, sep="\t")[["factor", "enhancer", "binding"]]
+
+        filter_bed = self.clear_peak(ddf)
 
         prom = self.get_promoter_dataframe(filter_bed)
         p = self.get_gene_dataframe(filter_bed)
         weight = self.distance_weight()
 
-        features = self.aggregate_binding(binding, prom, p, weight)
+
+
+        features = self.aggregate_binding(ddf, prom, p, weight)
 
         expression_file = self.get_expression(fin_expression, features)
         # factors_expression_file = self.get_factorExpression(fin_expression)

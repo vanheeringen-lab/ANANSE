@@ -98,23 +98,23 @@ if __name__ == "__main__":
     p.add_argument(
         "-p", "--motifs", dest="pfmfile", help="PWM", metavar="FILE", default=None
     )
-    p.add_argument(
-        "-r",
-        "--enhancers",
-        required=True,
-        dest="fin_rpkm",
-        help="BED file with RPKM on the 4th column",
-        metavar="FILE",
-    )
-    p.add_argument(
-        "-f",
-        "--filter_promoter",
-        dest="fpomoter",
-        help="Filter promoters, True or False, input should be either 'True' or 'False'.",
-        metavar="NAME",
-        type=ast.literal_eval,
-        default=True,
-    )
+    # p.add_argument(
+    #     "-r",
+    #     "--enhancers",
+    #     required=True,
+    #     dest="fin_rpkm",
+    #     help="BED file with RPKM on the 4th column",
+    #     metavar="FILE",
+    # )
+    # p.add_argument(
+    #     "-f",
+    #     "--filter_promoter",
+    #     dest="fpomoter",
+    #     help="Filter promoters, True or False, input should be either 'True' or 'False'.",
+    #     metavar="NAME",
+    #     type=ast.literal_eval,
+    #     default=True,
+    # )
     p.add_argument(
         "-e",
         "--expression",

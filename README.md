@@ -1,9 +1,9 @@
 # ANANSE: ANalysis Algorithm for Networks Specified by Enhancers
 
-
-[![bioconda-badge](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io)
-[![PyPI version](https://badge.fury.io/py/genomepy.svg)](https://badge.fury.io/py/ANANSE)
-
+[![Anaconda-Server Badge](https://anaconda.org/qxuchn/ananse/badges/version.svg)](https://anaconda.org/qxuchn/ananse)
+[![Anaconda-Server Badge](https://anaconda.org/qxuchn/ananse/badges/license.svg)](https://anaconda.org/qxuchn/ananse)
+[![Anaconda-Server Badge](https://anaconda.org/qxuchn/ananse/badges/installer/conda.svg)](https://conda.anaconda.org/qxuchn)
+[![Anaconda-Server Badge](https://anaconda.org/qxuchn/ananse/badges/downloads.svg)](https://anaconda.org/qxuchn/ananse)
 
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
 
@@ -100,8 +100,7 @@
   * Required arguments:
     * `-e, --expression`  
       The expression file of your interested cell type or tissue. It could have one or more gene expression file(s). In this file, the 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/KRT_rep1_TPM.txt) is an example of expression file.   
-    * `-r, --enhancers`  
-      The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](/test/data/krt_enhancer.bed) is an example enhancer BED file.
+
     * `-b, --binding`  
       The binding network from `Build binding network` step. One of the example `binding network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/binding.txt).  
     * `-o, --output`  

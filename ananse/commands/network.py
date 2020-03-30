@@ -13,9 +13,9 @@ import ananse.network
 
 
 def network(args):
-    if not os.path.exists(args.fin_rpkm):
-        print("File %s does not exist!" % args.fin_rpkm)
-        sys.exit(1)
+    # if not os.path.exists(args.fin_rpkm):
+    #     print("File %s does not exist!" % args.fin_rpkm)
+    #     sys.exit(1)
 
     b = ananse.network.Network(
         genome=args.genome, 
@@ -24,5 +24,5 @@ def network(args):
         promoter=args.promoter
     )
     b.run_network(
-        args.fin_rpkm, args.binding, args.fin_expression, args.corrfiles, args.outfile
+        args.binding, args.fin_expression, args.corrfiles, args.outfile
     )

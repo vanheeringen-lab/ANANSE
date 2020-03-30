@@ -56,8 +56,13 @@ setup(
         "configparser",
         "six",
         "future",
-        "genomepy",
+        "gimmemotifs >=0.14.0",
         "tqdm",
         "pillow",
+        "networkx",
+        "chest", 
+        "dask",
+        "pytables", 
+        "adjusttext"
     ],
 )
