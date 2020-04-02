@@ -15,34 +15,28 @@
 
 ## Quick start
 
-* ### **Installation**
+* ### **Easy installation**
+  * The most straightforward way to install ANANSE is via conda using the bioconda channel.
 
-  * The most straightforward way to install ANANSE is by using [bioconda](https://bioconda.github.io/). If you have not used bioconda before, first install [conda](https://docs.continuum.io/anaconda/) and then set up the necessary channels (in this order!). You only have to do this once.
+  * If you have not used bioconda before, first set up the necessary channels (in this order!). You only have to do this once.
 
     ```
     $ conda config --add channels defaults
     $ conda config --add channels bioconda
     $ conda config --add channels conda-forge
     ```
+  * You can now install ANANSE with one command:
+    ```  
 
-  * Now you can install ANANSE:
-
-    ```
-    # Install all dependencies, and Python 3 is the required.
-    $ conda create -n ananse python=3 gimmemotifs=0.14.0 networkx chest dask pytables adjusttext
+    # Create an environment called ananse with all dependencies
+    $ conda create -n ananse python=3 ananse
 
     # Activate the environment
-    $ conda activate ananse 
-
-    # Download the genome of interest.
-    $ genomepy install hg38 UCSC --annotation
-    
-    # Install ANANSE development version package from github
-    $ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@develop
+    $ conda activate ananse
     ```
-
+  * Python 3 is the required for ANANSE. Don't forget to activate the environment with conda activate gimme whenever you want to use ANANSE.
   * For most of the analyses it is beneficial to use as many threads as possible for the motif analysis. This is configured by the GimmeMotifs config file. If you haven't done so, run `gimme`, which will create a new GimmeMotifs config file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
-
+   
 
 * ### **Usage**
   
@@ -164,7 +158,7 @@
 ---
 ## Help
 
-  * The preferred way to get support is through the Github issues page
+  * The preferred way to get support is through the Github issues page.
 
 ---
 
@@ -179,7 +173,5 @@
 
 ## License
 
-  [![License](pic/_license-mit-blue.svg)](http://badges.mit-license.org)
-
-  - **[MIT license](http://opensource.org/licenses/mit-license.php)**
-  - Copyright 2019 © <a href="https://github.com/vanheeringen-lab" target="_blank">vanheeringen-lab</a>.
+  - **[MIT license](http://opensource.org/licenses/mit-license.php)** [![Anaconda-Server Badge](https://anaconda.org/qxuchn/ananse/badges/license.svg)](https://anaconda.org/qxuchn/ananse)
+  - Copyright 2020 © <a href="https://github.com/vanheeringen-lab" target="_blank">vanheeringen-lab</a>.
