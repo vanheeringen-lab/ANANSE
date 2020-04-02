@@ -26,8 +26,7 @@
     $ conda config --add channels conda-forge
     ```
   * You can now install ANANSE with one command:
-    ```  
-
+    ``` 
     # Create an environment called ananse with all dependencies
     $ conda create -n ananse python=3 ananse
 
