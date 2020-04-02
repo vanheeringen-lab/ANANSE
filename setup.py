@@ -56,7 +56,7 @@ setup(
         "configparser",
         "six",
         "future",
-        "gimmemotifs >=0.14.0",
+        "gimmemotifs >=0.14.4",
         "tqdm",
         "pillow",
         "networkx",
