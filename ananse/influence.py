@@ -13,6 +13,8 @@ from __future__ import print_function
 import sys
 import os
 import warnings
+from loguru import logger
+from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
@@ -219,15 +221,16 @@ def plot_influscore(infile, outfile):
 class Influence(object):
     def __init__(self, Gbf=None, Gaf=None, outfile=None, expression=None, edges=100000, filter=False):
 
+        logger.info("Read network")
         # Load GRNs
         if Gbf is None and Gaf is not None:
             self.G = read_network(Gaf, edges=edges)
-            print("You only previde one network file in second cell!")
+            logger.warning("You only previde one network file in second cell!")
         elif Gaf is None and Gbf is not None:
             self.G = read_network(Gbf, edges=edges)
-            print("You only previde one network file in first cell!")
+            logger.warning("You only previde one network file in first cell!")
         elif Gaf is None and Gbf is None:
-            print("You should previde at list one network file!")
+            logger.warning("You should previde at list one network file!")
         else:
             G1 = read_network(Gbf, edges=edges)
             G2 = read_network(Gaf, edges=edges)
@@ -266,10 +269,13 @@ class Influence(object):
         influence_file = open(self.outfile,"w")
         influence_file.write("factor\tdirectTargets\ttotalTargets\ttargetsore\tGscore\tfactor_fc\tpval\ttarget_fc\n")
 
-        for j in jobs:
-            (factor, score, direct_targets, total_targets, factor_fc, pval, target_fc) = j.get()
-            print(factor, direct_targets, total_targets, score, self.expression_change["score"][factor],
-                    factor_fc, pval, target_fc, file=influence_file, sep="\t")
+        with tqdm(total=len(jobs)) as pbar:
+            for j in jobs:
+                (factor, score, direct_targets, total_targets, factor_fc, pval, target_fc) = j.get()
+                print(factor, direct_targets, total_targets, score, self.expression_change["score"][factor],
+                        factor_fc, pval, target_fc, file=influence_file, sep="\t")
+                pbar.update(1)
+        print("\n")
 
         pool.close()
         influence_file.close()
@@ -300,10 +306,15 @@ class Influence(object):
 
     def run_influence(self, plot=True, filter=None, fin_expression=None):
 
+        logger.info("Run target score")
         influence_file = self.run_target_score()
+        
+        logger.info("Run influence score")
         self.run_influence_score(influence_file, filter=None, fin_expression=None)
 
+        logger.info("Save results")
         self.save_reg_network(".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt")
 
         if plot is True:
+            logger.info("Plot results")
             plot_influscore(self.outfile, ".".join(self.outfile.split(".")[:-1]) + ".pdf")

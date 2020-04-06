@@ -116,6 +116,13 @@ if __name__ == "__main__":
     #     default=True,
     # )
     p.add_argument(
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of core used",
+        type=int,
+    )
+    p.add_argument(
         "-e",
         "--expression",
         dest="fin_expression",
@@ -236,6 +243,7 @@ if __name__ == "__main__":
         dest="edges",
         help="Number of top edges used",
         type=int,
+        default=100000,
     )
     p.add_argument(
         "-d", "--degenes", dest="expression", help="DE genes file", metavar="FILE",

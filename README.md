@@ -1,9 +1,11 @@
 # ANANSE: ANalysis Algorithm for Networks Specified by Enhancers
 
-[![Anaconda-Server Badge](https://anaconda.org/qxuchn/ananse/badges/version.svg)](https://anaconda.org/qxuchn/ananse)
-[![Anaconda-Server Badge](https://anaconda.org/qxuchn/ananse/badges/license.svg)](https://anaconda.org/qxuchn/ananse)
-[![Anaconda-Server Badge](https://anaconda.org/qxuchn/ananse/badges/installer/conda.svg)](https://conda.anaconda.org/qxuchn)
-[![Anaconda-Server Badge](https://anaconda.org/qxuchn/ananse/badges/downloads.svg)](https://anaconda.org/qxuchn/ananse)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/installer/conda.svg)](https://conda.anaconda.org/bioconda)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/version.svg)](https://anaconda.org/bioconda/ananse)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/license.svg)](https://anaconda.org/bioconda/ananse)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/platforms.svg)](https://anaconda.org/bioconda/ananse)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/downloads.svg)](https://anaconda.org/bioconda/ananse)
+
 
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
 
