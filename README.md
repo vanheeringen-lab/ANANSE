@@ -2,8 +2,8 @@
 [![PyPI version](https://badge.fury.io/py/ananse.svg)](https://badge.fury.io/py/ananse)
 [![bioconda-badge](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/version.svg)](https://anaconda.org/bioconda/ananse)
+
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/license.svg)](https://anaconda.org/bioconda/ananse)
-[![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/installer/conda.svg)](https://conda.anaconda.org/bioconda)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/downloads.svg)](https://anaconda.org/bioconda/ananse)
 
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
