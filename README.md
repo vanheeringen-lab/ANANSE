@@ -62,7 +62,8 @@
   * Optional arguments:
     
     * `-g, --genome`  
-      The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`. The default setting is hg19.
+      The genome that is used for the gene annotation and the enhancer location. 
+      This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. The default setting is `hg19`.
     * `-a, --annotation`  
       The input 12 columns BED file with gene annotation in your genome version. [***This***](https://github.com/vanheeringen-lab/ANANSE/raw/master/data/hg38_genes.bed) is an example BED annotation file of human hg38.
     * `-p, --motifs`  
