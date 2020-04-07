@@ -1,7 +1,6 @@
 # ANANSE: ANalysis Algorithm for Networks Specified by Enhancers
 [![bioconda-badge](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/version.svg)](https://anaconda.org/bioconda/ananse)
-
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/license.svg)](https://anaconda.org/bioconda/ananse)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/downloads.svg)](https://anaconda.org/bioconda/ananse)
 
@@ -61,7 +60,7 @@
 
   * Optional arguments:
 
-    * `-n, --ncore`
+    * `-n, --ncore`  
       Specifies the number of threads to use during analysis.  
     * `-g, --genome`  
       The genome that is used for the gene annotation and the enhancer location. 
@@ -103,7 +102,7 @@
       The folder to save results, `-o` is the required arguments. 
 
   * Optional arguments:
-    * `-n, --ncore`
+    * `-n, --ncore`  
       Specifies the number of threads to use during analysis. 
     * `-g, --genome`  
       The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`.
@@ -142,9 +141,9 @@
 
   * Optional arguments:
 
-    * `-n, --ncore`
+    * `-n, --ncore`  
       Specifies the number of threads to use during analysis. 
-    * `-s, --edges`,
+    * `-s, --edges`  
       Specifics the number of top edges (interactions) used. 
     * `-b, --bnetwork`  
     The network in first cell (optional). It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).  
