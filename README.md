@@ -1,11 +1,9 @@
 # ANANSE: ANalysis Algorithm for Networks Specified by Enhancers
 
-[![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/installer/conda.svg)](https://conda.anaconda.org/bioconda)
+[![bioconda-badge](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/version.svg)](https://anaconda.org/bioconda/ananse)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/license.svg)](https://anaconda.org/bioconda/ananse)
-[![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/platforms.svg)](https://anaconda.org/bioconda/ananse)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/downloads.svg)](https://anaconda.org/bioconda/ananse)
-
 
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
 
@@ -56,7 +54,7 @@
 
   * Required arguments:
     * `-r, --enhancers`  
-      The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](/test/data/krt_enhancer.bed) is an example enhancer BED file.
+      The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](https://github.com/vanheeringen-lab/ANANSE/raw/master/test/data/krt_enhancer.bed) is an example enhancer BED file.
     * `-o, --output`  
       The name of the output file.
 
@@ -66,9 +64,10 @@
     * `-n, --ncore`
       Specifies the number of threads to use during analysis.  
     * `-g, --genome`  
-      The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`. The default setting is hg19.
+      The genome that is used for the gene annotation and the enhancer location. 
+      This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. The default setting is `hg19`.
     * `-a, --annotation`  
-      The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
+      The input 12 columns BED file with gene annotation in your genome version. [***This***](https://github.com/vanheeringen-lab/ANANSE/raw/master/data/hg38_genes.bed) is an example BED annotation file of human hg38.
     * `-p, --motifs`  
       The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.
     * `-f, --filter_promoter`  
