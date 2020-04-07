@@ -219,8 +219,9 @@ def plot_influscore(infile, outfile):
 
 
 class Influence(object):
-    def __init__(self, Gbf=None, Gaf=None, outfile=None, expression=None, edges=100000, filter=False):
+    def __init__(self, ncore=1, Gbf=None, Gaf=None, outfile=None, expression=None, edges=100000, filter=False):
 
+        self.ncore = ncore
         logger.info("Read network")
         # Load GRNs
         if Gbf is None and Gaf is not None:
@@ -254,7 +255,7 @@ class Influence(object):
     def run_target_score(self, max_degree=3):
         """Run target score for all TFs."""
         
-        pool = mp.Pool()
+        pool = mp.Pool(self.ncore)
         jobs = []
 
         tfs = [node for node in self.G.nodes() if self.G.out_degree(node) > 0]

@@ -35,8 +35,9 @@ warnings.filterwarnings("ignore")
 
 
 class Binding(object):
-    def __init__(self, genome="hg19", gene_bed=None, pfmfile=None):
+    def __init__(self, ncore=1, genome="hg19", gene_bed=None, pfmfile=None):
 
+        self.ncore = ncore
         self.genome = genome
         g = Genome(self.genome)
         self.gsize = g.props["sizes"]["sizes"]
@@ -168,7 +169,7 @@ class Binding(object):
         pfmscorefile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
         seqs = [s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=self.genome).ids]
 
-        s = Scanner()
+        s = Scanner(ncpus=self.ncore)
         s.set_motifs(self.pfmfile)
         s.set_threshold(threshold=0.0)
         s.set_genome(self.genome)
@@ -203,7 +204,6 @@ class Binding(object):
                     write_header = True
                 pfm_score[cols].to_csv(pfmscorefile, sep="\t", header=write_header)
                 # pbar.update(chunk + chunksize)
-        print("\n")
 
         return pfmscorefile.name
 

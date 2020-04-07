@@ -62,7 +62,9 @@
 
 
   * Optional arguments:
-    
+
+    * `-n, --ncore`
+      Specifies the number of threads to use during analysis.  
     * `-g, --genome`  
       The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`. The default setting is hg19.
     * `-a, --annotation`  
@@ -102,6 +104,8 @@
       The folder to save results, `-o` is the required arguments. 
 
   * Optional arguments:
+    * `-n, --ncore`
+      Specifies the number of threads to use during analysis. 
     * `-g, --genome`  
       The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`.
     * `-p, --motifs`  
@@ -139,6 +143,10 @@
 
   * Optional arguments:
 
+    * `-n, --ncore`
+      Specifies the number of threads to use during analysis. 
+    * `-s, --edges`,
+      Specifics the number of top edges (interactions) used. 
     * `-b, --bnetwork`  
     The network in first cell (optional). It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).  
     * `-e, --expression`  

@@ -47,6 +47,13 @@ if __name__ == "__main__":
         default=None,
     )
     p.add_argument(
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of core used",
+        type=int,
+    )
+    p.add_argument(
         "-r",
         "--enhancers",
         required=True,
@@ -223,6 +230,13 @@ if __name__ == "__main__":
         default=None,
     )
     p.add_argument(
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of core used",
+        type=int,
+    )
+    p.add_argument(
         "-a",
         "--anetwork",
         dest="Gaf",
@@ -238,7 +252,7 @@ if __name__ == "__main__":
         metavar="FILE",
     )
     p.add_argument(
-        "-n",
+        "-s",
         "--edges",
         dest="edges",
         help="Number of top edges used",
