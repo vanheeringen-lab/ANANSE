@@ -62,7 +62,7 @@ setup(
         "networkx",
         "chest", 
         "dask",
-        "pytables", 
+        "tables", 
         "adjusttext"
     ],
 )

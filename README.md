@@ -60,7 +60,9 @@
 
 
   * Optional arguments:
-    
+
+    * `-n, --ncore`
+      Specifies the number of threads to use during analysis.  
     * `-g, --genome`  
       The genome that is used for the gene annotation and the enhancer location. 
       This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. The default setting is `hg19`.
@@ -101,6 +103,8 @@
       The folder to save results, `-o` is the required arguments. 
 
   * Optional arguments:
+    * `-n, --ncore`
+      Specifies the number of threads to use during analysis. 
     * `-g, --genome`  
       The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`.
     * `-p, --motifs`  
@@ -138,6 +142,10 @@
 
   * Optional arguments:
 
+    * `-n, --ncore`
+      Specifies the number of threads to use during analysis. 
+    * `-s, --edges`,
+      Specifics the number of top edges (interactions) used. 
     * `-b, --bnetwork`  
     The network in first cell (optional). It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).  
     * `-e, --expression`  

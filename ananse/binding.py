@@ -11,8 +11,10 @@
 # Python imports
 import os
 import pickle
+from tqdm import tqdm
 import warnings
 from tempfile import NamedTemporaryFile
+from loguru import logger
 
 import numpy as np
 import pandas as pd
@@ -33,8 +35,9 @@ warnings.filterwarnings("ignore")
 
 
 class Binding(object):
-    def __init__(self, genome="hg19", gene_bed=None, pfmfile=None):
+    def __init__(self, ncore=1, genome="hg19", gene_bed=None, pfmfile=None):
 
+        self.ncore = ncore
         self.genome = genome
         g = Genome(self.genome)
         self.gsize = g.props["sizes"]["sizes"]
@@ -166,7 +169,7 @@ class Binding(object):
         pfmscorefile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
         seqs = [s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=self.genome).ids]
 
-        s = Scanner()
+        s = Scanner(ncpus=self.ncore)
         s.set_motifs(self.pfmfile)
         s.set_threshold(threshold=0.0)
         s.set_genome(self.genome)
@@ -174,29 +177,33 @@ class Binding(object):
         with open(self.pfmfile) as f:
             motifs = read_motifs(f)
 
-        chunksize = 10000
+        chunksize = 100
         # Run 10k peaks one time.
-        for chunk in range(0, len(seqs), chunksize):
-            chunk_seqs = seqs[chunk : chunk + chunksize]
-            print("\t", chunk, "-", chunk + chunksize, "enhancers")
-            pfm_score = []
-            it = s.best_score(chunk_seqs, zscore=True, gc=True)
-            # We are using GC-normalization for motif scan because many sequence is GC-enriched.
-            # GimmeMotif develop branch already include GC-normalization option now.
-            for seq, scores in zip(chunk_seqs, it):
-                for motif, score in zip(motifs, scores):
-                    pfm_score.append([motif.id, seq, score])
-            pfm_score = pd.DataFrame(pfm_score, columns=["motif", "enhancer", "zscore"])
-            pfm_score = pfm_score.set_index("motif")
 
-            print("\tCombine")
-            pfm_score["zscoreRank"] = minmax_scale(rankdata(pfm_score["zscore"]))
-            # When we built model, rank and minmax normalization was used.
-            cols = ["enhancer", "zscore", "zscoreRank"]
-            write_header = False
-            if chunk == 0:
-                write_header = True
-            pfm_score[cols].to_csv(pfmscorefile, sep="\t", header=write_header)
+        with tqdm(total=len(seqs)) as pbar:
+            for chunk in range(0, len(seqs), chunksize):
+                chunk_seqs = seqs[chunk : chunk + chunksize]
+                # print(chunk, "-", chunk + chunksize, "enhancers")
+                pfm_score = []
+                it = s.best_score(chunk_seqs, zscore=True, gc=True)
+                # We are using GC-normalization for motif scan because many sequence is GC-enriched.
+                # GimmeMotif develop branch already include GC-normalization option now.
+                for seq, scores in zip(chunk_seqs, it):
+                    for motif, score in zip(motifs, scores):
+                        pfm_score.append([motif.id, seq, score])
+                    pbar.update(1)
+                pfm_score = pd.DataFrame(pfm_score, columns=["motif", "enhancer", "zscore"])
+                pfm_score = pfm_score.set_index("motif")
+
+                # print("\tCombine")
+                pfm_score["zscoreRank"] = minmax_scale(rankdata(pfm_score["zscore"]))
+                # When we built model, rank and minmax normalization was used.
+                cols = ["enhancer", "zscore", "zscoreRank"]
+                write_header = False
+                if chunk == 0:
+                    write_header = True
+                pfm_score[cols].to_csv(pfmscorefile, sep="\t", header=write_header)
+                # pbar.update(chunk + chunksize)
 
         return pfmscorefile.name
 
@@ -218,21 +225,26 @@ class Binding(object):
         r = r.dropna().reset_index()
 
         table = r.compute()
-        print("Predicting TF binding sites")
+        # print("Predicting TF binding sites")
         table["binding"] = clf.predict_proba(table[["zscore", "peakRPKMScale"]])[:, 1]
-        print("Save results")
+        # print("Save results")
 
         return table
 
     def run_binding(self, peak_bed, outfile):
 
+        logger.info("Peak initializtion")
+
         filter_bed = self.clear_peak(peak_bed)
 
-        print("Motif scanning")
+        logger.info("Motif scan")
         pfm_weight = self.get_PWMScore(filter_bed)
         pfm = dd.read_csv(pfm_weight, sep="\t")
 
+        logger.info("Predicting TF binding sites")
         peak_weight = self.get_peakRPKM(filter_bed)
         peak = dd.read_csv(peak_weight, sep="\t")
         table = self.get_binding_score(pfm, peak)
+        
+        logger.info("Save results")
         table.to_csv(outfile, sep="\t", index=False)

@@ -18,6 +18,7 @@ def influence(args):
     #     sys.exit(1)
 
     a = ananse.influence.Influence(
+        ncore=args.ncore,
         Gbf=args.Gbf,
         Gaf=args.Gaf,
         outfile=args.outfile,
