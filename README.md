@@ -33,8 +33,7 @@
     $ conda activate ananse
     ```
   * Python 3 is the required for ANANSE. Don't forget to activate the environment with conda activate gimme whenever you want to use ANANSE.
-  * For most of the analyses it is beneficial to use as many threads as possible for the motif analysis. This is configured by the GimmeMotifs config file. If you haven't done so, run `gimme`, which will create a new GimmeMotifs config file `~/.config/gimmemotifs/gimmemotifs.cfg`, and change the `ncpus` parameter.
-   
+
 
 * ### **Usage**
   
