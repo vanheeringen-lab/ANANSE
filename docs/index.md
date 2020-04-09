@@ -34,13 +34,14 @@ ANANSE is free and open source research software. If you find it useful please c
     - [Command: ananse binding](command-line_reference/#motif-database)
     - [Command: ananse network](command-line_reference/#motif-database)
     - [Command: ananse influence](command-line_reference/#motif-database)
-* API documentation
-* Examples
-    - Working with motifs
-    - Motif scanning
-    - Finding de novo motifs
-    - Motif statistics
-    - Maelstrom
+* [API documentation](API_documentation.md)
+    - [Working with `binding` Class](API_documentation/#working-with-binding-class)
+    - [Working with `network` Class](API_documentation/#working-with-network-class)
+    - [Working with `influence` Class](API_documentation/#working-with-influence-class)
+* [Examples](examples.md)
+    - [Command: ananse binding](examples/#motif-database)
+    - [Command: ananse network](examples/#motif-database)
+    - [Command: ananse influence](examples/#motif-database)
 * FAQ
     - Sorry, motif prediction tool [X] is not supported
     - I get motifs that have differential scores in gimme maelstrom, however, the number is not different across clusters
