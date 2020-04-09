@@ -25,9 +25,12 @@ ANANSE is free and open source research software. If you find it useful please c
 - [Installation](installation.md)
     - [The easiest way to install](installation/#the-easiest-way-to-install)
     - [Alternative installation](installation/#alternative-installation)
-- [Prepare data](prepare_data.md)
-    - [Genome](prepare_data/#genome)
-    - [Motif database](prepare_data/#motif-database)
+- [Input data](input_data.md)
+    - [Genome](input_data/#genome)
+    - [Motif database](input_data/#motif-database)
+    - [Enhancer data](input_data/#enhancer-data)
+    - [Expression data](input_data/#enhancer-data)
+    - [Differential expression data](input_data/#enhancer-data)
 * [Command-line reference](command-line_reference.md)
     - List of tools
     - Input formats
