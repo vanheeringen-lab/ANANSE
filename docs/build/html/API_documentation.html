@@ -1,0 +1,296 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>API document &mdash; ananse 0.1.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ananse
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">API document</a><ul>
+<li><a class="reference internal" href="#working-with-binding-class">Working with <code class="docutils literal notranslate"><span class="pre">Binding</span></code> Class</a></li>
+<li><a class="reference internal" href="#working-with-network-class">Working with <code class="docutils literal notranslate"><span class="pre">Network</span></code> Class</a></li>
+<li><a class="reference internal" href="#working-with-influence-class">Working with <code class="docutils literal notranslate"><span class="pre">influence</span></code> Class</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ananse</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>API document</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/API_documentation.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="api-document">
+<h1>API document<a class="headerlink" href="#api-document" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="working-with-binding-class">
+<h2>Working with <code class="docutils literal notranslate"><span class="pre">Binding</span></code> Class<a class="headerlink" href="#working-with-binding-class" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Binding</span></code> class include all functions used to infer TF-binding site for all enhancer peaks.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">dask.dataframe</span> <span class="k">as</span> <span class="nn">dd</span>
+
+<span class="kn">from</span> <span class="nn">ananse</span> <span class="kn">import</span> <span class="n">binding</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">gene_bed</span> <span class="o">=</span> <span class="s2">&quot;/data/hg38_genes.bed&quot;</span>
+<span class="n">peak_bed</span> <span class="o">=</span> <span class="s2">&quot;data/krt_enhancer.bed&quot;</span>
+<span class="n">pfmfile</span> <span class="o">=</span> <span class="s2">&quot;/data/gimme.vertebrate.v5.1.pfm&quot;</span>
+</pre></div>
+</div>
+<p>A new <code class="docutils literal notranslate"><span class="pre">Binding</span></code> object <code class="docutils literal notranslate"><span class="pre">bid</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">bid</span><span class="o">=</span><span class="n">binding</span><span class="o">.</span><span class="n">Binding</span><span class="p">(</span><span class="n">genome</span><span class="o">=</span><span class="s2">&quot;hg38&quot;</span><span class="p">,</span> <span class="n">gene_bed</span><span class="o">=</span> <span class="n">gene_bed</span><span class="p">,</span> <span class="n">pfmfile</span><span class="o">=</span><span class="n">pfmfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Using <code class="docutils literal notranslate"><span class="pre">clear_peak()</span></code> function, we can filter the peaks in promoter ranges.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">filter_bed</span> <span class="o">=</span> <span class="n">bid</span><span class="o">.</span><span class="n">clear_peak</span><span class="p">(</span><span class="n">peak_bed</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">get_PWMScore()</span></code> function, calculate the motif z-score of all TFs in all peaks.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pfm_weight</span> <span class="o">=</span> <span class="n">bid</span><span class="o">.</span><span class="n">get_PWMScore</span><span class="p">(</span><span class="n">filter_bed</span><span class="p">)</span>
+<span class="n">pfm</span> <span class="o">=</span> <span class="n">dd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">pfm_weight</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Load enhancer peak intensity.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">peak_weight</span> <span class="o">=</span> <span class="n">bid</span><span class="o">.</span><span class="n">get_peakRPKM</span><span class="p">(</span><span class="n">filter_bed</span><span class="p">)</span>
+<span class="n">peak</span> <span class="o">=</span> <span class="n">dd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">peak_weight</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Infer the TF-binding score.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">table</span><span class="o">=</span><span class="n">bid</span><span class="o">.</span><span class="n">get_binding_score</span><span class="p">(</span><span class="n">pfm</span><span class="p">,</span> <span class="n">peak</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">peak_bed</span></code> file is the enhancer peak file, and <code class="docutils literal notranslate"><span class="pre">&quot;./&quot;</span></code> is the output dir. With <code class="docutils literal notranslate"><span class="pre">run_binding()</span></code> function, we can infer the binding sites of all TFs in <code class="docutils literal notranslate"><span class="pre">peak_bed</span></code> enhancer ranges.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">bid</span><span class="o">.</span><span class="n">run_binding</span><span class="p">(</span><span class="n">peak_bed</span><span class="p">,</span><span class="s2">&quot;./&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="working-with-network-class">
+<h2>Working with <code class="docutils literal notranslate"><span class="pre">Network</span></code> Class<a class="headerlink" href="#working-with-network-class" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Network</span></code> class include all functions used to infer cell type specific gene regulatory network.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">dask.dataframe</span> <span class="k">as</span> <span class="nn">dd</span>
+
+<span class="kn">from</span> <span class="nn">ananse</span> <span class="kn">import</span> <span class="n">network</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fin_expression</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;data/KRT_rep1_TPM.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;data/KRT_rep2_TPM.txt&quot;</span><span class="p">]</span>
+<span class="n">binding</span> <span class="o">=</span> <span class="s2">&quot;results/binding.txt&quot;</span>
+<span class="n">gene_bed</span> <span class="o">=</span> <span class="s2">&quot;/data/hg38_genes.bed&quot;</span>
+<span class="n">peak_bed</span> <span class="o">=</span> <span class="s2">&quot;data/krt_enhancer.bed&quot;</span>
+<span class="n">pfmfile</span> <span class="o">=</span> <span class="s2">&quot;/data/gimme.vertebrate.v5.1.pfm&quot;</span>
+<span class="n">corrfiles</span> <span class="o">=</span> <span class="s2">&quot;expressioncorrelation.txt&quot;</span>
+</pre></div>
+</div>
+<p>A new <code class="docutils literal notranslate"><span class="pre">Network</span></code> object <code class="docutils literal notranslate"><span class="pre">net</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">net</span><span class="o">=</span><span class="n">network</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">genome</span><span class="o">=</span><span class="s2">&quot;hg38&quot;</span><span class="p">,</span> <span class="n">gene_bed</span><span class="o">=</span> <span class="n">gene_bed</span><span class="p">,</span> <span class="n">pfmfile</span><span class="o">=</span><span class="n">pfmfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Using <code class="docutils literal notranslate"><span class="pre">clear_peak()</span></code> function, we can filter the peaks in promoter ranges.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">filter_bed</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">clear_peak</span><span class="p">(</span><span class="n">peak_bed</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Using <code class="docutils literal notranslate"><span class="pre">get_promoter_dataframe()</span></code> function to overlap the enhancer with promoter, and using <code class="docutils literal notranslate"><span class="pre">get_gene_dataframe()</span></code> function to overlap the enhancer with gene.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prom</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">get_promoter_dataframe</span><span class="p">(</span><span class="n">filter_bed</span><span class="p">)</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">get_gene_dataframe</span><span class="p">(</span><span class="n">filter_bed</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Using <code class="docutils literal notranslate"><span class="pre">weight()</span></code> function to establish weight function 100 kb up and downstream to the TSS.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">weight</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">distance_weight</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Using <code class="docutils literal notranslate"><span class="pre">aggregate_binding()</span></code> function to merge binding data with gene.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">features</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">aggregate_binding</span><span class="p">(</span><span class="n">binding</span><span class="p">,</span> <span class="n">prom</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">weight</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Using <code class="docutils literal notranslate"><span class="pre">aggregate_binding()</span></code> function to establish and merge expression data with features, and using <code class="docutils literal notranslate"><span class="pre">get_correlation()</span></code> function to establsih and merge expression data with features.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">expression_file</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">get_expression</span><span class="p">(</span><span class="n">fin_expression</span><span class="p">,</span> <span class="n">features</span><span class="p">)</span>
+<span class="n">corr_file</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">get_correlation</span><span class="p">(</span><span class="n">corrfiles</span><span class="p">,</span> <span class="n">features</span><span class="p">)</span>
+
+<span class="n">other</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">expression_file</span><span class="p">,</span>
+    <span class="n">corr_file</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">featurefile</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">join_features</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Using <code class="docutils literal notranslate"><span class="pre">create_network()</span></code> function to establish gene regulatory network.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">create_network</span><span class="p">(</span><span class="n">featurefile</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="working-with-influence-class">
+<h2>Working with <code class="docutils literal notranslate"><span class="pre">influence</span></code> Class<a class="headerlink" href="#working-with-influence-class" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Quan Xu
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
