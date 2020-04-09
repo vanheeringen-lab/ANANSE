@@ -23,24 +23,17 @@ ANANSE is free and open source research software. If you find it useful please c
 
 ### Full contents
 - [Installation](installation.md)
-    - The easiest way to install
-    - Alternative installation
+    - [The easiest way to install](installation.md/#the-easiest-way-to-install)
+    - [Alternative installation](installation.md/#alternative-installation)
 - [Prepare data](prepare_data.md)
-    - Genome
-    - Motif database
-- [Tutorials](tutorials.md)
-    - Find de novo motifs
-    - Scan for known motifs
-    - Find differential motifs
-    - Compare two sets with de novo motifs
-    - Motif enrichment statistics
-* Command-line reference
+    - [Genome](prepare_data.md/#genome)
+    - [Motif database](prepare_data.md/#motif-database)
+* [Command-line reference](command-line_reference.md)
     - List of tools
     - Input formats
-    - Command: gimme motifs
-    - Command: gimme maelstrom
-    - Command: gimme scan
-    - Command: gimme roc
+    - [Command: ananse binding](command-line_reference.md/#motif-database)
+    - [Command: ananse network](command-line_reference.md/#motif-database)
+    - [Command: ananse influence](command-line_reference.md/#motif-database)
 * API documentation
 * Examples
     - Working with motifs
@@ -48,10 +41,6 @@ ANANSE is free and open source research software. If you find it useful please c
     - Finding de novo motifs
     - Motif statistics
     - Maelstrom
-* Auto-generated
-    - The Motif class
-    - Prediction of de novo motifs
-    - Motif scanning
 * FAQ
     - Sorry, motif prediction tool [X] is not supported
     - I get motifs that have differential scores in gimme maelstrom, however, the number is not different across clusters
