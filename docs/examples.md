@@ -1,5 +1,9 @@
 ## Examples
 
+```
+git clone https://github.com/vanheeringen-lab/ANANSE.git
+cd ANANSE/test/
+```
 ### Build TF binding network
 
 ```
