@@ -33,6 +33,9 @@ ANANSE is free and open source research software. If you find it useful please c
     - Predict de novo motifs
     - Compare motifs between data sets
     - Create sequence logos
+- [Prepare data](prepare_data.md)
+    -Genome
+    -Motif database
 - [Tutorials](tutorials.md)
     - Find de novo motifs
     - Scan for known motifs
