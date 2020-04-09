@@ -5,6 +5,7 @@
 ### Build TF binding network
 
   * Example:
+  
     ```
     $ ananse binding  -r data/krt_enhancer.bed \
                       -o results/binding.txt \
@@ -42,6 +43,7 @@
 ### Built gene regulatory network
 
   * Example:
+
     ```
     $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                       -r data/krt_enhancer.bed \
@@ -82,7 +84,8 @@
 
 ### Infer TF influence score
 
-  * Example:
+  * Example:  
+
     ```
     $ ananse influence  -a results/full_network.txt \
                         -e data/FB_rep1_TPM.txt \
