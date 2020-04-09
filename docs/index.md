@@ -1,4 +1,4 @@
-## ANANSE: ANalysis Algorithm for Networks Specified by Enhancers
+## **ANANSE**: **AN**alysis **A**lgorithm for **N**etworks **S**pecified by **E**nhancers
 
 ### What is ANANSE Network?
 ANANSE is an analysis framework for key transcription factor prediction during cell fate switch written in Python. It contains command-line scripts to predict all TF binding network (`binding`), predict gene regulatory network (`network`) and infer influence score between two cell types(tissues) (`influence`). In addition, all this functionality is available from a Python API.
