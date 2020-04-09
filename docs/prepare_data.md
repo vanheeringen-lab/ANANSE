@@ -22,7 +22,7 @@ genomepy install GRCh38 NCBI -a
 ### Motif database
 By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: `gimme.vertebrate.v5.0`. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. Large-scale benchmarks using ChIP-seq peaks show that this database shows good performance and should be a good default choice. 
 
-If you would like to use your own motif database, please makesure your database include following two files:
+If you would like to use your own motif database, please makesure your database include following two files:  
 * Motif file
     ```
     #GM.5.0.Sox.0001	M1911_1.02;;M3916_1.02;;M5846_1.02;;M6471_1.02;;M6478_1.02;;MA0084.1_SRY;;MA1152.1_SOX15;;SOX12;;SOX12_1 Sox12_bulyk_sc09-primary;;SOX15_1 Sox15_bulyk_sc09-primary;;SOX18_1 Sox18_bulyk_sc09-primary;;SOX30;;SOX30_1 Sox30_bulyk_sc09-primary;;SOX7_1 Sox7_bulyk_sc09-primary;;SOX9_1 SOX9_transfac_M00410;;SOX9_3 SOX9_jolma_DBD_M136;;SRY;;SRY_3 SRY_jaspar_MA0084.1
@@ -47,7 +47,8 @@ If you would like to use your own motif database, please makesure your database 
     0.3621	0.1054	0.2208	0.3116
     0.5727	0.0104	0.1741	0.2428
     ```
-* Motif2factors file
+
+* Motif2factors file  
     ```
     Motif	Factor	Evidence	Curated
     GM.5.0.Sox.0001	SRY	JASPAR	Y
@@ -56,6 +57,7 @@ If you would like to use your own motif database, please makesure your database 
     GM.5.0.Sox.0001	SOX9	SELEX	Y
     GM.5.0.Sox.0001	Sox9	SELEX	N
     ```
+    
 The `motif` file should end with `.pfm`,  and `motif2factors` file should have the same name with `motif` file and end with `motif2factors.txt`.
 The defaule `gimme.vertebrate.v5.0` file can be found here: [gimme.vertebrate.v5.0.pfm](https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.pfm) and [gimme.vertebrate.v5.0.motif2factors.txt](https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.motif2factors.txt).
 

@@ -25,17 +25,9 @@ ANANSE is free and open source research software. If you find it useful please c
 - [Installation](installation.md)
     - The easiest way to install
     - Alternative installation
-    - Configuration
-    - Overview
-    - Motif databases
-    - Simple examples
-    - Install a genome
-    - Predict de novo motifs
-    - Compare motifs between data sets
-    - Create sequence logos
 - [Prepare data](prepare_data.md)
-    -Genome
-    -Motif database
+    - Genome
+    - Motif database
 - [Tutorials](tutorials.md)
     - Find de novo motifs
     - Scan for known motifs
