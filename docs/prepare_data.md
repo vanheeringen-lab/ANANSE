@@ -23,6 +23,7 @@ genomepy install GRCh38 NCBI -a
 By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: `gimme.vertebrate.v5.0`. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. Large-scale benchmarks using ChIP-seq peaks show that this database shows good performance and should be a good default choice. 
 
 If you would like to use your own motif database, please makesure your database include following two files:  
+
 * Motif file  
 
     ```

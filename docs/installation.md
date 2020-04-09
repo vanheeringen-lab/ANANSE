@@ -25,3 +25,6 @@ Or create a specific environment:
 ANANSE only supports Python 3. Don't forget to activate the environment with `source activate ananse` whenever you want to use ANANSE.
 
 Installation successful? Good. Have a look at the `configuration<configuration>` section.
+
+### Alternative installation
+
