@@ -1,6 +1,0 @@
-# mkdocs.yaml
-site_name: ANANSE
-pages:
-    - Home: index.md
-    - About: about.md
-theme: rtd-dropdown
