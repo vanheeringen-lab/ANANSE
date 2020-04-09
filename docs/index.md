@@ -23,17 +23,17 @@ ANANSE is free and open source research software. If you find it useful please c
 
 ### Full contents
 - [Installation](installation.md)
-    - [The easiest way to install](installation.md/#the-easiest-way-to-install)
-    - [Alternative installation](installation.md/#alternative-installation)
+    - [The easiest way to install](installation/#the-easiest-way-to-install)
+    - [Alternative installation](installation/#alternative-installation)
 - [Prepare data](prepare_data.md)
-    - [Genome](prepare_data.md/#genome)
-    - [Motif database](prepare_data.md/#motif-database)
+    - [Genome](prepare_data/#genome)
+    - [Motif database](prepare_data/#motif-database)
 * [Command-line reference](command-line_reference.md)
     - List of tools
     - Input formats
-    - [Command: ananse binding](command-line_reference.md/#motif-database)
-    - [Command: ananse network](command-line_reference.md/#motif-database)
-    - [Command: ananse influence](command-line_reference.md/#motif-database)
+    - [Command: ananse binding](command-line_reference/#motif-database)
+    - [Command: ananse network](command-line_reference/#motif-database)
+    - [Command: ananse influence](command-line_reference/#motif-database)
 * API documentation
 * Examples
     - Working with motifs
