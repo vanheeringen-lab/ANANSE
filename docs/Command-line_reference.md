@@ -2,7 +2,7 @@
 
 * **All the example dataset and result files are able to find at [***http://mbdata.science.ru.nl/qxu/ananse/ananse.html***](http://mbdata.science.ru.nl/qxu/ananse/ananse.html).**
 
-### ***Build TF binding network***
+### Build TF binding network
 
   * Example:
     ```
@@ -39,7 +39,7 @@
     * `-h, --help`  
       Show the help message and exit.
 
-### ***Built gene regulatory network***
+### Built gene regulatory network
 
   * Example:
     ```
@@ -80,7 +80,7 @@
       Show the help message and exit.
 
 
-### ***Infer TF influence score***
+### Infer TF influence score
 
   * Example:
     ```

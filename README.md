@@ -5,6 +5,9 @@
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/downloads.svg)](https://anaconda.org/bioconda/ananse)
 
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
+See [full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/) for detailed installation instructions and usage examples.  
+
+
 
 ![](/pic/Fig2.jpg)
 > (A), Illustration of all the data used to predict key TFs in cell conversion. Those data include the enhancer database from ATAC-seq, DNase-seq or p300 ChIP-seq, the motif score of all TFs and the gene expression data of each cell type from RNA-seq. (B), The predicted cell-type specific TF binding profiles from enhancer database and TF's motif score in each cell type. (C), The predicted cell-type specific GRN based on TF/Gene binding, TF/Gene expression and its' distance. (D), The GRN difference between two interested cell types. (E), The ranked influence score of all TFs calculated from GRN.
