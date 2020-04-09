@@ -4,3 +4,4 @@ pullgit.sh
 __pycache__
 *egg-info
 dist
+tomaster.sh
