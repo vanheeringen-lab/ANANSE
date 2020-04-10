@@ -6,7 +6,7 @@ cd ANANSE/test/
 ```
 ### Build TF binding network
 
-```
+``` bash
 $ ananse binding  -r data/krt_enhancer.bed \
                     -o results/binding.txt \
                     -a /data/hg38_genes.bed \
@@ -16,20 +16,17 @@ $ ananse binding  -r data/krt_enhancer.bed \
 
 ### Built gene regulatory network
 
-```
+``` bash
 $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                    -r data/krt_enhancer.bed \
                     -b results/binding.txt \
                     -o results/full_features.txt \
-                    -a /data/hg38_genes.bed \
                     -g hg38 \
-                    -c expressioncorrelation.txt \
-                    -p ../data/gimme.vertebrate.v5.1.pfm
+                    -a /data/hg38_genes.bed 
 ```
 
 ### Infer TF influence score
 
-```
+``` bash
 $ ananse influence  -a results/full_network.txt \
                     -e data/FB_rep1_TPM.txt \
                     -d data/FB2KRT_degenes.csv \

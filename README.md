@@ -3,6 +3,7 @@
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/version.svg)](https://anaconda.org/bioconda/ananse)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/license.svg)](https://anaconda.org/bioconda/ananse)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/downloads.svg)](https://anaconda.org/bioconda/ananse)
+[![Documentation Status](https://readthedocs.org/projects/anansepy/badge/?version=latest)](https://anansepy.readthedocs.io/en/latest/?badge=latest)
 
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
 See [full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/) for detailed installation instructions and usage examples.  
@@ -85,12 +86,10 @@ See [full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/) for 
   * Example:
     ```
     $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                      -r data/krt_enhancer.bed \
                       -b results/binding.txt \
                       -o results/full_features.txt \
                       -a /data/hg38_genes.bed \
                       -g hg38 \
-                      -c expressioncorrelation.txt \
                       -p ../data/gimme.vertebrate.v5.1.pfm
     ```
 
