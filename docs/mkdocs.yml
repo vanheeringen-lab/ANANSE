@@ -1,0 +1,9 @@
+site_name: My Docs
+theme: 
+    name: 'readthedocs'
+    # name: 'mkdocs'
+    # name: 'material'
+# markdown_extensions:
+#     - toc:
+#         permalink: true
+#     - pymdownx.arithmatex
