@@ -1,32 +1,38 @@
 site_name: ANANSE
+site_author: Quan Xu
+copyright: '2020, Quan Xu'
+
+extra:
+    version: 1.0
+
 # theme: alabaster
 theme: readthedocs
 
 nav:
   - Home: 'index.md'
   - Installation: 'installation.md'
-      - The easiest way to install: 'installation/#the-easiest-way-to-install'
-      - Alternative installation: 'installation/#alternative-installation'
+      - The easiest way to install: 'installation.md/#the-easiest-way-to-install'
+      - Alternative installation: 'installation.md/#alternative-installation'
   - Input data: 'input_data.md'
-      - Genome: 'input_data/#genome'
-      - Motif database: 'input_data/#motif-database'
-      - Enhancer data: 'input_data/#enhancer-data'
-      - Expression data: 'input_data/#enhancer-data'
-      - Differential expression data: 'input_data/#enhancer-data'
+      - Genome: 'input_data.md/#genome'
+      - Motif database: 'input_data.md/#motif-database'
+      - Enhancer data: 'input_data.md/#enhancer-data'
+      - Expression data: 'input_data.md/#enhancer-data'
+      - Differential expression data: 'input_data.md/#enhancer-data'
   - Command-line reference: 'command-line_reference.md'
       - List of tools
       - Input formats
-      - Command: ananse binding: 'command-line_reference/#motif-database'
-      - Command: ananse network: 'command-line_reference/#motif-database'
-      - Command: ananse influence: 'command-line_reference/#motif-database'
+      - Command: ananse binding: 'command-line_reference.md/#motif-database'
+      - Command: ananse network: 'command-line_reference.md/#motif-database'
+      - Command: ananse influence: 'command-line_reference.md/#motif-database'
   - API documentation: 'API_documentation.md'
-      - Working with `binding` Class: 'API_documentation/#working-with-binding-class'
-      - Working with `network` Class: 'API_documentation/#working-with-network-class'
-      - Working with `influence` Class: 'API_documentation/#working-with-influence-class'
+      - Working with `binding` Class: 'API_documentation.md/#working-with-binding-class'
+      - Working with `network` Class: 'API_documentation.md/#working-with-network-class'
+      - Working with `influence` Class: 'API_documentation.md/#working-with-influence-class'
   - Examples: 'examples.md'
-      - Command: ananse binding: 'examples/#motif-database'
-      - Command: ananse network: 'examples/#motif-database'
-      - Command: ananse influence: 'examples/#motif-database'
+      - Command: ananse binding: 'examples.md/#motif-database'
+      - Command: ananse network: 'examples.md/#motif-database'
+      - Command: ananse influence: 'examples.md/#motif-database'
   - FAQ
       - Sorry, motif prediction tool X] is not supported
       - I get motifs that have differential scores in gimme maelstrom, however, the number is not different across clusters
