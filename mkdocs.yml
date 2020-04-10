@@ -1,2 +1,3 @@
 site_name: ANANSE
-theme: readthedocs
+theme: alabaster
+# theme: readthedocs
