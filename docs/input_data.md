@@ -31,6 +31,17 @@ By default ANANSE uses a non-redundant, clustered database of known vertebrate m
     might work fine in your local environment but they might break once you deploy
     them to your production server.
 
+
+!!! note
+
+    MkDocs does not support YAML style deliminators (`---` or `...`) for
+    MultiMarkdown style meta-data. In fact, MkDocs relies on the the presence or
+    absence of the deliminators to determine whether YAML style meta-data or
+    MultiMarkdown style meta-data is being used. If the deliminators are
+    detected, but the content between the deliminators is not valid YAML
+    meta-data, MkDocs does not attempt to parse the content as MultiMarkdown
+    style meta-data.
+
 If you would like to use your own motif database, please makesure your database include following two files:  
 
 * Motif file
