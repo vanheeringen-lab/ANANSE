@@ -1,0 +1,187 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+    <title>Input data &mdash; My Docs</title>
+
+    <link rel="shortcut icon" href="../img/favicon.ico">
+    <link rel="stylesheet" href="../css/alabaster.css" type="text/css">
+    <link rel="stylesheet" href="../css/alabaster-overrides.css" type="text/css">
+
+    
+
+    
+      <script src="../search/main.js"></script>
+    
+
+    
+
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+    
+  
+</head>
+<body>
+
+  <div class="document">
+    <div class="documentwrapper">
+      <div class="bodywrapper">
+        <div class="body" role="main">
+          
+            <h2 id="prepare-data">Prepare data</h2>
+<h3 id="genome">Genome</h3>
+<p>When you need run <code>ANANSE</code> in your sample, genome file is necessary. We recommand you download your genome file with <a href="https://github.com/vanheeringen-lab/genomepy">genomepy</a>, which is a python package could install genome easily.</p>
+<p>In ANANSE, for each genome, we need:
+* A genome fasta file
+* A 12 columns BED file with genome annotation. </p>
+<p>When you would like to insall the genome with <code>genomepy</code>, you could fellow this commands, which will download both <code>fasta</code> file and <code>bed</code> file.</p>
+<pre><code>conda create -n genomepy python=3
+conda activate genomepy
+conda install genomepy=0.7.2
+
+conda activate genompy
+
+# install hg38 genome
+genomepy install GRCh38 NCBI -a
+</code></pre>
+
+<h3 id="motif-database">Motif database</h3>
+<p>By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: <code>gimme.vertebrate.v5.0</code>. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. Large-scale benchmarks using ChIP-seq peaks show that this database shows good performance and should be a good default choice. </p>
+<p>If you would like to use your own motif database, please makesure your database include following two files:  </p>
+<ul>
+<li>Motif file</li>
+</ul>
+<pre><code>#GM.5.0.Sox.0001    M1911_1.02;;M3916_1.02;;M5846_1.02;;M6471_1.02;;M6478_1.02;;MA0084.1_SRY;;MA1152.1_SOX15;;SOX12;;SOX12_1 Sox12_bulyk_sc09-primary;;SOX15_1 Sox15_bulyk_sc09-primary;;SOX18_1 Sox18_bulyk_sc09-primary;;SOX30;;SOX30_1 Sox30_bulyk_sc09-primary;;SOX7_1 Sox7_bulyk_sc09-primary;;SOX9_1 SOX9_transfac_M00410;;SOX9_3 SOX9_jolma_DBD_M136;;SRY;;SRY_3 SRY_jaspar_MA0084.1
+&gt;GM.5.0.Sox.0001
+0.7213  0.0793  0.1103  0.0891
+0.9259  0.0072  0.0062  0.0607
+0.0048  0.9203  0.0077  0.0672
+0.9859  0.0030  0.0030  0.0081
+0.9778  0.0043  0.0128  0.0051
+0.1484  0.0050  0.0168  0.8299
+#GM.5.0.Homeodomain.0001    M4064_1.02;;TGIF1;;TGIF1_1 TGIF_transfac_M00418;;TGIF1_HUMAN.H11MO.0.A
+&gt;GM.5.0.Homeodomain.0001
+0.8870  0.0000  0.0178  0.0951
+0.1156  0.2033  0.6629  0.0181
+0.0017  0.7452  0.0809  0.1722
+0.0011  0.0003  0.0003  0.9983
+0.0026  0.0141  0.9721  0.0111
+0.0000  0.0189  0.0054  0.9758
+0.0006  0.9983  0.0006  0.0006
+0.9170  0.0140  0.0046  0.0644
+0.2228  0.2421  0.3300  0.2051
+0.3621  0.1054  0.2208  0.3116
+0.5727  0.0104  0.1741  0.2428
+</code></pre>
+
+<ul>
+<li>Motif2factors file  </li>
+</ul>
+<pre><code>Motif   Factor  Evidence    Curated
+GM.5.0.Sox.0001 SRY JASPAR  Y
+GM.5.0.Sox.0001 SOX9    Transfac    Y
+GM.5.0.Sox.0001 Sox9    Transfac    N
+GM.5.0.Sox.0001 SOX9    SELEX   Y
+GM.5.0.Sox.0001 Sox9    SELEX   N
+</code></pre>
+
+<p>The <code>motif</code> file should end with <code>.pfm</code>,  and <code>motif2factors</code> file should have the same name with <code>motif</code> file and end with <code>motif2factors.txt</code>.
+The defaule <code>gimme.vertebrate.v5.0</code> file can be found here: <a href="https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.pfm">gimme.vertebrate.v5.0.pfm</a> and <a href="https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.motif2factors.txt">gimme.vertebrate.v5.0.motif2factors.txt</a>.</p>
+            
+          
+        </div>
+      </div>
+    </div>
+    <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebarwrapper">
+        
+          
+            
+  <h1 class="logo"><a href="..">My Docs</a></h1>
+
+
+
+          
+            
+
+
+
+<h3>Table Of Contents</h3>
+
+<nav>
+  
+  
+    <ul>
+    
+      <li><a href="#genome">Genome</a></li>
+      <ul>
+    
+  </ul>
+    
+      <li><a href="#motif-database">Motif database</a></li>
+      <ul>
+    
+  </ul>
+    
+  </ul>
+  
+
+  
+</nav>
+          
+            
+  <h3>Related Topics</h3>
+  <ul>
+    
+      <li>Previous: <a href="../examples/" title="previous chapter">
+        Examples
+      </a></li>
+    
+    
+      <li>Next: <a href="../installation/" title="next chapter">
+        Installation
+      </a></li>
+    
+  </ul>
+
+          
+            <div id="searchbox" style="display: none;" role="search">
+  <h3>Quick search</h3>
+  <form class="search" action="../search.html" method="get">
+    <input name="q" type="text">
+    <input value="Go" type="submit">
+  </form>
+  <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+  </p>
+</div>
+<script type="text/javascript">
+  document.getElementById("searchbox").style.display = "block";
+</script>
+          
+        
+      </div>
+    </div>
+    <div class="clearer"></div>
+  </div>
+
+  
+    <div class="footer">
+      
+      
+        
+        Powered by <a href="http://www.mkdocs.org">mkdocs 1.1</a>
+        &amp; <a href="https://github.com/iamale/mkdocs-alabaster">mkdocs-alabaster</a>
+      
+    </div>
+  
+
+  <!--
+  MkDocs version      : 1.1
+  Docs Build Date UTC : 2020-04-10 09:23:33
+  -->
+</body>
+</html>
