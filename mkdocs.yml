@@ -15,7 +15,7 @@ extra_css:
   - css/extra.css
 markdown_extensions:
   - admonition
-  - codehilite
+#   - codehilite
   - footnotes
 
 nav:
