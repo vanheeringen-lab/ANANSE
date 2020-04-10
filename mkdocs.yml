@@ -20,8 +20,8 @@ nav:
       # - Expression data: 'input_data.md/#enhancer-data'
       # - Differential expression data: 'input_data.md/#enhancer-data'
   - Command-line reference: 'command-line_reference.md'
-      - List of tools
-      - Input formats
+      # - List of tools
+      # - Input formats
       # - Command: ananse binding: 'command-line_reference.md/#motif-database'
       # - Command: ananse network: 'command-line_reference.md/#motif-database'
       # - Command: ananse influence: 'command-line_reference.md/#motif-database'
@@ -33,10 +33,10 @@ nav:
       # - Command: ananse binding: 'examples.md/#motif-database'
       # - Command: ananse network: 'examples.md/#motif-database'
       # - Command: ananse influence: 'examples.md/#motif-database'
-  - FAQ
-      - Sorry, motif prediction tool X] is not supported
-      - I get motifs that have differential scores in gimme maelstrom, however, the number is not different across clusters
-      - I have upgraded GimmeMotifs and now it doesn’t find my genome
-      - I cannot run gimme index anymore
-      - I get a KeyError when running gimme maelstrom
-  - Acknowledgments
+  # - FAQ
+  #     - Sorry, motif prediction tool X] is not supported
+  #     - I get motifs that have differential scores in gimme maelstrom, however, the number is not different across clusters
+  #     - I have upgraded GimmeMotifs and now it doesn’t find my genome
+  #     - I cannot run gimme index anymore
+  #     - I get a KeyError when running gimme maelstrom
+  # - Acknowledgments
