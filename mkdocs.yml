@@ -9,6 +9,8 @@ extra:
 theme: readthedocs
 markdown_extensions:
   - admonition
+  - codehilite
+  - footnotes
 
 nav:
   - Home: 'index.md'
