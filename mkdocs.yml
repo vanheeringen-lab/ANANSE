@@ -1,0 +1,53 @@
+site_name: ANANSE
+site_description: ANalysis Algorithm for Networks Specified by Enhancers.
+site_author: Quan Xu
+copyright: Copyright &copy; 2020 <a href="https://github.com/vanheeringen-lab">vanheeringen-lab</a>, Maintained by <a href="mailto:qxuchn@gmail.com" target="_blank">Quan Xu</a>.
+
+
+repo_url: https://github.com/vanheeringen-lab/ANANSE/
+
+extra:
+    version: 1.0
+
+# theme: alabaster
+theme: readthedocs
+
+extra_css:
+  - css/extra.css
+markdown_extensions:
+  - admonition
+#   - codehilite
+  - footnotes
+
+nav:
+  - Home: 'index.md'
+  - Installation: 'installation.md'
+      # - The easiest way to install: 'installation.md/#the-easiest-way-to-install'
+      # - Alternative installation: 'installation.md/#alternative-installation'
+  - Input data: 'input_data.md'
+      # - Genome: 'input_data.md/#genome'
+      # - Motif database: 'input_data.md/#motif-database'
+      # - Enhancer data: 'input_data.md/#enhancer-data'
+      # - Expression data: 'input_data.md/#enhancer-data'
+      # - Differential expression data: 'input_data.md/#enhancer-data'
+  - Command-line reference: 'command-line_reference.md'
+      # - List of tools
+      # - Input formats
+      # - Command: ananse binding: 'command-line_reference.md/#motif-database'
+      # - Command: ananse network: 'command-line_reference.md/#motif-database'
+      # - Command: ananse influence: 'command-line_reference.md/#motif-database'
+  - API documentation: 'API_documentation.md'
+      # - Working with `binding` Class: 'API_documentation.md/#working-with-binding-class'
+      # - Working with `network` Class: 'API_documentation.md/#working-with-network-class'
+      # - Working with `influence` Class: 'API_documentation.md/#working-with-influence-class'
+  - Examples: 'examples.md'
+      # - Command: ananse binding: 'examples.md/#motif-database'
+      # - Command: ananse network: 'examples.md/#motif-database'
+      # - Command: ananse influence: 'examples.md/#motif-database'
+  # - FAQ
+  #     - Sorry, motif prediction tool X] is not supported
+  #     - I get motifs that have differential scores in gimme maelstrom, however, the number is not different across clusters
+  #     - I have upgraded GimmeMotifs and now it doesn’t find my genome
+  #     - I cannot run gimme index anymore
+  #     - I get a KeyError when running gimme maelstrom
+  # - Acknowledgments
