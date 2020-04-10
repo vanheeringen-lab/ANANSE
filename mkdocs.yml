@@ -10,13 +10,7 @@ extra:
 
 # theme: alabaster
 theme: readthedocs
-    highlightjs: true
-    hljs_languages:
-        - yaml
-        - django
-        - bash
-        - python
-        
+
 extra_css:
   - css/extra.css
 markdown_extensions:
