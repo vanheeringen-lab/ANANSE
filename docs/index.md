@@ -6,7 +6,9 @@ ANANSE is an analysis framework for key transcription factor prediction during c
 
 ### Citation
 ANANSE is free and open source research software. If you find it useful please cite our paper:
-> Xu, Q., Georgiou, G., Veenstra, G.J.C., Zhou, H., and van Heeringen, S.J. (2020). **ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination.** [https://www.biorxiv.org/](https://www.biorxiv.org/)
+
+!!! note
+    Xu, Q., Georgiou, G., Veenstra, G.J.C., Zhou, H., and van Heeringen, S.J. (2020). **ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination.** [https://www.biorxiv.org/](https://www.biorxiv.org/)
 
 ### Getting started
 * The easiest way to install ANANSE is using [bioconda](https://bioconda.github.io/) on Linux (include [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10) ) or Mac. 
