@@ -6,7 +6,7 @@
 [![Documentation Status](https://readthedocs.org/projects/anansepy/badge/?version=latest)](https://anansepy.readthedocs.io/en/latest/?badge=latest)
 
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
-See [full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/) for detailed installation instructions and usage examples.  
+Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/)** for detailed installation instructions and usage examples.  
 
 
 
@@ -17,6 +17,8 @@ See [full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/) for 
 ---
 
 ## Quick start
+* ### **Detail documentation**
+  * The **full ANANSE documentation** at [https://anansepy.readthedocs.io](https://anansepy.readthedocs.io). 
 
 * ### **Easy installation**
   * The most straightforward way to install ANANSE is via conda using the bioconda channel.

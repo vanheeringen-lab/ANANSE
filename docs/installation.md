@@ -6,25 +6,24 @@ ANANSE runs on Linux. On Windows 10 it will run fine using the [Windows Subsyste
 
 The preferred way to install ANANSE is by using [conda](https://docs.continuum.io/anaconda). Activate the [bioconda](https://bioconda.github.io/) channel if you haven't used bioconda before.
 You only have to do this once.
-```
-    $ conda config --add channels defaults
-    $ conda config --add channels bioconda
-    $ conda config --add channels conda-forge
+``` bash
+$ conda config --add channels defaults
+$ conda config --add channels bioconda
+$ conda config --add channels conda-forge
 ```
 You can install ANANSE with one command. In the current environment:
-```
-    $ conda install ananse
+``` bash
+$ conda install ananse
 ```
 Or create a specific environment:
-```
-    $ conda create -n ananse python=3 ananse
+``` bash
+$ conda create -n ananse python=3 ananse
 
-    # Activate the environment before you use ANANSE
-    $ conda activate ananse
+# Activate the environment before you use ANANSE
+$ conda activate ananse
 ```
 ANANSE only supports Python 3. Don't forget to activate the environment with `source activate ananse` whenever you want to use ANANSE.
 
-Installation successful? Good. Have a look at the `configuration<configuration>` section.
-
 ### Alternative installation
 
+You can also instll ANANSE with `pip`.
