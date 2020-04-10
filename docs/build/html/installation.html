@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>&lt;no title&gt; &mdash; ANANSE v0.1 documentation</title>
+  <title>Installation &mdash; ANANSE v0.1 documentation</title>
   
 
   
@@ -79,7 +79,12 @@
             
             
               <!-- Local TOC -->
-              <div class="local-toc"><ul class="simple">
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Installation</a><ul>
+<li><a class="reference internal" href="#the-easiest-way-to-install">The easiest way to install</a></li>
+<li><a class="reference internal" href="#alternative-installation">Alternative installation</a></li>
+</ul>
+</li>
 </ul>
 </div>
             
@@ -125,7 +130,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>&lt;no title&gt;</li>
+      <li>Installation</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -144,35 +149,36 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <p>## Installation</p>
-<p>ANANSE runs on Linux. On Windows 10 it will run fine using the [Windows Subsystem for Linux](<a class="reference external" href="https://docs.microsoft.com/en-us/windows/wsl/install-win10">https://docs.microsoft.com/en-us/windows/wsl/install-win10</a>). Mac OSX should work and is included in the build test. However, as I don’t use it myself, unexpected issues might pop up. Let me know, so I can try to fix it.</p>
-<p>### The easiest way to install</p>
-<p>The preferred way to install ANANSE is by using [conda](<a class="reference external" href="https://docs.continuum.io/anaconda">https://docs.continuum.io/anaconda</a>). Activate the [bioconda](<a class="reference external" href="https://bioconda.github.io/">https://bioconda.github.io/</a>) channel if you haven’t used bioconda before.
-You only have to do this once.
-<a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a></p>
-<blockquote>
-<div><p>$ conda config –add channels defaults
-$ conda config –add channels bioconda
-$ conda config –add channels conda-forge</p>
-</div></blockquote>
-<p><code class="docutils literal notranslate"><span class="pre">`</span>
-<span class="pre">You</span> <span class="pre">can</span> <span class="pre">install</span> <span class="pre">ANANSE</span> <span class="pre">with</span> <span class="pre">one</span> <span class="pre">command.</span> <span class="pre">In</span> <span class="pre">the</span> <span class="pre">current</span> <span class="pre">environment:</span>
-<span class="pre">`</span></code></p>
-<blockquote>
-<div><p>$ conda install ananse</p>
-</div></blockquote>
-<p><code class="docutils literal notranslate"><span class="pre">`</span>
-<span class="pre">Or</span> <span class="pre">create</span> <span class="pre">a</span> <span class="pre">specific</span> <span class="pre">environment:</span>
-<span class="pre">`</span></code></p>
-<blockquote>
-<div><p>$ conda create -n ananse python=3 ananse</p>
-<p># Activate the environment before you use ANANSE
-$ conda activate ananse</p>
-</div></blockquote>
-<p><a href="#id5"><span class="problematic" id="id6">``</span></a>`
-ANANSE only supports Python 3. Don’t forget to activate the environment with <cite>source activate ananse</cite> whenever you want to use ANANSE.</p>
-<p>Installation successful? Good. Have a look at the <cite>configuration&lt;configuration&gt;</cite> section.</p>
-<p>### Alternative installation</p>
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>ANANSE runs on Linux. On Windows 10 it will run fine using the <a class="reference external" href="https://docs.microsoft.com/en-us/windows/wsl/install-win10">Windows Subsystem for Linux</a>. Mac OSX should work and is included in the build test. However, as I don’t use it myself, unexpected issues might pop up. Let me know, so I can try to fix it.</p>
+<div class="section" id="the-easiest-way-to-install">
+<h2>The easiest way to install<a class="headerlink" href="#the-easiest-way-to-install" title="Permalink to this headline">¶</a></h2>
+<p>The preferred way to install ANANSE is by using <a class="reference external" href="https://docs.continuum.io/anaconda">conda</a>. Activate the <a class="reference external" href="https://bioconda.github.io/">bioconda</a> channel if you haven’t used bioconda before.
+You only have to do this once.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    $ conda config --add channels defaults
+    $ conda config --add channels bioconda
+    $ conda config --add channels conda-forge
+</pre></div>
+</div>
+<p>You can install ANANSE with one command. In the current environment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    $ conda install ananse
+</pre></div>
+</div>
+<p>Or create a specific environment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    $ conda create -n ananse python=3 ananse
+
+    # Activate the environment before you use ANANSE
+    $ conda activate ananse
+</pre></div>
+</div>
+<p>ANANSE only supports Python 3. Don’t forget to activate the environment with <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">activate</span> <span class="pre">ananse</span></code> whenever you want to use ANANSE.</p>
+<p>Installation successful? Good. Have a look at the <code class="docutils literal notranslate"><span class="pre">configuration&lt;configuration&gt;</span></code> section.</p>
+</div>
+<div class="section" id="alternative-installation">
+<h2>Alternative installation<a class="headerlink" href="#alternative-installation" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
 
 
            </div>

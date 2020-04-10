@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>&lt;no title&gt; &mdash; ANANSE v0.1 documentation</title>
+  <title>Command-line reference &mdash; ANANSE v0.1 documentation</title>
   
 
   
@@ -79,7 +79,13 @@
             
             
               <!-- Local TOC -->
-              <div class="local-toc"><ul class="simple">
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Command-line reference</a><ul>
+<li><a class="reference internal" href="#build-tf-binding-network">Build TF binding network</a></li>
+<li><a class="reference internal" href="#built-gene-regulatory-network">Built gene regulatory network</a></li>
+<li><a class="reference internal" href="#infer-tf-influence-score">Infer TF influence score</a></li>
+</ul>
+</li>
 </ul>
 </div>
             
@@ -125,7 +131,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>&lt;no title&gt;</li>
+      <li>Command-line reference</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -144,138 +150,112 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <p>## Command-line reference</p>
+  <div class="section" id="command-line-reference">
+<h1>Command-line reference<a class="headerlink" href="#command-line-reference" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
-<li><p><strong>All the example dataset and result files are able to find at [***http://mbdata.science.ru.nl/qxu/ananse/ananse.html*</strong>](<a class="reference external" href="http://mbdata.science.ru.nl/qxu/ananse/ananse.html).**">http://mbdata.science.ru.nl/qxu/ananse/ananse.html).**</a></p></li>
+<li><p><strong>All the example dataset and result files are able to find at <a class="reference external" href="http://mbdata.science.ru.nl/qxu/ananse/ananse.html"><em><strong>http://mbdata.science.ru.nl/qxu/ananse/ananse.html</strong></em></a>.</strong></p></li>
 </ul>
-<p>### Build TF binding network</p>
-<blockquote>
-<div><ul>
+<div class="section" id="build-tf-binding-network">
+<h2>Build TF binding network<a class="headerlink" href="#build-tf-binding-network" title="Permalink to this headline">¶</a></h2>
+<ul>
 <li><p>Example:</p>
-<p><a href="#id1"><span class="problematic" id="id2">``</span></a>`
-$ ananse binding  -r data/krt_enhancer.bed </p>
-<blockquote>
-<div><p>-o results/binding.txt -a /data/hg38_genes.bed -g hg38 -p /data/gimme.vertebrate.v5.1.pfm</p>
-</div></blockquote>
-<p><a href="#id3"><span class="problematic" id="id4">``</span></a><a href="#id5"><span class="problematic" id="id6">`</span></a></p>
-</li>
-<li><p>Required arguments:
-* <cite>-r, –enhancers</cite></p>
-<blockquote>
-<div><p>The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [<strong>*This*</strong>](<a class="reference external" href="https://github.com/vanheeringen-lab/ANANSE/raw/master/test/data/krt_enhancer.bed">https://github.com/vanheeringen-lab/ANANSE/raw/master/test/data/krt_enhancer.bed</a>) is an example enhancer BED file.</p>
-</div></blockquote>
-<ul class="simple">
-<li><p><cite>-o, –output</cite>
-The name of the output file.</p></li>
-</ul>
-</li>
-<li><p>Optional arguments:</p>
-<ul class="simple">
-<li><p><cite>-n, –ncore</cite>
-Specifies the number of threads to use during analysis.</p></li>
-<li><p><cite>-g, –genome</cite>
-The genome that is used for the gene annotation and the enhancer location.
-This can be either the name of a genome installed with [genomepy](<a class="reference external" href="https://github.com/vanheeringen-lab/genomepy">https://github.com/vanheeringen-lab/genomepy</a>), for example <cite>hg38</cite>, or the name of a genome FASTA file, for example <cite>/data/genomes/hg38/hg38.fa</cite>. It is recommended to use a genome installed by <cite>genomepy</cite>. The default setting is <cite>hg19</cite>.</p></li>
-<li><p><cite>-a, –annotation</cite>
-The input 12 columns BED file with gene annotation in your genome version. [<strong>*This*</strong>](<a class="reference external" href="https://github.com/vanheeringen-lab/ANANSE/raw/master/data/hg38_genes.bed">https://github.com/vanheeringen-lab/ANANSE/raw/master/data/hg38_genes.bed</a>) is an example BED annotation file of human hg38.</p></li>
-<li><p><cite>-p, –motifs</cite>
-The input Motif file. [<strong>*This*</strong>](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [<strong>*This*</strong>](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [<strong>*This*</strong>](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.</p></li>
-<li><p><cite>-f, –filter_promoter</cite>
-Filter promoters, True or False, input should be
-either ‘True’ or ‘False’. (Default setting: True; if ‘True’, the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.).</p></li>
-<li><p><cite>-d, –keep_detail</cite>
-Keep detail files, True or False, input should be either ‘True’ or ‘False’. (Default setting: True).</p></li>
-<li><p><cite>-h, –help</cite>
-Show the help message and exit.</p></li>
-</ul>
-</li>
-</ul>
-</div></blockquote>
-<p>### Built gene regulatory network</p>
-<blockquote>
-<div><ul>
-<li><p>Example:</p>
-<p><a href="#id7"><span class="problematic" id="id8">``</span></a>`
-$ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt </p>
-<blockquote>
-<div><p>-r data/krt_enhancer.bed -b results/binding.txt -o results/full_features.txt -a /data/hg38_genes.bed -g hg38 -c expressioncorrelation.txt -p ../data/gimme.vertebrate.v5.1.pfm</p>
-</div></blockquote>
-<p><a href="#id9"><span class="problematic" id="id10">``</span></a><a href="#id11"><span class="problematic" id="id12">`</span></a></p>
-</li>
-<li><p>Required arguments:
-* <cite>-e, –expression</cite></p>
-<blockquote>
-<div><p>The expression file of your interested cell type or tissue. It could have one or more gene expression file(s). In this file, the 1st column should contain gene name, and a column should be named TPM. [<strong>*This*</strong>](/test/data/KRT_rep1_TPM.txt) is an example of expression file.</p>
-</div></blockquote>
-<ul class="simple">
-<li><p><cite>-b, –binding</cite>
-The binding network from <cite>Build binding network</cite> step. One of the example <cite>binding network</cite> could be found at [<strong>*here*</strong>](<a class="reference external" href="http://mbdata.science.ru.nl/qxu/ananse/results/binding.txt">http://mbdata.science.ru.nl/qxu/ananse/results/binding.txt</a>).</p></li>
-<li><p><cite>-o, –output</cite>
-The folder to save results, <cite>-o</cite> is the required arguments.</p></li>
-</ul>
-</li>
-<li><p>Optional arguments:
-* <cite>-n, –ncore</cite></p>
-<blockquote>
-<div><p>Specifies the number of threads to use during analysis.</p>
-</div></blockquote>
-<ul class="simple">
-<li><p><cite>-g, –genome</cite>
-The genome of your data. For example, hg38. The genome is recommended to download by <cite>genomepy</cite>.</p></li>
-<li><p><cite>-p, –motifs</cite>
-The input Motif file. [<strong>*This*</strong>](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [<strong>*This*</strong>](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [<strong>*This*</strong>](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.</p></li>
-<li><p><cite>-a, –annotation</cite>
-The input 12 columns BED file with gene annotation in your genome version. [<strong>*This*</strong>](/data/hg38_genes.bed) is an example BED annotation file of human hg38.</p></li>
-<li><p><cite>-f, –filter_promoter</cite>
-Filter promoters, True or False, input should be
-either ‘True’ or ‘False’. (Default setting: True; if ‘True’, the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.).</p></li>
-<li><p><cite>-c, –corrfiles</cite>
-All gene correlation file, the human gene expression correlation can be found at [<strong>*here*</strong>](<a class="reference external" href="http://mbdata.science.ru.nl/qxu/ananse/data/expressioncorrelation.txt">http://mbdata.science.ru.nl/qxu/ananse/data/expressioncorrelation.txt</a>).</p></li>
-<li><p><cite>-h, –help</cite>
-Show the help message and exit.</p></li>
-</ul>
-</li>
-</ul>
-</div></blockquote>
-<p>### Infer TF influence score</p>
-<blockquote>
-<div><ul>
-<li><p>Example:</p>
-<p><a href="#id13"><span class="problematic" id="id14">``</span></a>`
-$ ananse influence  -a results/full_network.txt </p>
-<blockquote>
-<div><p>-e data/FB_rep1_TPM.txt -d data/FB2KRT_degenes.csv -o results/FB2KRT.txt -p False</p>
-</div></blockquote>
-<p><a href="#id15"><span class="problematic" id="id16">``</span></a><a href="#id17"><span class="problematic" id="id18">`</span></a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ananse binding  -r data/krt_enhancer.bed \
+                  -o results/binding.txt \
+                  -a /data/hg38_genes.bed \
+                  -g hg38 \
+                  -p /data/gimme.vertebrate.v5.1.pfm
+</pre></div>
+</div>
 </li>
 <li><p>Required arguments:</p>
 <ul class="simple">
-<li><p><cite>-a, –anetwork</cite></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-r,</span> <span class="pre">--enhancers</span></code><br />The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. <a class="reference external" href="https://github.com/vanheeringen-lab/ANANSE/raw/master/test/data/krt_enhancer.bed"><em><strong>This</strong></em></a> is an example enhancer BED file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code><br />The name of the output file.</p></li>
 </ul>
-<p>The network in second cell. It is the result from <cite>Built GRN</cite> step. One of the example <cite>network</cite> could be found at [<strong>*here*</strong>](<a class="reference external" href="http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt">http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt</a>).
-* <cite>-d, –degenes</cite>
-The differential expression table between two cells. [<strong>*This*</strong>](/test/data/FB2KRT_degenes.csv) is an example of differential expression file.
-* <cite>-o, –output</cite>
-The folder to save results, <cite>-o</cite> is the required arguments.</p>
 </li>
 <li><p>Optional arguments:</p>
 <ul class="simple">
-<li><p><cite>-n, –ncore</cite>
-Specifies the number of threads to use during analysis.</p></li>
-<li><p><cite>-s, –edges</cite>
-Specifics the number of top edges (interactions) used.</p></li>
-<li><p><cite>-b, –bnetwork</cite></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-n,</span> <span class="pre">--ncore</span></code><br />Specifies the number of threads to use during analysis.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-g,</span> <span class="pre">--genome</span></code><br />The genome that is used for the gene annotation and the enhancer location.
+This can be either the name of a genome installed with <a class="reference external" href="https://github.com/vanheeringen-lab/genomepy">genomepy</a>, for example <code class="docutils literal notranslate"><span class="pre">hg38</span></code>, or the name of a genome FASTA file, for example <code class="docutils literal notranslate"><span class="pre">/data/genomes/hg38/hg38.fa</span></code>. It is recommended to use a genome installed by <code class="docutils literal notranslate"><span class="pre">genomepy</span></code>. The default setting is <code class="docutils literal notranslate"><span class="pre">hg19</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-a,</span> <span class="pre">--annotation</span></code><br />The input 12 columns BED file with gene annotation in your genome version. <a class="reference external" href="https://github.com/vanheeringen-lab/ANANSE/raw/master/data/hg38_genes.bed"><em><strong>This</strong></em></a> is an example BED annotation file of human hg38.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-p,</span> <span class="pre">--motifs</span></code><br />The input Motif file. <a class="reference external" href="/data/gimme.vertebrate.v5.1.pfm"><em><strong>This</strong></em></a> is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. <a class="reference external" href="/data/gimme.vertebrate.v5.1.motif2factors.txt"><em><strong>This</strong></em></a> is an example of motif2factors file. <a class="reference external" href="/data/gimme.vertebrate.v5.1.factortable.txt"><em><strong>This</strong></em></a> is an example of factortable file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-f,</span> <span class="pre">--filter_promoter</span></code><br />Filter promoters, True or False, input should be
+either ‘True’ or ‘False’. (Default setting: True; if ‘True’, the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-d,</span> <span class="pre">--keep_detail</span></code><br />Keep detail files, True or False, input should be either ‘True’ or ‘False’. (Default setting: True).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-h,</span> <span class="pre">--help</span></code><br />Show the help message and exit.</p></li>
 </ul>
-<p>The network in first cell (optional). It is the result from <cite>Built GRN</cite> step. One of the example <cite>network</cite> could be found at [<strong>*here*</strong>](<a class="reference external" href="http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt">http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt</a>).
-* <cite>-e, –expression</cite>
-The gene expression in first cell (optional). One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM. [<strong>*This*</strong>](/test/data/FB_rep1_TPM.txt) is an example of expression file.
-* <cite>-p, –plot</cite>
-Plot influence. True or False, input should be either ‘True’ or ‘False’. (Default setting: True)
-* <cite>-h, –help</cite>
-Show the help message and exit.</p>
 </li>
 </ul>
-</div></blockquote>
+</div>
+<div class="section" id="built-gene-regulatory-network">
+<h2>Built gene regulatory network<a class="headerlink" href="#built-gene-regulatory-network" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
+                  -r data/krt_enhancer.bed \
+                  -b results/binding.txt \
+                  -o results/full_features.txt \
+                  -a /data/hg38_genes.bed \
+                  -g hg38 \
+                  -c expressioncorrelation.txt \
+                  -p ../data/gimme.vertebrate.v5.1.pfm
+</pre></div>
+</div>
+</li>
+<li><p>Required arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-e,</span> <span class="pre">--expression</span></code><br />The expression file of your interested cell type or tissue. It could have one or more gene expression file(s). In this file, the 1st column should contain gene name, and a column should be named TPM. <a class="reference external" href="/test/data/KRT_rep1_TPM.txt"><em><strong>This</strong></em></a> is an example of expression file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-b,</span> <span class="pre">--binding</span></code><br />The binding network from <code class="docutils literal notranslate"><span class="pre">Build</span> <span class="pre">binding</span> <span class="pre">network</span></code> step. One of the example <code class="docutils literal notranslate"><span class="pre">binding</span> <span class="pre">network</span></code> could be found at <a class="reference external" href="http://mbdata.science.ru.nl/qxu/ananse/results/binding.txt"><em><strong>here</strong></em></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code><br />The folder to save results, <code class="docutils literal notranslate"><span class="pre">-o</span></code> is the required arguments.</p></li>
+</ul>
+</li>
+<li><p>Optional arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-n,</span> <span class="pre">--ncore</span></code><br />Specifies the number of threads to use during analysis.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-g,</span> <span class="pre">--genome</span></code><br />The genome of your data. For example, hg38. The genome is recommended to download by <code class="docutils literal notranslate"><span class="pre">genomepy</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-p,</span> <span class="pre">--motifs</span></code><br />The input Motif file. <a class="reference external" href="/data/gimme.vertebrate.v5.1.pfm"><em><strong>This</strong></em></a> is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. <a class="reference external" href="/data/gimme.vertebrate.v5.1.motif2factors.txt"><em><strong>This</strong></em></a> is an example of motif2factors file. <a class="reference external" href="/data/gimme.vertebrate.v5.1.factortable.txt"><em><strong>This</strong></em></a> is an example of factortable file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-a,</span> <span class="pre">--annotation</span></code><br />The input 12 columns BED file with gene annotation in your genome version. <a class="reference external" href="/data/hg38_genes.bed"><em><strong>This</strong></em></a> is an example BED annotation file of human hg38.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-f,</span> <span class="pre">--filter_promoter</span></code><br />Filter promoters, True or False, input should be
+either ‘True’ or ‘False’. (Default setting: True; if ‘True’, the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-c,</span> <span class="pre">--corrfiles</span></code><br />All gene correlation file, the human gene expression correlation can be found at <a class="reference external" href="http://mbdata.science.ru.nl/qxu/ananse/data/expressioncorrelation.txt"><em><strong>here</strong></em></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-h,</span> <span class="pre">--help</span></code><br />Show the help message and exit.</p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="infer-tf-influence-score">
+<h2>Infer TF influence score<a class="headerlink" href="#infer-tf-influence-score" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ananse influence  -a results/full_network.txt \
+                    -e data/FB_rep1_TPM.txt \
+                    -d data/FB2KRT_degenes.csv \
+                    -o results/FB2KRT.txt \
+                    -p False
+</pre></div>
+</div>
+</li>
+<li><p>Required arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-a,</span> <span class="pre">--anetwork</span></code><br />The network in second cell. It is the result from <code class="docutils literal notranslate"><span class="pre">Built</span> <span class="pre">GRN</span></code> step. One of the example <code class="docutils literal notranslate"><span class="pre">network</span></code> could be found at <a class="reference external" href="http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt"><em><strong>here</strong></em></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-d,</span> <span class="pre">--degenes</span></code><br />The differential expression table between two cells. <a class="reference external" href="/test/data/FB2KRT_degenes.csv"><em><strong>This</strong></em></a> is an example of differential expression file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code><br />The folder to save results, <code class="docutils literal notranslate"><span class="pre">-o</span></code> is the required arguments.</p></li>
+</ul>
+</li>
+<li><p>Optional arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-n,</span> <span class="pre">--ncore</span></code><br />Specifies the number of threads to use during analysis.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-s,</span> <span class="pre">--edges</span></code><br />Specifics the number of top edges (interactions) used.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-b,</span> <span class="pre">--bnetwork</span></code><br />The network in first cell (optional). It is the result from <code class="docutils literal notranslate"><span class="pre">Built</span> <span class="pre">GRN</span></code> step. One of the example <code class="docutils literal notranslate"><span class="pre">network</span></code> could be found at <a class="reference external" href="http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt"><em><strong>here</strong></em></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-e,</span> <span class="pre">--expression</span></code><br />The gene expression in first cell (optional). One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM. <a class="reference external" href="/test/data/FB_rep1_TPM.txt"><em><strong>This</strong></em></a> is an example of expression file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-p,</span> <span class="pre">--plot</span></code><br />Plot influence. True or False, input should be either ‘True’ or ‘False’. (Default setting: True)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-h,</span> <span class="pre">--help</span></code><br />Show the help message and exit.</p></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
 
 
            </div>

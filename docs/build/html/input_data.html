@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>&lt;no title&gt; &mdash; ANANSE v0.1 documentation</title>
+  <title>Prepare data &mdash; ANANSE v0.1 documentation</title>
   
 
   
@@ -79,7 +79,12 @@
             
             
               <!-- Local TOC -->
-              <div class="local-toc"><ul class="simple">
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Prepare data</a><ul>
+<li><a class="reference internal" href="#genome">Genome</a></li>
+<li><a class="reference internal" href="#motif-database">Motif database</a></li>
+</ul>
+</li>
 </ul>
 </div>
             
@@ -125,7 +130,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>&lt;no title&gt;</li>
+      <li>Prepare data</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -144,63 +149,73 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <p>## Prepare data</p>
-<p>### Genome
-When you need run <cite>ANANSE</cite> in your sample, genome file is necessary. We recommand you download your genome file with [genomepy](<a class="reference external" href="https://github.com/vanheeringen-lab/genomepy">https://github.com/vanheeringen-lab/genomepy</a>), which is a python package could install genome easily.</p>
-<p>In ANANSE, for each genome, we need:
-* A genome fasta file
-* A 12 columns BED file with genome annotation.</p>
-<p>When you would like to insall the genome with <cite>genomepy</cite>, you could fellow this commands, which will download both <cite>fasta</cite> file and <cite>bed</cite> file.
-<a href="#id1"><span class="problematic" id="id2">``</span></a>`
-conda create -n genomepy python=3
-conda activate genomepy
-conda install genomepy=0.7.2</p>
-<p>conda activate genompy</p>
-<p># install hg38 genome
-genomepy install GRCh38 NCBI -a
-<a href="#id3"><span class="problematic" id="id4">``</span></a><a href="#id5"><span class="problematic" id="id6">`</span></a></p>
-<p>### Motif database
-By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: <cite>gimme.vertebrate.v5.0</cite>. These motifs come from CIS-BP (<a class="reference external" href="http://cisbp.ccbr.utoronto.ca/">http://cisbp.ccbr.utoronto.ca/</a>) and other sources. Large-scale benchmarks using ChIP-seq peaks show that this database shows good performance and should be a good default choice.</p>
+  <div class="section" id="prepare-data">
+<h1>Prepare data<a class="headerlink" href="#prepare-data" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="genome">
+<h2>Genome<a class="headerlink" href="#genome" title="Permalink to this headline">¶</a></h2>
+<p>When you need run <code class="docutils literal notranslate"><span class="pre">ANANSE</span></code> in your sample, genome file is necessary. We recommand you download your genome file with <a class="reference external" href="https://github.com/vanheeringen-lab/genomepy">genomepy</a>, which is a python package could install genome easily.</p>
+<p>In ANANSE, for each genome, we need:</p>
+<ul class="simple">
+<li><p>A genome fasta file</p></li>
+<li><p>A 12 columns BED file with genome annotation.</p></li>
+</ul>
+<p>When you would like to insall the genome with <code class="docutils literal notranslate"><span class="pre">genomepy</span></code>, you could fellow this commands, which will download both <code class="docutils literal notranslate"><span class="pre">fasta</span></code> file and <code class="docutils literal notranslate"><span class="pre">bed</span></code> file.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">genomepy</span> <span class="n">python</span><span class="o">=</span><span class="mi">3</span>
+<span class="n">conda</span> <span class="n">activate</span> <span class="n">genomepy</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="n">genomepy</span><span class="o">=</span><span class="mf">0.7</span><span class="o">.</span><span class="mi">2</span>
+
+<span class="n">conda</span> <span class="n">activate</span> <span class="n">genompy</span>
+
+<span class="c1"># install hg38 genome</span>
+<span class="n">genomepy</span> <span class="n">install</span> <span class="n">GRCh38</span> <span class="n">NCBI</span> <span class="o">-</span><span class="n">a</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="motif-database">
+<h2>Motif database<a class="headerlink" href="#motif-database" title="Permalink to this headline">¶</a></h2>
+<p>By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: <code class="docutils literal notranslate"><span class="pre">gimme.vertebrate.v5.0</span></code>. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. Large-scale benchmarks using ChIP-seq peaks show that this database shows good performance and should be a good default choice.</p>
 <p>If you would like to use your own motif database, please makesure your database include following two files:</p>
 <ul class="simple">
 <li><p>Motif file</p></li>
 </ul>
-<p><code class="docutils literal notranslate"><span class="pre">`</span>
-<span class="pre">#GM.5.0.Sox.0001</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">M1911_1.02;;M3916_1.02;;M5846_1.02;;M6471_1.02;;M6478_1.02;;MA0084.1_SRY;;MA1152.1_SOX15;;SOX12;;SOX12_1</span> <span class="pre">Sox12_bulyk_sc09-primary;;SOX15_1</span> <span class="pre">Sox15_bulyk_sc09-primary;;SOX18_1</span> <span class="pre">Sox18_bulyk_sc09-primary;;SOX30;;SOX30_1</span> <span class="pre">Sox30_bulyk_sc09-primary;;SOX7_1</span> <span class="pre">Sox7_bulyk_sc09-primary;;SOX9_1</span> <span class="pre">SOX9_transfac_M00410;;SOX9_3</span> <span class="pre">SOX9_jolma_DBD_M136;;SRY;;SRY_3</span> <span class="pre">SRY_jaspar_MA0084.1</span>
-<span class="pre">&gt;GM.5.0.Sox.0001</span>
-<span class="pre">0.7213</span>&#160; <span class="pre">0.0793</span>&#160; <span class="pre">0.1103</span>&#160; <span class="pre">0.0891</span>
-<span class="pre">0.9259</span>&#160; <span class="pre">0.0072</span>&#160; <span class="pre">0.0062</span>&#160; <span class="pre">0.0607</span>
-<span class="pre">0.0048</span>&#160; <span class="pre">0.9203</span>&#160; <span class="pre">0.0077</span>&#160; <span class="pre">0.0672</span>
-<span class="pre">0.9859</span>&#160; <span class="pre">0.0030</span>&#160; <span class="pre">0.0030</span>&#160; <span class="pre">0.0081</span>
-<span class="pre">0.9778</span>&#160; <span class="pre">0.0043</span>&#160; <span class="pre">0.0128</span>&#160; <span class="pre">0.0051</span>
-<span class="pre">0.1484</span>&#160; <span class="pre">0.0050</span>&#160; <span class="pre">0.0168</span>&#160; <span class="pre">0.8299</span>
-<span class="pre">#GM.5.0.Homeodomain.0001</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">M4064_1.02;;TGIF1;;TGIF1_1</span> <span class="pre">TGIF_transfac_M00418;;TGIF1_HUMAN.H11MO.0.A</span>
-<span class="pre">&gt;GM.5.0.Homeodomain.0001</span>
-<span class="pre">0.8870</span>&#160; <span class="pre">0.0000</span>&#160; <span class="pre">0.0178</span>&#160; <span class="pre">0.0951</span>
-<span class="pre">0.1156</span>&#160; <span class="pre">0.2033</span>&#160; <span class="pre">0.6629</span>&#160; <span class="pre">0.0181</span>
-<span class="pre">0.0017</span>&#160; <span class="pre">0.7452</span>&#160; <span class="pre">0.0809</span>&#160; <span class="pre">0.1722</span>
-<span class="pre">0.0011</span>&#160; <span class="pre">0.0003</span>&#160; <span class="pre">0.0003</span>&#160; <span class="pre">0.9983</span>
-<span class="pre">0.0026</span>&#160; <span class="pre">0.0141</span>&#160; <span class="pre">0.9721</span>&#160; <span class="pre">0.0111</span>
-<span class="pre">0.0000</span>&#160; <span class="pre">0.0189</span>&#160; <span class="pre">0.0054</span>&#160; <span class="pre">0.9758</span>
-<span class="pre">0.0006</span>&#160; <span class="pre">0.9983</span>&#160; <span class="pre">0.0006</span>&#160; <span class="pre">0.0006</span>
-<span class="pre">0.9170</span>&#160; <span class="pre">0.0140</span>&#160; <span class="pre">0.0046</span>&#160; <span class="pre">0.0644</span>
-<span class="pre">0.2228</span>&#160; <span class="pre">0.2421</span>&#160; <span class="pre">0.3300</span>&#160; <span class="pre">0.2051</span>
-<span class="pre">0.3621</span>&#160; <span class="pre">0.1054</span>&#160; <span class="pre">0.2208</span>&#160; <span class="pre">0.3116</span>
-<span class="pre">0.5727</span>&#160; <span class="pre">0.0104</span>&#160; <span class="pre">0.1741</span>&#160; <span class="pre">0.2428</span>
-<span class="pre">`</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#GM.5.0.Sox.0001	M1911_1.02;;M3916_1.02;;M5846_1.02;;M6471_1.02;;M6478_1.02;;MA0084.1_SRY;;MA1152.1_SOX15;;SOX12;;SOX12_1 Sox12_bulyk_sc09-primary;;SOX15_1 Sox15_bulyk_sc09-primary;;SOX18_1 Sox18_bulyk_sc09-primary;;SOX30;;SOX30_1 Sox30_bulyk_sc09-primary;;SOX7_1 Sox7_bulyk_sc09-primary;;SOX9_1 SOX9_transfac_M00410;;SOX9_3 SOX9_jolma_DBD_M136;;SRY;;SRY_3 SRY_jaspar_MA0084.1</span>
+<span class="o">&gt;</span><span class="n">GM</span><span class="o">.</span><span class="mf">5.0</span><span class="o">.</span><span class="n">Sox</span><span class="o">.</span><span class="mi">0001</span>
+<span class="mf">0.7213</span>	<span class="mf">0.0793</span>	<span class="mf">0.1103</span>	<span class="mf">0.0891</span>
+<span class="mf">0.9259</span>	<span class="mf">0.0072</span>	<span class="mf">0.0062</span>	<span class="mf">0.0607</span>
+<span class="mf">0.0048</span>	<span class="mf">0.9203</span>	<span class="mf">0.0077</span>	<span class="mf">0.0672</span>
+<span class="mf">0.9859</span>	<span class="mf">0.0030</span>	<span class="mf">0.0030</span>	<span class="mf">0.0081</span>
+<span class="mf">0.9778</span>	<span class="mf">0.0043</span>	<span class="mf">0.0128</span>	<span class="mf">0.0051</span>
+<span class="mf">0.1484</span>	<span class="mf">0.0050</span>	<span class="mf">0.0168</span>	<span class="mf">0.8299</span>
+<span class="c1">#GM.5.0.Homeodomain.0001	M4064_1.02;;TGIF1;;TGIF1_1 TGIF_transfac_M00418;;TGIF1_HUMAN.H11MO.0.A</span>
+<span class="o">&gt;</span><span class="n">GM</span><span class="o">.</span><span class="mf">5.0</span><span class="o">.</span><span class="n">Homeodomain</span><span class="o">.</span><span class="mi">0001</span>
+<span class="mf">0.8870</span>	<span class="mf">0.0000</span>	<span class="mf">0.0178</span>	<span class="mf">0.0951</span>
+<span class="mf">0.1156</span>	<span class="mf">0.2033</span>	<span class="mf">0.6629</span>	<span class="mf">0.0181</span>
+<span class="mf">0.0017</span>	<span class="mf">0.7452</span>	<span class="mf">0.0809</span>	<span class="mf">0.1722</span>
+<span class="mf">0.0011</span>	<span class="mf">0.0003</span>	<span class="mf">0.0003</span>	<span class="mf">0.9983</span>
+<span class="mf">0.0026</span>	<span class="mf">0.0141</span>	<span class="mf">0.9721</span>	<span class="mf">0.0111</span>
+<span class="mf">0.0000</span>	<span class="mf">0.0189</span>	<span class="mf">0.0054</span>	<span class="mf">0.9758</span>
+<span class="mf">0.0006</span>	<span class="mf">0.9983</span>	<span class="mf">0.0006</span>	<span class="mf">0.0006</span>
+<span class="mf">0.9170</span>	<span class="mf">0.0140</span>	<span class="mf">0.0046</span>	<span class="mf">0.0644</span>
+<span class="mf">0.2228</span>	<span class="mf">0.2421</span>	<span class="mf">0.3300</span>	<span class="mf">0.2051</span>
+<span class="mf">0.3621</span>	<span class="mf">0.1054</span>	<span class="mf">0.2208</span>	<span class="mf">0.3116</span>
+<span class="mf">0.5727</span>	<span class="mf">0.0104</span>	<span class="mf">0.1741</span>	<span class="mf">0.2428</span>
+</pre></div>
+</div>
 <ul class="simple">
 <li><p>Motif2factors file</p></li>
 </ul>
-<p><code class="docutils literal notranslate"><span class="pre">`</span>
-<span class="pre">Motif</span>&#160;&#160; <span class="pre">Factor</span>&#160; <span class="pre">Evidence</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">Curated</span>
-<span class="pre">GM.5.0.Sox.0001</span> <span class="pre">SRY</span>&#160;&#160;&#160;&#160; <span class="pre">JASPAR</span>&#160; <span class="pre">Y</span>
-<span class="pre">GM.5.0.Sox.0001</span> <span class="pre">SOX9</span>&#160;&#160;&#160; <span class="pre">Transfac</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">Y</span>
-<span class="pre">GM.5.0.Sox.0001</span> <span class="pre">Sox9</span>&#160;&#160;&#160; <span class="pre">Transfac</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">N</span>
-<span class="pre">GM.5.0.Sox.0001</span> <span class="pre">SOX9</span>&#160;&#160;&#160; <span class="pre">SELEX</span>&#160;&#160; <span class="pre">Y</span>
-<span class="pre">GM.5.0.Sox.0001</span> <span class="pre">Sox9</span>&#160;&#160;&#160; <span class="pre">SELEX</span>&#160;&#160; <span class="pre">N</span>
-<span class="pre">`</span></code></p>
-<p>The <cite>motif</cite> file should end with <cite>.pfm</cite>,  and <cite>motif2factors</cite> file should have the same name with <cite>motif</cite> file and end with <cite>motif2factors.txt</cite>.
-The defaule <cite>gimme.vertebrate.v5.0</cite> file can be found here: [gimme.vertebrate.v5.0.pfm](<a class="reference external" href="https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.pfm">https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.pfm</a>) and [gimme.vertebrate.v5.0.motif2factors.txt](<a class="reference external" href="https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.motif2factors.txt">https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.motif2factors.txt</a>).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Motif</span>	<span class="n">Factor</span>	<span class="n">Evidence</span>	<span class="n">Curated</span>
+<span class="n">GM</span><span class="o">.</span><span class="mf">5.0</span><span class="o">.</span><span class="n">Sox</span><span class="o">.</span><span class="mi">0001</span>	<span class="n">SRY</span>	<span class="n">JASPAR</span>	<span class="n">Y</span>
+<span class="n">GM</span><span class="o">.</span><span class="mf">5.0</span><span class="o">.</span><span class="n">Sox</span><span class="o">.</span><span class="mi">0001</span>	<span class="n">SOX9</span>	<span class="n">Transfac</span>	<span class="n">Y</span>
+<span class="n">GM</span><span class="o">.</span><span class="mf">5.0</span><span class="o">.</span><span class="n">Sox</span><span class="o">.</span><span class="mi">0001</span>	<span class="n">Sox9</span>	<span class="n">Transfac</span>	<span class="n">N</span>
+<span class="n">GM</span><span class="o">.</span><span class="mf">5.0</span><span class="o">.</span><span class="n">Sox</span><span class="o">.</span><span class="mi">0001</span>	<span class="n">SOX9</span>	<span class="n">SELEX</span>	<span class="n">Y</span>
+<span class="n">GM</span><span class="o">.</span><span class="mf">5.0</span><span class="o">.</span><span class="n">Sox</span><span class="o">.</span><span class="mi">0001</span>	<span class="n">Sox9</span>	<span class="n">SELEX</span>	<span class="n">N</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">motif</span></code> file should end with <code class="docutils literal notranslate"><span class="pre">.pfm</span></code>,  and <code class="docutils literal notranslate"><span class="pre">motif2factors</span></code> file should have the same name with <code class="docutils literal notranslate"><span class="pre">motif</span></code> file and end with <code class="docutils literal notranslate"><span class="pre">motif2factors.txt</span></code>.
+The defaule <code class="docutils literal notranslate"><span class="pre">gimme.vertebrate.v5.0</span></code> file can be found here: <a class="reference external" href="https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.pfm">gimme.vertebrate.v5.0.pfm</a> and <a class="reference external" href="https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.motif2factors.txt">gimme.vertebrate.v5.0.motif2factors.txt</a>.</p>
+</div>
+</div>
 
 
            </div>
