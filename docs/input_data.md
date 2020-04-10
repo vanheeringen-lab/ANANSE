@@ -4,10 +4,12 @@
 When you need run `ANANSE` in your sample, genome file is necessary. We recommand you download your genome file with [genomepy](https://github.com/vanheeringen-lab/genomepy), which is a python package could install genome easily.
 
 In ANANSE, for each genome, we need:
+
 * A genome fasta file
 * A 12 columns BED file with genome annotation. 
 
 When you would like to insall the genome with `genomepy`, you could fellow this commands, which will download both `fasta` file and `bed` file.
+
 ```
 conda create -n genomepy python=3
 conda activate genomepy
