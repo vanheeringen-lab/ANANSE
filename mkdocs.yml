@@ -21,6 +21,7 @@ markdown_extensions:
 
 nav:
   - Home: 'index.md'
+  - Model Description: 'model_description.md'
   - Installation: 'installation.md'
       # - The easiest way to install: 'installation.md/#the-easiest-way-to-install'
       # - Alternative installation: 'installation.md/#alternative-installation'
@@ -44,6 +45,7 @@ nav:
       # - Command: ananse binding: 'examples.md/#motif-database'
       # - Command: ananse network: 'examples.md/#motif-database'
       # - Command: ananse influence: 'examples.md/#motif-database'
+  - FAQ: 'faq.md'
   # - FAQ
   #     - Sorry, motif prediction tool X] is not supported
   #     - I get motifs that have differential scores in gimme maelstrom, however, the number is not different across clusters

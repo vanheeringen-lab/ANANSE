@@ -28,6 +28,8 @@ ANANSE is free and open source research software. If you find it useful please c
 * You can also visit our website at <a href="https://github.com/vanheeringen-lab" target="_blank">vanheeringen-lab</a>
 
 ### Full contents
+* [Model Description](model_description.md)
+    - [Overview of ANANSE](model_description/#overview_of_ANANSE)
 * [Installation](installation.md)
     - [The easiest way to install](installation/#the-easiest-way-to-install)
     - [Alternative installation](installation/#alternative-installation)
@@ -49,11 +51,9 @@ ANANSE is free and open source research software. If you find it useful please c
     - [Command: ananse binding](examples/#motif-database)
     - [Command: ananse network](examples/#motif-database)
     - [Command: ananse influence](examples/#motif-database)
-* FAQ
-    - Sorry, motif prediction tool [X] is not supported
-    - I get motifs that have differential scores in gimme maelstrom, however, the number is not different across clusters
-    - I have upgraded GimmeMotifs and now it doesn’t find my genome
-    - I cannot run gimme index anymore
-    - I get ‘RuntimeError: Invalid DISPLAY variable’
-    - I get a KeyError when running gimme maelstrom
+* [FAQ](faq.md)
+    - I can use what kinds of enhancer data
+    - ANANSE can be used to what bioogy process
+    - Which species data can be used
+
 * Acknowledgments
