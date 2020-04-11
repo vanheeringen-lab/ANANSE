@@ -31,7 +31,7 @@ By default ANANSE uses a non-redundant, clustered database of known vertebrate m
 !!! note "Example"  
     * Motif file
 
-    ```
+    ``` bash
     #GM.5.0.Sox.0001	
     >GM.5.0.Sox.0001
     0.7213	0.0793	0.1103	0.0891
@@ -57,7 +57,7 @@ By default ANANSE uses a non-redundant, clustered database of known vertebrate m
 
     * Motif2factors file  
 
-    ```
+    ``` bash
     Motif	Factor	Evidence	Curated
     GM.5.0.Sox.0001	SRY	JASPAR	Y
     GM.5.0.Sox.0001	SOX9	Transfac	Y
@@ -76,7 +76,7 @@ The EP300 ChIP-seq or ATAC-seq peaks were used to define putative enhancer regio
 !!! note "Example"
     This is the example of input BED file:
 
-    ```
+    ``` bash
     chr2	148881617	148881817	7
     chr7	145997204	145997404	4
     chr7	145997304	145997404	4
@@ -95,7 +95,7 @@ The expression data normally from RNA-seq experiment. We are using `TPM` score t
 !!! note "Example"
     This is the example of input expression file:
 
-    ```
+    ``` bash
     target_id	tpm
     A1BG	9.579771
     A1CF	0.0223
