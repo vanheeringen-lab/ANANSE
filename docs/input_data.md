@@ -72,6 +72,7 @@ The EP300 ChIP-seq or ATAC-seq peaks were used to define putative enhancer regio
 
 !!! note "example"
     This is the example of input BED file:
+
     ```
     chr2	148881617	148881817	7
     chr7	145997204	145997404	4
@@ -80,15 +81,17 @@ The EP300 ChIP-seq or ATAC-seq peaks were used to define putative enhancer regio
     chr13	109424160	109424360	20
     chr14	32484901	32485101	2
     ```
+
     You can find our test samples enhancer files here:  
     * [FB_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_enhancer.bed)  
     * [KRT_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_enhancer.bed)
 
 ### Expression data
-The expression data normally from RNA-seq experiment. We are using `TPM` score to represent gene's expression in ANANSE.
+The expression data normally from RNA-seq experiment. We are using `TPM` score to represent gene's expression in ANANSE. In expression file, the 1st column (named as `target_id`) should contain **gene name**, and the second column should be named as `tpm`. 
 
 !!! note "example"
     This is the example of input expression file:
+
     ```
     target_id	tpm
     A1BG	9.579771
@@ -97,9 +100,10 @@ The expression data normally from RNA-seq experiment. We are using `TPM` score t
     A2ML1	664.452
     A3GALT2	0.147194
     ```
-    In this file, the 1st column (named as `target_id`) should contain **gene name**, and the second column should be named as `tpm`. You can find our test samples enhancer files here:  
-    * [FB_rep1_TPM.txt](/test/data/KRT_rep1_TPM.txt)  
-    * [FB_rep2_TPM.txt](/test/data/KRT_rep2_TPM.txt)  
+
+    You can find our test samples enhancer files here:  
+    * [FB_rep1_TPM.txt](/test/data/FB_rep1_TPM.txt)  
+    * [FB_rep2_TPM.txt](/test/data/FB_rep2_TPM.txt)  
     * [KRT_rep1_TPM.txt](/test/data/KRT_rep1_TPM.txt)  
     * [KRT_rep2_TPM.txt](/test/data/KRT_rep2_TPM.txt)  
 
