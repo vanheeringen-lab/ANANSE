@@ -1,7 +1,7 @@
 ## **ANANSE**: **AN**alysis **A**lgorithm for **N**etworks **S**pecified by **E**nhancers
 
 ### What is ANANSE?
-ANANSE is an analysis framework for key transcription factor prediction during cell fate switch written in Python. It contains easy use command-line scripts, and it include the following three tools:
+ANANSE is an analysis framework for key transcription factor prediction during cell fate switch written in Python. It contains a user-friendly command-line scripts, and it includes the following three tools:
 
 |   Command   |  Function    |
 | ---- |  ---- |
@@ -22,9 +22,9 @@ ANANSE is free and open source research software. If you find it useful please c
 * There’s also an [python API documentation](API_documentation.md) for python users.
 
 ### Get help
-* First, check the FAQ for common issues.
+* First, check the [FAQ](faq.md) for common issues.
 * The preferred way to get support is through the [Github issues page](https://github.com/vanheeringen-lab/ANANSE/issues).
-* Finally, you can reach me by email to <a href="mailto:qxuchn@gmail.com" target="_blank">Quan Xu</a> or <a href="mailto:simon.vanheeringen@gmail.com" target="_blank">Simon J. van Heeringen</a>.
+* Finally, you can reach us by email to <a href="mailto:qxuchn@gmail.com" target="_blank">Quan Xu</a> or <a href="mailto:simon.vanheeringen@gmail.com" target="_blank">Simon J. van Heeringen</a>.
 * You can also visit our website at <a href="https://github.com/vanheeringen-lab" target="_blank">vanheeringen-lab</a>
 
 ### Full contents
