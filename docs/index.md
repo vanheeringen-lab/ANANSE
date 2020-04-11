@@ -1,6 +1,6 @@
 ## **ANANSE**: **AN**alysis **A**lgorithm for **N**etworks **S**pecified by **E**nhancers
 
-### What is ANANSE Network?
+### What is ANANSE?
 ANANSE is an analysis framework for key transcription factor prediction during cell fate switch written in Python. It contains easy use command-line scripts, and it include the following three tools:
 
 |   Command   |  Function    |
@@ -52,8 +52,7 @@ ANANSE is free and open source research software. If you find it useful please c
     - [Command: ananse network](examples/#motif-database)
     - [Command: ananse influence](examples/#motif-database)
 * [FAQ](faq.md)
-    - I can use what kinds of enhancer data
-    - ANANSE can be used to what bioogy process
-    - Which species data can be used
-
+    - [I can use what kinds of enhancer data](faq/#I_can_use_what_kinds_of_enhancer_data)
+    - [ANANSE can be used to what bioogy process](faq/#ANANSE_can_be_used_to_what_bioogy_process)
+    - [Which species data can be used](faq/#Which_species_data_can_be_used)
 * Acknowledgments

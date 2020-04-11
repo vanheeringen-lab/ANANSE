@@ -1,4 +1,4 @@
-## Prepare data
+## Input data
 
 ### Genome
 When you need run `ANANSE` in your sample, genome file is necessary. We recommand you download your genome file with [genomepy](https://github.com/vanheeringen-lab/genomepy), which is a python package could install genome easily.
