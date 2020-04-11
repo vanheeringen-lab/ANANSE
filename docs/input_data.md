@@ -110,10 +110,10 @@ A3GALT2	0.147194
 !!! note "Example"
     You can find our test samples enhancer files here:  
 
-    * [FB_rep1_TPM.txt](/test/data/FB_rep1_TPM.txt)  
-    * [FB_rep2_TPM.txt](/test/data/FB_rep2_TPM.txt)  
-    * [KRT_rep1_TPM.txt](/test/data/KRT_rep1_TPM.txt)  
-    * [KRT_rep2_TPM.txt](/test/data/KRT_rep2_TPM.txt)  
+    * [FB_rep1_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_rep1_TPM.txt)  
+    * [FB_rep2_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_rep2_TPM.txt)  
+    * [KRT_rep1_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_rep1_TPM.txt)  
+    * [KRT_rep2_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_rep2_TPM.txt)  
 
 ### Differential expression data
 The differential expression data normally from RNA-seq experiment. In differential expression file, the 1st column (named as `resid`) should contain **gene name**, the second column should be named as `log2FoldChange` which is **log2 FoldChange score** of gene, and the third column should be named as `padj`, which is **p-value** of gene. 
@@ -137,7 +137,7 @@ DMKN	-11.6435948368453	0
 !!! note "Example"
     You can find our test samples enhancer files here:  
 
-    * [FB2KRT_degenes.csv](/test/data/FB2KRT_degenes.csv)  
+    * [FB2KRT_degenes.csv](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB2KRT_degenes.csv)  
 
 [^1]: van Heeringen, S.J., and Veenstra, G.J.C. (2010). GimmeMotifs: a de novo motif prediction pipeline for ChIP-sequencing experiments. Bioinformatics 27, 270-271.
 [^2]: Kempfer, R., and Pombo, A. (2019). Methods for mapping 3D chromosome architecture. Nat Rev Genet.
