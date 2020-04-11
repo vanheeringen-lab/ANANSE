@@ -4,8 +4,6 @@
 
 ### Build TF binding network
 
-* Example:
-
 ``` bash
 $ ananse binding  -r data/krt_enhancer.bed \
                   -o results/binding.txt \
@@ -13,16 +11,16 @@ $ ananse binding  -r data/krt_enhancer.bed \
                   -g hg38 \
                   -p /data/gimme.vertebrate.v5.1.pfm
 ```
+''' tip
+    Please use `-h/--help` for the details of all options.
 
-* Required arguments:
+**Required arguments:**  
   * `-r, --enhancers`  
     The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](https://github.com/vanheeringen-lab/ANANSE/raw/master/test/data/krt_enhancer.bed) is an example enhancer BED file.
   * `-o, --output`  
     The name of the output file.
 
-
-* Optional arguments:
-
+**Optional arguments:**  
   * `-n, --ncore`  
     Specifies the number of threads to use during analysis.  
   * `-g, --genome`  
@@ -42,8 +40,6 @@ $ ananse binding  -r data/krt_enhancer.bed \
 
 ### Built gene regulatory network
 
-* Example:
-
 ``` bash
 $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                   -b results/binding.txt \
@@ -52,8 +48,10 @@ $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                   -g hg38 \
                   -p ../data/gimme.vertebrate.v5.1.pfm
 ```
+''' tip
+    Please use `-h/--help` for the details of all options.
 
-* Required arguments:
+**Required arguments:**
   * `-e, --expression`  
     The expression file of your interested cell type or tissue. It could have one or more gene expression file(s). In this file, the 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/KRT_rep1_TPM.txt) is an example of expression file.   
 
@@ -62,7 +60,7 @@ $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
   * `-o, --output`  
     The folder to save results, `-o` is the required arguments. 
 
-* Optional arguments:
+**Optional arguments:**
   * `-n, --ncore`  
     Specifies the number of threads to use during analysis. 
   * `-g, --genome`  
@@ -79,10 +77,7 @@ $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
   * `-h, --help`  
     Show the help message and exit.
 
-
 ### Infer TF influence score
-
-* Example:  
 
 ``` bash
 $ ananse influence  -a results/full_network.txt \
@@ -91,9 +86,10 @@ $ ananse influence  -a results/full_network.txt \
                     -o results/FB2KRT.txt \
                     -p False
 ```
+''' tip
+    Please use `-h/--help` for the details of all options.
 
-* Required arguments:
-
+**Required arguments:**  
   * `-a, --anetwork`  
   The network in second cell. It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).   
   * `-d, --degenes`  
@@ -101,8 +97,7 @@ $ ananse influence  -a results/full_network.txt \
   * `-o, --output`  
   The folder to save results, `-o` is the required arguments.   
 
-* Optional arguments:
-
+**Optional arguments:**  
   * `-n, --ncore`  
     Specifies the number of threads to use during analysis. 
   * `-s, --edges`  
