@@ -17,7 +17,7 @@ $ ananse binding  -r data/krt_enhancer.bed \
 **Required arguments:**  
 
 * `-r, --enhancers`  
-    The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](https://github.com/vanheeringen-lab/ANANSE/raw/master/test/data/krt_enhancer.bed) is an example enhancer BED file.  
+    The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. You could found the method to generate enhancer file and the test enhancer files at [Enhancer data](input_data/#enhancer-data) part.  
 * `-o, --output`  
     The name of the output file.
 
@@ -26,15 +26,13 @@ $ ananse binding  -r data/krt_enhancer.bed \
 * `-n, --ncore`  
     Specifies the number of threads to use during analysis.  
 * `-g, --genome`  
-    The genome that is used for the gene annotation and the enhancer location. This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. The default setting is `hg19`.
+    The genome that is used for the gene annotation and the enhancer location. This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. You could found the method to generate genome files at [Genome](input_data/#genome) part. The default setting is `hg19`.  
 * `-a, --annotation`  
-    The input 12 columns BED file with gene annotation in your genome version. [***This***](https://github.com/vanheeringen-lab/ANANSE/raw/master/data/hg38_genes.bed) is an example BED annotation file of human hg38.
+    The input 12 columns BED file with gene annotation in your genome version. You could found the method to generate annotation BED file and the test BED files at [Genome](input_data/#genome) part.  
 * `-p, --motifs`  
-    The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.
+    The input Motif file. You could found what is motif file and the default motif files at [Motif database](input_data/#motif-database) part.  
 * `-f, --filter_promoter`  
     Filter promoters, True or False, input should be either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.).
-* `-d, --keep_detail`  
-    Keep detail files, True or False, input should be either 'True' or 'False'. (Default setting: True).  
 * `-h, --help`  
     Show the help message and exit.
 
@@ -65,13 +63,11 @@ $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
 * `-n, --ncore`  
     Specifies the number of threads to use during analysis.  
 * `-g, --genome`  
-    The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`.  
-* `-p, --motifs`  
-    The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.  
+    The genome that is used for the gene annotation and the enhancer location. This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. You could found the method to generate genome files at [Genome](input_data/#genome) part. The default setting is `hg19`.  
 * `-a, --annotation`  
-    The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.  
-* `-f, --filter_promoter`  
-    Filter promoters, True or False, input should be either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.).  
+    The input 12 columns BED file with gene annotation in your genome version. You could found the method to generate annotation BED file and the test BED files at [Genome](input_data/#genome) part.  
+* `-p, --motifs`  
+    The input Motif file. You could found what is motif file and the default motif files at [Motif database](input_data/#motif-database) part.  
 * `-c, --corrfiles`  
     All gene correlation file, the human gene expression correlation can be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/data/expressioncorrelation.txt).  
 * `-h, --help`  
