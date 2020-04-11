@@ -12,7 +12,7 @@ $ ananse binding  -r data/krt_enhancer.bed \
                   -p /data/gimme.vertebrate.v5.1.pfm
 ```
 ''' tip
-    Please use `-h/--help` for the details of all options.
+  Please use `-h/--help` for the details of all options.
 
 **Required arguments:**  
   * `-r, --enhancers`  
@@ -49,9 +49,9 @@ $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                   -p ../data/gimme.vertebrate.v5.1.pfm
 ```
 ''' tip
-    Please use `-h/--help` for the details of all options.
+  Please use `-h/--help` for the details of all options.
 
-**Required arguments:**
+**Required arguments:**  
   * `-e, --expression`  
     The expression file of your interested cell type or tissue. It could have one or more gene expression file(s). In this file, the 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/KRT_rep1_TPM.txt) is an example of expression file.   
 
@@ -60,7 +60,7 @@ $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
   * `-o, --output`  
     The folder to save results, `-o` is the required arguments. 
 
-**Optional arguments:**
+**Optional arguments:**  
   * `-n, --ncore`  
     Specifies the number of threads to use during analysis. 
   * `-g, --genome`  
@@ -87,7 +87,7 @@ $ ananse influence  -a results/full_network.txt \
                     -p False
 ```
 ''' tip
-    Please use `-h/--help` for the details of all options.
+  Please use `-h/--help` for the details of all options.
 
 **Required arguments:**  
   * `-a, --anetwork`  
