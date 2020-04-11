@@ -80,9 +80,9 @@ chr13	109424160	109424360	20
 chr14	32484901	32485101	2
 ```
 
-!!! example
-    You can find our test samples enhancer files here:
-    - [FB_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_enhancer.bed) 
+!!! note "example"
+    You can find our test samples enhancer files here:  
+    - [FB_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_enhancer.bed)  
     - [KRT_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_enhancer.bed)
 
 ### Expression data

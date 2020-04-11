@@ -17,7 +17,7 @@ $ ananse binding  -r data/krt_enhancer.bed \
 **Required arguments:**  
 
 * `-r, --enhancers`  
-    The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. [***This***](https://github.com/vanheeringen-lab/ANANSE/raw/master/test/data/krt_enhancer.bed) is an example enhancer BED file.  
+    The name of the input enhancer peak file. This should be a BED format file, with 4 columns. The first column is chromosome name, the second and third columns are the start and end point of peak. We recommend all peaks have 200bp. If the peak is not 200bp, we will normize it to 200bp. The fourth column is intensity of the peak, it could be RPKM or equivalent value. You could found the method to generate enhancer file and the test enhancer files at [Enhancer data](input_data/#enhancer-data) part.  
 * `-o, --output`  
     The name of the output file.
 
