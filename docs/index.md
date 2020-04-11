@@ -1,13 +1,18 @@
 ## **ANANSE**: **AN**alysis **A**lgorithm for **N**etworks **S**pecified by **E**nhancers
 
-### What is ANANSE Network?
-ANANSE is an analysis framework for key transcription factor prediction during cell fate switch written in Python. It contains command-line scripts to predict all TF binding network (`binding`), predict gene regulatory network (`network`) and infer influence score between two cell types(tissues) (`influence`). In addition, all this functionality is available from a Python API.
+### What is ANANSE?
+ANANSE is an analysis framework for key transcription factor prediction during cell fate switch written in Python. It contains easy use command-line scripts, and it include the following three tools:
+
+|   Command   |  Function    |
+| ---- |  ---- |
+|  ananse binding   | predict  cell type-specific enhancer TF binding profile  |
+|  ananse network    | predict cell type-specific enahncer gene regulatory network  |
+|   ananse influence   |  infer enhancer binding key transcription factors during cell fate determination   |   
 
 
-### Citation
+ANANSE is free and open source research software. If you find it useful please cite our paper:
 
-!!! note ""
-    ANANSE is free and open source research software. If you find it useful please cite our paper:
+!!! note "Citation"
     > Xu, Q., Georgiou, G., Veenstra, G.J.C., Zhou, H., and van Heeringen, S.J. (2020). **ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination.** [https://www.biorxiv.org/](https://www.biorxiv.org/)
 
 ### Getting started
@@ -23,6 +28,8 @@ ANANSE is an analysis framework for key transcription factor prediction during c
 * You can also visit our website at <a href="https://github.com/vanheeringen-lab" target="_blank">vanheeringen-lab</a>
 
 ### Full contents
+* [Model Description](model_description.md)
+    - [Overview of ANANSE](model_description/#overview_of_ANANSE)
 * [Installation](installation.md)
     - [The easiest way to install](installation/#the-easiest-way-to-install)
     - [Alternative installation](installation/#alternative-installation)
@@ -44,11 +51,9 @@ ANANSE is an analysis framework for key transcription factor prediction during c
     - [Command: ananse binding](examples/#motif-database)
     - [Command: ananse network](examples/#motif-database)
     - [Command: ananse influence](examples/#motif-database)
-* FAQ
-    - Sorry, motif prediction tool [X] is not supported
-    - I get motifs that have differential scores in gimme maelstrom, however, the number is not different across clusters
-    - I have upgraded GimmeMotifs and now it doesn’t find my genome
-    - I cannot run gimme index anymore
-    - I get ‘RuntimeError: Invalid DISPLAY variable’
-    - I get a KeyError when running gimme maelstrom
+* [FAQ](faq.md)
+    - [I can use what kinds of enhancer data](faq/#I_can_use_what_kinds_of_enhancer_data)
+    - [ANANSE can be used to what bioogy process](faq/#ANANSE_can_be_used_to_what_bioogy_process)
+    - [Which species data can be used](faq/#Which_species_data_can_be_used)
+    - [Do I need provide motif data](faq/#Do_I_need_provide_motif_data)
 * Acknowledgments
