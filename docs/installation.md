@@ -26,4 +26,5 @@ ANANSE only supports Python 3. Don't forget to activate the environment with `so
 
 ### Alternative installation
 
-You can also instll ANANSE with `pip`.
+You can also install ANANSE with `pip`.
+#TODO
