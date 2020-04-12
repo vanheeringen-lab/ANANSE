@@ -6,7 +6,8 @@ In our tranning model, we used EP300 ChIP-seq peak as enhancer. In our examples,
 ### ANANSE can be used to what bioogy process
 
 ### Which species data can be used
+All the tranning and test data are from human, but we firmly believe you could apply ANANSE to other species.
 
 ### Do I need provide motif data
-
+By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: `gimme.vertebrate.v5.0`. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. Large-scale benchmarks using ChIP-seq peaks show that this database shows good performance and should be a good default choice. he detail discription about motif database can be found at [Motif database](input_data/#motif-database) part.
 
