@@ -23,9 +23,9 @@ ANANSE infers cell type-specific GRNs based on the predicted TF binding sites an
 
 The weighted sum of TF predicted enhancer intensity within 100kb around TSS is defined as the TF-gene binding score (Eq. 1). 
 
-\begin{equation*}
-B_{x,r} = \sum_{k} w_k s_k 
-\end{equation*}
+<!-- \begin{equation*} -->
+$$ B_{x,r} = \sum_{k} w_k s_k $$
+<!-- \end{equation*} -->
 
 where $B_{x,r}$ is the binding score between TF $x$ and target gene $r$, $w_k$ is the weighted distance between an enhancer and the target gene and where $s_k$ is predicted binding intensity at genomic position $k$ of TF $x$. 
 
