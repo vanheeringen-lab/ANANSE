@@ -10,5 +10,5 @@ ANANSE is a method to predict key transcription factors in cell fate determinati
 All the tranning and test data are from human, but we firmly believe you could apply ANANSE to other species.
 
 ### Do I need provide motif data
-By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: `gimme.vertebrate.v5.0`. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. Large-scale benchmarks using ChIP-seq peaks show that this database shows good performance and should be a good default choice. The detail discription about motif database can be found at [Motif database](input_data/#motif-database) part.
+By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: `gimme.vertebrate.v5.0`. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. Large-scale benchmarks using ChIP-seq peaks show that this database shows good performance and should be a good default choice. The detail discription about motif database can be found at [Motif database](https://anansepy.readthedocs.io/en/latest/input_data/#motif-database) part.
 
