@@ -33,11 +33,11 @@ The distance weight is based on a linear genomic distance between the enhancer a
 
 \begin{equation}
 w_k =
-  \begin{quad}
+  \begin{array}
     0               & \quad k \in (\text{0kb,2kb}]\\
     1               & \quad k \in (\text{2kb,5kb}]\\
     \frac{2e^{-\mu|k-t_r|}}{1+e^{-\mu|k-t_r|}}  & \quad k \in (\text{5kb,100kb}]
-  \end{quad}
+  \end{array}
 \end{equation}
 
 where $t_r$ is the genomic position of the TSS of gene $r$ and the parameter $\mu$, which determines the decay rate as a function of distance from the TSS, is set such that an enhancer 10 kb from the TSS contributes one-half of that at the TSS. This distance weight calculation is similar to the method previously described in Wang et al., 2016, except that only signal in enhancers is used, enhancers within 2kb around TSS are removed and the weight of enhancers within 2kb to 5kb is set to 1.
