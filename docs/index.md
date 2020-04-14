@@ -52,8 +52,8 @@ ANANSE is free and open source research software. If you find it useful please c
     - [Command: ananse network](examples/#motif-database)
     - [Command: ananse influence](examples/#motif-database)
 * [FAQ](faq.md)
-    - [I can use what kinds of enhancer data](faq/#I_can_use_what_kinds_of_enhancer_data)
-    - [ANANSE can be used to what bioogy process](faq/#ANANSE_can_be_used_to_what_bioogy_process)
-    - [Which species data can be used](faq/#Which_species_data_can_be_used)
+    - [I can apply ANANSE to what kind of enhancer data](faq/#I_can_apply_ANANSE_to_what_kind_of_enhancer_data)
+    - [I can apply ANANSE to what bioogy process](faq/#I_can_apply_ANANSE_to_what_bioogy_process)
+    - [I can apply ANANSE to which species data](faq/#I_can_apply_ANANSE_to_which_species_data)
     - [Do I need provide motif data](faq/#Do_I_need_provide_motif_data)
 * Acknowledgments
