@@ -86,7 +86,7 @@ if __name__ == "__main__":
         dest="fpomoter",
         help="Filter promoters, True or False, input should be either 'True' or 'False'.",
         metavar="NAME",
-        type="store_false",
+        action="store_false",
         default=True,
     )
     p.add_argument(
