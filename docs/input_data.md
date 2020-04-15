@@ -97,6 +97,20 @@ chr14	32484901	32485101	2
     * [FB_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_enhancer.bed)  
     * [KRT_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_enhancer.bed)
 
+!!! tip
+    Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.
+
+    ```
+    # sort the bdg file
+    sort -k1,1 -k2,2n KRT_p300.bdg > KRT_p300_sort.bdg"
+    
+    # switch bdg file to wig file with bedGraphToBigWig
+    bedGraphToBigWig KRT_p300_sort.bdg hg38.fa.sizes KRT_p300_sort.wig
+
+    # Max intensity of one enhancer peak with bigWigSummary
+    bigWigSummary -type=max KRT_p300_sort.wig chr12 54070173 54072173 1
+    ```
+
 ### Expression data
 
 The expression data normally comes from an RNA-seq experiment. We use the `TPM` score to represent the gene expression in ANANSE. In the expression input file, the 1st column (named as `target_id`) should contain the **gene name**, and the second column should be named `tpm`.
