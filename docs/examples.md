@@ -3,6 +3,15 @@
 ```
 git clone https://github.com/vanheeringen-lab/ANANSE.git
 cd ANANSE/test/
+ls -lh data                                                                
+# total 3.2M
+# -rw-rw-r-- 1 qxu qxu 730K Apr  2 14:51 FB2KRT_degenes.csv
+# -rw-rw-r-- 1 qxu qxu 1.2M Apr 11 21:22 FB_enhancer.bed
+# -rw-rw-r-- 1 qxu qxu 260K Apr  2 14:51 FB_rep1_TPM.txt
+# -rw-rw-r-- 1 qxu qxu 261K Apr 11 21:22 FB_rep2_TPM.txt
+# -rw-rw-r-- 1 qxu qxu 253K Apr 11 21:22 KRT_enhancer.bed
+# -rw-rw-r-- 1 qxu qxu 267K Apr  2 14:51 KRT_rep1_TPM.txt
+# -rw-rw-r-- 1 qxu qxu 268K Apr  2 14:51 KRT_rep2_TPM.txt
 ```
 ### Build TF binding network
 
