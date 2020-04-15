@@ -42,5 +42,5 @@ $ ananse influence  -b results/FB_network.txt \
                     -e data/FB_rep1_TPM.txt \
                     -d data/FB2KRT_degenes.csv \
                     -o results/FB2KRT.txt \
-                    -p False
+                    -p 
 ```
