@@ -69,7 +69,7 @@ if __name__ == "__main__":
         metavar="BED",
     )
     p.add_argument(
-        "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg19"
+        "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg38"
     )
     p.add_argument(
         "-o",
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         metavar="BED",
     )
     p.add_argument(
-        "-g", "--genome", dest="genome", help="Genome", metavar="NAME", default="hg19",
+        "-g", "--genome", dest="genome", help="Genome", metavar="NAME", default="hg38",
     )
     p.add_argument(
         "-i",
