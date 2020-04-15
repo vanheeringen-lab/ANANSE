@@ -44,7 +44,8 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/)**
   
   * **All the example dataset and result files are able to find at [***http://mbdata.science.ru.nl/qxu/ananse/ananse.html***](http://mbdata.science.ru.nl/qxu/ananse/ananse.html).**
   ---
-  > ### ***Build TF binding network***
+  > ### ***Build TF binding network***  
+  > Predict cell type-specific transcription factor binding profile
 
   * Example:
     ```
@@ -81,7 +82,8 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/)**
       Show the help message and exit.
 
   ---
-  > ### ***Built gene regulatory network***
+  > ### ***Built gene regulatory network***  
+  > Infer cell type-specific gene regulatory network
 
   * Example:
     ```
@@ -119,7 +121,8 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/)**
       Show the help message and exit.
 
   ---
-  > ### ***Infer TF influence score***
+  > ### ***Infer TF influence score***  
+  > Infer key transcription factors during cell fate determination
 
   * Example:
     ```
