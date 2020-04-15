@@ -27,7 +27,7 @@ genomepy install GRCh38.p13 Ensembl -a
 By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: `gimme.vertebrate.v5.0`. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. [Large-scale benchmarks](https://www.biorxiv.org/content/10.1101/474403v1.full) using ChIP-seq peaks show that this database shows good performance and should be a good default choice. 
 
 !!! warning
-    If you would like to use your own motif database, please makesure your database include following two files: 1) **a motif file** and 2) **a motif2factors file**.
+    If you would like to use your own motif database, please make sure your database include following two files: 1) **a motif file** and 2) **a motif2factors file**.
     The `motif` file should contain positional frequency matrices and should end with the `.pfm` extension. The `motif2factors` file should have the same name as  the `motif` file and end with `.motif2factors.txt` instead of `.pfm`.
 
 #### Motif file
@@ -70,7 +70,7 @@ GM.5.0.Sox.0001	Sox9	ChIP-seq	N
 GM.5.0.Sox.0001	SRY	SELEX	Y
 ```
 
-!!! note "Example"  
+!!! note  
     The default motif database (`gimme.vertebrate.v5.0`) from the [GimmeMotifs](https://github.com/vanheeringen-lab/gimmemotifs) package[^1] can be found here:  
 
     * [gimme.vertebrate.v5.0.pfm](https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.pfm)  
@@ -91,11 +91,24 @@ chr13	109424160	109424360	20
 chr14	32484901	32485101	2
 ```
 
-!!! note "Example"
+!!! note 
     You can find our example enhancer files here: 
 
     * [FB_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_enhancer.bed)  
     * [KRT_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_enhancer.bed)
+
+!!! tip "Example"
+    Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.
+
+    * sort the bdg file  
+    `sort -k1,1 -k2,2n KRT_p300.bdg > KRT_p300_sort.bdg`
+    
+    * switch bdg file to wig file with bedGraphToBigWig  
+    `bedGraphToBigWig KRT_p300_sort.bdg hg38.fa.sizes KRT_p300_sort.wig`
+
+    * calculate max intensity of one enhancer peak with bigWigSummary  
+    `bigWigSummary -type=max KRT_p300_sort.wig chr12 54070173 54072173 1`
+
 
 ### Expression data
 
@@ -112,7 +125,7 @@ A2ML1	664.452
 A3GALT2	0.147194
 ```
 
-!!! note "Example"
+!!! note 
     You can find our example expression files here:  
 
     * [FB_rep1_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_rep1_TPM.txt)  
@@ -140,7 +153,7 @@ DMKN	-11.6435948368453	0
 !!! warning
     The `log2FoldChange` should be a **negative number** if this gene is up regulated, and **positive number** if this gene is down regulated.
 
-!!! note "Example"
+!!! note 
     You can find our example differential expression input file here:  
 
     * [FB2KRT_degenes.csv](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB2KRT_degenes.csv)  

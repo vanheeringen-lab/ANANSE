@@ -6,8 +6,8 @@ ANANSE is a computational approach to infer enhancer-based gene regulatory netwo
 
 | Command           | Function                                                       |
 | ----------------- | -------------------------------------------------------------- |
-|  ananse binding   | predict cell type-specific binding of transcription factors    |
-|  ananse network   | predict a cell type-specific gene regulatory network           |
+|  ananse binding   | predict cell type-specific transcription factor binding profile   |
+|  ananse network   | infer cell type-specific gene regulatory network           |
 |  ananse influence | infer key transcription factors during cell fate determination |   
 
 ANANSE is free and open source research software. If you find it useful please cite our paper:
@@ -33,6 +33,9 @@ ANANSE is free and open source research software. If you find it useful please c
 
 * [Model description](model_description.md)
     - [Overview of ANANSE](model_description/#overview_of_ANANSE)
+    - [Prediction of transcription factor binding](model_description/#prediction_of_transcription_factor_binding)
+    - [Inference of gene regulatory networks](model_description/#inference_of_gene_regulatory_networks)
+    - [Calculation of influence score](model_description/#calculation_of_influence_score)
 * [Installation](installation.md)
     - [The easiest way to install](installation/#the-easiest-way-to-install)
     - [Alternative installation](installation/#alternative-installation)
