@@ -18,20 +18,20 @@ ls -lh data
 
 ``` bash
 $ ananse binding  -r data/krt_enhancer.bed \
-                    -o results/binding.txt \
-                    -a ../data/hg38_genes.bed \
-                    -g hg38 \
-                    -p ../data/gimme.vertebrate.v5.1.pfm
+                  -o results/binding.txt \
+                  -a ../data/hg38_genes.bed \
+                  -g hg38 \
+                  -p ../data/gimme.vertebrate.v5.1.pfm
 ```
 
 ### Built gene regulatory network
 
 ``` bash
 $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                    -b results/binding.txt \
-                    -o results/KRT_features.txt \
-                    -g hg38 \
-                    -a ../data/hg38_genes.bed 
+                  -b results/binding.txt \
+                  -o results/KRT_features.txt \
+                  -g hg38 \
+                  -a ../data/hg38_genes.bed 
 ```
 
 ### Infer TF influence score
