@@ -100,16 +100,15 @@ chr14	32484901	32485101	2
 !!! tip
     Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.
 
-    ```
-    # sort the bdg file
-    sort -k1,1 -k2,2n KRT_p300.bdg > KRT_p300_sort.bdg"
+    * sort the bdg file
+    `sort -k1,1 -k2,2n KRT_p300.bdg > KRT_p300_sort.bdg`
     
-    # switch bdg file to wig file with bedGraphToBigWig
-    bedGraphToBigWig KRT_p300_sort.bdg hg38.fa.sizes KRT_p300_sort.wig
+    * switch bdg file to wig file with bedGraphToBigWig
+    `bedGraphToBigWig KRT_p300_sort.bdg hg38.fa.sizes KRT_p300_sort.wig`
 
-    # Max intensity of one enhancer peak with bigWigSummary
-    bigWigSummary -type=max KRT_p300_sort.wig chr12 54070173 54072173 1
-    ```
+    * calculate max intensity of one enhancer peak with bigWigSummary
+    `bigWigSummary -type=max KRT_p300_sort.wig chr12 54070173 54072173 1`
+
 
 ### Expression data
 
