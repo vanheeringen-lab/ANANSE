@@ -86,7 +86,7 @@ if __name__ == "__main__":
         dest="fpomoter",
         help="Filter promoters, True or False, input should be either 'True' or 'False'.",
         metavar="NAME",
-        type=ast.literal_eval,
+        type="store_false",
         default=True,
     )
     p.add_argument(
@@ -158,7 +158,9 @@ if __name__ == "__main__":
         "--promoter",
         dest="promoter",
         help="Calculate promoter and expression network",
-        default=False,
+        metavar="NAME",
+        action="store_true",
+        default=False,        
     )
     p.add_argument(
         "-a",
@@ -277,8 +279,8 @@ if __name__ == "__main__":
         dest="plot",
         help="Plot influence, True or False, input should be either 'True' or 'False'.",
         metavar="NAME",
-        type=ast.literal_eval,
-        default=True,
+        action="store_true",
+        default=False,
     )
     p.set_defaults(func=commands.influence)
 
