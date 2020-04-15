@@ -138,7 +138,7 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/)**
   * Required arguments:
   
     * `-t, --target`  
-    The network in second cell. It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).   
+    The network in target cell. It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).   
     * `-d, --degenes`  
     The differential expression table between two cells. [***This***](/test/data/FB2KRT_degenes.csv) is an example of differential expression file.  
     * `-o, --output`  
@@ -151,7 +151,7 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/)**
     * `-i, --edges`  
       Specifics the number of top edges (interactions) used. 
     * `-s, --source`  
-    The network in first cell (optional). It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).  
+    The network in source cell (optional). It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).  
     * `-e, --expression`  
     The gene expression in first cell (optional). One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/FB_rep1_TPM.txt) is an example of expression file. 
     * `-p, --plot`  

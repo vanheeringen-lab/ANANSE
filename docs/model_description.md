@@ -17,11 +17,11 @@ D) The differential GRN between the two cell types. In this step, the interactio
 E) The barplot shows the ranked influence score of all TFs calculated from the differential GRN. The influence score is calculated based on gene expression score, distance from the enhancer bound by TF to gene, and the interaction score between TF and gene.
 
 
-#### Prediction of transcription factor binding
+### Prediction of transcription factor binding
 
 The enhancer intensity is combined with sequence features in enhancer peaks to infer cell type-specific TF binding profiles. The enhancer locations can be obtained from ChIP-seq analyses of the transcriptional co-activator EP300, chromatin accessibility data such as ATAC-seq or a combination of TF ChIP peaks. Basically any type that gives sharp peaks would be usable. To determine the enhancer activity, we recommend to use either EP300 ChIP-seq or H3K27ac ChIP-seq, as both of these have been shown to correlate with enhancer activity (Creyghton et al., 2010; Rada-Iglesias et al., 2011). The enhancer activity is combined with TF motif scores in the enhancer sequences usin logistic regression. The motif analysis is performed using [GimmeMotifs](https://gimmemotifs.readthedocs.org).
 
-#### Inference of gene regulatory networks
+### Inference of gene regulatory networks
 
 ANANSE infers cell type-specific GRNs based on the predicted TF binding sites and the expression levels both TFs as well as their target genes. TF-gene interaction scores, the edge weights in the network, are calculated based on the predicted TF binding probability, the distance between the enhancer and the target gene, and expression of both TF and the target gene. By integrating these data, ANANSE determines the interaction score of each TF-gene pair. 
 
@@ -53,6 +53,6 @@ I_{x,r} = \frac{B_{x,r} + E_x + E_r}{3} \tag{3}
 \end{equation}
 
 
-#### Calculation of influence score
+### Calculation of influence score
 
 **TODO**
