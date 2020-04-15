@@ -27,7 +27,7 @@ The weighted sum of TF predicted enhancer intensity within 100kb around TSS is d
 $$ B_{x,r} = \sum_{k} w_k s_k $$
 <!-- \end{equation*} -->
 
-where $ B_{x,r} $ is the binding score between TF $x$ and target gene $r$, $w_k$ is the weighted distance between an enhancer and the target gene and where $s_k$ is predicted binding intensity at genomic position $k$ of TF $x$. 
+where $ B_{x,r} $ is the binding score between TF $$x$$ and target gene \\(r\\), $w_k$ is the weighted distance between an enhancer and the target gene and where $s_k$ is predicted binding intensity at genomic position $k$ of TF $x$. 
 
 The distance weight is based on a linear genomic distance between the enhancer and the TSS of a gene according to: 
 
@@ -42,7 +42,7 @@ w_k =
 
 where $t_r$ is the genomic position of the TSS of gene $r$ and the parameter $\mu$, which determines the decay rate as a function of distance from the TSS, is set such that an enhancer 10 kb from the TSS contributes one-half of that at the TSS. This distance weight calculation is similar to the method previously described in Wang et al., 2016, except that only signal in enhancers is used, enhancers within 2kb around TSS are removed and the weight of enhancers within 2kb to 5kb is set to 1.
 
-We scaled the expression level of the TF and the target gene, expressed as transcripts per million (TPM), and the TF-gene binding score $B_{x,r}$  we calculated in the first step from 0 to 1, with 1 being the highest and 0 the lowest. Combining the TF-gene binding score and TF and target expression scores by taking the mean, we obtained a TF-gene interaction score.
+We scaled the expression level of the TF and the target gene, expressed as transcripts per million (TPM), and the TF-gene binding score $B_{x,r}$  we calculated in theS first step from 0 to 1, with 1 being the highest and 0 the lowest. Combining the TF-gene binding score and TF and target expression scores by taking the mean, we obtained a TF-gene interaction score.
 
 #### Calculation of influence score
 
