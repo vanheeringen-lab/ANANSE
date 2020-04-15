@@ -124,7 +124,7 @@ A3GALT2	0.147194
 
 The differential expression data normally comes from an RNA-seq experiment. This file can be created using, for instance, [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html). In the differential expression file, the 1st column (named as `resid`) should contain **gene name**, the second column should be named as `log2FoldChange` which is **log2 FoldChange score** of gene, and the third column should be named as `padj`, which is the adjusted **p-value** of the differential gene expression test. 
 
-This is the example of input expression file:
+This is an example of a differential expression input file:
 
 ```
 resid	log2FoldChange	padj
@@ -138,10 +138,10 @@ DAB2	7.46610079411987	0
 DMKN	-11.6435948368453	0
 ```
 !!! warning
-    The `log2FoldChange` should **negative number** if this gene is up regulated, and **positive number** if this gene is down regulated.
+    The `log2FoldChange` should be a **negative number** if this gene is up regulated, and **positive number** if this gene is down regulated.
 
 !!! note "Example"
-    You can find our test samples enhancer files here:  
+    You can find our example differential expression input file here:  
 
     * [FB2KRT_degenes.csv](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB2KRT_degenes.csv)  
 
