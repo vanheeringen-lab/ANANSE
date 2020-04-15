@@ -224,8 +224,8 @@ if __name__ == "__main__":
     # influence.py
     p = subparsers.add_parser("influence")
     p.add_argument(
-        "-b",
-        "--bnetwork",
+        "-s",
+        "--source",
         dest="Gbf",
         help="network in first cell",
         metavar="FILE",
@@ -239,8 +239,8 @@ if __name__ == "__main__":
         type=int,
     )
     p.add_argument(
-        "-a",
-        "--anetwork",
+        "-t",
+        "--target",
         dest="Gaf",
         help="network in second cell",
         metavar="FILE",
@@ -254,7 +254,7 @@ if __name__ == "__main__":
         metavar="FILE",
     )
     p.add_argument(
-        "-s",
+        "-i",
         "--edges",
         dest="edges",
         help="Number of top edges used",

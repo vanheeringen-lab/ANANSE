@@ -74,10 +74,9 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/)**
     * `-p, --motifs`  
       The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file.
     * `-f, --filter_promoter`  
-      Filter promoters, True or False, input should be
-      either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.).
+      Filter promoters. Default setting is True If 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.
     * `-d, --keep_detail`  
-      Keep detail files, True or False, input should be either 'True' or 'False'. (Default setting: True).  
+      Keep detail files. Default setting is True.  
     * `-h, --help`  
       Show the help message and exit.
 
@@ -113,8 +112,7 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/)**
     * `-a, --annotation`  
       The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
     * `-f, --filter_promoter`  
-      Filter promoters, True or False, input should be
-      either 'True' or 'False'. (Default setting: True; if 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.).
+      Filter promoters. Default setting is True. If 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.
     * `-c, --corrfiles`  
       All gene correlation file, the human gene expression correlation can be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/data/expressioncorrelation.txt).
     * `-h, --help`  
@@ -125,16 +123,16 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/)**
 
   * Example:
     ```
-    $ ananse influence  -a results/full_network.txt \
+    $ ananse influence  -t results/full_network.txt \
                         -e data/FB_rep1_TPM.txt \
                         -d data/FB2KRT_degenes.csv \
                         -o results/FB2KRT.txt \
-                        -p False
+                        -p 
     ```
 
   * Required arguments:
   
-    * `-a, --anetwork`  
+    * `-t, --target`  
     The network in second cell. It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).   
     * `-d, --degenes`  
     The differential expression table between two cells. [***This***](/test/data/FB2KRT_degenes.csv) is an example of differential expression file.  
@@ -145,14 +143,14 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/)**
 
     * `-n, --ncore`  
       Specifies the number of threads to use during analysis. 
-    * `-s, --edges`  
+    * `-i, --edges`  
       Specifics the number of top edges (interactions) used. 
-    * `-b, --bnetwork`  
+    * `-s, --source`  
     The network in first cell (optional). It is the result from `Built GRN` step. One of the example `network` could be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/full_network.txt).  
     * `-e, --expression`  
     The gene expression in first cell (optional). One or more gene expression file(s), 1st column should contain gene name, and a column should be named TPM. [***This***](/test/data/FB_rep1_TPM.txt) is an example of expression file. 
     * `-p, --plot`  
-    Plot influence. True or False, input should be either 'True' or 'False'. (Default setting: True)  
+    Plot influence. Default setting is True.
     * `-h, --help`  
     Show the help message and exit.
 
