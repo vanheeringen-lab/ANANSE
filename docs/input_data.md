@@ -70,7 +70,7 @@ GM.5.0.Sox.0001	Sox9	ChIP-seq	N
 GM.5.0.Sox.0001	SRY	SELEX	Y
 ```
 
-!!! note "Example"  
+!!! note  
     The default motif database (`gimme.vertebrate.v5.0`) from the [GimmeMotifs](https://github.com/vanheeringen-lab/gimmemotifs) package[^1] can be found here:  
 
     * [gimme.vertebrate.v5.0.pfm](https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.pfm)  
@@ -91,13 +91,13 @@ chr13	109424160	109424360	20
 chr14	32484901	32485101	2
 ```
 
-!!! note "Example"
+!!! note 
     You can find our example enhancer files here: 
 
     * [FB_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_enhancer.bed)  
     * [KRT_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_enhancer.bed)
 
-!!! tip
+!!! tip "Example"
     Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.
 
     * sort the bdg file  
@@ -125,7 +125,7 @@ A2ML1	664.452
 A3GALT2	0.147194
 ```
 
-!!! note "Example"
+!!! note 
     You can find our example expression files here:  
 
     * [FB_rep1_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_rep1_TPM.txt)  
@@ -153,7 +153,7 @@ DMKN	-11.6435948368453	0
 !!! warning
     The `log2FoldChange` should **negative number** if this gene is up regulated, and **positive number** if this gene is down regulated.
 
-!!! note "Example"
+!!! note 
     You can find our test samples enhancer files here:  
 
     * [FB2KRT_degenes.csv](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB2KRT_degenes.csv)  
