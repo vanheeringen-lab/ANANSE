@@ -6,11 +6,15 @@ An overview of the workflow that ANANSE uses to prioritize transcription factors
 
 ![](img/Fig2.jpg)
 
-* **(A)** An overview of the data types required by ANANSE. These data include motif score of all TFs and gene expression data (e.g. RNA-seq) and enhancer activity data for each cell type. The enhancer data can be obtained by ATAC-seq, EP300 ChIP-seq or H3K27ac ChIP-seq. The blue and orange peaks represent enhancers in two different cell types. The four sequence logos represent the motif of four TFs. The heatmap represents gene expression intensity in the two cell types. 
-* **(B)** The TF binding profiles predicted from the enhancer data and TF motif scores in each cell type. Two GRNs below show cell type-specific TF binding profiles in two cell types (source and target cell types). 
-* **(C)** The cell type-specific GRN predicted based on TF-gene binding, TF expression and target gene expression. The two networks show cell type-specific GRNs in two cell types. The orange circle represents a TF or a gene, and the size of the circle indicates the target gene number of the corresponding TF. The blue arrow indicates regulation between two TFs, and the color intensity represents regulation intensity as the edge weight.
-* **(D)** The differential GRN between the two cell types. In this step, the interaction specific for the target cell type is kept constant, and if the interaction score of the target cell type is higher than that of the source cell type, the interaction score is further used. 
-* **(E)** The barplot shows the ranked influence score of all TFs calculated from the differential GRN. The influence score is calculated based on gene expression score, distance from the enhancer bound by TF to gene, and the interaction score between TF and gene.
+A) An overview of the data types required by ANANSE. These data include motif score of all TFs and gene expression data (e.g. RNA-seq) and enhancer activity data for each cell type. The enhancer data can be obtained by ATAC-seq, EP300 ChIP-seq or H3K27ac ChIP-seq. The blue and orange peaks represent enhancers in two different cell types. The four sequence logos represent the motif of four TFs. The heatmap represents gene expression intensity in the two cell types. 
+
+B) The TF binding profiles predicted from the enhancer data and TF motif scores in each cell type. Two GRNs below show cell type-specific TF binding profiles in two cell types (source and target cell types). 
+
+C) The cell type-specific GRN predicted based on TF-gene binding, TF expression and target gene expression. The two networks show cell type-specific GRNs in two cell types. The orange circle represents a TF or a gene, and the size of the circle indicates the target gene number of the corresponding TF. The blue arrow indicates regulation between two TFs, and the color intensity represents regulation intensity as the edge weight.
+
+D) The differential GRN between the two cell types. In this step, the interaction specific for the target cell type is kept constant, and if the interaction score of the target cell type is higher than that of the source cell type, the interaction score is further used. 
+
+E) The barplot shows the ranked influence score of all TFs calculated from the differential GRN. The influence score is calculated based on gene expression score, distance from the enhancer bound by TF to gene, and the interaction score between TF and gene.
 
 
 #### Prediction of transcription factor binding
@@ -40,7 +44,7 @@ w_k =
   \end{cases} \tag{2}
 \end{equation}
 
-where \\(t_r\\) is the genomic position of the TSS of gene\\(r\\) and the parameter \\(\mu\\), which determines the decay rate as a function of distance from the TSS, is set such that an enhancer 10 kb from the TSS contributes one-half of that at the TSS. This distance weight calculation is similar to the method previously described in Wang et al., 2016, except that only signal in enhancers is used, enhancers within 2kb around TSS are removed and the weight of enhancers within 2kb to 5kb is set to 1.
+where \\(t_r\\) is the genomic position of the TSS of gene s\\(r\\) and the parameter \\(\mu\\), which determines the decay rate as a function of distance from the TSS, is set such that an enhancer 10 kb from the TSS contributes one-half of that at the TSS. This distance weight calculation is similar to the method previously described in Wang et al., 2016, except that only signal in enhancers is used, enhancers within 2kb around TSS are removed and the weight of enhancers within 2kb to 5kb is set to 1.
 
 We scaled the expression level of the TF \\(E_x\\) and the target gene \\(E_r\\), expressed as transcripts per million (TPM), and the TF-gene binding score \\(B_{x,r}\\) we calculated in the first step from 0 to 1, with 1 being the highest and 0 the lowest. Combining the TF-gene binding score and TF and target expression scores by taking the mean, we obtained a TF-gene interaction score, \\(I_{x,r}\\):
 
