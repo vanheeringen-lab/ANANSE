@@ -1,6 +1,6 @@
 ## Installation
 
-ANANSE runs on Linux. On Windows 10 it will run fine using the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10). Mac OSX should work and is included in the build test. However, as I don't use it myself, unexpected issues might pop up. Let me know, so I can try to fix it.
+ANANSE runs on Linux. On Windows 10 it will run fine using the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10). Mac OSX should work, however, as we don't use it ourselves so unexpected issues might pop up. Let us know, so we can try to fix it.
 
 ### The easiest way to install
 
