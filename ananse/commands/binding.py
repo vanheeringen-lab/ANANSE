@@ -20,7 +20,7 @@ def binding(args):
     a = ananse.binding.Binding(
         ncore=args.ncore,
         genome=args.genome, 
-        gene_bed=args.annotation, 
+        # gene_bed=args.annotation, 
         pfmfile=args.pfmfile
     )
     a.run_binding(args.fin_rpkm, args.outfile)

@@ -53,22 +53,22 @@ class Binding(object):
         self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
         self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
 
-        # Gene information file
-        if self.genome == "hg38":
-            if gene_bed is None:
-                self.gene_bed = "../data/hg38_genes.bed"
-            else:
-                self.gene_bed = gene_bed
-        elif self.genome == "hg19":
-            if gene_bed is None:
-                self.gene_bed = "../data/hg19_genes.bed"
-            else:
-                self.gene_bed = gene_bed
-        else:
-            if gene_bed is None:
-                raise TypeError("Please provide a gene bed file with -a argument.")
-            else:
-                self.gene_bed = gene_bed
+        # # Gene information file
+        # if self.genome == "hg38":
+        #     if gene_bed is None:
+        #         self.gene_bed = "../data/hg38_genes.bed"
+        #     else:
+        #         self.gene_bed = gene_bed
+        # elif self.genome == "hg19":
+        #     if gene_bed is None:
+        #         self.gene_bed = "../data/hg19_genes.bed"
+        #     else:
+        #         self.gene_bed = gene_bed
+        # else:
+        #     if gene_bed is None:
+        #         raise TypeError("Please provide a gene bed file with -a argument.")
+        #     else:
+        #         self.gene_bed = gene_bed
 
         # dream_model.txt is the logistic regression model.
         package_dir = os.path.dirname(ananse.__file__)
@@ -104,9 +104,13 @@ class Binding(object):
                     + "\n"
                 )
 
-        npeaks = BedTool(s, from_string=True)
+        fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
+        with open(fl2) as pbed:
+            for i in s:
+                pbed.write(i)
 
-        return npeaks
+        # return npeaks
+        return fl2.name
 
     def clear_peak(self, peak_bed, filter_promoter=True, up=2000, down=2000):
         """

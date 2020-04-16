@@ -8,8 +8,8 @@
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
 ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to use these GRNs to identify the key transcription factors in cell fate determination. You can use it to generate a shortlist of transcription factors for trans-differentiation experiments, but also to study transcription regulation during development and differentiation. It is written in Python and it contains a user-friendly command-line script that includes `ananse binding`, `ananse network`, and `ananse influence`.
 
-Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/latest/)** for detailed installation instructions and usage examples.  
-
+Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)** for detailed installation instructions and usage examples.  
+For documentation on the development version see [here](https://anansepy.readthedocs.io/en/develop/).
 
 
 ![](/pic/Fig2.jpg)
