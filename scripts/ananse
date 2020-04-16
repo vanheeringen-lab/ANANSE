@@ -61,13 +61,13 @@ if __name__ == "__main__":
     group.add_argument(
         "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg38"
     )
-    group.add_argument(
-        "-a",
-        "--annotation",
-        dest="annotation",
-        help="Gene annotation in BED12 format",
-        metavar="BED",
-    )
+    # group.add_argument(
+    #     "-a",
+    #     "--annotation",
+    #     dest="annotation",
+    #     help="Gene annotation in BED12 format",
+    #     metavar="BED",
+    # )
     group.add_argument(
         "-p",
         "--pfmfile",
@@ -83,14 +83,14 @@ if __name__ == "__main__":
         help="Number of core used",
         type=int,
     )
-    group.add_argument(
-        "-P",
-        "--keep_promoter",
-        dest="fpomoter",
-        help="Keep promoters, by default all regions within 2kb of a TSS are removed.",
-        action="store_false",
-        default=True,
-    )
+    # group.add_argument(
+    #     "-P",
+    #     "--keep_promoter",
+    #     dest="fpomoter",
+    #     help="Keep promoters, by default all regions within 2kb of a TSS are removed.",
+    #     action="store_false",
+    #     default=True,
+    # )
     group.add_argument("-h", "--help", action="help", help="show this help message and exit")
     # p.add_argument(
     #     "-d",
