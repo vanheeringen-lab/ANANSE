@@ -1,36 +1,39 @@
 ## Input data
 
 ### Genome
-When you need run `ANANSE` in your sample, genome file is necessary. We recommand you download your genome file with [genomepy](https://github.com/vanheeringen-lab/genomepy), which is a python package could install genome easily.
+
+To run `ANANSE` on your sample, a genome file is necessary. We recommand that you download your genome file with [genomepy](https://github.com/vanheeringen-lab/genomepy), which is a Python package to easily download and install genomes and associated files such as gene annotations.
 
 In ANANSE, for each genome, we need:
 
-* A genome fasta file
+* A genome FASTA file
 * A 12 columns BED file with genome annotation. 
 
-When you would like to insall the genome with `genomepy`, you could fellow this commands, which will download both `fasta` file and `bed` file.
+When you would like to install the genome with `genomepy` you can use this command, which will download both the `FASTA` file and the annotation `BED` file.
 
 ``` bash
-conda create -n genomepy python=3
-conda activate genomepy
-conda install genomepy=0.7.2
+# activate ananse environment
+conda activate ananse
 
-conda activate genompy
+# install the hg38 genome
+genomepy install hg38 UCSC -a
 
-# install hg38 genome
-genomepy install GRCh38 NCBI -a
+# or, alternatively, the version from Ensembl
+genomepy install GRCh38.p13 Ensembl -a
 ```
 
 ### Motif database
-By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: `gimme.vertebrate.v5.0`. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. Large-scale benchmarks using ChIP-seq peaks show that this database shows good performance and should be a good default choice. 
+
+By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: `gimme.vertebrate.v5.0`. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. [Large-scale benchmarks](https://www.biorxiv.org/content/10.1101/474403v1.full) using ChIP-seq peaks show that this database shows good performance and should be a good default choice. 
 
 !!! warning
-    If you would like to use your own motif database, please makesure your database include following two files: 1, **Motif file**; 2, **Motif2factors file**.
-    The `motif` file should end with `.pfm`,  and `motif2factors` file should have the same name with `motif` file and end with `motif2factors.txt`.
+    If you would like to use your own motif database, please make sure your database include following two files: 1) **a motif file** and 2) **a motif2factors file**.
+    The `motif` file should contain positional frequency matrices and should end with the `.pfm` extension. The `motif2factors` file should have the same name as  the `motif` file and end with `.motif2factors.txt` instead of `.pfm`.
 
-* Motif file
+#### Motif file
+
 ```    
-#GM.5.0.Sox.0001	M1911_1.02;;M3916_1.02;;M5846_1.02;;M6471_1.02;;M6478_1.02;;MA0084.1_SRY;;MA1152.1_SOX15;;SOX12;;SOX12_1 Sox12_bulyk_sc09-primary;;SOX15_1 Sox15_bulyk_sc09-primary;;SOX18_1 Sox18_bulyk_sc09-primary;;SOX30;;SOX30_1 Sox30_bulyk_sc09-primary;;SOX7_1 Sox7_bulyk_sc09-primary;;SOX9_1 SOX9_transfac_M00410;;SOX9_3 SOX9_jolma_DBD_M136;;SRY;;SRY_3 SRY_jaspar_MA0084.1
+# Comments are allowd
 >GM.5.0.Sox.0001
 0.7213	0.0793	0.1103	0.0891
 0.9259	0.0072	0.0062	0.0607
@@ -38,7 +41,6 @@ By default ANANSE uses a non-redundant, clustered database of known vertebrate m
 0.9859	0.0030	0.0030	0.0081
 0.9778	0.0043	0.0128	0.0051
 0.1484	0.0050	0.0168	0.8299
-#GM.5.0.Homeodomain.0001	M4064_1.02;;TGIF1;;TGIF1_1 TGIF_transfac_M00418;;TGIF1_HUMAN.H11MO.0.A
 >GM.5.0.Homeodomain.0001
 0.8870	0.0000	0.0178	0.0951
 0.1156	0.2033	0.6629	0.0181
@@ -53,7 +55,8 @@ By default ANANSE uses a non-redundant, clustered database of known vertebrate m
 0.5727	0.0104	0.1741	0.2428
 ```
 
-* Motif2factors file  
+#### Motif2factors file  
+
 ```
 Motif	Factor	Evidence	Curated
 GM.5.0.Sox.0001	SRY	JASPAR	Y
@@ -67,13 +70,14 @@ GM.5.0.Sox.0001	Sox9	ChIP-seq	N
 GM.5.0.Sox.0001	SRY	SELEX	Y
 ```
 
-!!! note "Example"  
-    The default motif database (`gimme.vertebrate.v5.0`) can be found at [GimmeMotif](https://github.com/vanheeringen-lab/gimmemotifs) package[^1] at here:  
+!!! note  
+    The default motif database (`gimme.vertebrate.v5.0`) from the [GimmeMotifs](https://github.com/vanheeringen-lab/gimmemotifs) package[^1] can be found here:  
 
     * [gimme.vertebrate.v5.0.pfm](https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.pfm)  
     * [gimme.vertebrate.v5.0.motif2factors.txt](https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.motif2factors.txt)
 
 ### Enhancer data
+
 The EP300 ChIP-seq or ATAC-seq peaks were used to define putative enhancer regions for specific cell types. The summits of the MACS2 peaks were chosen first, then extended (+/- 100bp) to a total size of 200bp. The EP300 or H3K27ac ChIP-seq peak intensity generated by MACS2 (bedGraph file) was used to represent enhancer intensity. bedGraphToBigWig tool[^2] was used to switch bedGraph files to bigWig files. The intensity of enhancer peak was calculated by bigWigSummary tool[^2], which selected the highest signal of EP300 (200 bp around the peak summit) or H3K27ac (2,000 bp around the peak summit) ChIP-seq peak.
 
 This is the example of input BED file:
@@ -87,16 +91,30 @@ chr13	109424160	109424360	20
 chr14	32484901	32485101	2
 ```
 
-!!! note "Example"
-    You can find our test samples enhancer files here: 
+!!! note 
+    You can find our example enhancer files here: 
 
     * [FB_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_enhancer.bed)  
     * [KRT_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_enhancer.bed)
 
-### Expression data
-The expression data normally from RNA-seq experiment. We are using `TPM` score to represent gene's expression in ANANSE. In expression file, the 1st column (named as `target_id`) should contain **gene name**, and the second column should be named as `tpm`. 
+!!! tip "Example"
+    Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.
 
-This is the example of input expression file:
+    * sort the bdg file  
+    `sort -k1,1 -k2,2n KRT_p300.bdg > KRT_p300_sort.bdg`
+    
+    * switch bdg file to wig file with bedGraphToBigWig  
+    `bedGraphToBigWig KRT_p300_sort.bdg hg38.fa.sizes KRT_p300_sort.wig`
+
+    * calculate max intensity of one enhancer peak with bigWigSummary  
+    `bigWigSummary -type=max KRT_p300_sort.wig chr12 54070173 54072173 1`
+
+
+### Expression data
+
+The expression data normally comes from an RNA-seq experiment. We use the `TPM` score to represent the gene expression in ANANSE. In the expression input file, the 1st column (named as `target_id`) should contain the **gene name**, and the second column should be named `tpm`.
+
+This is an example of the input expression file:
 
 ```
 target_id	tpm
@@ -107,18 +125,19 @@ A2ML1	664.452
 A3GALT2	0.147194
 ```
 
-!!! note "Example"
-    You can find our test samples enhancer files here:  
+!!! note 
+    You can find our example expression files here:  
 
-    * [FB_rep1_TPM.txt](/test/data/FB_rep1_TPM.txt)  
-    * [FB_rep2_TPM.txt](/test/data/FB_rep2_TPM.txt)  
-    * [KRT_rep1_TPM.txt](/test/data/KRT_rep1_TPM.txt)  
-    * [KRT_rep2_TPM.txt](/test/data/KRT_rep2_TPM.txt)  
+    * [FB_rep1_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_rep1_TPM.txt)  
+    * [FB_rep2_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_rep2_TPM.txt)  
+    * [KRT_rep1_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_rep1_TPM.txt)  
+    * [KRT_rep2_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_rep2_TPM.txt)  
 
 ### Differential expression data
-The differential expression data normally from RNA-seq experiment. In differential expression file, the 1st column (named as `resid`) should contain **gene name**, the second column should be named as `log2FoldChange` which is **log2 FoldChange score** of gene, and the third column should be named as `padj`, which is **p-value** of gene. 
 
-This is the example of input expression file:
+The differential expression data normally comes from an RNA-seq experiment. This file can be created using, for instance, [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html). In the differential expression file, the 1st column (named as `resid`) should contain **gene name**, the second column should be named as `log2FoldChange` which is **log2 FoldChange score** of gene, and the third column should be named as `padj`, which is the adjusted **p-value** of the differential gene expression test. 
+
+This is an example of a differential expression input file:
 
 ```
 resid	log2FoldChange	padj
@@ -132,13 +151,12 @@ DAB2	7.46610079411987	0
 DMKN	-11.6435948368453	0
 ```
 !!! warning
-    The `log2FoldChange` should **negative number** if this gene is up regulated, and **positive number** if this gene is down regulated.
+    The `log2FoldChange` should be a **negative number** if this gene is up regulated, and **positive number** if this gene is down regulated.
 
-!!! note "Example"
-    You can find our test samples enhancer files here:  
+!!! note 
+    You can find our example differential expression input file here:  
 
-    * [FB2KRT_degenes.csv](/test/data/FB2KRT_degenes.csv)  
+    * [FB2KRT_degenes.csv](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB2KRT_degenes.csv)  
 
 [^1]: van Heeringen, S.J., and Veenstra, G.J.C. (2010). GimmeMotifs: a de novo motif prediction pipeline for ChIP-sequencing experiments. Bioinformatics 27, 270-271.
-[^2]: Kempfer, R., and Pombo, A. (2019). Methods for mapping 3D chromosome architecture. Nat Rev Genet.
-Kent, J., ENCODE DCC. (2014). kentUtils: Jim Kent command line bioinformatic utilities. Available from: https://github.com/ENCODE-DCC/kentUtils.
+[^2]: Kent, J., ENCODE DCC. (2014). kentUtils: Jim Kent command line bioinformatic utilities. Available from: https://github.com/ENCODE-DCC/kentUtils.

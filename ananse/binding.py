@@ -35,7 +35,7 @@ warnings.filterwarnings("ignore")
 
 
 class Binding(object):
-    def __init__(self, ncore=1, genome="hg19", gene_bed=None, pfmfile=None):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None):
 
         self.ncore = ncore
         self.genome = genome

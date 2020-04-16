@@ -19,6 +19,9 @@ markdown_extensions:
 #   - codehilite
   - footnotes
 
+extra_javascript:
+    - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'
+
 nav:
   - Home: 'index.md'
   - Model Description: 'model_description.md'
@@ -52,4 +55,5 @@ nav:
   #     - I have upgraded GimmeMotifs and now it doesn’t find my genome
   #     - I cannot run gimme index anymore
   #     - I get a KeyError when running gimme maelstrom
-  # - Acknowledgments
+  - Acknowledgments: 'acknowledgments.md'
+

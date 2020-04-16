@@ -30,7 +30,7 @@ warnings.filterwarnings("ignore")
 
 
 class Network(object):
-    def __init__(self, ncore=1, genome="hg19", gene_bed=None, pfmfile=None, promoter=False):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, promoter=False):
 
         self.ncore = ncore
         self.genome = genome

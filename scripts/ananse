@@ -69,7 +69,7 @@ if __name__ == "__main__":
         metavar="BED",
     )
     p.add_argument(
-        "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg19"
+        "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg38"
     )
     p.add_argument(
         "-o",
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         dest="fpomoter",
         help="Filter promoters, True or False, input should be either 'True' or 'False'.",
         metavar="NAME",
-        type=ast.literal_eval,
+        action="store_false",
         default=True,
     )
     p.add_argument(
@@ -158,7 +158,9 @@ if __name__ == "__main__":
         "--promoter",
         dest="promoter",
         help="Calculate promoter and expression network",
-        default=False,
+        metavar="NAME",
+        action="store_true",
+        default=False,        
     )
     p.add_argument(
         "-a",
@@ -168,7 +170,7 @@ if __name__ == "__main__":
         metavar="BED",
     )
     p.add_argument(
-        "-g", "--genome", dest="genome", help="Genome", metavar="NAME", default="hg19",
+        "-g", "--genome", dest="genome", help="Genome", metavar="NAME", default="hg38",
     )
     p.add_argument(
         "-i",
@@ -222,8 +224,8 @@ if __name__ == "__main__":
     # influence.py
     p = subparsers.add_parser("influence")
     p.add_argument(
-        "-b",
-        "--bnetwork",
+        "-s",
+        "--source",
         dest="Gbf",
         help="network in first cell",
         metavar="FILE",
@@ -237,8 +239,8 @@ if __name__ == "__main__":
         type=int,
     )
     p.add_argument(
-        "-a",
-        "--anetwork",
+        "-t",
+        "--target",
         dest="Gaf",
         help="network in second cell",
         metavar="FILE",
@@ -252,7 +254,7 @@ if __name__ == "__main__":
         metavar="FILE",
     )
     p.add_argument(
-        "-s",
+        "-i",
         "--edges",
         dest="edges",
         help="Number of top edges used",
@@ -277,8 +279,8 @@ if __name__ == "__main__":
         dest="plot",
         help="Plot influence, True or False, input should be either 'True' or 'False'.",
         metavar="NAME",
-        type=ast.literal_eval,
-        default=True,
+        action="store_true",
+        default=False,
     )
     p.set_defaults(func=commands.influence)
 
