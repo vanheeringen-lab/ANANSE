@@ -2,14 +2,9 @@
 
 ### Genome
 
-To run `ANANSE` on your sample, a genome file is necessary. We recommand that you download your genome file with [genomepy](https://github.com/vanheeringen-lab/genomepy), which is a Python package to easily download and install genomes and associated files such as gene annotations.
+To run `ANANSE` on your sample(s), a matching genome and gene annotation is necessary. We recommand that you download your genome file with [genomepy](https://github.com/vanheeringen-lab/genomepy). Genomepy is a Python package with command-line interface to easily download and install genomes, generates associated files and more.
 
-In ANANSE, for each genome, we need:
-
-* A genome FASTA file
-* A 12 columns BED file with genome annotation. 
-
-When you would like to install the genome with `genomepy` you can use this command, which will download both the `FASTA` file and the annotation `BED` file.
+To install the genome with `genomepy` you can use this command, which will download both the `FASTA` file and the annotation `BED` file, and exports them to the PATH.
 
 ``` bash
 # activate ananse environment
@@ -21,6 +16,14 @@ genomepy install hg38 UCSC -a
 # or, alternatively, the version from Ensembl
 genomepy install GRCh38.p13 Ensembl -a
 ```
+
+You can then direct to the genome like so: `-g hg38`
+
+If you wish to manually set the files required for ANANSE, create a folder containing:
+* A genome FASTA file
+* A BED12 file with genome annotation.
+
+You can then direct to the genome like so: `-g /path/to/genome.fa`
 
 ### Motif database
 
