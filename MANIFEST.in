@@ -2,4 +2,5 @@ include README.md
 include LICENSE
 include scripts/**
 include ananse/db/dream_model.txt
+include ananse/db/tfs.txt
 include versioneer.py
