@@ -9,6 +9,7 @@
 """Built gene regulatory network"""
 
 # Python imports
+import os
 import math
 import warnings
 from tempfile import NamedTemporaryFile
@@ -25,36 +26,40 @@ from pybedtools import BedTool
 from genomepy import Genome
 
 from ananse import mytmpdir
+import ananse
 
 warnings.filterwarnings("ignore")
 
 
 class Network(object):
-    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, promoter=False):
+    # def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, promoter=False):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None):
 
         self.ncore = ncore
         self.genome = genome
         g = Genome(self.genome)
         self.gsize = g.props["sizes"]["sizes"]
 
-        # Motif information file
-        if pfmfile is None:
-            self.pfmfile = "../data/gimme.vertebrate.v5.1.pfm"
-        else:
-            self.pfmfile = pfmfile
+        # # Motif information file
+        # if pfmfile is None:
+        #     self.pfmfile = "../data/gimme.vertebrate.v5.1.pfm"
+        # else:
+        #     self.pfmfile = pfmfile
 
-        self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
-        self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
+        # self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
+        # self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
+
+        package_dir = os.path.dirname(ananse.__file__)
 
         # Gene information file
         if self.genome == "hg38":
             if gene_bed is None:
-                self.gene_bed = "../data/hg38_genes.bed"
+                self.gene_bed =  os.path.join(package_dir, "db", "hg38_genes.bed")
             else:
                 self.gene_bed = gene_bed
         elif self.genome == "hg19":
             if gene_bed is None:
-                self.gene_bed = "../data/hg19_genes.bed"
+                self.gene_bed =  os.path.join(package_dir, "db", "hg19_genes.bed")
             else:
                 self.gene_bed = gene_bed            
         else:
@@ -63,7 +68,7 @@ class Network(object):
             else:
                 self.gene_bed = gene_bed
         
-        self.promoter = promoter
+        # self.promoter = promoter
 
 
     def clear_peak(self, ddf):
@@ -71,6 +76,10 @@ class Network(object):
         Filter the enhancer peaks in promoter range.
         """
         ddf = ddf.compute()
+
+        global alltfs
+        alltfs = list(set(ddf.factor))
+
         enhancerbed = pd.DataFrame(set(ddf.enhancer))
         enhancerbed[["chr","site"]]=enhancerbed[0].str.split(":",expand=True)
         enhancerbed[["start","end"]]=enhancerbed.site.str.split("-",expand=True)
@@ -366,10 +375,13 @@ class Network(object):
         warnings.filterwarnings("ignore")
         factorsExpression = {}
 
-        for line in open(self.motifs2factors):
-            if not line.split("\t")[1].strip().split(",") == [""]:
-                for factor in line.split("\t")[1].strip().split(","):
-                    factorsExpression[factor.upper()] = []
+        # for line in open(self.motifs2factors):
+        #     if not line.split("\t")[1].strip().split(",") == [""]:
+        #         for factor in line.split("\t")[1].strip().split(","):
+        #             factorsExpression[factor.upper()] = []
+        
+        for tf in alltfs:
+            factorsExpression[tf] = []
 
         for f in fin_expression:
             with open(f) as fa:
@@ -675,7 +687,7 @@ class Network(object):
         logger.info("Create network")
         self.create_network(featurefile, outfile)
 
-        if self.promoter:
-            self.create_promoter_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter."+outfile.split(".")[-1])
-            self.create_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_expression."+outfile.split(".")[-1])
-            self.create_promoter_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter_expression."+outfile.split(".")[-1])
+        # if self.promoter:
+        #     self.create_promoter_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter."+outfile.split(".")[-1])
+        #     self.create_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_expression."+outfile.split(".")[-1])
+        #     self.create_promoter_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter_expression."+outfile.split(".")[-1])

@@ -21,8 +21,8 @@ def network(args):
         ncore=args.ncore,
         genome=args.genome, 
         gene_bed=args.annotation, 
-        pfmfile=args.pfmfile,
-        promoter=args.promoter
+        # pfmfile=args.pfmfile,
+        # promoter=args.promoter
     )
     b.run_network(
         args.binding, args.fin_expression, args.corrfiles, args.outfile

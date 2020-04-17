@@ -46,6 +46,7 @@ def filter_tfs(motifs2factors, tffile):
     ft = ft.replace("T" , "TBXT")
     ft = ft.replace("t" , "tbxt")
 
+    ft.rename(columns = {"Factor":"factor"}, inplace = True)
     return ft
 
 class Binding(object):
@@ -202,7 +203,7 @@ class Binding(object):
             ["motif", "enhancer", "zscore", "peakRPKMScale"]
         ]
         r = r.merge(ft, left_on="motif", right_on="Motif")
-        r = r.groupby(["Factor", "enhancer"])[["zscore", "peakRPKMScale"]].max()
+        r = r.groupby(["factor", "enhancer"])[["zscore", "peakRPKMScale"]].max()
         r = r.dropna().reset_index()
 
         table = r.compute()
