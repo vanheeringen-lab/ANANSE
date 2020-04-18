@@ -215,7 +215,7 @@ class Binding(object):
 
     def run_binding(self, peak_bed, outfile):
 
-        logger.info("Peak initializtion")
+        logger.info("Peak initialization")
 
         filter_bed = self.set_peak_size(peak_bed)
 
