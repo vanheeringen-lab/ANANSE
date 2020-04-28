@@ -11,6 +11,12 @@ import argparse
 from ananse import commands, __version__
 from genomepy import Genome
 
+
+class NegateAction(argparse.Action):
+    def __call__(self, parser, ns, values, option):
+        setattr(ns, self.dest, "include" in option)
+
+
 if __name__ == "__main__":
     description = """
     ananse v{0}
@@ -37,16 +43,9 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers()
 
     # binding.py
-    p = subparsers.add_parser("binding")
-    p.add_argument(
-        "-p",
-        "--pfmfile",
-        dest="pfmfile",
-        help="PFM file with motifs",
-        metavar="FILE",
-        default=None,
-    )
-    p.add_argument(
+    p = subparsers.add_parser("binding", add_help=False)
+    group = p.add_argument_group("required arguments")
+    group.add_argument(
         "-r",
         "--enhancers",
         required=True,
@@ -54,17 +53,7 @@ if __name__ == "__main__":
         help="BED file with RPKM on the 4th column",
         metavar="FILE",
     )
-    p.add_argument(
-        "-a",
-        "--annotation",
-        dest="annotation",
-        help="Gene annotation in BED12 format",
-        metavar="BED",
-    )
-    p.add_argument(
-        "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg19"
-    )
-    p.add_argument(
+    group.add_argument(
         "-o",
         "--output",
         required=True,
@@ -73,31 +62,101 @@ if __name__ == "__main__":
         metavar="FILE",
         default=None,
     )
-    p.add_argument(
-        "-f",
-        "--filter_promoter",
-        dest="fpomoter",
-        help="Filter promoters, True or False, input should be either 'True' or 'False'.",
-        metavar="NAME",
-        type=ast.literal_eval,
-        default=True,
+    group = p.add_argument_group("optional arguments")
+    group.add_argument(
+        "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg38"
     )
-    p.add_argument(
-        "-d",
-        "--keep_detail",
-        dest="detail",
-        help="Keep detail files, True or False, input should be either 'True' or 'False'.",
-        metavar="NAME",
-        type=ast.literal_eval,
-        default=True,
+    group.add_argument(
+        "-p",
+        "--pfmfile",
+        dest="pfmfile",
+        help="PFM file with motifs",
+        metavar="FILE",
+        default=None,
     )
+    group.add_argument(
+        "-n", "--ncore", dest="ncore", help="Number of core used", type=int,
+    )
+    group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
+    )
+    # p.add_argument(
+    #     "-d",
+    #     "--keep_detail",
+    #     dest="detail",
+    #     help="Keep detailed output files, by default they are removed",
+    #     action="store_true",
+    #     default=False,
+    # )
     p.set_defaults(func=commands.binding)
 
     # network.py
-    p = subparsers.add_parser("network")
-    p.add_argument(
-        "-p", "--motifs", dest="pfmfile", help="PWM", metavar="FILE", default=None
+    p = subparsers.add_parser("network", add_help=False)
+    group = p.add_argument_group("required arguments")
+    group.add_argument(
+        "-b", "--binding", dest="binding", help="All TFs binding file", metavar="FILE",
     )
+    group.add_argument(
+        "-e",
+        "--expression",
+        dest="fin_expression",
+        help="Expression scores",
+        metavar="FILE",
+        nargs="*",
+    )
+    group.add_argument(
+        "-o",
+        "--output",
+        required=True,
+        dest="outfile",
+        help="Output file",
+        metavar="FILE",
+        default=None,
+    )
+    group = p.add_argument_group("optional arguments")
+    group.add_argument(
+        "-g", "--genome", dest="genome", help="Genome", metavar="NAME", default="hg38",
+    )
+    group.add_argument(
+        "-a",
+        "--annotation",
+        dest="annotation",
+        help="Gene annotation in BED12 format",
+        metavar="BED",
+    )
+    group.add_argument(
+        "-c",
+        "--corrfiles",
+        dest="corrfiles",
+        help="Files with correlation",
+        metavar="FILE",
+        nargs="*",
+    )
+    group.add_argument(
+        "-n", "--ncore", dest="ncore", help="Number of core used", type=int,
+    )
+    group.add_argument(
+        "--include-promoter",
+        "--exclude-promoter",
+        default=False,
+        help="Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are excluded.",
+        dest="include_promoter",
+        action=NegateAction,
+        nargs=0,
+    )
+    group.add_argument(
+        "--include-enhancer",
+        "--exclude-enhancer",
+        default=True,
+        help="Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. By default enhancer peaks are included.",
+        dest="include_enhancer",
+        action=NegateAction,
+        nargs=0,
+    )
+    group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
+    )
+
     # p.add_argument(
     #     "-r",
     #     "--enhancers",
@@ -115,64 +174,17 @@ if __name__ == "__main__":
     #     type=ast.literal_eval,
     #     default=True,
     # )
-    p.add_argument(
-        "-e",
-        "--expression",
-        dest="fin_expression",
-        help="Expression scores",
-        metavar="FILE",
-        nargs="*",
-    )
-    p.add_argument(
-        "-c",
-        "--corrfiles",
-        dest="corrfiles",
-        help="Files with correlation",
-        metavar="FILE",
-        nargs="*",
-    )
-    p.add_argument(
-        "-b",
-        "--binding",
-        dest="binding",
-        help="All TFs binding file",
-        metavar="FILE",
-        nargs="*",
-    )
-    p.add_argument(
-        "-x",
-        "--promoter",
-        dest="promoter",
-        help="Calculate promoter and expression network",
-        default=False,
-    )
-    p.add_argument(
-        "-a",
-        "--annotation",
-        dest="annotation",
-        help="Gene annotation in BED12 format",
-        metavar="BED",
-    )
-    p.add_argument(
-        "-g", "--genome", dest="genome", help="Genome", metavar="NAME", default="hg19",
-    )
-    p.add_argument(
-        "-i",
-        "--impute",
-        dest="impute",
-        help="Impute missing values",
-        default=False,
-        action="store_true",
-    )
-    p.add_argument(
-        "-o",
-        "--output",
-        required=True,
-        dest="outfile",
-        help="Output file",
-        metavar="FILE",
-        default=None,
-    )
+
+    # This not used currently
+    # group.add_argument(
+    #     "-i",
+    #     "--impute",
+    #     dest="impute",
+    #     help="Impute missing values",
+    #     default=False,
+    #     action="store_true",
+    # )
+
     p.set_defaults(func=commands.network)
 
     # # network.py
@@ -206,41 +218,21 @@ if __name__ == "__main__":
     # p.set_defaults(func=commands.network)
 
     # influence.py
-    p = subparsers.add_parser("influence")
-    p.add_argument(
-        "-b",
-        "--bnetwork",
-        dest="Gbf",
-        help="network in first cell",
-        metavar="FILE",
-        default=None,
-    )
-    p.add_argument(
-        "-a",
-        "--anetwork",
+    p = subparsers.add_parser("influence", add_help=False)
+
+    group = p.add_argument_group("required arguments")
+    group.add_argument(
+        "-t",
+        "--target",
         dest="Gaf",
         help="network in second cell",
         metavar="FILE",
         default=None,
     )
-    p.add_argument(
-        "-e",
-        "--expression",
-        dest="fin_expression",
-        help="Expression scores in first cell",
-        metavar="FILE",
-    )
-    p.add_argument(
-        "-n",
-        "--edges",
-        dest="edges",
-        help="Number of top edges used",
-        type=int,
-    )
-    p.add_argument(
+    group.add_argument(
         "-d", "--degenes", dest="expression", help="DE genes file", metavar="FILE",
     )
-    p.add_argument(
+    group.add_argument(
         "-o",
         "--outfile",
         required=True,
@@ -249,15 +241,45 @@ if __name__ == "__main__":
         metavar="FILE",
         default=None,
     )
-    p.add_argument(
+    group = p.add_argument_group("optional arguments")
+    group.add_argument(
+        "-s",
+        "--source",
+        dest="Gbf",
+        help="network in first cell",
+        metavar="FILE",
+        default=None,
+    )
+    group.add_argument(
+        "-i",
+        "--edges",
+        dest="edges",
+        help="Number of top edges used",
+        type=int,
+        default=100000,
+    )
+    group.add_argument(
+        "-e",
+        "--expression",
+        dest="fin_expression",
+        help="Expression scores in first cell",
+        metavar="FILE",
+    )
+    group.add_argument(
         "-p",
         "--plot",
         dest="plot",
-        help="Plot influence, True or False, input should be either 'True' or 'False'.",
-        metavar="NAME",
-        type=ast.literal_eval,
-        default=True,
+        help="Create influence score plot.",
+        action="store_true",
+        default=False,
     )
+    group.add_argument(
+        "-n", "--ncore", dest="ncore", help="Number of core used", type=int,
+    )
+    group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
+    )
+
     p.set_defaults(func=commands.influence)
 
     if len(sys.argv) == 1:

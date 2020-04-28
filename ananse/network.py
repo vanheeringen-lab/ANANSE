@@ -9,6 +9,7 @@
 """Built gene regulatory network"""
 
 # Python imports
+import os
 import math
 import warnings
 from tempfile import NamedTemporaryFile
@@ -18,40 +19,47 @@ import pandas as pd
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
 import dask.dataframe as dd
+from dask.diagnostics import ProgressBar
+from loguru import logger
 
 from pybedtools import BedTool
 from genomepy import Genome
 
 from ananse import mytmpdir
+import ananse
 
 warnings.filterwarnings("ignore")
 
 
 class Network(object):
-    def __init__(self, genome="hg19", gene_bed=None, pfmfile=None, promoter=False):
+    # def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, promoter=False):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None):
 
+        self.ncore = ncore
         self.genome = genome
         g = Genome(self.genome)
         self.gsize = g.props["sizes"]["sizes"]
 
-        # Motif information file
-        if pfmfile is None:
-            self.pfmfile = "../data/gimme.vertebrate.v5.1.pfm"
-        else:
-            self.pfmfile = pfmfile
+        # # Motif information file
+        # if pfmfile is None:
+        #     self.pfmfile = "../data/gimme.vertebrate.v5.1.pfm"
+        # else:
+        #     self.pfmfile = pfmfile
 
-        self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
-        self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
+        # self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
+        # self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
+
+        package_dir = os.path.dirname(ananse.__file__)
 
         # Gene information file
         if self.genome == "hg38":
             if gene_bed is None:
-                self.gene_bed = "../data/hg38_genes.bed"
+                self.gene_bed =  os.path.join(package_dir, "db", "hg38_genes.bed")
             else:
                 self.gene_bed = gene_bed
         elif self.genome == "hg19":
             if gene_bed is None:
-                self.gene_bed = "../data/hg19_genes.bed"
+                self.gene_bed =  os.path.join(package_dir, "db", "hg19_genes.bed")
             else:
                 self.gene_bed = gene_bed            
         else:
@@ -60,7 +68,7 @@ class Network(object):
             else:
                 self.gene_bed = gene_bed
         
-        self.promoter = promoter
+        # self.promoter = promoter
 
 
     def clear_peak(self, ddf):
@@ -68,6 +76,10 @@ class Network(object):
         Filter the enhancer peaks in promoter range.
         """
         ddf = ddf.compute()
+
+        global alltfs
+        alltfs = list(set(ddf.factor))
+
         enhancerbed = pd.DataFrame(set(ddf.enhancer))
         enhancerbed[["chr","site"]]=enhancerbed[0].str.split(":",expand=True)
         enhancerbed[["start","end"]]=enhancerbed.site.str.split("-",expand=True)
@@ -192,7 +204,6 @@ class Network(object):
 
         # ddf = dd.read_hdf(binding, key="/binding")[["factor", "enhancer", "binding"]]
         # ddf = dd.read_csv(binding, sep="\t")[["factor", "enhancer", "binding"]]
-
         prom_table = ddf.merge(prom, left_on="enhancer", right_on="loc")
         prom_table = prom_table.groupby(["factor", "gene"])[["binding"]].max()
         prom_table = prom_table.rename(columns={"binding": "max_binding_in_promoter"})
@@ -288,13 +299,21 @@ class Network(object):
 
         features_file = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
         # print("computing, output file {}".format(features_file.name))
+        with ProgressBar():
+            f_table.compute(num_workers = self.ncore)
         f_table.to_hdf(features_file.name, key="/features")
         return features_file.name
-        # f_table.to_csv(outfile.replace("h5","txt"), sep="\t", index=False)
+
+        # return f_table
 
     def get_expression(self, fin_expression, features, min_tpm=1e-10, column="tpm"):
-        df = pd.read_hdf(features)
-        df = df[["source_target", "factor", "gene"]]
+        # df = dd.read_hdf(features)
+        # print(features.head())
+        # features = dd.from_pandas(features, chunksize=100000)
+        df = pd.read_hdf(features, key="/features", 
+                    columns=["source_target", "factor", "gene"])
+        # df = features
+        # df = df[["source_target", "factor", "gene"]]
         df.source_target = [i.upper() for i in list(df.source_target)]
         df.gene = [i.upper() for i in list(df.gene)]
         df = df.set_index("source_target")
@@ -339,6 +358,8 @@ class Network(object):
             df[col + ".scale"] = minmax_scale(df[col])
             df[col + ".rank.scale"] = minmax_scale(rankdata(df[col]))
 
+        # with ProgressBar():
+        #     df.compute(num_workers = self.ncore)
         expression_file = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
         # outfile = os.path.join(outdir, "expression.txt")
         df.to_csv(expression_file, sep="\t")
@@ -354,10 +375,13 @@ class Network(object):
         warnings.filterwarnings("ignore")
         factorsExpression = {}
 
-        for line in open(self.motifs2factors):
-            if not line.split("\t")[1].strip().split(",") == [""]:
-                for factor in line.split("\t")[1].strip().split(","):
-                    factorsExpression[factor.upper()] = []
+        # for line in open(self.motifs2factors):
+        #     if not line.split("\t")[1].strip().split(",") == [""]:
+        #         for factor in line.split("\t")[1].strip().split(","):
+        #             factorsExpression[factor.upper()] = []
+        
+        for tf in alltfs:
+            factorsExpression[tf] = []
 
         for f in fin_expression:
             with open(f) as fa:
@@ -419,7 +443,7 @@ class Network(object):
         return corr_file.name
 
     def join_features(self, features, other):
-        network = pd.read_hdf(features)
+        network = pd.read_hdf(features, key="/features")
 
         for fname in other:
             df = pd.read_table(fname, sep="\t")
@@ -432,16 +456,20 @@ class Network(object):
 
         # Compute before saving, will result in an error otherwise
         # network = network.compute()
-        featurefile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        network.to_csv(featurefile, sep="\t", index=False)
-        # network.to_hdf(outfile, key="/features")
-        return featurefile.name
+        # with ProgressBar():
+            # network.compute(num_workers = self.ncore)
+        # featurefile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
+        # print(network.head())
+        # network.to_csv(featurefile, sep="\t", index=False)
+        # network.to_hdf(featurefile, key="/features")
+        # return featurefile.name
+        return network
 
     def create_network(self, featurefile, outfile, impute=False):
 
-        # network = pd.read_hdf(featurefile, key="/features")
-        network = pd.read_csv(featurefile, sep="\t")
-
+        # network = dd.read_hdf(featurefile, key="/features")
+        # network = dd.read_csv(featurefile, sep="\t")
+        network = featurefile
         exclude_cols = [
             "sum_weighted_logodds",
             "enhancers",
@@ -479,6 +507,8 @@ class Network(object):
         bpd = bpd.rename(columns={0: "binding"})
         bpd["prob"] = minmax_scale(rankdata(bpd["binding"], method="dense"))
 
+        # with ProgressBar():
+        #     bpd.compute(num_workers = self.ncore)
         bpd.to_csv(outfile, sep="\t")
 
     def create_promoter_network(self, featurefile, outfile, impute=False):
@@ -618,6 +648,9 @@ class Network(object):
 
         # b=self.interaction.Interaction(genome=self.genome, gene_bed= self.gene_bed, pfmfile=self.pfmfile)
 
+        # print("1, Read data")
+        logger.info("Read data")
+
         ddf = dd.read_csv(binding, sep="\t")[["factor", "enhancer", "binding"]]
 
         filter_bed = self.clear_peak(ddf)
@@ -627,8 +660,11 @@ class Network(object):
         weight = self.distance_weight()
 
 
+        logger.info("Aggregate binding")
 
         features = self.aggregate_binding(ddf, prom, p, weight)
+
+        logger.info("Join expression")
 
         expression_file = self.get_expression(fin_expression, features)
         # factors_expression_file = self.get_factorExpression(fin_expression)
@@ -643,12 +679,15 @@ class Network(object):
                 expression_file,
                 corr_file,
             ]
+
         # outfile = 'full_features.h5'
+        logger.info("Join features")
         featurefile = self.join_features(features, other)
 
+        logger.info("Create network")
         self.create_network(featurefile, outfile)
 
-        if self.promoter:
-            self.create_promoter_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter."+outfile.split(".")[-1])
-            self.create_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_expression."+outfile.split(".")[-1])
-            self.create_promoter_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter_expression."+outfile.split(".")[-1])
+        # if self.promoter:
+        #     self.create_promoter_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter."+outfile.split(".")[-1])
+        #     self.create_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_expression."+outfile.split(".")[-1])
+        #     self.create_promoter_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter_expression."+outfile.split(".")[-1])

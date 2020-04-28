@@ -18,6 +18,9 @@ def binding(args):
         sys.exit(1)
 
     a = ananse.binding.Binding(
-        genome=args.genome, gene_bed=args.annotation, pfmfile=args.pfmfile
+        ncore=args.ncore,
+        genome=args.genome, 
+        # gene_bed=args.annotation, 
+        pfmfile=args.pfmfile
     )
     a.run_binding(args.fin_rpkm, args.outfile)

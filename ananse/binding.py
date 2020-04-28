@@ -11,8 +11,10 @@
 # Python imports
 import os
 import pickle
+from tqdm import tqdm
 import warnings
 from tempfile import NamedTemporaryFile
+from loguru import logger
 
 import numpy as np
 import pandas as pd
@@ -32,53 +34,71 @@ import ananse
 warnings.filterwarnings("ignore")
 
 
-class Binding(object):
-    def __init__(self, genome="hg19", gene_bed=None, pfmfile=None):
+def filter_tfs(motifs2factors, tffile):
+    ft = pd.read_csv(motifs2factors, sep="\t")
 
+    # "Curated" is manually curated or direct evidence for binding. For instance a ChIP-seq predicted motif is an N in this column
+    ft = ft.loc[ft.Curated == "Y"]
+    tfs = pd.read_csv(tffile, header = None)[0].tolist()
+    ft = ft.loc[ft.Factor.isin (tfs)]
+    
+    # replace T to TBXT
+    ft = ft.replace("T" , "TBXT")
+    ft = ft.replace("t" , "tbxt")
+
+    ft.rename(columns = {"Factor":"factor"}, inplace = True)
+    return ft
+
+class Binding(object):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None):
+
+        self.ncore = ncore
         self.genome = genome
         g = Genome(self.genome)
         self.gsize = g.props["sizes"]["sizes"]
-
-        # pfmfile = pfmfile_location(pfmfile)
-
-        # Motif information file
-        if pfmfile is None:
-            self.pfmfile = "../data/gimme.vertebrate.v5.1.pfm"
-        else:
-            self.pfmfile = pfmfile
-
-        self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
-        self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
-
-        # Gene information file
-        if self.genome == "hg38":
-            if gene_bed is None:
-                self.gene_bed = "../data/hg38_genes.bed"
-            else:
-                self.gene_bed = gene_bed
-        elif self.genome == "hg19":
-            if gene_bed is None:
-                self.gene_bed = "../data/hg19_genes.bed"
-            else:
-                self.gene_bed = gene_bed
-        else:
-            if gene_bed is None:
-                raise TypeError("Please provide a gene bed file with -a argument.")
-            else:
-                self.gene_bed = gene_bed
 
         # dream_model.txt is the logistic regression model.
         package_dir = os.path.dirname(ananse.__file__)
         self.model = os.path.join(package_dir, "db", "dream_model.txt")
 
-    def set_peak_size(self, peaks, seqlen=200):
+        # load real tfs
+        self.tffile = os.path.join(package_dir, "db", "tfs.txt")
+        # self.tffile = "db/tfs.txt"
+
+        # Motif information file
+        self.pfmfile = pfmfile_location(pfmfile) 
+        self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
+        self.filtermotifs2factors = filter_tfs(self.motifs2factors, self.tffile)
+        # self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
+
+        # # Gene information file
+        # if self.genome == "hg38":
+        #     if gene_bed is None:
+        #         self.gene_bed = "../data/hg38_genes.bed"
+        #     else:
+        #         self.gene_bed = gene_bed
+        # elif self.genome == "hg19":
+        #     if gene_bed is None:
+        #         self.gene_bed = "../data/hg19_genes.bed"
+        #     else:
+        #         self.gene_bed = gene_bed
+        # else:
+        #     if gene_bed is None:
+        #         raise TypeError("Please provide a gene bed file with -a argument.")
+        #     else:
+        #         self.gene_bed = gene_bed
+
+
+    def set_peak_size(self, peak_bed, seqlen=200):
 
         gsizedic = {}
         with open(self.gsize) as gsizefile:
             for chrom in gsizefile:
                 gsizedic[chrom.split()[0]] = int(chrom.split()[1])
 
-        s = ""
+        peaks = BedTool(peak_bed)
+        fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
+
         for peak in peaks:
 
             if peak.length < seqlen or peak.length > seqlen:
@@ -86,11 +106,10 @@ class Binding(object):
                 summit = (peak.start + peak.end) // 2
                 start, end = summit - seqlen // 2, summit + seqlen // 2
             else:
-                start, end = peak.start, peak.start
-
+                start, end = peak.start, peak.end
             # remove seq which langer than chromosome length or smaller than 0
             if start > 0 and end < gsizedic[peak.chrom]:
-                s += (
+                fl2.write(
                     str(peak.chrom)
                     + "\t"
                     + str(start)
@@ -100,42 +119,7 @@ class Binding(object):
                     + str(peak.fields[-1])
                     + "\n"
                 )
-
-        npeaks = BedTool(s, from_string=True)
-
-        return npeaks
-
-    def clear_peak(self, peak_bed, filter_promoter=True, up=2000, down=2000):
-        """
-        Filter the enhancer peaks in promoter range.
-        """
-        # set all seq to 200bp
-        peaks = BedTool(peak_bed)
-        peaks = self.set_peak_size(peaks, 200)
-
-        # remove all peaks that overlap with TSS(up2000 to down2000).
-        b = BedTool(self.gene_bed)
-        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(  # noqa: E741
-            l=up, r=down, g=self.gsize, s=True  # noqa: E741
-        )
-        vals = []
-        # for f in b.intersect(peaks, wo=True, nonamecheck=True):
-        # Bedtools don't have nonamecheck option now?
-        for f in b.intersect(peaks, wo=True):
-            chrom = f[0]
-            peak_start, peak_end = int(f[13]), int(f[14])
-            vals.append(chrom + ":" + str(peak_start) + "-" + str(peak_end))
-        fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        with open(peak_bed) as pbed:
-            for line in pbed:
-                if filter_promoter:
-                    if (
-                        line.split()[0] + ":" + line.split()[1] + "-" + line.split()[2]
-                        not in vals
-                    ):
-                        fl2.write(line)
-                else:
-                    fl2.write(line)
+        # return npeaks
         return fl2.name
 
     def get_peakRPKM(self, fin_rpkm):
@@ -166,7 +150,7 @@ class Binding(object):
         pfmscorefile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
         seqs = [s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=self.genome).ids]
 
-        s = Scanner()
+        s = Scanner(ncpus=self.ncore)
         s.set_motifs(self.pfmfile)
         s.set_threshold(threshold=0.0)
         s.set_genome(self.genome)
@@ -174,29 +158,33 @@ class Binding(object):
         with open(self.pfmfile) as f:
             motifs = read_motifs(f)
 
-        chunksize = 10000
+        chunksize = 1000
         # Run 10k peaks one time.
-        for chunk in range(0, len(seqs), chunksize):
-            chunk_seqs = seqs[chunk : chunk + chunksize]
-            print("\t", chunk, "-", chunk + chunksize, "enhancers")
-            pfm_score = []
-            it = s.best_score(chunk_seqs, zscore=True, gc=True)
-            # We are using GC-normalization for motif scan because many sequence is GC-enriched.
-            # GimmeMotif develop branch already include GC-normalization option now.
-            for seq, scores in zip(chunk_seqs, it):
-                for motif, score in zip(motifs, scores):
-                    pfm_score.append([motif.id, seq, score])
-            pfm_score = pd.DataFrame(pfm_score, columns=["motif", "enhancer", "zscore"])
-            pfm_score = pfm_score.set_index("motif")
 
-            print("\tCombine")
-            pfm_score["zscoreRank"] = minmax_scale(rankdata(pfm_score["zscore"]))
-            # When we built model, rank and minmax normalization was used.
-            cols = ["enhancer", "zscore", "zscoreRank"]
-            write_header = False
-            if chunk == 0:
-                write_header = True
-            pfm_score[cols].to_csv(pfmscorefile, sep="\t", header=write_header)
+        with tqdm(total=len(seqs)) as pbar:
+            for chunk in range(0, len(seqs), chunksize):
+                chunk_seqs = seqs[chunk : chunk + chunksize]
+                # print(chunk, "-", chunk + chunksize, "enhancers")
+                pfm_score = []
+                it = s.best_score(chunk_seqs, zscore=True, gc=True)
+                # We are using GC-normalization for motif scan because many sequence is GC-enriched.
+                # GimmeMotif develop branch already include GC-normalization option now.
+                for seq, scores in zip(chunk_seqs, it):
+                    for motif, score in zip(motifs, scores):
+                        pfm_score.append([motif.id, seq, score])
+                    pbar.update(1)
+                pfm_score = pd.DataFrame(pfm_score, columns=["motif", "enhancer", "zscore"])
+                pfm_score = pfm_score.set_index("motif")
+
+                # print("\tCombine")
+                pfm_score["zscoreRank"] = minmax_scale(rankdata(pfm_score["zscore"]))
+                # When we built model, rank and minmax normalization was used.
+                cols = ["enhancer", "zscore", "zscoreRank"]
+                write_header = False
+                if chunk == 0:
+                    write_header = True
+                pfm_score[cols].to_csv(pfmscorefile, sep="\t", header=write_header)
+                # pbar.update(chunk + chunksize)
 
         return pfmscorefile.name
 
@@ -209,30 +197,36 @@ class Binding(object):
         with open(self.model, "rb") as f:
             clf = pickle.load(f)
 
-        ft = dd.read_csv(self.factortable, sep="\t")
+        # ft = dd.read_csv(self.filtermotifs2factors, sep="\t")
+        ft = self.filtermotifs2factors
         r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
             ["motif", "enhancer", "zscore", "peakRPKMScale"]
         ]
-        r = r.merge(ft, left_on="motif", right_on="motif")
+        r = r.merge(ft, left_on="motif", right_on="Motif")
         r = r.groupby(["factor", "enhancer"])[["zscore", "peakRPKMScale"]].max()
         r = r.dropna().reset_index()
 
         table = r.compute()
-        print("Predicting TF binding sites")
+        # print("Predicting TF binding sites")
         table["binding"] = clf.predict_proba(table[["zscore", "peakRPKMScale"]])[:, 1]
-        print("Save results")
+        # print("Save results")
 
         return table
 
     def run_binding(self, peak_bed, outfile):
 
-        filter_bed = self.clear_peak(peak_bed)
+        logger.info("Peak initialization")
 
-        print("Motif scanning")
+        filter_bed = self.set_peak_size(peak_bed)
+
+        logger.info("Motif scan")
         pfm_weight = self.get_PWMScore(filter_bed)
         pfm = dd.read_csv(pfm_weight, sep="\t")
 
+        logger.info("Predicting TF binding sites")
         peak_weight = self.get_peakRPKM(filter_bed)
         peak = dd.read_csv(peak_weight, sep="\t")
         table = self.get_binding_score(pfm, peak)
+        
+        logger.info("Save results")
         table.to_csv(outfile, sep="\t", index=False)
