@@ -63,13 +63,15 @@ def difference(S, R):
     """Calculate the network different between two cell types."""
     DIF = nx.create_empty_copy(R)
     for (u, v, d) in S.edges(data=True):
-
         if (u, v) not in R.edges and S.edges[u, v]["weight"] > 0.5:
-            DIF.add_edge(u, v, weight=d["weight"], n=1)
-        elif S.edges[u, v]["weight"] - R.edges[u, v]["weight"] >= 0.3:
-            DIF.add_edge(
-                u, v, weight=S.edges[u, v]["weight"] - R.edges[u, v]["weight"], n=1
-            )
+            DIF.add_edge(u, v, weight=d["weight"], n=1, neglogweight=-np.log(d["weight"]))
+        else:
+            diff_weight = S.edges[u, v]["weight"] - R.edges[u, v]["weight"]
+            if diff_weight >= 0.3:
+                DIF.add_edge(
+                u, v, weight=diff_weight, n=1,
+                neglogweight=-np.log(diff_weight)
+                )
 
     return DIF
 
@@ -114,7 +116,7 @@ def targetScore(node, G, max_degree=3, expression=None):
     targets = [t for t in lengths if 0 < lengths[t] <= max_degree]
 
     # get shortest paths based on edge weight
-    lengths, paths = nx.single_source_dijkstra(G, node, weight="weight")
+    lengths, paths = nx.single_source_dijkstra(G, node, weight="neglogweight")
 
     # calculate influence score
     for target in targets:
