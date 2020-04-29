@@ -35,7 +35,18 @@ warnings.filterwarnings("ignore")
 
 
 def filter_tfs(motifs2factors, tffile):
+    """filter unreal TFs from motif database
+
+    Arguments:
+        motifs2factors {[type]} -- [motifs2factors]
+        tffile {[type]} -- [real tfs]
+
+    Returns:
+        [type] -- [motifs2factors]
+    """
     ft = pd.read_csv(motifs2factors, sep="\t")
+
+    ft['Factor'] = ft.Factor.str.upper()
 
     # "Curated" is manually curated or direct evidence for binding. For instance a ChIP-seq predicted motif is an N in this column
     ft = ft.loc[ft.Curated == "Y"]
@@ -90,7 +101,17 @@ class Binding(object):
 
 
     def set_peak_size(self, peak_bed, seqlen=200):
+        """set all input peaks to 200bp
 
+        Arguments:
+            peak_bed {[bed]} -- [input peak bed file]
+
+        Keyword Arguments:
+            seqlen {int} -- [peak length] (default: {200})
+
+        Returns:
+            [type] -- [200bp peak file]
+        """
         gsizedic = {}
         with open(self.gsize) as gsizefile:
             for chrom in gsizefile:
@@ -144,8 +165,13 @@ class Binding(object):
         return peakrpkmfile.name
 
     def get_PWMScore(self, fin_regions_fa):
-        """
-        Scan motif in every peak.
+        """ Scan motif in every peak.
+
+        Arguments:
+            fin_regions_fa {[type]} -- [input fasta file]
+
+        Returns:
+            [type] -- [pfmscorefile]
         """
         pfmscorefile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
         seqs = [s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=self.genome).ids]
@@ -189,8 +215,14 @@ class Binding(object):
         return pfmscorefile.name
 
     def get_binding_score(self, pfm, peak):
-        """
-        Infer TF binding score from motif z-score and peak intensity.
+        """Infer TF binding score from motif z-score and peak intensity.
+
+        Arguments:
+            pfm {[type]} -- [motif scan result]
+            peak {[type]} -- [peak intensity]
+
+        Returns:
+            [type] -- [the predicted tf binding table]
         """
 
         # Load model

@@ -67,7 +67,7 @@ def difference(S, R):
     for (u, v, d) in S.edges(data=True):
         if (u, v) not in R.edges:
             if S.edges[u, v]["weight"] > 0.5:
-            DIF.add_edge(u, v, weight=d["weight"], n=1, neglogweight=-np.log(d["weight"]))
+                DIF.add_edge(u, v, weight=d["weight"], n=1, neglogweight=-np.log(d["weight"]))
         else:
             diff_weight = S.edges[u, v]["weight"] - R.edges[u, v]["weight"]
             if diff_weight >= 0.3:

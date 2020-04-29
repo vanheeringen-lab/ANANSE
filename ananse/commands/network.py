@@ -21,6 +21,8 @@ def network(args):
         ncore=args.ncore,
         genome=args.genome, 
         gene_bed=args.annotation, 
+        include_promoter=args.include_promoter,
+        include_enhancer=args.include_enhancer
         # pfmfile=args.pfmfile,
         # promoter=args.promoter
     )

@@ -32,13 +32,26 @@ warnings.filterwarnings("ignore")
 
 
 class Network(object):
-    # def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, promoter=False):
-    def __init__(self, ncore=1, genome="hg38", gene_bed=None):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None, include_promoter=False, include_enhancer=True):
+        """[infer cell type-specific gene regulatory network]
 
+        Arguments:
+            object {[type]} -- [description]
+
+        Keyword Arguments:
+            ncore {int} -- [Specifies the number of threads to use during analysis.] (default: {1})
+            genome {str} -- [The genome that is used for the gene annotation and the enhancer location.] (default: {"hg38"})
+            gene_bed {[type]} -- [Gene annotation for the genome specified with -g as a 12 column BED file.] (default: {None})
+            include_promoter {bool} -- [Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference.] (default: {False})
+            include_enhancer {bool} -- [Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference.] (default: {True})
+
+        Raises:
+            TypeError: [description]
+        """
         self.ncore = ncore
         self.genome = genome
-        g = Genome(self.genome)
-        self.gsize = g.props["sizes"]["sizes"]
+        self.g = Genome(self.genome)
+        self.gsize = self.g.props["sizes"]["sizes"]
 
         # # Motif information file
         # if pfmfile is None:
@@ -69,7 +82,9 @@ class Network(object):
                 self.gene_bed = gene_bed
         
         # self.promoter = promoter
+        self.include_promoter = include_promoter
 
+        self.include_enhancer = include_enhancer
 
     def clear_peak(self, ddf):
         """
@@ -89,7 +104,6 @@ class Network(object):
         enhancerbed.to_csv(enhancerfile, sep="\t", header=False, index=False)
         # print(enhancerfile.name)
         return enhancerfile.name
-
 
     def get_promoter_dataframe(self, peak_bed, up=2000, down=2000):
         # all overlap Enh-TSS(up8000 to down2000) pair
@@ -164,7 +178,7 @@ class Network(object):
 
         return p
 
-    def distance_weight(self, alpha=1e5, padding=100000, keep1=5000, remove=2000):
+    def distance_weight(self, include_promoter=False, include_enhancer=True, alpha=1e5, padding=100000, keep1=5000, remove=2000):
         """
         Built weight distribution from TSS.
         """
@@ -174,26 +188,82 @@ class Network(object):
         # keep1 is keep full binding score range
 
         u = -math.log(1.0 / 3.0) * 1e5 / alpha
-        weight1 = pd.DataFrame(
-            {"weight": [0 for z in range(1, remove + 1)], "dist": range(1, remove + 1)}
-        )
-        weight2 = pd.DataFrame(
-            {
-                "weight": [1 for z in range(remove + 1, keep1 + 1)],
-                "dist": range(remove + 1, keep1 + 1),
-            }
-        )
-        weight3 = pd.DataFrame(
-            {
-                "weight": [
-                    2.0
-                    * math.exp(-u * math.fabs(z) / 1e5)
-                    / (1.0 + math.exp(-u * math.fabs(z) / 1e5))
-                    for z in range(1, padding - keep1 + 1)
-                ],
-                "dist": range(keep1 + 1, padding + 1),
-            }
-        )
+
+        if include_promoter and include_enhancer:
+            weight1 = pd.DataFrame(
+                {"weight": [1 for z in range(1, remove + 1)], "dist": range(1, remove + 1)}
+            )
+            weight2 = pd.DataFrame(
+                {
+                    "weight": [1 for z in range(remove + 1, keep1 + 1)],
+                    "dist": range(remove + 1, keep1 + 1),
+                }
+            )
+            weight3 = pd.DataFrame(
+                {
+                    "weight": [
+                        2.0
+                        * math.exp(-u * math.fabs(z) / 1e5)
+                        / (1.0 + math.exp(-u * math.fabs(z) / 1e5))
+                        for z in range(1, padding - keep1 + 1)
+                    ],
+                    "dist": range(keep1 + 1, padding + 1),
+                }
+            )
+        elif not include_promoter and include_enhancer:
+            weight1 = pd.DataFrame(
+                {"weight": [0 for z in range(1, remove + 1)], "dist": range(1, remove + 1)}
+            )
+            weight2 = pd.DataFrame(
+                {
+                    "weight": [1 for z in range(remove + 1, keep1 + 1)],
+                    "dist": range(remove + 1, keep1 + 1),
+                }
+            )
+            weight3 = pd.DataFrame(
+                {
+                    "weight": [
+                        2.0
+                        * math.exp(-u * math.fabs(z) / 1e5)
+                        / (1.0 + math.exp(-u * math.fabs(z) / 1e5))
+                        for z in range(1, padding - keep1 + 1)
+                    ],
+                    "dist": range(keep1 + 1, padding + 1),
+                }
+            )
+        elif include_promoter and not include_enhancer:
+            weight1 = pd.DataFrame(
+                {"weight": [1 for z in range(1, remove + 1)], "dist": range(1, remove + 1)}
+            )
+            weight2 = pd.DataFrame(
+                {
+                    "weight": [0 for z in range(remove + 1, keep1 + 1)],
+                    "dist": range(remove + 1, keep1 + 1),
+                }
+            )
+            weight3 = pd.DataFrame(
+                {
+                    "weight": [0 for z in range(1, padding - keep1 + 1)],
+                    "dist": range(keep1 + 1, padding + 1),
+                }
+            )
+        else:
+            weight1 = pd.DataFrame(
+                {"weight": [0 for z in range(1, remove + 1)], "dist": range(1, remove + 1)}
+            )
+            weight2 = pd.DataFrame(
+                {
+                    "weight": [0 for z in range(remove + 1, keep1 + 1)],
+                    "dist": range(remove + 1, keep1 + 1),
+                }
+            )
+            weight3 = pd.DataFrame(
+                {
+                    "weight": [0 for z in range(1, padding - keep1 + 1)],
+                    "dist": range(keep1 + 1, padding + 1),
+                }
+            )
+
         weight = pd.concat([weight1, weight2, weight3])
 
         weightfile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
@@ -302,6 +372,7 @@ class Network(object):
         with ProgressBar():
             f_table.compute(num_workers = self.ncore)
         f_table.to_hdf(features_file.name, key="/features")
+
         return features_file.name
 
         # return f_table
@@ -486,14 +557,14 @@ class Network(object):
             "factor_expression.scale",
             "target_expression.scale",
             # "factor_expression.rank.scale", 
-            "target_expression.rank.scale",
+            # "target_expression.rank.scale",
             "corr_file1",
             "correlation",
             "correlationRank",
             "max_binding_in_promoter",
             "max_binding",
             "max_sum_dist_weight",
-            #                "sum_dist_weight"
+            # "sum_dist_weight"
         ]
         network = network[[c for c in network.columns if c not in exclude_cols]]
         network = network.set_index("source_target")
@@ -514,7 +585,8 @@ class Network(object):
     def create_promoter_network(self, featurefile, outfile, impute=False):
 
         # network = pd.read_hdf(featurefile, key="/features")
-        network = pd.read_csv(featurefile, sep="\t")
+        # network = pd.read_csv(featurefile, sep="\t")
+        network = featurefile
 
         exclude_cols = [
             "sum_weighted_logodds",
@@ -531,7 +603,8 @@ class Network(object):
             "target_expression",
             "factor_expression.scale",
             "target_expression.scale",
-            "factor_expression.rank.scale", "target_expression.rank.scale",
+            # "factor_expression.rank.scale", 
+            # "target_expression.rank.scale",
             "corr_file1",
             "correlation",
             "correlationRank",
@@ -557,7 +630,8 @@ class Network(object):
     def create_expression_network(self, featurefile, outfile, impute=False):
 
         # network = pd.read_hdf(featurefile, key="/features")
-        network = pd.read_csv(featurefile, sep="\t")
+        # network = pd.read_csv(featurefile, sep="\t")
+        network = featurefile
 
         exclude_cols = [
             "sum_weighted_logodds",
@@ -574,7 +648,8 @@ class Network(object):
             "target_expression",
             "factor_expression.scale",
             "target_expression.scale",
-            # "factor_expression.rank.scale", "target_expression.rank.scale",
+            # "factor_expression.rank.scale", 
+            # "target_expression.rank.scale",
             "corr_file1",
             "correlation",
             "correlationRank",
@@ -597,49 +672,6 @@ class Network(object):
 
         bpd.to_csv(outfile, sep="\t")
 
-    def create_promoter_expression_network(self, featurefile, outfile, impute=False):
-
-        # network = pd.read_hdf(featurefile, key="/features")
-        network = pd.read_csv(featurefile, sep="\t")
-
-        exclude_cols = [
-            "sum_weighted_logodds",
-            "enhancers",
-            "log_enhancers",
-            "sum_binding",
-            "sum_logodds",
-            "log_sum_binding",
-            "factorExpression",
-            "targetExpression",
-            "factor",
-            "gene",
-            "factor_expression",
-            "target_expression",
-            "factor_expression.scale",
-            "target_expression.scale",
-            # "factor_expression.rank.scale", "target_expression.rank.scale",
-            "corr_file1",
-            "correlation",
-            "correlationRank",
-            # "max_binding_in_promoter",
-            "max_binding",
-            "max_sum_dist_weight",
-            "sum_dist_weight"
-        ]
-        network = network[[c for c in network.columns if c not in exclude_cols]]
-        network = network.set_index("source_target")
-        network["binding"] = minmax_scale(
-            rankdata(network["max_binding_in_promoter"], method="dense")
-        )
-        network.drop(["max_binding_in_promoter"], axis=1, inplace=True)
-
-        bp = network.mean(axis=1)
-        bpd = pd.DataFrame(bp)
-        bpd = bpd.rename(columns={0: "binding"})
-        bpd["prob"] = minmax_scale(rankdata(bpd["binding"], method="dense"))
-
-        bpd.to_csv(outfile, sep="\t")
-
     def run_network(self, binding, fin_expression, corrfiles, outfile):
         # gene_bed="/home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed"
         # peak_bed="data/krt_enhancer.bed"
@@ -648,20 +680,17 @@ class Network(object):
 
         # b=self.interaction.Interaction(genome=self.genome, gene_bed= self.gene_bed, pfmfile=self.pfmfile)
 
-        # print("1, Read data")
         logger.info("Read data")
-
         ddf = dd.read_csv(binding, sep="\t")[["factor", "enhancer", "binding"]]
 
         filter_bed = self.clear_peak(ddf)
 
         prom = self.get_promoter_dataframe(filter_bed)
         p = self.get_gene_dataframe(filter_bed)
-        weight = self.distance_weight()
 
+        weight = self.distance_weight(self.include_promoter, self.include_enhancer)
 
         logger.info("Aggregate binding")
-
         features = self.aggregate_binding(ddf, prom, p, weight)
 
         logger.info("Join expression")
@@ -686,6 +715,23 @@ class Network(object):
 
         logger.info("Create network")
         self.create_network(featurefile, outfile)
+
+        # if self.include_promoter and self.include_enhancer:
+        #     self.create_network(featurefile, outfile)
+
+        # elif not self.include_promoter and self.include_enhancer:
+        #     self.create_network(featurefile, outfile)
+
+        # elif self.include_promoter and not self.include_enhancer:
+        #     self.create_promoter_network(featurefile, outfile)
+
+        # else:
+        #     self.create_expression_network(featurefile, outfile)
+
+        # if self.include_promoter and not self.include_enhancer:
+        #     self.create_promoter_network(featurefile, outfile)
+        # else:
+        #     self.create_network(featurefile, outfile)
 
         # if self.promoter:
         #     self.create_promoter_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter."+outfile.split(".")[-1])
