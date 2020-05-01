@@ -17,7 +17,8 @@ ls -lh data
 ### Build TF binding network
 
 ``` bash
-$ ananse binding  -r data/krt_enhancer.bed \
+$ ananse binding  -n 20 \
+                  -r data/krt_enhancer.bed \
                   -o results/binding.txt \
                   -a ../data/hg38_genes.bed \
                   -g hg38 \
@@ -27,20 +28,24 @@ $ ananse binding  -r data/krt_enhancer.bed \
 ### Built gene regulatory network
 
 ``` bash
-$ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
+$ ananse network  -n 20 \
+                  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                   -b results/binding.txt \
                   -o results/KRT_features.txt \
                   -g hg38 \
-                  -a ../data/hg38_genes.bed 
+                  -a ../data/hg38_genes.bed \
+                  --exclude-promoter --include-enhancer
 ```
 
 ### Infer TF influence score
 
 ``` bash
-$ ananse influence  -b results/FB_network.txt \
-                    -a results/KRT_network.txt \
+$ ananse influence  -n 20 \
+                    -s results/FB_network.txt \
+                    -t results/KRT_network.txt \
                     -e data/FB_rep1_TPM.txt \
                     -d data/FB2KRT_degenes.csv \
                     -o results/FB2KRT.txt \
-                    -p 
+                    -p \
+                    -i 100000 
 ```

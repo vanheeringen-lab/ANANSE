@@ -94,7 +94,7 @@ For documentation on the development version see [here](https://anansepy.readthe
                       -o results/full_features.txt \
                       -a /data/hg38_genes.bed \
                       -g hg38 \
-                      -p ../data/gimme.vertebrate.v5.1.pfm
+                      --exclude-promoter --include-enhancer
     ```
 
   * Required arguments:
@@ -111,12 +111,12 @@ For documentation on the development version see [here](https://anansepy.readthe
       Specifies the number of threads to use during analysis. 
     * `-g, --genome`  
       The genome of your data. For example, hg38. The genome is recommended to download by `genomepy`.
-    * `-p, --motifs`  
-      The input Motif file. [***This***](/data/gimme.vertebrate.v5.1.pfm) is an example Motif file in vertebrate. if provided there should also be a motif2factors.txt file and a factortable.txt file in the same folder. [***This***](/data/gimme.vertebrate.v5.1.motif2factors.txt) is an example of motif2factors file. [***This***](/data/gimme.vertebrate.v5.1.factortable.txt) is an example of factortable file. 
     * `-a, --annotation`  
       The input 12 columns BED file with gene annotation in your genome version. [***This***](/data/hg38_genes.bed) is an example BED annotation file of human hg38.
-    * `-f, --filter_promoter`  
-      Filter promoters. Default setting is True. If 'True', the function will filtered all promoter peaks (+-2k from TSS) in provided enhancer peaks.
+    * `--include-promoter, --exclude-promoter`
+      Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are **excluded**.
+    * `--include-enhancer, --exclude-enhancer`
+      Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. By default enhancer peaks are **included**.
     * `-c, --corrfiles`  
       All gene correlation file, the human gene expression correlation can be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/data/expressioncorrelation.txt).
     * `-h, --help`  

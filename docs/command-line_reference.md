@@ -55,7 +55,8 @@ $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                   -b results/binding.txt \
                   -o results/full_features.txt \
                   -a data/hg38_genes.bed \
-                  -g hg38
+                  -g hg38 \
+                  --exclude-promoter --include-enhancer
 ```
 !!! tip
     Please use `-h/--help` for the details of all options.
