@@ -88,6 +88,15 @@ if __name__ == "__main__":
     #     action="store_true",
     #     default=False,
     # )
+    group.add_argument(
+        "--include-notfs",
+        "--exclude-notfs",
+        default=False,
+        help="Include or exclude noTFs from database. By default no tfs are exclude.",
+        dest="include_notfs",
+        action=NegateAction,
+        nargs=0,
+    )
     p.set_defaults(func=commands.binding)
 
     # network.py

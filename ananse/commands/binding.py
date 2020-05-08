@@ -21,6 +21,7 @@ def binding(args):
         ncore=args.ncore,
         genome=args.genome, 
         # gene_bed=args.annotation, 
-        pfmfile=args.pfmfile
+        pfmfile=args.pfmfile,
+        include_notfs=args.include_notfs
     )
     a.run_binding(args.fin_rpkm, args.outfile)

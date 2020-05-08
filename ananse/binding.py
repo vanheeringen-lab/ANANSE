@@ -34,7 +34,7 @@ import ananse
 warnings.filterwarnings("ignore")
 
 
-def filter_tfs(motifs2factors, tffile):
+def clear_tfs(motifs2factors, tffile, include_notfs=False):
     """filter unreal TFs from motif database
 
     Arguments:
@@ -50,9 +50,9 @@ def filter_tfs(motifs2factors, tffile):
 
     # "Curated" is manually curated or direct evidence for binding. For instance a ChIP-seq predicted motif is an N in this column
     ft = ft.loc[ft.Curated == "Y"]
-    tfs = pd.read_csv(tffile, header = None)[0].tolist()
-    ft = ft.loc[ft.Factor.isin (tfs)]
-    
+    if not include_notfs:
+        tfs = pd.read_csv(tffile, header = None)[0].tolist()
+        ft = ft.loc[ft.Factor.isin (tfs)]        
     # replace T to TBXT
     ft = ft.replace("T" , "TBXT")
     ft = ft.replace("t" , "tbxt")
@@ -61,7 +61,7 @@ def filter_tfs(motifs2factors, tffile):
     return ft
 
 class Binding(object):
-    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, include_notfs=False):
 
         self.ncore = ncore
         self.genome = genome
@@ -72,6 +72,8 @@ class Binding(object):
         package_dir = os.path.dirname(ananse.__file__)
         self.model = os.path.join(package_dir, "db", "dream_model.txt")
 
+        # filter tfs?
+        self.include_notfs = include_notfs
         # load real tfs
         self.tffile = os.path.join(package_dir, "db", "tfs.txt")
         # self.tffile = "db/tfs.txt"
@@ -79,7 +81,7 @@ class Binding(object):
         # Motif information file
         self.pfmfile = pfmfile_location(pfmfile) 
         self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
-        self.filtermotifs2factors = filter_tfs(self.motifs2factors, self.tffile)
+        self.filtermotifs2factors = clear_tfs(self.motifs2factors, self.tffile, self.include_notfs)
         # self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
 
         # # Gene information file
@@ -184,7 +186,7 @@ class Binding(object):
         with open(self.pfmfile) as f:
             motifs = read_motifs(f)
 
-        chunksize = 1000
+        chunksize = 10000
         # Run 10k peaks one time.
 
         with tqdm(total=len(seqs)) as pbar:
