@@ -60,7 +60,6 @@ def read_network(fname, edges=100000):
             raise
     return G
 
-
 def difference(S, R):
     """Calculate the network different between two cell types."""
     DIF = nx.create_empty_copy(R)
@@ -76,7 +75,6 @@ def difference(S, R):
                 neglogweight=-np.log(diff_weight)
                 )
     return DIF
-
 
 def read_expression(fname):
     """Read kallisto output, return dictionary with abs fold change."""

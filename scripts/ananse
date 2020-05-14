@@ -97,6 +97,15 @@ if __name__ == "__main__":
         action=NegateAction,
         nargs=0,
     )
+    group.add_argument(
+        "--unremove-curated",
+       # "--remove-curated",
+        default=True,
+        help="Include or exclude noTFs from database. By default no tfs are exclude.",
+        dest="rm_curated",
+        action=NegateAction,
+        nargs=0,
+    )
     p.set_defaults(func=commands.binding)
 
     # network.py

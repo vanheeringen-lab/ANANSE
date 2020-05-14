@@ -34,7 +34,7 @@ import ananse
 warnings.filterwarnings("ignore")
 
 
-def clear_tfs(motifs2factors, tffile, include_notfs=False):
+def clear_tfs(motifs2factors, tffile, include_notfs=False, rm_curated=True):
     """filter unreal TFs from motif database
 
     Arguments:
@@ -47,12 +47,12 @@ def clear_tfs(motifs2factors, tffile, include_notfs=False):
     ft = pd.read_csv(motifs2factors, sep="\t")
 
     ft['Factor'] = ft.Factor.str.upper()
-
-    # "Curated" is manually curated or direct evidence for binding. For instance a ChIP-seq predicted motif is an N in this column
-    ft = ft.loc[ft.Curated == "Y"]
+    if rm_curated:
+        # "Curated" is manually curated or direct evidence for binding. For instance a ChIP-seq predicted motif is an N in this column
+        ft = ft.loc[ft.Curated == "Y"]
     if not include_notfs:
         tfs = pd.read_csv(tffile, header = None)[0].tolist()
-        ft = ft.loc[ft.Factor.isin (tfs)]        
+        ft = ft.loc[ft.Factor.isin (tfs)]
     # replace T to TBXT
     ft = ft.replace("T" , "TBXT")
     ft = ft.replace("t" , "tbxt")
@@ -61,7 +61,7 @@ def clear_tfs(motifs2factors, tffile, include_notfs=False):
     return ft
 
 class Binding(object):
-    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, include_notfs=False):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, include_notfs=False, rm_curated=True):
 
         self.ncore = ncore
         self.genome = genome
@@ -74,14 +74,17 @@ class Binding(object):
 
         # filter tfs?
         self.include_notfs = include_notfs
+        # remove curated?
+        self.rm_curated = rm_curated
+
         # load real tfs
         self.tffile = os.path.join(package_dir, "db", "tfs.txt")
         # self.tffile = "db/tfs.txt"
 
         # Motif information file
-        self.pfmfile = pfmfile_location(pfmfile) 
+        self.pfmfile = pfmfile_location(pfmfile)
         self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
-        self.filtermotifs2factors = clear_tfs(self.motifs2factors, self.tffile, self.include_notfs)
+        self.filtermotifs2factors = clear_tfs(self.motifs2factors, self.tffile, self.include_notfs, self.rm_curated)
         # self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
 
         # # Gene information file
@@ -237,7 +240,7 @@ class Binding(object):
             ["motif", "enhancer", "zscore", "peakRPKMScale"]
         ]
         r = r.merge(ft, left_on="motif", right_on="Motif")
-        r = r.groupby(["factor", "enhancer"])[["zscore", "peakRPKMScale"]].max()
+        r = r.groupby(["factor", "enhancer"])[["zscore", "peakRPKMScale"]].mean()
         r = r.dropna().reset_index()
 
         table = r.compute()
@@ -261,6 +264,6 @@ class Binding(object):
         peak_weight = self.get_peakRPKM(filter_bed)
         peak = dd.read_csv(peak_weight, sep="\t")
         table = self.get_binding_score(pfm, peak)
-        
+
         logger.info("Save results")
         table.to_csv(outfile, sep="\t", index=False)
