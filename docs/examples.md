@@ -3,10 +3,10 @@
 ### Prepare code and dataset
 * Activate the environment before you use ANANSE  
 ```
-$ conda activate ananse
+conda activate ananse
 ```
 
-* Install the `ANANSE` version in the paper  
+* Install the `ANANSE` version used in the paper  
 ```
 conda uninstall ananse
 pip install git+https://github.com/vanheeringen-lab/ANANSE.git@d8dbdd2e405558334566386b747867c401f45870
