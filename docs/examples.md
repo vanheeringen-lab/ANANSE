@@ -1,5 +1,11 @@
 ## Examples
 
+### Prepare code and dataset
+* Activate the environment before you use ANANSE  
+```
+$ conda activate ananse
+```
+
 * Install the `ANANSE` version in the paper  
 ```
 conda uninstall ananse
