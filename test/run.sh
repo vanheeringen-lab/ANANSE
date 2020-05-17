@@ -1,23 +1,33 @@
-python ../grns/binding.py  -r data/krt_enhancer.bed \
-                            -o results \
-                            -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
-                            -g hg38 \
-                            -p ../data/gimme.vertebrate.v5.1.pfm
+ananse binding  -n 30 \
+                -r data/FB_enhancer.bed \
+                -o results/FB_binding.txt \
+                -g hg38 \
+                --unremove-curated
 
+ananse binding  -n 30 \
+                -r data/KRT_enhancer.bed \
+                -o results/KRT_binding.txt \
+                -g hg38 \
+                --unremove-curated
 
-python ../grns/interaction.py  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                            -o results \
-                            -a /home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed \
-                            -g hg38 \
-                            -b results/binding.predicted.h5 \
-                            -c /home/qxu/projects/regulatoryNetwork/history/cell_trans/human_gene_correlation/expressioncorrelation.txt \
-                            -p ../data/gimme.vertebrate.v5.1.pfm
+ananse network  -n 30 \
+                -e data/FB_rep1_TPM.txt data/FB_rep2_TPM.txt \
+                -b results/FB_binding.txt \
+                -o results/FB_network.txt \
+                -g hg38 \
+                --exclude-promoter --include-enhancer
 
-python ../grns/network.py -f results/full_features.h5 -o results
+ananse network  -n 30 \
+                -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
+                -b results/KRT_binding.txt \
+                -o results/KRT_network.txt \
+                -g hg38 \
+                --exclude-promoter --include-enhancer
 
-python ../grns/influence.py -a results/full_network.txt \
-                            -e data/FB_rep1_TPM.txt \
-                            -d data/FB2KRT_degenes.csv \
-                            -o results/FB2KRT.txt
-
-
+ananse influence    -n 30 \
+                    -s results/FB_network.txt \
+                    -t results/KRT_network.txt \
+                    -e data/FB_rep1_TPM.txt \
+                    -d data/FB2KRT_degenes.csv \
+                    -o results/FB2KRT.txt \
+                    -i 100000
