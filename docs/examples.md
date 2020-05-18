@@ -11,6 +11,7 @@ conda activate ananse
 
 * Install the `ANANSE` version used in the paper  
 ```
+conda install genomepy=0.7.2
 pip install git+https://github.com/vanheeringen-lab/ANANSE.git@d8dbdd2e405558334566386b747867c401f45870
 ```
 
