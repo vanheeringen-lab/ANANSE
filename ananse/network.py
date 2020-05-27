@@ -56,8 +56,8 @@ class Network(object):
         """
         self.ncore = ncore
         self.genome = genome
-        self.g = Genome(self.genome)
-        self.gsize = self.g.props["sizes"]["sizes"]
+        g = Genome(self.genome)
+        self.gsize = g.sizes_file
 
         # # Motif information file
         # if pfmfile is None:
