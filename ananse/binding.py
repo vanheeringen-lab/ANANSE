@@ -65,8 +65,6 @@ class Binding(object):
 
         self.ncore = ncore
         self.genome = genome
-        g = Genome(self.genome)
-        self.gsize = g.props["sizes"]["sizes"]
 
         # dream_model.txt is the logistic regression model.
         package_dir = os.path.dirname(ananse.__file__)
@@ -117,10 +115,7 @@ class Binding(object):
         Returns:
             [type] -- [200bp peak file]
         """
-        gsizedic = {}
-        with open(self.gsize) as gsizefile:
-            for chrom in gsizefile:
-                gsizedic[chrom.split()[0]] = int(chrom.split()[1])
+        gsizedic = Genome(self.genome).sizes
 
         peaks = BedTool(peak_bed)
         fl2 = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
