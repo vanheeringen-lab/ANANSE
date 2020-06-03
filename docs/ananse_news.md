@@ -1,8 +1,11 @@
 ## ANANSE News
 
 ### ANANSE v0.1.3
-> 2020-04-16
+> 2020-06-02
 
+* Fix genomepy chromosome size bug thanks Siebren Frölich ([@siebrenf](https://github.com/siebrenf)).
+* Fix influence calculation path bug.
+* Fix promoter and expression network caculation bug.
 * Fix a lot of bugs, thanks Siebren Frölich ([@siebrenf](https://github.com/siebrenf)) and Jos Smits ([@JGASmits](https://github.com/JGASmits)) for valuable input, testing and bug hunting.  
 * Add ReadtheDocs for ANANSE  
 * You can download it from GitHub: [ANANSE Release v0.1.3](https://github.com/vanheeringen-lab/ANANSE/releases/tag/v0.1.3).
