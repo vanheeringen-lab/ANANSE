@@ -60,21 +60,21 @@ def read_network(fname, edges=100000):
             raise
     return G
 
-
 def difference(S, R):
     """Calculate the network different between two cell types."""
     DIF = nx.create_empty_copy(R)
     for (u, v, d) in S.edges(data=True):
-
-        if (u, v) not in R.edges and S.edges[u, v]["weight"] > 0.5:
-            DIF.add_edge(u, v, weight=d["weight"], n=1)
-        elif S.edges[u, v]["weight"] - R.edges[u, v]["weight"] >= 0.3:
-            DIF.add_edge(
-                u, v, weight=S.edges[u, v]["weight"] - R.edges[u, v]["weight"], n=1
-            )
-
+        if (u, v) not in R.edges:
+            if S.edges[u, v]["weight"] > 0.5:
+                DIF.add_edge(u, v, weight=d["weight"], n=1)
+        else:
+            diff_weight = S.edges[u, v]["weight"] - R.edges[u, v]["weight"]
+            if diff_weight >= 0.3:
+                DIF.add_edge(
+                u, v, weight=diff_weight, n=1,
+                neglogweight=-np.log(diff_weight)
+                )
     return DIF
-
 
 def read_expression(fname):
     """Read kallisto output, return dictionary with abs fold change."""
@@ -102,7 +102,6 @@ def read_expression(fname):
 
     return expression_change
 
-
 def targetScore(node, G, max_degree=3, expression=None):
     """Calculate the influence score."""
 
@@ -111,35 +110,42 @@ def targetScore(node, G, max_degree=3, expression=None):
 
     total_score = 0
 
-    # get all targets up to max_degree degree
-    lengths, paths = nx.single_source_dijkstra(G, node, weight="n")
+    # Get the targets that are within a certain number of steps from TF
+    lengths, paths = nx.single_source_dijkstra(G, node, cutoff=max_degree-1)
     targets = [t for t in lengths if 0 < lengths[t] <= max_degree]
+    
+    for target in paths:
+        all_paths = {}
+        # Calculate all paths from TF to target to select to path with the lowest total weight
+        for path in nx.all_simple_paths(G, node, target, cutoff=max_degree-1):
+            if len(path) <= max_degree:
+                weight = np.cumprod([G[s][t]['weight'] for s,t in zip(path, path[1:])])[-1] 
+                # Add weight, corrected for the length of the path
+                all_paths[tuple(path)] = weight / (len(path) - 1)
+        if len(all_paths) > 0:
+            path, weight = sorted(all_paths.items(), key=lambda p: p[1])[-1]
 
-    # get shortest paths based on edge weight
-    lengths, paths = nx.single_source_dijkstra(G, node, weight="weight")
+            # print(target, path, weight)
 
-    # calculate influence score
-    for target in targets:
-        path = paths[target]
-        # outdegree of parent node of the target
-        d = np.log(G.out_degree(path[-2]) + 1)
-        # d = G.out_degree(path[-2])
+            # outdegree of parent node of the target
+            d = np.log(G.out_degree(path[-2]) + 1)
+            # d = G.out_degree(path[-2])
 
-        # the level (or the number of steps) that gene is away from transcription factor
-        l = len(path) 
-        
-        # expression score of the target
-        g = expression["score"].get(target, 0)
-        
-        # weight is cumulative product of probabilities
-        weight = [G[s][t]["weight"] for s, t in zip(path[:-1], path[1:])]
+            # the level (or the number of steps) that gene is away from transcription factor
+            l = len(path) 
+            
+            # expression score of the target
+            g = expression["score"].get(target, 0)
+            
+            # weight is cumulative product of probabilities
+            # weight = [G[s][t]["weight"] for s, t in zip(path[:-1], path[1:])]
 
-        # cumulative sum of weight
-        weight = np.cumprod(weight)[-1]
+            # cumulative sum of weight
+            # weight = np.cumprod(weight)[-1]
 
-        # score = g / len(path) / d * weight
-        score = g / l * weight
-        total_score += score
+            # score = g / len(path) / d * weight
+            score = g / l * weight
+            total_score += score
 
     # Get Mann-Whitney U p-value of direct targets vs. non-direct targets
     direct_targets = [n for n in G[node] if n in expression["fc"]]

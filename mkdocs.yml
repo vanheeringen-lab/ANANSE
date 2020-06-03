@@ -55,5 +55,7 @@ nav:
   #     - I have upgraded GimmeMotifs and now it doesn’t find my genome
   #     - I cannot run gimme index anymore
   #     - I get a KeyError when running gimme maelstrom
+  - ANANSE news: 'ananse_news.md'
+  
   - Acknowledgments: 'acknowledgments.md'
 
