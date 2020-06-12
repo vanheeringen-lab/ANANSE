@@ -60,6 +60,7 @@ def read_network(fname, edges=100000):
             raise
     return G
 
+
 def difference(S, R):
     """Calculate the network different between two cell types."""
     DIF = nx.create_empty_copy(R)
@@ -76,18 +77,25 @@ def difference(S, R):
                 )
     return DIF
 
+
 def read_expression(fname):
-    """Read kallisto output, return dictionary with abs fold change."""
+    """Read differential gene expression analysis output, return dictionary with abs fold change.
+
+    input:
+    a tab-separated file containing 3 columns (HGNC gene symbols, (adjusted) p-values and log2foldchange)
+    header is omitted if starting with "resid"
+    """
 
     # Expression change
     expression_change = {"score": {}, "fc": {}, "realfc": {}}
 
     for line in open(fname):
         if not line.startswith("resid"):
-            gene = line.split("\t")[0].strip().upper()
-            foldchange = abs(float(line.split("\t")[1]))
-            realFC = float(line.split("\t")[1])
-            padj = float(line.split("\t")[2])
+            line = line.strip().split("\t")
+            gene = line[0].strip().upper()
+            realFC = float(line[1])
+            foldchange = abs(realFC)
+            padj = float(line[2])
             # if padj==0:
             #     padj=1e-300
             # gscore =foldchange * (-np.log10(padj))
@@ -102,11 +110,13 @@ def read_expression(fname):
 
     return expression_change
 
-def targetScore(node, G, max_degree=3, expression=None):
+
+def targetScore(node, G, expression_change, max_degree=3):
     """Calculate the influence score."""
 
-    if expression is None:
-        expression = {"score": {}, "fc": {}}
+    # debug only.
+    if expression_change is None:
+        expression_change = {"score": {}, "fc": {}}
 
     total_score = 0
 
@@ -135,7 +145,7 @@ def targetScore(node, G, max_degree=3, expression=None):
             l = len(path) 
             
             # expression score of the target
-            g = expression["score"].get(target, 0)
+            g = expression_change["score"].get(target, 0)
             
             # weight is cumulative product of probabilities
             # weight = [G[s][t]["weight"] for s, t in zip(path[:-1], path[1:])]
@@ -148,17 +158,17 @@ def targetScore(node, G, max_degree=3, expression=None):
             total_score += score
 
     # Get Mann-Whitney U p-value of direct targets vs. non-direct targets
-    direct_targets = [n for n in G[node] if n in expression["fc"]]
-    non_direct_targets = [n for n in list(G.nodes) if n in expression["fc"] and n not in direct_targets]
+    direct_targets = [n for n in G[node] if n in expression_change["fc"]]
+    non_direct_targets = [n for n in list(G.nodes) if n in expression_change["fc"] and n not in direct_targets]
 
-    target_fc = [expression["fc"][t] for t in direct_targets]
-    non_target_fc = [expression["fc"][t] for t in non_direct_targets]
+    target_fc = [expression_change["fc"][t] for t in direct_targets]
+    non_target_fc = [expression_change["fc"][t] for t in non_direct_targets]
 
     pval = mannwhitneyu(target_fc, non_target_fc)[1]
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
 
     # factor, targetScore, directTargets, totalTargets, Gscore, pval, target_fc
-    return (node, total_score, G.out_degree(node), len(targets), expression["fc"].get(node, 0), pval, target_fc_diff)
+    return node, total_score, G.out_degree(node), len(targets), expression_change["fc"].get(node, 0), pval, target_fc_diff
 
 
 def filter_TF(scores_df, network=None, tpmfile=None, tpm=20, overlap=0.98):
@@ -225,26 +235,26 @@ def plot_influscore(infile, outfile):
 
 
 class Influence(object):
-    def __init__(self, ncore=1, Gbf=None, Gaf=None, outfile=None, expression=None, edges=100000, filter=False):
+    def __init__(self, outfile, degenes, Gbf=None, Gaf=None, filter=False, edges=100000, ncore=1):
 
         self.ncore = ncore
-        logger.info("Read network")
+        logger.info("Reading network(s)")
         # Load GRNs
         if Gbf is None and Gaf is not None:
             self.G = read_network(Gaf, edges=edges)
-            logger.warning("You only previde one network file in second cell!")
+            logger.warning("You only provide the target network!")
         elif Gaf is None and Gbf is not None:
             self.G = read_network(Gbf, edges=edges)
-            logger.warning("You only previde one network file in first cell!")
+            logger.warning("You only provided the source network!")
         elif Gaf is None and Gbf is None:
-            logger.warning("You should previde at list one network file!")
+            logger.warning("You should provide at least one ANANSE network file!")
         else:
             G1 = read_network(Gbf, edges=edges)
             G2 = read_network(Gaf, edges=edges)
             self.G = difference(G2, G1)
 
         # Load expression file
-        self.expression_change = read_expression(expression)
+        self.expression_change = read_expression(degenes)
 
         self.outfile = outfile
 
@@ -270,10 +280,10 @@ class Influence(object):
         detfs = [ g for g in tfs if g in self.expression_change["score"] and self.expression_change["realfc"][g]<0 ]
         
         for tf in detfs:
-            jobs.append(pool.apply_async(targetScore, (tf, self.G, max_degree, self.expression_change)))
+            jobs.append(pool.apply_async(targetScore, (tf, self.G, self.expression_change, max_degree)))
 
         # Get results and write to file
-        influence_file = open(self.outfile,"w")
+        influence_file = open(self.outfile, "w")
         influence_file.write("factor\tdirectTargets\ttotalTargets\ttargetsore\tGscore\tfactor_fc\tpval\ttarget_fc\n")
 
         with tqdm(total=len(jobs)) as pbar:
@@ -282,7 +292,7 @@ class Influence(object):
                 print(factor, direct_targets, total_targets, score, self.expression_change["score"][factor],
                         factor_fc, pval, target_fc, file=influence_file, sep="\t")
                 pbar.update(1)
-        print("\n")
+        print("\n", file=influence_file)
 
         pool.close()
         influence_file.close()
@@ -293,7 +303,7 @@ class Influence(object):
 
         return self.outfile
 
-    def run_influence_score(self, influence_file, filter=None, fin_expression=None):
+    def run_influence_score(self, influence_file, fin_expression=None):
         """Calculate influence score from target score and gscore"""
 
         scores_df = pd.read_table(influence_file, index_col=0)
@@ -311,13 +321,13 @@ class Influence(object):
             scores_df2 = filter_TF(network=self.G, scores_df=scores_df, tpmfile=fin_expression)
             scores_df2.to_csv(".".join(self.outfile.split(".")[:-1]) + "_filtered.txt", sep="\t")
 
-    def run_influence(self, plot=True, filter=None, fin_expression=None):
+    def run_influence(self, plot=True, fin_expression=None):
 
         logger.info("Run target score")
         influence_file = self.run_target_score()
         
         logger.info("Run influence score")
-        self.run_influence_score(influence_file, filter=None, fin_expression=None)
+        self.run_influence_score(influence_file, fin_expression=fin_expression)
 
         logger.info("Save results")
         self.save_reg_network(".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt")
