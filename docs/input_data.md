@@ -85,7 +85,20 @@ The enhancer data file that ANANSE needs as input should contain putative enhanc
 
 In practice these are examples of approaches that will work:
 
-* For **EP300 ChIP-seq** data. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp. Use [bedtools](https://bedtools.readthedocs.io/) `bamcov` to calculate the EP300 read counts in the peaks, or convert the MACS2 bedGraph to bigWig with `bedGraphToBigWig` and use `bigWigSummary` to select the highest EP300 signal in the peaks.
+* For **EP300 ChIP-seq** data. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp. Use [bedtools](https://bedtools.readthedocs.io/) `multicov` to calculate the EP300 read counts in the peaks:
+
+```
+bedtools multicov -bed <peaks.bed> -bams <EP300.bam> -q 10 > enhancer_signal.bed
+```
+
+Alternatively, convert the MACS2 bedGraph to bigWig with `bedGraphToBigWig` and use [deepTools](https://deeptools.readthedocs.io/en/develop/content/tools/computeMatrix.html) `computeMatrix` to select the highest EP300 signal in the peaks:
+
+```
+computeMatrix scale-regions -R <peaks.bed> -S <EP300.bw> -o tmp.txt.gz -m 200 -bs 200 --averageTypeBins max --missingDataAsZero
+zcat tmp.txt.gz |tail -n+2 |cut -f1,2,3,7 > enhancer_signal.bed
+```
+
+
 * For **H3K27ac ChIP-seq** data. Use ATAC-seq to identify putative enhancer peaks. Take the summits of the peaks and extend these by +/- 1kb to a total size of 2kb. Use one of the approached mentioned above to calculate the H3K27ac signal in these peaks. Note that in contrast to the 200bp used for EP300, we use 2kb here because the H3K27ac signal is rather broad and peaks just outside the ATAC-seq peak region.
 
 This is an example of an input BED file:
