@@ -94,11 +94,12 @@ To calculate the influence score for the transition from a *source* cell type (`
 Example command: 
 
 ``` bash
-$ ananse influence  -t results/full_network.txt \
-                    -e data/FB_rep1_TPM.txt \
-                    -d data/FB2KRT_degenes.csv \
-                    -o results/FB2KRT.txt \
-                    -p 
+$ ananse influence  -s results/full_network_stage1.txt \
+                    -t results/full_network_stage2.txt \
+                    -d data/stage2_stage1_degenes.tsv \
+                    -e data/stage1_TPM.tsv \
+                    -o results/influence.txt \
+                    -n 2
 ```
 !!! tip
     Please use `-h/--help` for the details of all options.

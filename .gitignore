@@ -1,4 +1,6 @@
 /test/results/*
+.idea/
+build/
 pushgit.sh
 pullgit.sh
 __pycache__
