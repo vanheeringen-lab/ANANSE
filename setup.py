@@ -66,6 +66,5 @@ setup(
         "tqdm",
         "pillow",
         "chest",
-        "pytables",
     ],
 )
