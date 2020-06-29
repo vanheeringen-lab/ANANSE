@@ -20,16 +20,21 @@ genomepy install GRCh38.p13 Ensembl -a
 You can then direct to the genome like so: `-g hg38`
 
 If you wish to manually set the files required for ANANSE, create a folder containing:  
-* A genome FASTA file
-* A BED12 file with genome annotation.
+* A genome FASTA file  
+* A BED12 file with genome annotation.  
 
 !!! note  
     Some model organism gene bed files:  
-    [hg19](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/hg19.genes.bed)
-    [hg38](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/hg38.genes.bed)
-    [mm10](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/mm10.gene.bed)
-    [xt9.1](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/xt9.1.gene.bed)
-    [xt10.0](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/xt10.0.gene.bed)
+
+    * [hg19](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/hg19.genes.bed)  
+
+    * [hg38](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/hg38.genes.bed)  
+
+    * [mm10](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/mm10.gene.bed)  
+
+    * [xt9.1](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/xt9.1.gene.bed)  
+    
+    * [xt10.0](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/xt10.0.gene.bed)  
 
 
 You can then direct to the genome like so: `-g /path/to/genome.fa`
