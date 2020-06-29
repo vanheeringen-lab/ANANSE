@@ -202,7 +202,7 @@ class Network(object):
 
         return p
 
-    def distance_weight(self, include_promoter=False, include_enhancer=True, alpha=1e4, padding=1e5, keep1=5000, remove=2000):
+    def distance_weight(self, include_promoter=False, include_enhancer=True, alpha=1e4, padding=100000, keep1=5000, remove=2000):
         """
         Built weight distribution from TSS.
         """
