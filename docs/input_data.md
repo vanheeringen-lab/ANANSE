@@ -101,7 +101,7 @@ In practice these are examples of approaches that will work:
 
     * Select the highest EP300 signal in the peaks with bigWigSummary  
     `bigWigSummary -type=max KRT_p300_sort.wig chr2 148881617 148881817 1`
-
+    `chr2:148881617-148881817` is one of 200bp EP300 ChIP-seq peak.   
 
 !!! note
     Alternatively, convert the MACS2 bedGraph to bigWig with `bedGraphToBigWig` and use [deepTools](https://deeptools.readthedocs.io/en/develop/content/tools/computeMatrix.html) `computeMatrix` to select the highest EP300 signal in the peaks:
@@ -128,6 +128,7 @@ In practice these are examples of approaches that will work:
 
     * Select the highest EP300 signal in the peaks with bigWigSummary  
     `bigWigSummary -type=max KRT_H3K27ac_sort.wig chr12 54070173 54072173 1`
+    `chr12:54070173-54072173` is one of 2000bp ATAC-seq peak.   
 
 
 This is an example of an input BED file:
