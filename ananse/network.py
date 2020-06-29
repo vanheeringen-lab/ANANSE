@@ -73,12 +73,12 @@ class Network(object):
         # Gene information file
         if self.genome == "hg38":
             if gene_bed is None:
-                self.gene_bed =  os.path.join(package_dir, "db", "hg38_genes.bed")
+                self.gene_bed =  os.path.join(package_dir, "db", "hg38.genes.bed")
             else:
                 self.gene_bed = gene_bed
         elif self.genome == "hg19":
             if gene_bed is None:
-                self.gene_bed =  os.path.join(package_dir, "db", "hg19_genes.bed")
+                self.gene_bed =  os.path.join(package_dir, "db", "hg19.genes.bed")
             else:
                 self.gene_bed = gene_bed            
         else:
