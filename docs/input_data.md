@@ -85,21 +85,63 @@ The enhancer data file that ANANSE needs as input should contain putative enhanc
 
 In practice these are examples of approaches that will work:
 
-* For **EP300 ChIP-seq** data. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp. Use [bedtools](https://bedtools.readthedocs.io/) `multicov` to calculate the EP300 read counts in the peaks:
+* For **EP300 ChIP-seq** data. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp. Convert the MACS2 bedGraph to bigWig and select the highest EP300 signal in the peaks.
+
+!!! tip "Example"
+    Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.
+    * Call peaks with MACS2  
+
+    * Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp  
+
+    * Sort the MACS2 bedGraph file  
+    `sort -k1,1 -k2,2n KRT_p300.bdg > KRT_p300_sort.bdg`
+    
+    * Convert sorted MACS2 bedGraph file to bigwig file with bedGraphToBigWig  
+    `bedGraphToBigWig KRT_p300_sort.bdg hg38.fa.sizes KRT_p300_sort.wig`
+
+    * Select the highest EP300 signal in the peaks with bigWigSummary  
+    `bigWigSummary -type=max KRT_p300_sort.wig chr2 148881617 148881817 1`
+
+<!-- 
+
+Use [bedtools](https://bedtools.readthedocs.io/) `multicov` to calculate the EP300 read counts in the peaks:
 
 ```
 bedtools multicov -bed <peaks.bed> -bams <EP300.bam> -q 10 > enhancer_signal.bed
-```
+``` -->
 
-Alternatively, convert the MACS2 bedGraph to bigWig with `bedGraphToBigWig` and use [deepTools](https://deeptools.readthedocs.io/en/develop/content/tools/computeMatrix.html) `computeMatrix` to select the highest EP300 signal in the peaks:
+!!! note
+    Alternatively, convert the MACS2 bedGraph to bigWig with `bedGraphToBigWig` and use [deepTools](https://deeptools.readthedocs.io/en/develop/content/tools/computeMatrix.html) `computeMatrix` to select the highest EP300 signal in the peaks:
 
-```
-computeMatrix scale-regions -R <peaks.bed> -S <EP300.bw> -o tmp.txt.gz -m 200 -bs 200 --averageTypeBins max --missingDataAsZero
-zcat tmp.txt.gz |tail -n+2 |cut -f1,2,3,7 > enhancer_signal.bed
-```
+    ```
+    computeMatrix scale-regions -R <peaks.bed> -S <EP300.bw> -o tmp.txt.gz -m 200 -bs 200 --averageTypeBins max --missingDataAsZero
+    zcat tmp.txt.gz |tail -n+2 |cut -f1,2,3,7 > enhancer_signal.bed
+    ```
 
 
 * For **H3K27ac ChIP-seq** data. Use ATAC-seq to identify putative enhancer peaks. Take the summits of the peaks and extend these by +/- 1kb to a total size of 2kb. Use one of the approached mentioned above to calculate the H3K27ac signal in these peaks. Note that in contrast to the 200bp used for EP300, we use 2kb here because the H3K27ac signal is rather broad and peaks just outside the ATAC-seq peak region.
+
+!!! tip "Example"
+    Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.
+    * Call peaks with MACS2  
+
+    * Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp  
+
+    * Sort the MACS2 bedGraph file  
+    `sort -k1,1 -k2,2n KRT_H3K27ac.bdg > KRT_H3K27ac_sort.bdg`
+    
+    * Convert sorted MACS2 bedGraph file to bigwig file with bedGraphToBigWig  
+    `bedGraphToBigWig KRT_H3K27ac_sort.bdg hg38.fa.sizes KRT_H3K27ac_sort.wig`
+
+    * Select the highest EP300 signal in the peaks with bigWigSummary  
+    `bigWigSummary -type=max KRT_H3K27ac_sort.wig chr12 54070173 54072173 1`
+
+
+!!! note 
+    You can find our example enhancer files here: 
+
+    * [FB_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_enhancer.bed)  
+    * [KRT_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_enhancer.bed)
 
 This is an example of an input BED file:
 
@@ -112,13 +154,8 @@ chr13	109424160	109424360	20
 chr14	32484901	32485101	2
 ```
 
-!!! note 
-    You can find our example enhancer files here: 
 
-    * [FB_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_enhancer.bed)  
-    * [KRT_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_enhancer.bed)
-
-!!! tip "Example"
+<!-- !!! tip "Example"
     Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.
 
     * sort the bdg file  
@@ -128,7 +165,7 @@ chr14	32484901	32485101	2
     `bedGraphToBigWig KRT_p300_sort.bdg hg38.fa.sizes KRT_p300_sort.wig`
 
     * calculate max intensity of one enhancer peak with bigWigSummary  
-    `bigWigSummary -type=max KRT_p300_sort.wig chr12 54070173 54072173 1`
+    `bigWigSummary -type=max KRT_p300_sort.wig chr12 54070173 54072173 1` -->
 
 
 ### Expression data
