@@ -40,9 +40,10 @@ setup(
         "setuptools >= 0.7",
         "adjusttext",
         "dask",
-        "gimmemotifs >=0.14.4",
+        "gimmemotifs >= 0.14.4",
         "loguru",
         "networkx",
         "tables",
+        "genomepy >= 0.8.3"
     ],
 )
