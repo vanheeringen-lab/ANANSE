@@ -100,7 +100,7 @@ In practice these are examples of approaches that will work:
     `bedGraphToBigWig KRT_p300_sort.bdg hg38.fa.sizes KRT_p300_sort.wig`
 
     * Select the highest EP300 signal in the peaks with bigWigSummary  
-    `bigWigSummary -type=max KRT_p300_sort.wig chr2 148881617 148881817 1`
+    `bigWigSummary -type=max KRT_p300_sort.wig chr2 148881617 148881817 1`  
     `chr2:148881617-148881817` is one of 200bp EP300 ChIP-seq peak.   
 
 !!! note
@@ -127,7 +127,7 @@ In practice these are examples of approaches that will work:
     `bedGraphToBigWig KRT_H3K27ac_sort.bdg hg38.fa.sizes KRT_H3K27ac_sort.wig`
 
     * Select the highest EP300 signal in the peaks with bigWigSummary  
-    `bigWigSummary -type=max KRT_H3K27ac_sort.wig chr12 54070173 54072173 1`
+    `bigWigSummary -type=max KRT_H3K27ac_sort.wig chr12 54070173 54072173 1`  
     `chr12:54070173-54072173` is one of 2000bp ATAC-seq peak.   
 
 
