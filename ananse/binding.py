@@ -129,7 +129,7 @@ class Binding(object):
             else:
                 start, end = peak.start, peak.end
             # remove seq which langer than chromosome length or smaller than 0
-            if start > 0 and end < gsizedic[peak.chrom]:
+            if start > 0 and end < int(gsizedic[peak.chrom]):
                 fl2.write(
                     str(peak.chrom)
                     + "\t"
