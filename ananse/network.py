@@ -202,11 +202,11 @@ class Network(object):
 
         return p
 
-    def distance_weight(self, include_promoter=False, include_enhancer=True, alpha=1e5, padding=100000, keep1=5000, remove=2000):
+    def distance_weight(self, include_promoter=False, include_enhancer=True, alpha=1e4, padding=1e5, keep1=5000, remove=2000):
         """
         Built weight distribution from TSS.
         """
-        # alpha is half site, default setting is 1e5, which means at 1e5 position weight is 0.5
+        # alpha is half site, default setting is 1e4, which means at 1e4 position weight is 0.5
         # padding is the full range we used
         # remove is promoter removed range
         # keep1 is keep full binding score range

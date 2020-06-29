@@ -18,11 +18,11 @@ def influence(args):
     #     sys.exit(1)
 
     a = ananse.influence.Influence(
-        ncore=args.ncore,
-        Gbf=args.Gbf,
-        Gaf=args.Gaf,
-        outfile=args.outfile,
-        expression=args.expression,
-        edges=args.edges,
+        ncore=args.ncore,  # --ncore (optional)
+        Gbf=args.Gbf,  # --source (Gbf = GRN before)
+        Gaf=args.Gaf,  # --target (Gaf = GRN after)
+        outfile=args.outfile,  # --output
+        degenes=args.expression,  # --degenes (HGNC gene names, padj and log2foldchanges)
+        edges=args.edges,  # --edges (optional)
     )
-    a.run_influence(args.plot, args.fin_expression)
+    a.run_influence(args.plot, args.fin_expression)  # -p and --expression (HGNC gene names and TPM)
