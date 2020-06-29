@@ -13,7 +13,7 @@ ANANSE is a computational approach to infer enhancer-based gene regulatory netwo
 ANANSE is free and open source research software. If you find it useful please cite our paper:
 
 !!! note "Citation"
-    > Xu, Q., Georgiou, G., Veenstra, G.J.C., Zhou, H., and van Heeringen, S.J. (2020). **ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination.** [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.06.05.135798v1), 2020
+    > Xu, Q., Georgiou, G., Veenstra, G.J.C., Zhou, H., and van Heeringen, S.J. (2020). **ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination.** [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.06.05.135798v1).
 
 ### Getting started
 
