@@ -89,6 +89,7 @@ In practice these are examples of approaches that will work:
 
 !!! tip "Example"
     Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.  
+
     * Call peaks with MACS2  
 
     * Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp  
@@ -116,6 +117,7 @@ In practice these are examples of approaches that will work:
 
 !!! tip "Example"
     Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.  
+    
     * Call peaks with MACS2  
 
     * Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp  
