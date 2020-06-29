@@ -20,7 +20,9 @@ genomepy install GRCh38.p13 Ensembl -a
 You can then direct to the genome like so: `-g hg38`
 
 If you wish to manually set the files required for ANANSE, create a folder containing:  
+
     * A genome FASTA file  
+
     * A BED12 file with genome annotation.  
 
 !!! note  
