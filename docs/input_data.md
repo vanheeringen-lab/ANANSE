@@ -88,7 +88,7 @@ In practice these are examples of approaches that will work:
 * For **EP300 ChIP-seq** data. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp. Convert the MACS2 bedGraph to bigWig and select the highest EP300 signal in the peaks.
 
 !!! tip "Example"
-    Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.
+    Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.  
     * Call peaks with MACS2  
 
     * Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp  
@@ -115,7 +115,7 @@ In practice these are examples of approaches that will work:
 * For **ATAC-seq and H3K27ac ChIP-seq** data. Use ATAC-seq to identify putative enhancer peaks. Take the summits of the peaks and extend these by +/- 1kb to a total size of 2kb. Use one of the approached mentioned above to calculate the H3K27ac signal in these peaks. Note that in contrast to the 200bp used for EP300, we use 2kb here because the H3K27ac signal is rather broad and peaks just outside the ATAC-seq peak region.
 
 !!! tip "Example"
-    Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.
+    Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.  
     * Call peaks with MACS2  
 
     * Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp  
