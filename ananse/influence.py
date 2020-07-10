@@ -93,7 +93,10 @@ def read_expression(fname):
         if not line.startswith("resid"):
             line = line.strip().split("\t")
             gene = line[0].strip().upper()
-            realFC = float(line[1])
+            if line[1]=='':
+                realFC = 0
+            else:
+                realFC = float(line[1])
             foldchange = abs(realFC)
             padj = float(line[2])
             # if padj==0:
