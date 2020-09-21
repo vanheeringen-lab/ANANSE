@@ -67,6 +67,13 @@ if __name__ == "__main__":
         "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg38"
     )
     group.add_argument(
+        "-e", 
+        "--enhancer", 
+        dest="enhancerKind", 
+        help="The input enhancer data, H3K27ac or p300. By default is H3K27ac.",
+        default="H3K27ac"
+    )
+    group.add_argument(
         "-p",
         "--pfmfile",
         dest="pfmfile",
