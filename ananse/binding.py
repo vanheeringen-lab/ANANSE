@@ -238,7 +238,7 @@ class Binding(object):
         r = r.groupby(["factor", "enhancer"])[["zscore", "peakRPKMScale"]].mean()
         r = r.dropna().reset_index()
 
-        table = r.compute()
+        table = r.compute(num_workers=self.ncore)
         # print("Predicting TF binding sites")
         table["binding"] = clf.predict_proba(table[["zscore", "peakRPKMScale"]])[:, 1]
         # print("Save results")
@@ -257,7 +257,7 @@ class Binding(object):
 
         logger.info("Predicting TF binding sites")
         peak_weight = self.get_peakRPKM(filter_bed)
-        peak = dd.read_csv(peak_weight, sep="\t")
+        peak = dd.read_csv(peak_weight, sep="\t", blocksize=200e6)
         table = self.get_binding_score(pfm, peak)
 
         logger.info("Save results")
