@@ -72,7 +72,7 @@ class Binding(object):
 
         if self.enhancerKind == "H3K27ac":
             self.model = os.path.join(package_dir, "db", "dream_model_h3k27ac.txt")
-        elif self.enhancerKind = "p300":
+        elif self.enhancerKind == "p300":
             self.model = os.path.join(package_dir, "db", "dream_model_p300.txt")
         else:
             raise TypeError("The input enhancer data type should H3K27ac or p300. Please provide a enhancer type with -e argument. By default is H3K27ac.")
@@ -229,7 +229,7 @@ class Binding(object):
             table = r.compute(num_workers=self.ncore)
             table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
 
-        elif self.enhancerKind = "p300":
+        elif self.enhancerKind == "p300":
             r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
                 ["motif", "enhancer", "zscore", "peakRPKMScale"]
             ]
