@@ -24,6 +24,7 @@ def binding(args):
         pfmfile=args.pfmfile,
         include_notfs=args.include_notfs,
         rm_curated=args.rm_curated,
-        enhancerKind=args.enhancerKind
+        enhancerKind=args.enhancerKind,
+        tffile=args.tffile
     )
     a.run_binding(args.fin_rpkm, args.outfile)

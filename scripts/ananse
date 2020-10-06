@@ -82,6 +82,14 @@ if __name__ == "__main__":
         default=None,
     )
     group.add_argument(
+        "-t",
+        "--tffile",
+        dest="tffile",
+        help="TF file used in analysis",
+        metavar="FILE",
+        default=None,
+    )
+    group.add_argument(
         "-n", "--ncore", dest="ncore", help="Number of core used", type=int,
     )
     group.add_argument(

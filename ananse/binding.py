@@ -61,7 +61,7 @@ def clear_tfs(motifs2factors, tffile, include_notfs=False, rm_curated=True):
     return ft
 
 class Binding(object):
-    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, include_notfs=False, rm_curated=True, enhancerKind="H3K27ac"):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, include_notfs=False, rm_curated=True, enhancerKind="H3K27ac", tffile=None):
 
         self.ncore = ncore
         self.genome = genome
@@ -83,7 +83,9 @@ class Binding(object):
         self.rm_curated = rm_curated
 
         # load real tfs
-        self.tffile = os.path.join(package_dir, "db", "tfs.txt")
+        self.tffile = tffile
+        if self.tffile is None:
+            self.tffile = os.path.join(package_dir, "db", "tfs.txt")
         # self.tffile = "db/tfs.txt"
 
         # Motif information file
