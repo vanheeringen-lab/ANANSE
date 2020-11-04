@@ -312,8 +312,18 @@ if __name__ == "__main__":
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
-
     p.set_defaults(func=commands.influence)
+
+    # quantile.py
+    p = subparsers.add_parser("quantile", add_help=False)
+    group = p.add_argument_group("required arguments")
+    group.add_argument(
+        "-b", "--bed_input", dest="bed_input", help="The original H3K27ac enahncer file", metavar="FILE",
+    )
+    group.add_argument(
+        "-e", "--bed_output", dest="bed_output", help="The normalized H3K27ac enahncer file", metavar="FILE",
+    )
+    p.set_defaults(func=commands.quantile)
 
     if len(sys.argv) == 1:
         parser.print_help()
