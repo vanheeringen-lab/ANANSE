@@ -233,14 +233,14 @@ class Binding(object):
 
         elif self.enhancerKind == "p300":
             r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
-                ["motif", "enhancer", "zscore", "peakRPKMScale"]
+                ["motif", "enhancer", "zscore", "log10_peakRPKM"]
             ]
             r = r.merge(ft, left_on="motif", right_on="Motif")
-            r = r.groupby(["factor", "enhancer"])[["zscore", "peakRPKMScale"]].mean()
+            r = r.groupby(["factor", "enhancer"])[["zscore", "log10_peakRPKM"]].mean()
             r = r.dropna().reset_index()
 
             table = r.compute(num_workers=self.ncore)
-            table["binding"] = clf.predict_proba(table[["zscore", "peakRPKMScale"]])[:, 1]
+            table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
         else:
             raise TypeError("The input enhancer data type should H3K27ac or p300. Please provide a enhancer type with -e argument. By default is H3K27ac.")
 
