@@ -61,14 +61,21 @@ def clear_tfs(motifs2factors, tffile, include_notfs=False, rm_curated=True):
     return ft
 
 class Binding(object):
-    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, include_notfs=False, rm_curated=True):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, include_notfs=False, rm_curated=True, enhancerKind="H3K27ac", tffile=None):
 
         self.ncore = ncore
         self.genome = genome
 
         # dream_model.txt is the logistic regression model.
         package_dir = os.path.dirname(ananse.__file__)
-        self.model = os.path.join(package_dir, "db", "dream_model.txt")
+        self.enhancerKind = enhancerKind
+
+        if self.enhancerKind == "H3K27ac":
+            self.model = os.path.join(package_dir, "db", "dream_model_h3k27ac.txt")
+        elif self.enhancerKind == "p300":
+            self.model = os.path.join(package_dir, "db", "dream_model_p300.txt")
+        else:
+            raise TypeError("The input enhancer data type should H3K27ac or p300. Please provide a enhancer type with -e argument. By default is H3K27ac.")
 
         # filter tfs?
         self.include_notfs = include_notfs
@@ -76,32 +83,15 @@ class Binding(object):
         self.rm_curated = rm_curated
 
         # load real tfs
-        self.tffile = os.path.join(package_dir, "db", "tfs.txt")
+        self.tffile = tffile
+        if self.tffile is None:
+            self.tffile = os.path.join(package_dir, "db", "tfs.txt")
         # self.tffile = "db/tfs.txt"
 
         # Motif information file
         self.pfmfile = pfmfile_location(pfmfile)
         self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
         self.filtermotifs2factors = clear_tfs(self.motifs2factors, self.tffile, self.include_notfs, self.rm_curated)
-        # self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
-
-        # # Gene information file
-        # if self.genome == "hg38":
-        #     if gene_bed is None:
-        #         self.gene_bed = "../data/hg38_genes.bed"
-        #     else:
-        #         self.gene_bed = gene_bed
-        # elif self.genome == "hg19":
-        #     if gene_bed is None:
-        #         self.gene_bed = "../data/hg19_genes.bed"
-        #     else:
-        #         self.gene_bed = gene_bed
-        # else:
-        #     if gene_bed is None:
-        #         raise TypeError("Please provide a gene bed file with -a argument.")
-        #     else:
-        #         self.gene_bed = gene_bed
-
 
     def set_peak_size(self, peak_bed, seqlen=200):
         """set all input peaks to 200bp
@@ -229,19 +219,30 @@ class Binding(object):
         with open(self.model, "rb") as f:
             clf = pickle.load(f)
 
-        # ft = dd.read_csv(self.filtermotifs2factors, sep="\t")
         ft = self.filtermotifs2factors
-        r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
-            ["motif", "enhancer", "zscore", "peakRPKMScale"]
-        ]
-        r = r.merge(ft, left_on="motif", right_on="Motif")
-        r = r.groupby(["factor", "enhancer"])[["zscore", "peakRPKMScale"]].mean()
-        r = r.dropna().reset_index()
 
-        table = r.compute()
-        # print("Predicting TF binding sites")
-        table["binding"] = clf.predict_proba(table[["zscore", "peakRPKMScale"]])[:, 1]
-        # print("Save results")
+        if self.enhancerKind == "H3K27ac":
+            r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
+                ["motif", "enhancer", "zscore", "log10_peakRPKM"]
+            ]
+            r = r.merge(ft, left_on="motif", right_on="Motif")
+            r = r.groupby(["factor", "enhancer"])[["zscore", "log10_peakRPKM"]].mean()
+            r = r.dropna().reset_index()
+            table = r.compute(num_workers=self.ncore)
+            table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
+
+        elif self.enhancerKind == "p300":
+            r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
+                ["motif", "enhancer", "zscore", "log10_peakRPKM"]
+            ]
+            r = r.merge(ft, left_on="motif", right_on="Motif")
+            r = r.groupby(["factor", "enhancer"])[["zscore", "log10_peakRPKM"]].mean()
+            r = r.dropna().reset_index()
+
+            table = r.compute(num_workers=self.ncore)
+            table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
+        else:
+            raise TypeError("The input enhancer data type should H3K27ac or p300. Please provide a enhancer type with -e argument. By default is H3K27ac.")
 
         return table
 
@@ -257,7 +258,7 @@ class Binding(object):
 
         logger.info("Predicting TF binding sites")
         peak_weight = self.get_peakRPKM(filter_bed)
-        peak = dd.read_csv(peak_weight, sep="\t")
+        peak = dd.read_csv(peak_weight, sep="\t", blocksize=200e6)
         table = self.get_binding_score(pfm, peak)
 
         logger.info("Save results")

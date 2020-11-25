@@ -26,6 +26,7 @@ if __name__ == "__main__":
 
     epilog = """
     commands:
+        quantile    normalize H3K27ac enahncer file
         binding     infer TF binding sites in enhancer peaks
         network     built network for each sample
         influence   infer key TFs between two samples
@@ -67,10 +68,25 @@ if __name__ == "__main__":
         "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg38"
     )
     group.add_argument(
+        "-e", 
+        "--enhancer", 
+        dest="enhancerKind", 
+        help="The input enhancer data, H3K27ac or p300. By default is H3K27ac.",
+        default="H3K27ac"
+    )
+    group.add_argument(
         "-p",
         "--pfmfile",
         dest="pfmfile",
         help="PFM file with motifs",
+        metavar="FILE",
+        default=None,
+    )
+    group.add_argument(
+        "-t",
+        "--tffile",
+        dest="tffile",
+        help="TF file used in analysis",
         metavar="FILE",
         default=None,
     )
@@ -297,8 +313,24 @@ if __name__ == "__main__":
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
-
     p.set_defaults(func=commands.influence)
+
+    # quantile.py
+    p = subparsers.add_parser("quantile", add_help=False)
+    group = p.add_argument_group("required arguments")
+    group.add_argument(
+        "-b", "--bam_input", dest="bam_input", help="The original H3K27ac ChIP-seq bam file", metavar="FILE",
+    )
+    group.add_argument(
+        "-p", "--broadPeak", dest="broadPeak", help="The original H3K27ac ChIP-seq broadPeak file", metavar="FILE",
+    )    
+    group.add_argument(
+        "-e", "--bed_output", dest="bed_output", help="The normalized H3K27ac enahncer file", metavar="FILE",
+    )
+    group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
+    )
+    p.set_defaults(func=commands.quantile)
 
     if len(sys.argv) == 1:
         parser.print_help()

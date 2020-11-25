@@ -40,7 +40,7 @@ requirements:
         - "dask"
         - "pytables" 
         - "adjusttext"
-        - "genomepy >= 0.8.3"
+        - "genomepy >=0.8.3"
         
 about:
     home: https://github.com/vanheeringen-lab/ANANSE/

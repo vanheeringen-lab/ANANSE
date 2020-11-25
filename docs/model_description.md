@@ -4,7 +4,7 @@
 
 An overview of the workflow that ANANSE uses to prioritize transcription factors for cellular fate changes. ANANSE infers gene regulatory networks (GRNs) to predict key transcription factors (TFs) that drive cellular transitions.
 
-![](img/Fig2.jpg)
+![](img/Fig2.png)
 
 A) An overview of the data types required by ANANSE. These data include motif score of all TFs and gene expression data (e.g. RNA-seq) and enhancer activity data for each cell type. The enhancer data can be obtained by ATAC-seq, EP300 ChIP-seq or H3K27ac ChIP-seq. The blue and orange peaks represent enhancers in two different cell types. The four sequence logos represent the motif of four TFs. The heatmap represents gene expression intensity in the two cell types. 
 
@@ -19,7 +19,14 @@ E) The barplot shows the ranked influence score of all TFs calculated from the d
 
 ### Prediction of transcription factor binding
 
-The enhancer intensity is combined with sequence features in enhancer peaks to infer cell type-specific TF binding profiles. The enhancer locations can be obtained from ChIP-seq analyses of the transcriptional co-activator EP300, chromatin accessibility data such as ATAC-seq or a combination of TF ChIP peaks. Basically any type that gives sharp peaks would be usable. To determine the enhancer activity, we recommend to use either EP300 ChIP-seq or H3K27ac ChIP-seq, as both of these have been shown to correlate with enhancer activity (Creyghton et al., 2010; Rada-Iglesias et al., 2011). The enhancer activity is combined with TF motif scores in the enhancer sequences usin logistic regression. The motif analysis is performed using [GimmeMotifs](https://gimmemotifs.readthedocs.org).
+The enhancer intensity is combined with sequence features in enhancer peaks to infer cell type-specific TF binding profiles.  
+For human (hg38) data, a built-in enhancer location file is located in ANANSE, and it does not need be provided. To determine the enhancer activity, we recommend to use H3K27ac ChIP-seq.   
+For other genome data, The enhancer locations can be obtained from ChIP-seq analyses of the transcriptional co-activator EP300, chromatin accessibility data such as ATAC-seq or a combination of TF ChIP peaks. Basically any type that gives sharp peaks would be usable. To determine the enhancer activity, we recommend to use either EP300 ChIP-seq or H3K27ac ChIP-seq, as both of these have been shown to correlate with enhancer activity (Creyghton et al., 2010; Rada-Iglesias et al., 2011).   
+The enhancer activity is combined with TF motif scores in the enhancer sequences usin logistic regression. The motif analysis is performed using [GimmeMotifs](https://gimmemotifs.readthedocs.org).
+
+### Inference of TF binding networks
+
+**TODO**
 
 ### Inference of gene regulatory networks
 
