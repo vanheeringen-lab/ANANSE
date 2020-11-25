@@ -101,58 +101,25 @@ The enhancer data file that ANANSE needs as input should contain putative enhanc
 
 In practice these are examples of approaches that will work:
 
-* For **H3K27ac ChIP-seq for human hg38** data. Use [STAR]()/[bwa]() or your tool of choice to map your `fastq` file to genome. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Then establish enhancer peak normalize it with `ananse enhancer` command.  
+Use [STAR]()/[bwa]() or your tool of choice to map your `fastq` file to genome. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Then establish enhancer peak normalize it with `ananse enhancer` command.  
+
+* For **H3K27ac ChIP-seq for human hg38** data. `ananse enhancer` will generate enhancer based on built-in human enhancer database (200bp) and H3K27ac ChIP-seq intensity (2000bp).   
+!!! tip "Example"
+    * Make quantile normalized enhancer counts with ANANSE.  
+    `ananse enhancer -g hg38 -t H3K27ac -b KRT_H3K27ac.sorted.bam -p KRT_H3K27ac.broadPeak -e KRT_enhancer.bed`
+
+* For **EP300 ChIP-seq** data. `ananse enhancer` will generate enhancer based on p300 ChIP-seq peak (200bp) and p300 ChIP-seq intensity (200bp).   
+!!! tip "Example"
+    * Make quantile normalized enhancer counts with ANANSE.  
+    `ananse enhancer -g hg19 -t p300 -b KRT_p300.sorted.bam -p KRT_p300.narrowPeak -e KRT_enhancer.bed`
+
+
+* For **ATAC-seq and H3K27ac ChIP-seq** data. `ananse enhancer` will generate enhancer based on ATAC-seq peak (200bp) and H3K27ac ChIP-seq intensity (2000bp).  
 
 !!! tip "Example"
     * Make quantile normalized enhancer counts with ANANSE.  
-    `ananse enhancer -b KRT_H3K27ac.sorted.bam -p KRT_H3K27ac.broadPeak -e KRT_enhancer.bed`
+    `ananse enhancer -g hg19 -t ATAC -b KRT_H3K27ac.sorted.bam -p KRT_ATAC.narrowPeak -e KRT_enhancer.bed`
 
-* For **EP300 ChIP-seq** data. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp. Convert the MACS2 bedGraph to bigWig and select the highest EP300 signal in the peaks.
-
-!!! tip "Example"
-    Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.  
-
-    * Call peaks with MACS2  
-
-    * Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp  
-
-    * Sort the MACS2 bedGraph file  
-    `sort -k1,1 -k2,2n KRT_p300.bdg > KRT_p300_sort.bdg`
-    
-    * Convert sorted MACS2 bedGraph file to bigwig file with bedGraphToBigWig  
-    `bedGraphToBigWig KRT_p300_sort.bdg hg38.fa.sizes KRT_p300_sort.wig`
-
-    * Select the highest EP300 signal in the peaks with bigWigSummary  
-    `bigWigSummary -type=max KRT_p300_sort.wig chr2 148881617 148881817 1`  
-    `chr2:148881617-148881817` is one of 200bp EP300 ChIP-seq peak.   
-
-!!! note
-    Alternatively, convert the MACS2 bedGraph to bigWig with `bedGraphToBigWig` and use [deepTools](https://deeptools.readthedocs.io/en/develop/content/tools/computeMatrix.html) `computeMatrix` to select the highest EP300 signal in the peaks:
-
-    ```
-    computeMatrix scale-regions -R <peaks.bed> -S <EP300.bw> -o tmp.txt.gz -m 200 -bs 200 --averageTypeBins max --missingDataAsZero
-    zcat tmp.txt.gz |tail -n+2 |cut -f1,2,3,7 > enhancer_signal.bed
-    ```
-
-
-* For **ATAC-seq and H3K27ac ChIP-seq** data. Use ATAC-seq to identify putative enhancer peaks. Take the summits of the peaks and extend these by +/- 1kb to a total size of 2kb. Use one of the approached mentioned above to calculate the H3K27ac signal in these peaks. Note that in contrast to the 200bp used for EP300, we use 2kb here because the H3K27ac signal is rather broad and peaks just outside the ATAC-seq peak region.
-
-!!! tip "Example"
-    Example from MACS2 `bdg` file to enhancer file. `bedGraphToBigWig` and `bigWigSummary` could download from `conda`.  
-    
-    * Call peaks with MACS2  
-
-    * Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp  
-
-    * Sort the MACS2 bedGraph file  
-    `sort -k1,1 -k2,2n KRT_H3K27ac.bdg > KRT_H3K27ac_sort.bdg`
-    
-    * Convert sorted MACS2 bedGraph file to bigwig file with bedGraphToBigWig  
-    `bedGraphToBigWig KRT_H3K27ac_sort.bdg hg38.fa.sizes KRT_H3K27ac_sort.wig`
-
-    * Select the highest EP300 signal in the peaks with bigWigSummary  
-    `bigWigSummary -type=max KRT_H3K27ac_sort.wig chr12 54070173 54072173 1`  
-    `chr12:54070173-54072173` is one of 2000bp ATAC-seq peak.   
 
 
 This is an example of an input BED file:
