@@ -4,9 +4,11 @@
 > 2020-11-25
 
 * Switch the default enhancer to H3K27ac data.
-* Give suggestions, thanks [Branco Heuts](https://www.researchgate.net/profile/Branco_Heuts).
+* Add enhancer command to establish enhancer file.
+* Give many suggestions, thanks [Branco Heuts](https://www.researchgate.net/profile/Branco_Heuts).
 * Simplify the readme file.
 * Update the ReadtheDocs for ANANSE.  
+* You can download it from GitHub: [ANANSE Release v0.1.5](https://github.com/vanheeringen-lab/ANANSE/releases/tag/v0.1.5).
 
 ### ANANSE v0.1.4
 > 2020-07-29
@@ -15,6 +17,7 @@
 * Fix weight function
 * Fix TF filter
 * Improve docs
+* You can download it from GitHub: [ANANSE Release v0.1.4](https://github.com/vanheeringen-lab/ANANSE/releases/tag/v0.1.4).
 
 ### ANANSE v0.1.3
 > 2020-06-02
