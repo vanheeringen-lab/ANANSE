@@ -44,10 +44,10 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
 
   #### ***0. Make enhancer file***
   ```
-  ananse enhancer -g hg38 -t H3K27ac \
-                  -b data/KRT_H3K27ac_rep1.bam \
-                  -p data/KRT_H3K27ac_peaks.broadPeak \
-                  -o data/KRT_enhancer.bed 
+  $ ananse enhancer -g hg38 -t H3K27ac \
+                    -b data/KRT_H3K27ac_rep1.bam \
+                    -p data/KRT_H3K27ac_peaks.broadPeak \
+                    -o data/KRT_enhancer.bed 
   ```
 
   * `-t, --etype`. Enhancer type, H3K27ac, p300, or ATAC. 

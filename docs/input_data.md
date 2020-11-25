@@ -21,7 +21,7 @@ You can then direct to the genome like so: `-g hg38`
 
 If you wish to manually set the files required for ANANSE, create a folder containing:  
 
-    * A genome FASTA file  
+    * A genome FASTA file   
 
     * A BED12 file with genome annotation.  
 
@@ -60,18 +60,6 @@ By default ANANSE uses a non-redundant, clustered database of known vertebrate m
 0.9859	0.0030	0.0030	0.0081
 0.9778	0.0043	0.0128	0.0051
 0.1484	0.0050	0.0168	0.8299
->GM.5.0.Homeodomain.0001
-0.8870	0.0000	0.0178	0.0951
-0.1156	0.2033	0.6629	0.0181
-0.0017	0.7452	0.0809	0.1722
-0.0011	0.0003	0.0003	0.9983
-0.0026	0.0141	0.9721	0.0111
-0.0000	0.0189	0.0054	0.9758
-0.0006	0.9983	0.0006	0.0006
-0.9170	0.0140	0.0046	0.0644
-0.2228	0.2421	0.3300	0.2051
-0.3621	0.1054	0.2208	0.3116
-0.5727	0.0104	0.1741	0.2428
 ```
 
 #### Motif2factors file  
@@ -97,31 +85,26 @@ GM.5.0.Sox.0001	SRY	SELEX	Y
 
 ### Enhancer data
 
-The enhancer data file that ANANSE needs as input should contain putative enhancer regions with an associated enhancer signal for the specific cell-type. This signal can be any measure that is related to enhancer activity. We have used p300 or H3K27ac ChIP-seq signal. p300 ChIP-seq peaks can be used directly, however the H3K27ac signal is not specific enough. Peaks from a H3K27ac ChIP-seq experiment are too broad for the motif analysis. This means that you will have to use another source of data to determine the putative enhancer regions. We have used ATAC-seq, but other data such as DNase I could also work.
+The enhancer data file that ANANSE needs as input should contain putative enhancer regions with an associated enhancer signal for the specific cell type or tissue. This signal can be any measure that is related to enhancer activity. We have used p300 or H3K27ac ChIP-seq signal. p300 ChIP-seq peaks can be used directly, however the H3K27ac signal is not specific enough. Peaks from a H3K27ac ChIP-seq experiment are too broad for the motif analysis. This means that you will have to use another source of data to determine the putative enhancer regions. For human data, we estblished a enhancer peak database. For other genome, we have used ATAC-seq peaks, but other data such as DNase I could also work.
 
-In practice these are examples of approaches that will work:
-
-Use [STAR]()/[bwa]() or your tool of choice to map your `fastq` file to genome. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Then establish enhancer peak normalize it with `ananse enhancer` command.  
+In practice these are examples of approaches that will work: Use [STAR]()/[bwa]() or your tool of choice to map your `fastq` files to the genome. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Then establish enhancer peak normalize it with `ananse enhancer` command.  
 
 
 * For **H3K27ac ChIP-seq for human hg38** data. The `ananse enhancer` command will generate enhancer file based on built-in human enhancer database (200bp) and H3K27ac ChIP-seq intensity (2000bp).   
 
 !!! tip "Example"
-    * Make quantile normalized enhancer counts with ANANSE.  
     `ananse enhancer -g hg38 -t H3K27ac -b KRT_H3K27ac.sorted.bam -p KRT_H3K27ac.broadPeak -o KRT_enhancer.bed`
 
 
 * For **p300 ChIP-seq** data. The `ananse enhancer` command will generate enhancer file based on p300 ChIP-seq peak (200bp) and p300 ChIP-seq intensity (200bp).   
 
 !!! tip "Example"
-    * Make quantile normalized enhancer counts with ANANSE.  
     `ananse enhancer -g hg19 -t p300 -b KRT_p300.sorted.bam -p KRT_p300.narrowPeak -o KRT_enhancer.bed`
 
 
 * For **ATAC-seq and H3K27ac ChIP-seq** data. The `ananse enhancer` command will generate enhancer file based on ATAC-seq peak (200bp) and H3K27ac ChIP-seq intensity (2000bp).  
 
 !!! tip "Example"
-    * Make quantile normalized enhancer counts with ANANSE.  
     `ananse enhancer -g hg19 -t ATAC -b KRT_H3K27ac.sorted.bam -p KRT_ATAC.narrowPeak -o KRT_enhancer.bed`
 
 
@@ -139,7 +122,7 @@ chr14	32484901	32485101	2
 ```
 
 !!! note 
-    You can find our example enhancer files here: 
+    You can find our example enhancer files at here: 
 
     * [FB_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_enhancer.bed)  
     * [KRT_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_enhancer.bed)
