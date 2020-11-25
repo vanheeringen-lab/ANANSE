@@ -4,7 +4,7 @@
 > 2020-11-25
 
 * Switch the default enhancer to H3K27ac data.
-* Fix many bugs, and suggestions, thanks [Branco Heuts](https://www.researchgate.net/profile/Branco_Heuts).
+* Give suggestions, thanks [Branco Heuts](https://www.researchgate.net/profile/Branco_Heuts).
 * Simplify the readme file.
 * Update the ReadtheDocs for ANANSE.  
 
