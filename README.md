@@ -17,8 +17,8 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
 <!-- --- -->
 
 ## Quick start
-* ### **Detail documentation**
-  * The **full ANANSE documentation** at [https://anansepy.readthedocs.io](https://anansepy.readthedocs.io). 
+<!-- * ### **Detail documentation**
+  * The **full ANANSE documentation** at [https://anansepy.readthedocs.io](https://anansepy.readthedocs.io).  -->
 
 * ### **Easy installation**
   * The most straightforward way to install ANANSE is via conda using the bioconda channel.
@@ -45,7 +45,7 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
   
   <!-- * **All the example dataset and result files are able to find at [***http://mbdata.science.ru.nl/qxu/ananse/ananse.html***](http://mbdata.science.ru.nl/qxu/ananse/ananse.html).** -->
   ---
-  #### ***Build TF binding network***  
+  #### ***1. Build TF binding network***  
   <!-- > Predict cell type-specific transcription factor binding with enhancer intensity and motif z-score. -->
 
   <!-- * Example:  -->
@@ -60,8 +60,8 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
   * `-g, --genome`. The genome of the data.
   * `-h, --help`. Show the help message and exit.
 
-  ---
-  #### ***Built gene regulatory network***  
+  <!-- --- -->
+  #### ***2. Built gene regulatory network***  
   <!-- > Infer cell type-specific gene regulatory network with TF binding and distance to promoter. -->
 
   <!-- * Example: -->
@@ -82,8 +82,8 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
   * `--include-enhancer, --exclude-enhancer`. Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. By default enhancer peaks are **included**.
   * `-h, --help`. Show the help message and exit.
 
-  ---
-  #### ***Infer TF influence score***  
+  <!-- --- -->
+  #### ***3. Infer TF influence score***  
   <!-- > Infer key TFs during cell fate determination with TF expression and gene regulatory network. -->
 
   <!-- * Example: -->
