@@ -12,9 +12,10 @@ def quantile(args):
     #     sys.exit(1)
 
     b = ananse.quantile.Quantile(
-        bed_input=args.bed_input,
+        bam_input=args.bam_input,
+        broadPeak=args.broadPeak,
         bed_output=args.bed_output
     )
     b.run_quantile(
-        args.bed_input, args.bed_output
+        args.bam_input, args.broadPeak, args.bed_output
     )

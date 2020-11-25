@@ -26,6 +26,7 @@ if __name__ == "__main__":
 
     epilog = """
     commands:
+        quantile    normalize H3K27ac enahncer file
         binding     infer TF binding sites in enhancer peaks
         network     built network for each sample
         influence   infer key TFs between two samples
@@ -318,10 +319,16 @@ if __name__ == "__main__":
     p = subparsers.add_parser("quantile", add_help=False)
     group = p.add_argument_group("required arguments")
     group.add_argument(
-        "-b", "--bed_input", dest="bed_input", help="The original H3K27ac enahncer file", metavar="FILE",
+        "-b", "--bam_input", dest="bam_input", help="The original H3K27ac ChIP-seq bam file", metavar="FILE",
     )
     group.add_argument(
+        "-p", "--broadPeak", dest="broadPeak", help="The original H3K27ac ChIP-seq broadPeak file", metavar="FILE",
+    )    
+    group.add_argument(
         "-e", "--bed_output", dest="bed_output", help="The normalized H3K27ac enahncer file", metavar="FILE",
+    )
+    group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.quantile)
 

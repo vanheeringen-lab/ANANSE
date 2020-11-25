@@ -7,5 +7,6 @@ __pycache__
 *egg-info
 dist
 tomaster.sh
+conda_build.sh
 /site/*
 
