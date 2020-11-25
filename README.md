@@ -69,16 +69,15 @@ For documentation on the development version see [here](https://anansepy.readthe
   ```
   $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
                     -b results/binding.txt \
-                    -o results/full_features.txt \
+                    -o results/KRT_full_features.txt \
                     -g hg38 \
                     --exclude-promoter --include-enhancer
   ```
 
   <!-- * Required arguments: -->
   * `-e, --expression`. The expression file of your interested cell type or tissue. 
-
   * `-b, --binding`. The binding network from `Build binding network` step. 
-  * `-o, --output`. The folder to save results. 
+  * `-o, --output`. The output file. 
   * `-g, --genome`. The genome of your data. 
   * `--include-promoter, --exclude-promoter`. Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are **excluded**.
   * `--include-enhancer, --exclude-enhancer`. Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. By default enhancer peaks are **included**.
@@ -90,35 +89,34 @@ For documentation on the development version see [here](https://anansepy.readthe
 
   <!-- * Example: -->
   ```
-  $ ananse influence  -t results/full_network.txt \
+  $ ananse influence  -s results/FB_full_network.txt \
+                      -t results/KRT_full_network.txt \
                       -d data/FB2KRT_degenes.csv \
-                      -o results/FB2KRT.txt \
-                      -p 
+                      -o results/FB2KRT.txt 
   ```
 
   <!-- * Required arguments: -->
   * `-s, --source`. The network in source cell (optional).     
   * `-t, --target`. The network in target cell.  
   * `-d, --degenes`. The differential expression table between two cells.  
-  * `-o, --output`. The folder to save results. 
+  * `-o, --output`. The output file.  
   * `-h, --help`. Show the help message and exit.
 
+<!-- ___ -->
+## Citation
+  > Xu Q, Georgiou G, Veenstra G J C, et al. ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination[J]. [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.06.05.135798v2), 2020.
 
----
-## Help
+<!-- --- -->
+## Help and Support
 
-  * The preferred way to get support is through the Github issues page.
+  * The preferred way to get support is through the [Github issues page](https://github.com/vanheeringen-lab/ANANSE/issues).
 
----
+  * Reach out to me at one of the following places!
 
-## Support
+    - Website at <a href="https://github.com/vanheeringen-lab" target="_blank">`vanheeringen-lab`</a>
+    - Email to <a href="mailto:qxuchn@gmail.com" target="_blank">`Quan Xu`</a> or <a href="mailto:simon.vanheeringen@gmail.com" target="_blank">`Simon J. van Heeringen`</a>
 
-  Reach out to me at one of the following places!
-
-  - Website at <a href="https://github.com/vanheeringen-lab" target="_blank">`vanheeringen-lab`</a>
-  - Email to <a href="mailto:qxuchn@gmail.com" target="_blank">`Quan Xu`</a> or <a href="mailto:simon.vanheeringen@gmail.com" target="_blank">`Simon J. van Heeringen`</a>
-
----
+<!-- --- -->
 
 ## License
 
