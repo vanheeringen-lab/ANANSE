@@ -104,10 +104,10 @@ In practice these are examples of approaches that will work:
 * For **H3K27ac ChIP-seq for human hg38** data. Use [STAR]()/[bwa]() or your tool of choice to map your `fastq` file to genome. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Then establish enhancer peak normalize it with `ananse quantile` command.  
 
 !!! tip "Example"
-    * Quantile normalize enhancer counts with ANANSE.
+    * Quantile normalize enhancer counts with ANANSE.  
     `ananse quantile KRT_H3K27ac.sorted.bam KRT_enhancer.bed`
 
-    * Select enhancers that overlapped with corresponding broad peaks.
+    * Select enhancers that overlapped with corresponding broad peaks.  
     `bedtools intersect -a KRT_enhancer.bed -b KRT_H3K27ac.broadPeak -wa > KRT_enhancer_filter.bed`
 
 
@@ -219,7 +219,7 @@ DAB2	7.46610079411987	0
 DMKN	-11.6435948368453	0
 ```
 !!! warning
-    The `log2FoldChange` should be a **negative number** if this gene is up regulated, and **positive number** if this gene is down regulated.
+    The `log2FoldChange` should be a **positive number** if this gene is up regulated, and **negative number** if this gene is down regulated.
 
 !!! note 
     You can find our example differential expression input file here:  
