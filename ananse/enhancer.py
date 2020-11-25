@@ -103,16 +103,11 @@ class P300Enhancer(object):
                 start, end = summit - seqlen // 2, summit + seqlen // 2
             else:
                 start, end = peak.start, peak.end
+
             # remove seq which langer than chromosome length or smaller than 0
             if start > 0 and end < int(gsizedic[peak.chrom]):
-                fl2.write(
-                    str(peak.chrom)
-                    + "\t"
-                    + str(start)
-                    + "\t"
-                    + str(end)
-                    + "\n"
-                )
+                fl2.write(f"{peak.chrom}\t{start}\t{end}\n")
+
         return fl2.name
 
     def mk_peak(self, epeak):
@@ -122,10 +117,11 @@ class P300Enhancer(object):
                 a=line.split()
                 chrm=a[0]
                 start=int(a[1])
-                if start-100<0:
-                    start=100
                 summit=int(a[9])
-                npeakfile.write(f"{chrm}\t{start+summit-100}\t{start+summit+100}\n")
+                nsummit=start+summit
+                if nsummit<100:
+                    nsummit=100
+                npeakfile.write(f"{chrm}\t{nsummit-100}\t{nsummit+100}\n")
         return epeak200.name
 
     def quantileNormalize(self, epeak, bed_input, bed_output):
@@ -193,14 +189,8 @@ class AtacEnhancer(object):
                 start, end = peak.start, peak.end
             # remove seq which langer than chromosome length or smaller than 0
             if start > 0 and end < int(gsizedic[peak.chrom]):
-                fl2.write(
-                    str(peak.chrom)
-                    + "\t"
-                    + str(start)
-                    + "\t"
-                    + str(end)
-                    + "\n"
-                )
+                fl2.write(f"{peak.chrom}\t{start}\t{end}\n")
+
         # return npeaks
         return fl2.name
 
@@ -211,10 +201,11 @@ class AtacEnhancer(object):
                 a=line.split()
                 chrm=a[0]
                 start=int(a[1])
-                if start-1000<0:
-                    start=1000
                 summit=int(a[9])
-                npeakfile.write(f"{chrm}\t{start+summit-100}\t{start+summit+100}\n")
+                nsummit=start+summit
+                if nsummit<100:
+                    nsummit=100
+                npeakfile.write(f"{chrm}\t{nsummit-100}\t{nsummit+100}\n")
         return epeak200.name
 
     def quantileNormalize(self, epeak, bed_input, bed_output):
