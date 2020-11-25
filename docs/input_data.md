@@ -101,6 +101,16 @@ The enhancer data file that ANANSE needs as input should contain putative enhanc
 
 In practice these are examples of approaches that will work:
 
+* For **H3K27ac ChIP-seq for human hg38** data. Use [STAR]()/[bwa]() or your tool of choice to map your `fastq` file to genome. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Then establish enhancer peak normalize it with `ananse quantile` command.  
+
+!!! tip "Example"
+    * Quantile normalize enhancer counts with ANANSE.
+    `ananse quantile KRT_H3K27ac.sorted.bam KRT_enhancer.bed`
+
+    * Select enhancers that overlapped with corresponding broad peaks.
+    `bedtools intersect -a KRT_enhancer.bed -b KRT_H3K27ac.broadPeak -wa > KRT_enhancer_filter.bed`
+
+
 * For **EP300 ChIP-seq** data. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Take the summits of the peaks and extend these by +/- 100bp to a total size of 200bp. Convert the MACS2 bedGraph to bigWig and select the highest EP300 signal in the peaks.
 
 !!! tip "Example"
