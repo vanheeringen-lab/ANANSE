@@ -97,7 +97,7 @@ GM.5.0.Sox.0001	SRY	SELEX	Y
 
 ### Enhancer data
 
-The enhancer data file that ANANSE needs as input should contain putative enhancer regions with an associated enhancer signal for the specific cell-type. This signal can be any measure that is related to enhancer activity. We have used EP300 or H3K27ac ChIP-seq signal. EP300 ChIP-seq peaks can be used directly, however the H3K27ac signal is not specific enough. Peaks from a H3K27ac ChIP-seq experiment are too broad for the motif analysis. This means that you will have to use another source of data to determine the putative enhancer regions. We have used ATAC-seq, but other data such as DNase I could also work.
+The enhancer data file that ANANSE needs as input should contain putative enhancer regions with an associated enhancer signal for the specific cell-type. This signal can be any measure that is related to enhancer activity. We have used p300 or H3K27ac ChIP-seq signal. p300 ChIP-seq peaks can be used directly, however the H3K27ac signal is not specific enough. Peaks from a H3K27ac ChIP-seq experiment are too broad for the motif analysis. This means that you will have to use another source of data to determine the putative enhancer regions. We have used ATAC-seq, but other data such as DNase I could also work.
 
 In practice these are examples of approaches that will work:
 
@@ -111,7 +111,7 @@ Use [STAR]()/[bwa]() or your tool of choice to map your `fastq` file to genome. 
     `ananse enhancer -g hg38 -t H3K27ac -b KRT_H3K27ac.sorted.bam -p KRT_H3K27ac.broadPeak -e KRT_enhancer.bed`
 
 
-* For **EP300 ChIP-seq** data. `ananse enhancer` will generate enhancer based on p300 ChIP-seq peak (200bp) and p300 ChIP-seq intensity (200bp).   
+* For **p300 ChIP-seq** data. `ananse enhancer` will generate enhancer based on p300 ChIP-seq peak (200bp) and p300 ChIP-seq intensity (200bp).   
 
 !!! tip "Example"
     * Make quantile normalized enhancer counts with ANANSE.  
