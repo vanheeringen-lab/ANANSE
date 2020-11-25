@@ -331,7 +331,7 @@ if __name__ == "__main__":
         "-p", "--epeak", dest="epeak", help="The original H3K27ac ChIP-seq broadPeak, or the p300 ChIP-seq / ATAC-seq narrowPeak", metavar="FILE",
     ) 
     group.add_argument(
-        "-e", "--bed_output", dest="bed_output", help="The normalized H3K27ac enahncer file", metavar="FILE",
+        "-o", "--bed_output", dest="bed_output", help="The normalized H3K27ac enahncer file", metavar="FILE",
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
