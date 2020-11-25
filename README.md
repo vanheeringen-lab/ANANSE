@@ -45,9 +45,9 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
   #### ***0. Make enhancer file***
   ```
   ananse enhancer -g hg38 -t H3K27ac \
-                  -b FB_H3K27ac_rep1.bam \
-                  -p FB_H3K27ac_peaks.broadPeak \
-                  -o FB_enhancer.bed 
+                  -b data/KRT_H3K27ac_rep1.bam \
+                  -p data/KRT_H3K27ac_peaks.broadPeak \
+                  -o data/KRT_enhancer.bed 
   ```
 
   * `-t, --etype`. Enhancer type, H3K27ac, p300, or ATAC. 
@@ -64,7 +64,7 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
 
   <!-- * Example:  -->
   ```
-  $ ananse binding  -r data/krt_enhancer.bed \
+  $ ananse binding  -r data/KRT_enhancer.bed \
                     -o results/binding.txt \
                     -g hg38 
   ```
