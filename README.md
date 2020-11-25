@@ -21,30 +21,30 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
   * The **full ANANSE documentation** at [https://anansepy.readthedocs.io](https://anansepy.readthedocs.io).  -->
 
 * ### **Easy installation**
-  * The most straightforward way to install ANANSE is via conda using the bioconda channel.
+  <!-- * The most straightforward way to install ANANSE is via conda using the bioconda channel. -->
 
-  * If you have not used bioconda before, first set up the necessary channels (in this order!). You only have to do this once.
+  #### ***1. If you have not used bioconda before, first set up the necessary channels (in this order!). You only have to do this once.***
 
-    ```
-    $ conda config --add channels defaults
-    $ conda config --add channels bioconda
-    $ conda config --add channels conda-forge
-    ```
-  * You can now install ANANSE with one command:
-    ``` 
-    # Create an environment called ananse with all dependencies
-    $ conda create -n ananse python=3 ananse
+  ```
+  $ conda config --add channels defaults
+  $ conda config --add channels bioconda
+  $ conda config --add channels conda-forge
+  ```
+  #### ***2. Install ANANSE from bioconda***
+  ``` 
+  # Create an environment called ananse with all dependencies
+  $ conda create -n ananse python=3 ananse
 
-    # Activate the environment
-    $ conda activate ananse
-    ```
-  * Python 3 is the required for ANANSE. Don't forget to activate the environment with conda activate gimme whenever you want to use ANANSE.
+  # Activate the environment
+  $ conda activate ananse
+  ```
+  <!-- * Python 3 is the required for ANANSE. Don't forget to activate the environment with conda activate gimme whenever you want to use ANANSE. -->
 
 
 * ### **Usage**
   
   <!-- * **All the example dataset and result files are able to find at [***http://mbdata.science.ru.nl/qxu/ananse/ananse.html***](http://mbdata.science.ru.nl/qxu/ananse/ananse.html).** -->
-  ---
+  <!-- --- -->
   #### ***1. Build TF binding network***  
   <!-- > Predict cell type-specific transcription factor binding with enhancer intensity and motif z-score. -->
 
