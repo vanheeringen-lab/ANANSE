@@ -108,21 +108,21 @@ Use [STAR]()/[bwa]() or your tool of choice to map your `fastq` file to genome. 
 
 !!! tip "Example"
     * Make quantile normalized enhancer counts with ANANSE.  
-    `ananse enhancer -g hg38 -t H3K27ac -b KRT_H3K27ac.sorted.bam -p KRT_H3K27ac.broadPeak -e KRT_enhancer.bed`
+    `ananse enhancer -g hg38 -t H3K27ac -b KRT_H3K27ac.sorted.bam -p KRT_H3K27ac.broadPeak -o KRT_enhancer.bed`
 
 
 * For **p300 ChIP-seq** data. `ananse enhancer` will generate enhancer based on p300 ChIP-seq peak (200bp) and p300 ChIP-seq intensity (200bp).   
 
 !!! tip "Example"
     * Make quantile normalized enhancer counts with ANANSE.  
-    `ananse enhancer -g hg19 -t p300 -b KRT_p300.sorted.bam -p KRT_p300.narrowPeak -e KRT_enhancer.bed`
+    `ananse enhancer -g hg19 -t p300 -b KRT_p300.sorted.bam -p KRT_p300.narrowPeak -o KRT_enhancer.bed`
 
 
 * For **ATAC-seq and H3K27ac ChIP-seq** data. `ananse enhancer` will generate enhancer based on ATAC-seq peak (200bp) and H3K27ac ChIP-seq intensity (2000bp).  
 
 !!! tip "Example"
     * Make quantile normalized enhancer counts with ANANSE.  
-    `ananse enhancer -g hg19 -t ATAC -b KRT_H3K27ac.sorted.bam -p KRT_ATAC.narrowPeak -e KRT_enhancer.bed`
+    `ananse enhancer -g hg19 -t ATAC -b KRT_H3K27ac.sorted.bam -p KRT_ATAC.narrowPeak -o KRT_enhancer.bed`
 
 
 
