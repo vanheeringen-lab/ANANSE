@@ -41,6 +41,21 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
 
 
 * ### **Usage**
+
+  #### ***0. Make enhancer file***
+  ```
+  ananse enhancer -g hg38 -t H3K27ac \
+                  -b FB_H3K27ac_rep1.bam \
+                  -p FB_H3K27ac_peaks.broadPeak \
+                  -e FB_enhancer.bed 
+  ```
+
+  * `-t, --etype`. Enhancer type, H3K27ac, p300, or ATAC. 
+  * `-g, --genome`. The genome of the data.
+  * `-b, --bam_input`. The H3K27ac or p300 ChIP-seq bam file.
+  * `-p, --epeak`. The H3K27ac ChIP-seq broadPeak, or the p300 ChIP-seq / ATAC-seq narrowPeak.
+  * `-e, --bed_output`. The output enhancer file
+  * `-h, --help`. Show the help message and exit.
   
   <!-- * **All the example dataset and result files are able to find at [***http://mbdata.science.ru.nl/qxu/ananse/ananse.html***](http://mbdata.science.ru.nl/qxu/ananse/ananse.html).** -->
   <!-- --- -->
