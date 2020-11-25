@@ -1,12 +1,20 @@
 ## ANANSE News
 
-### ANANSE v0.1.4
+### ANANSE v0.1.5
 > 2020-11-25
 
 * Switch the default enhancer to H3K27ac data.
-* Fix genomepy chromosome size bug thanks Jordi Creus.
+* Fix many bugs, and suggestions, thanks [Branco Heuts](https://www.researchgate.net/profile/Branco_Heuts).
 * Simplify the readme file.
 * Update the ReadtheDocs for ANANSE.  
+
+### ANANSE v0.1.4
+> 2020-07-29
+
+* Fix genomepy version
+* Fix weight function
+* Fix TF filter
+* Improve docs
 
 ### ANANSE v0.1.3
 > 2020-06-02
