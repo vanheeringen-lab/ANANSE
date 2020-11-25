@@ -135,8 +135,8 @@ class P300Enhancer(object):
         bed = pd.read_csv(bed_input, header=None, sep="\t")
         t = np.searchsorted(np.sort(bed[3]), bed[3])
         bed[3] = [rank[i] for i in t]
-        bed[1] = [int(i)+100 for i in bed[1].tolist()]
-        bed[2] = [int(i)-100 for i in bed[2].tolist()]
+        bed[1] = [int(i) for i in bed[1].tolist()]
+        bed[2] = [int(i) for i in bed[2].tolist()]
         
         bed.to_csv(bed_output, sep="\t", header=False, index=False)
 
@@ -150,7 +150,7 @@ class P300Enhancer(object):
     def run_enhancer(self, bed_input, epeak, bed_output):
         epeak200 = self.mk_peak(epeak)
         clear_epeak200 = self.set_peak_size(epeak200)
-        os.system(f"cp {clear_epeak200} ./")
+        # os.system(f"cp {clear_epeak200} ./")
         bed_cov = self.runCov(self.bam_input, clear_epeak200)
         quantile_bed = self.quantileNormalize(epeak, bed_cov, bed_output)
 
@@ -164,7 +164,7 @@ class AtacEnhancer(object):
         self.bam_input = bam_input
         self.epeak = epeak
         self.bed_output = bed_output
-        self.peak_rank =  os.path.join(package_dir, "db", "peak_rank_hg38.txt")
+        self.peak_rank =  os.path.join(package_dir, "db", "peak_rank.txt")
 
     def set_peak_size(self, peak_bed, seqlen=200):
         """set all input peaks to 200bp
@@ -211,8 +211,8 @@ class AtacEnhancer(object):
                 a=line.split()
                 chrm=a[0]
                 start=int(a[1])
-                if start-100<0:
-                    start=100
+                if start-1000<0:
+                    start=1000
                 summit=int(a[9])
                 npeakfile.write(f"{chrm}\t{start+summit-100}\t{start+summit+100}\n")
         return epeak200.name
@@ -229,17 +229,17 @@ class AtacEnhancer(object):
         
         bed.to_csv(bed_output, sep="\t", header=False, index=False)
 
-    def runCov(self, bam_input, clear_epeak200):
+    def runCov(self, bam_input, clear_epeak2k):
         covfile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        covcmd = f"multiBamCov -bams {bam_input} -bed {clear_epeak200} > {covfile.name}"
+        covcmd = f"multiBamCov -bams {bam_input} -bed {clear_epeak2k} > {covfile.name}"
         process = subprocess.Popen(covcmd, shell=True, stdout=subprocess.PIPE)
         process.wait()
         return covfile.name
 
     def run_enhancer(self, bed_input, epeak, bed_output):
         epeak200 = self.mk_peak(epeak)
-        clear_epeak200 = self.set_peak_size(epeak200)
-        bed_cov = self.runCov(bed_cov.bam_input, clear_epeak200)
-        quantile_bed = self.quantileNormalize(epeak, bed_cov)
+        clear_epeak2k = self.set_peak_size(epeak200, 2000)
+        bed_cov = self.runCov(self.bam_input, clear_epeak2k)
+        quantile_bed = self.quantileNormalize(epeak, bed_cov, bed_output)
 
 
