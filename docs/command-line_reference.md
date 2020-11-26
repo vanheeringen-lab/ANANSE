@@ -31,7 +31,7 @@ $ ananse enhancer -g hg38 -t hg38H3K27ac \
 **Required arguments:**  
 
 * `-t, --etype`  
-    Enhancer type, hg38H3K27ac, p300, or ATAC. If you would like to run ANANSE in human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. And this **H3K27ac*** option ***only provide for hg38!** For other genome or human data does not have H3K27ac, you can set `-t` to `p300` or `ATAC`. 
+    Enhancer type, hg38H3K27ac, p300, or ATAC. If you would like to run ANANSE in human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. And this **hg38H3K27ac*** option ***only provide for hg38!** For other genome or human data does not have H3K27ac, you can set `-t` to `p300` or `ATAC`. 
 
 !!! note 
     There is 3 type of enhancer data: `hg38H3K27ac`, `p300`, or `ATAC`.  
