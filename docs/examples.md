@@ -40,14 +40,14 @@ ananse binding  -n 30 \
                 -r data/FB_enhancer.bed \
                 -o results/FB_binding.txt \
                 -g hg38 \
-                -e H3K27ac \
+                -t hg38H3K27ac \
                 --unremove-curated
 
 ananse binding  -n 30 \
                 -r data/KRT_enhancer.bed \
                 -o results/KRT_binding.txt \
                 -g hg38 \
-                -e H3K27ac \
+                -t hg38H3K27ac \
                 --unremove-curated
 ```
 

@@ -20,7 +20,7 @@ The following command generate KRT enhancer file from KRT H3K27ac ChIP-seq BAM f
 Example command:
 
 ``` bash
-$ ananse enhancer -g hg38 -t H3K27ac \
+$ ananse enhancer -g hg38 -t hg38H3K27ac \
                   -b data/KRT_H3K27ac.sorted.bam \
                   -p data/KRT_H3K27ac.broadPeak \
                   -o data/KRT_enhancer.bed
@@ -31,12 +31,12 @@ $ ananse enhancer -g hg38 -t H3K27ac \
 **Required arguments:**  
 
 * `-t, --etype`  
-    Enhancer type, H3K27ac, p300, or ATAC. If you would like to run ANANSE in human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. And this **H3K27ac*** option ***only provide for hg38!** For other genome or human data does not have H3K27ac, you can set `-t` to `p300` or `ATAC`. 
+    Enhancer type, hg38H3K27ac, p300, or ATAC. If you would like to run ANANSE in human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. And this **H3K27ac*** option ***only provide for hg38!** For other genome or human data does not have H3K27ac, you can set `-t` to `p300` or `ATAC`. 
 
 !!! note 
-    There is 3 type of enhancer data: `H3K27ac`, `p300`, or `ATAC`.  
+    There is 3 type of enhancer data: `hg38H3K27ac`, `p300`, or `ATAC`.  
     
-    * For human with H3K27ac ChIP-seq data, using `H3K27ac`: 1, hg38 genome; 2, H3K27ac ChIP-seq BAM file; 3, H3K27ac ChIP-seq BoardPeak file.  
+    * For human with H3K27ac ChIP-seq data, using `hg38H3K27ac`: 1, hg38 genome; 2, H3K27ac ChIP-seq BAM file; 3, H3K27ac ChIP-seq BoardPeak file.  
     * For p300 ChIP-seq data, using `p300`: 1, p300 ChIP-seq BAM file; 2, p3000 ChIP-seq narrowPeak file.  
     * For ATAC-seq data, using `ATAC`: 1, H3K27ac BAM file; 2, ATAC-seq narrowPeak file.  
 
@@ -62,7 +62,7 @@ Example command:
 ``` bash
 $ ananse binding  -r data/KRT_enhancer.bed \
                   -o results/KRT_binding.txt \
-                  -g hg38 \
+                  -g hg38 -t hg38H3K27ac \
                   -p data/gimme.vertebrate.v5.1.pfm
 ```
 !!! tip
@@ -73,7 +73,7 @@ $ ananse binding  -r data/KRT_enhancer.bed \
 * `-r, --enhancers`  
     The name of the input enhancer peak file. This should be a BED-formatted file with 4 columns. The first column is the chromosome name, the second and third columns are the start and end point of peak. We recommend that all peaks have a size of 200bp. If the peak is not 200bp, ANANSE will change it to 200bp. The fourth column is intensity of the peak, this can be the number of reads, RPKM or equivalent value. You can find the method to generate the enhancer file and an example of an enhancer input file in the section [Input data](input_data/#enhancer-data).  
 * `-t, --etype`  
-    Enhancer type, H3K27ac, p300, or ATAC. **H3K27ac only provide for hg38!**  
+    Enhancer type, hg38H3K27ac, p300, or ATAC.  
 * `-o, --output`  
     The name of the output file.
 
