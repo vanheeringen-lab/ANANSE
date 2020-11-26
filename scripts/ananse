@@ -68,11 +68,11 @@ if __name__ == "__main__":
         "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg38"
     )
     group.add_argument(
-        "-e", 
-        "--enhancer", 
-        dest="enhancerKind", 
-        help="The input enhancer data, H3K27ac or p300. By default is H3K27ac.",
-        default="H3K27ac"
+        "-t", 
+        "--etype", 
+        dest="etype", 
+        help="The input enhancer data, hg38H3K27ac, p300 or ATAC. By default is H3K27ac.",
+        default="hg38H3K27ac"
     )
     group.add_argument(
         "-p",
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         default=None,
     )
     group.add_argument(
-        "-t",
+        "-f",
         "--tffile",
         dest="tffile",
         help="TF file used in analysis",
@@ -322,7 +322,7 @@ if __name__ == "__main__":
         "-g", "--genome", dest="genome", help="Genome", metavar="NAME", default="hg38",
     )
     group.add_argument(
-        "-t", "--etype", dest="etype", help="Enhancer type, H3K27ac, p300, or ATAC", metavar="NAME", default="H3K27ac",
+        "-t", "--etype", dest="etype", help="Enhancer type, hg38H3K27ac, p300, or ATAC", metavar="NAME", default="hg38H3K27ac",
     )
     group.add_argument(
         "-b", "--bam_input", dest="bam_input", help="The original H3K27ac ChIP-seq bam file, or the p300 ChIP-seq bam file", metavar="FILE",

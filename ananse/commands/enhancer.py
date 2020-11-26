@@ -13,7 +13,7 @@ def enhancer(args):
     genome=args.genome
     etype=args.etype
 
-    if genome == "hg38" and etype == "H3K27ac":
+    if genome == "hg38" and etype == "hg38H3K27ac":
         b = ananse.enhancer.Enhancer(
             genome=args.genome, 
             bam_input=args.bam_input,
