@@ -41,6 +41,7 @@ $ ananse enhancer -g hg38 -t H3K27ac \
 
 !!! note 
     There is 3 kind of enhancer type: H3K27ac, p300, or ATAC.  
+    
     * For human with H3K27ac ChIP-seq data, using: 1, hg38 genome; 2, H3K27ac ChIP-seq BAM file; 3, H3K27ac ChIP-seq BoardPeak file.  
     * For p300 ChIP-seq data, using: 1, p300 ChIP-seq BAM file; 2, p3000 ChIP-seq narrowPeak file.  
     * For ATAC-seq data, using: 1, H3K27ac BAM file; 2, ATAC-seq narrowPeak file.  
