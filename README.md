@@ -50,7 +50,7 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
                     -o data/KRT_enhancer.bed 
   ```
 
-  * `-t, --etype`. Enhancer type, H3K27ac, p300, or ATAC. **The H3K27ac only provide for hg38!** 
+  * `-t, --etype`. Enhancer type, H3K27ac, p300, or ATAC. **H3K27ac only provide for hg38!** 
   * `-g, --genome`. The genome of the data.
   * `-b, --bam_input`. The H3K27ac or p300 ChIP-seq bam file.
   * `-p, --epeak`. The H3K27ac ChIP-seq broadPeak, or the p300 ChIP-seq / ATAC-seq narrowPeak.
@@ -70,7 +70,7 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
   ```
 
   * `-r, --enhancers`. The input enhancer peak file. 
-  * `-t, --etype`. Enhancer type, H3K27ac, p300, or ATAC. **The H3K27ac only provide for hg38!** 
+  * `-t, --etype`. Enhancer type, H3K27ac, p300, or ATAC. **H3K27ac only provide for hg38!** 
   * `-o, --output`. The output file.
   * `-g, --genome`. The genome of the data.
   * `-h, --help`. Show the help message and exit.
