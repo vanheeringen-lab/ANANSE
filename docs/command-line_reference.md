@@ -6,16 +6,16 @@
 In general, an analysis with ANANSE will consist of the following steps:
 
 1. Generate ANANSE input enhancer file for *target* cell type using `ananse enhancer`.
-2. Generate binding network for *target* cell type using `ananse binding`.
-3. Generate gene regulatory network (GRN) for *target* cell type using `ananse network`, based on the binding network from 1.
+2. Generate binding network for *target* cell type using `ananse binding`, based on the enhancer file from step 1.
+3. Generate gene regulatory network (GRN) for *target* cell type using `ananse network`, based on the binding network from step 2.
 4. Generate ANANSE input enhancer file for *source* cell type using `ananse enhancer`.
-5. Generate a binding network for a *source* cell type using `ananse binding`.
-6. Generate a GRN for a *source* cell type using `ananse network`, based on the binding network from 3.
-7. Run `ananse influence` based on the GRN of the *source* cell type (step 2) and the GRN of the *target* cell type (step 4)
+5. Generate a binding network for a *source* cell type using `ananse binding`, based on the enhancer file from step 4.
+6. Generate a GRN for a *source* cell type using `ananse network`, based on the binding network from step 5.
+7. Run `ananse influence` based on the GRN of the *source* cell type (step 4) and the GRN of the *target* cell type (step 6)
 
 ### Establish ANANSE input enhancer file: ananse enhancer
 
-The following command generate KRT enhancer file from KRT H3K27ac BAM file and BoardPeak file (***Only for hg38***). It is also possible generate this enhancer file from 1) p300 ChIP-seq BAM file and p3000 ChIP-seq narrowPeak file; 2) H3K27ac BAM file and ATAC-seq narrowPeak file (***for other genome***).
+The following command generate KRT enhancer file from KRT H3K27ac ChIP-seq BAM file and KRT H3K27ac ChIP-seq BoardPeak file (***Only for hg38***). It is also possible generate this enhancer file from 1) p300 ChIP-seq BAM file and p3000 ChIP-seq narrowPeak file; 2) H3K27ac BAM file and ATAC-seq narrowPeak file (***for other genome***).
 
 Example command:
 
@@ -25,17 +25,25 @@ $ ananse enhancer -g hg38 -t H3K27ac \
                   -p data/KRT_H3K27ac.broadPeak \
                   -o data/KRT_enhancer.bed
 ```
+!!! tip
+    Please use `-h/--help` for the details of all options.
 
 **Required arguments:**  
 
 * `-t, --etype`  
-    Enhancer type, H3K27ac, p300, or ATAC. **H3K27ac only provide for hg38!** If you would like run ANANSE for human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. For all other genome or you do not have H3K27ac data for human, you can set `-t` to `p300` or `ATAC`. 
+    Enhancer type, H3K27ac, p300, or ATAC. If you would like to run ANANSE in human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. And this **H3K27ac*** option ***only provide for hg38!** For other genome or human data does not have H3K27ac, you can set `-t` to `p300` or `ATAC`. 
 * `-g, --genome`  
     The genome that is used for the gene annotation and the enhancer location. This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. You can find the method to generate genome files in the section [Input data](input_data/#genome). The default genome is `hg38`.   * `-b, --bam_input`. The H3K27ac or p300 ChIP-seq bam file.
 * `-p, --epeak`  
     The H3K27ac ChIP-seq broadPeak, or the p300 ChIP-seq / ATAC-seq narrowPeak.
 * `-o, --bed_output`  
     The output enhancer file.
+
+!!! note 
+    There is 3 kind of enhancer type: H3K27ac, p300, or ATAC.  
+    * For human with H3K27ac ChIP-seq data, using: 1, hg38 genome; 2, H3K27ac ChIP-seq BAM file; 3, H3K27ac ChIP-seq BoardPeak file.  
+    * For p300 ChIP-seq data, using: 1, p300 ChIP-seq BAM file; 2, p3000 ChIP-seq narrowPeak file.  
+    * For ATAC-seq data, using: 1, H3K27ac BAM file; 2, ATAC-seq narrowPeak file.  
 
 **Optional arguments:**  
 
