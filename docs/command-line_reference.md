@@ -34,11 +34,11 @@ $ ananse enhancer -g hg38 -t H3K27ac \
     Enhancer type, H3K27ac, p300, or ATAC. If you would like to run ANANSE in human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. And this **H3K27ac*** option ***only provide for hg38!** For other genome or human data does not have H3K27ac, you can set `-t` to `p300` or `ATAC`. 
 
 !!! note 
-    There is 3 kind of enhancer type: H3K27ac, p300, or ATAC.  
+    There is 3 type of enhancer data: `H3K27ac`, `p300`, or `ATAC`.  
     
-    * For human with H3K27ac ChIP-seq data, using: 1, hg38 genome; 2, H3K27ac ChIP-seq BAM file; 3, H3K27ac ChIP-seq BoardPeak file.  
-    * For p300 ChIP-seq data, using: 1, p300 ChIP-seq BAM file; 2, p3000 ChIP-seq narrowPeak file.  
-    * For ATAC-seq data, using: 1, H3K27ac BAM file; 2, ATAC-seq narrowPeak file.  
+    * For human with H3K27ac ChIP-seq data, using `H3K27ac`: 1, hg38 genome; 2, H3K27ac ChIP-seq BAM file; 3, H3K27ac ChIP-seq BoardPeak file.  
+    * For p300 ChIP-seq data, using `p300`: 1, p300 ChIP-seq BAM file; 2, p3000 ChIP-seq narrowPeak file.  
+    * For ATAC-seq data, using `ATAC`: 1, H3K27ac BAM file; 2, ATAC-seq narrowPeak file.  
 
 * `-g, --genome`  
     The genome that is used for the gene annotation and the enhancer location. This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. You can find the method to generate genome files in the section [Input data](input_data/#genome). The default genome is `hg38`.   * `-b, --bam_input`. The H3K27ac or p300 ChIP-seq bam file.
