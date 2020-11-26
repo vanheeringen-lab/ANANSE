@@ -34,7 +34,7 @@ $ ananse enhancer -g hg38 -t hg38H3K27ac \
     Enhancer type, hg38H3K27ac, p300, or ATAC. If you would like to run ANANSE in human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. And this **hg38H3K27ac*** option ***only provide for hg38!** For other genome or human data does not have H3K27ac, you can set `-t` to `p300` or `ATAC`. 
 
 !!! note 
-    There is 3 type of enhancer data: `hg38H3K27ac`, `p300`, or `ATAC`.  
+    There are 3 type of enhancer data for `-t, --etype`: `hg38H3K27ac`, `p300`, or `ATAC`.  
     
     * For human with H3K27ac ChIP-seq data, using `hg38H3K27ac`: 1, hg38 genome; 2, H3K27ac ChIP-seq BAM file; 3, H3K27ac ChIP-seq BoardPeak file.  
     * For p300 ChIP-seq data, using `p300`: 1, p300 ChIP-seq BAM file; 2, p3000 ChIP-seq narrowPeak file.  
