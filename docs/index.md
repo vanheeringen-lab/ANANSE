@@ -6,6 +6,7 @@ ANANSE is a computational approach to infer enhancer-based gene regulatory netwo
 
 | Command           | Function                                                       |
 | ----------------- | -------------------------------------------------------------- |
+|  ananse enhancer   | establish ANANSE input enhancer file   |
 |  ananse binding   | predict cell type-specific transcription factor binding profile   |
 |  ananse network   | infer cell type-specific gene regulatory network           |
 |  ananse influence | infer key transcription factors during cell fate determination |   

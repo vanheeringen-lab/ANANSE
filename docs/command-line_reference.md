@@ -5,11 +5,43 @@
 
 In general, an analysis with ANANSE will consist of the following steps:
 
-1. Generate a binding network for a *target* cell type using `ananse binding`.
-2. Generate a gene regulatory network (GRN) for a *target* cell type using `ananse network`, based on the binding network from 1.
-3. Generate a binding network for a *source* cell type using `ananse binding`.
-4. Generate a GRN for a *source* cell type using `ananse network`, based on the binding network from 3.
-5. Run `ananse influence` based on the GRN of the *source* cell type (step 2) and the GRN of the *target* cell type (step 4)
+1. Generate ANANSE input enhancer file for *target* cell type using `ananse enhancer`.
+2. Generate binding network for *target* cell type using `ananse binding`.
+3. Generate gene regulatory network (GRN) for *target* cell type using `ananse network`, based on the binding network from 1.
+4. Generate ANANSE input enhancer file for *source* cell type using `ananse enhancer`.
+5. Generate a binding network for a *source* cell type using `ananse binding`.
+6. Generate a GRN for a *source* cell type using `ananse network`, based on the binding network from 3.
+7. Run `ananse influence` based on the GRN of the *source* cell type (step 2) and the GRN of the *target* cell type (step 4)
+
+### Establish ANANSE input enhancer file: ananse enhancer
+
+The following command generate KRT enhancer file from KRT H3K27ac BAM file and BoardPeak file (***Only for hg38***). It is also possible generate this enhancer file from 1) p300 ChIP-seq BAM file and p3000 ChIP-seq narrowPeak file; 2) H3K27ac BAM file and ATAC-seq narrowPeak file (***for other genome***).
+
+Example command:
+
+``` bash
+$ ananse enhancer -g hg38 -t H3K27ac \
+                  -b data/KRT_H3K27ac.sorted.bam \
+                  -p data/KRT_H3K27ac.broadPeak \
+                  -o data/KRT_enhancer.bed
+```
+
+**Required arguments:**  
+
+* `-t, --etype`  
+    Enhancer type, H3K27ac, p300, or ATAC. **H3K27ac only provide for hg38!** If you would like run ANANSE for human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. For all other genome or you do not have H3K27ac data for human, you can set `-t` to `p300` or `ATAC`. 
+* `-g, --genome`  
+    The genome that is used for the gene annotation and the enhancer location. This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. You can find the method to generate genome files in the section [Input data](input_data/#genome). The default genome is `hg38`.   * `-b, --bam_input`. The H3K27ac or p300 ChIP-seq bam file.
+* `-p, --epeak`  
+    The H3K27ac ChIP-seq broadPeak, or the p300 ChIP-seq / ATAC-seq narrowPeak.
+* `-o, --bed_output`  
+    The output enhancer file.
+
+**Optional arguments:**  
+
+* `-h, --help`  
+    Show the help message and exit.
+
 
 ### Build transcription factor binding network: ananse binding
 
@@ -18,8 +50,8 @@ The following command combines genome-wide enhancer intensities (EP300 ChIP-seq,
 Example command:
 
 ``` bash
-$ ananse binding  -r data/krt_enhancer.bed \
-                  -o results/binding.txt \
+$ ananse binding  -r data/KRT_enhancer.bed \
+                  -o results/KRT_binding.txt \
                   -g hg38 \
                   -p data/gimme.vertebrate.v5.1.pfm
 ```
@@ -30,6 +62,8 @@ $ ananse binding  -r data/krt_enhancer.bed \
 
 * `-r, --enhancers`  
     The name of the input enhancer peak file. This should be a BED-formatted file with 4 columns. The first column is the chromosome name, the second and third columns are the start and end point of peak. We recommend that all peaks have a size of 200bp. If the peak is not 200bp, ANANSE will change it to 200bp. The fourth column is intensity of the peak, this can be the number of reads, RPKM or equivalent value. You can find the method to generate the enhancer file and an example of an enhancer input file in the section [Input data](input_data/#enhancer-data).  
+* `-t, --etype`  
+    Enhancer type, H3K27ac, p300, or ATAC. **H3K27ac only provide for hg38!**  
 * `-o, --output`  
     The name of the output file.
 
@@ -52,8 +86,8 @@ Example command:
 
 ``` bash
 $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                  -b results/binding.txt \
-                  -o results/full_features.txt \
+                  -b results/KRT_binding.txt \
+                  -o results/KRT_network.txt \
                   -a data/hg38_genes.bed \
                   -g hg38 \
                   --exclude-promoter --include-enhancer
@@ -94,12 +128,12 @@ To calculate the influence score for the transition from a *source* cell type (`
 Example command: 
 
 ``` bash
-$ ananse influence  -s results/full_network_stage1.txt \
-                    -t results/full_network_stage2.txt \
-                    -d data/stage2_stage1_degenes.tsv \
-                    -e data/stage1_TPM.tsv \
+$ ananse influence  -s results/FB_network.txt \
+                    -t results/KRT_network.txt \
+                    -d data/FB2KRT_degenes.tsv \
+                    -e data/FB_TPM.tsv \
                     -o results/influence.txt \
-                    -n 2
+                    -n 20
 ```
 !!! tip
     Please use `-h/--help` for the details of all options.
