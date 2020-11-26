@@ -61,21 +61,23 @@ def clear_tfs(motifs2factors, tffile, include_notfs=False, rm_curated=True):
     return ft
 
 class Binding(object):
-    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, include_notfs=False, rm_curated=True, enhancerKind="H3K27ac", tffile=None):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, include_notfs=False, rm_curated=True, etype="H3K27ac", tffile=None):
 
         self.ncore = ncore
         self.genome = genome
 
         # dream_model.txt is the logistic regression model.
         package_dir = os.path.dirname(ananse.__file__)
-        self.enhancerKind = enhancerKind
+        self.etype = etype
 
-        if self.enhancerKind == "H3K27ac":
+        if self.genome == "hg38" and self.etype == "H3K27ac":
             self.model = os.path.join(package_dir, "db", "dream_model_h3k27ac.txt")
-        elif self.enhancerKind == "p300":
+        elif self.etype == "p300" or self.etype == "ATAC":
             self.model = os.path.join(package_dir, "db", "dream_model_p300.txt")
         else:
-            raise TypeError("The input enhancer data type should H3K27ac or p300. Please provide a enhancer type with -e argument. By default is H3K27ac.")
+            raise TypeError("""The input enhancer data type should H3K27ac, p300 or ATAC. 
+            It is not possible set -e to H3K27ac if the genome is not hg38. 
+            Please provide a enhancer type with -e argument. By default is H3K27ac.""")
 
         # filter tfs?
         self.include_notfs = include_notfs
@@ -221,7 +223,7 @@ class Binding(object):
 
         ft = self.filtermotifs2factors
 
-        if self.enhancerKind == "H3K27ac":
+        if self.etype == "H3K27ac":
             r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
                 ["motif", "enhancer", "zscore", "log10_peakRPKM"]
             ]
@@ -231,7 +233,7 @@ class Binding(object):
             table = r.compute(num_workers=self.ncore)
             table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
 
-        elif self.enhancerKind == "p300":
+        elif self.etype == "p300" or self.etype == "ATAC":
             r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
                 ["motif", "enhancer", "zscore", "log10_peakRPKM"]
             ]
@@ -242,7 +244,7 @@ class Binding(object):
             table = r.compute(num_workers=self.ncore)
             table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
         else:
-            raise TypeError("The input enhancer data type should H3K27ac or p300. Please provide a enhancer type with -e argument. By default is H3K27ac.")
+            raise TypeError("The input enhancer data type should H3K27ac, p300 or ATAC. Please provide a enhancer type with -e argument. By default is H3K27ac.")
 
         return table
 

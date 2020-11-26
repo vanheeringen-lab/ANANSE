@@ -68,10 +68,10 @@ if __name__ == "__main__":
         "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg38"
     )
     group.add_argument(
-        "-e", 
-        "--enhancer", 
-        dest="enhancerKind", 
-        help="The input enhancer data, H3K27ac or p300. By default is H3K27ac.",
+        "-t", 
+        "--etype", 
+        dest="etype", 
+        help="The input enhancer data, H3K27ac, p300 or ATAC. By default is H3K27ac.",
         default="H3K27ac"
     )
     group.add_argument(
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         default=None,
     )
     group.add_argument(
-        "-t",
+        "-f",
         "--tffile",
         dest="tffile",
         help="TF file used in analysis",
