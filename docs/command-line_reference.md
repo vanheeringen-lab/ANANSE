@@ -31,7 +31,7 @@ $ ananse enhancer -g hg38 -t hg38H3K27ac \
 **Required arguments:**  
 
 * `-t, --etype`  
-    Enhancer type, hg38H3K27ac, p300, or ATAC. If you would like to run ANANSE in human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. And this **hg38H3K27ac*** option ***only provide for hg38!** For other genome or human data does not have H3K27ac, you can set `-t` to `p300` or `ATAC`. 
+    Enhancer type, `hg38H3K27ac`, `p300`, or `ATAC`. If you would like to run ANANSE in human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. For other genome or human data not H3K27ac, you can use `-t` to `p300` or `ATAC`. 
 
 !!! note 
     There are 3 type of enhancer data for `-t, --etype`: `hg38H3K27ac`, `p300`, or `ATAC`.  
@@ -73,7 +73,7 @@ $ ananse binding  -r data/KRT_enhancer.bed \
 * `-r, --enhancers`  
     The name of the input enhancer peak file. This should be a BED-formatted file with 4 columns. The first column is the chromosome name, the second and third columns are the start and end point of peak. We recommend that all peaks have a size of 200bp. If the peak is not 200bp, ANANSE will change it to 200bp. The fourth column is intensity of the peak, this can be the number of reads, RPKM or equivalent value. You can find the method to generate the enhancer file and an example of an enhancer input file in the section [Input data](input_data/#enhancer-data).  
 * `-t, --etype`  
-    Enhancer type, hg38H3K27ac, p300, or ATAC.  
+    Enhancer type, `hg38H3K27ac`, `p300`, or `ATAC`.  
 * `-o, --output`  
     The name of the output file.
 
