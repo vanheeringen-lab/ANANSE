@@ -439,7 +439,7 @@ class Network(object):
             ).mean(1),
             columns=[column],
         )
-        expression.index.astype(str)
+        expression.index = expression.index.astype(str)
         expression.index = [i.upper() for i in list(expression.index)]
         # print(expression)
         expression[column] = np.log2(expression[column] + 1e-5)
