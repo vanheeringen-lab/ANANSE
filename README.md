@@ -116,6 +116,14 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
   * `-o, --output`. The output file.  
   * `-h, --help`. Show the help message and exit.
 
+### **Development installation**
+clone the repo from git
+checkout development branch
+install a development environment with conda:
+```conda env -f requirements.yaml```
+activate the environment with `conda activate ananse_dev`
+install ANANSE with `python setup.py develop`
+  
 <!-- ___ -->
 ## Citation
   > Xu Q, Georgiou G, Veenstra G J C, et al. ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination[J]. [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.06.05.135798v2), 2020.
