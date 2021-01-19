@@ -9,4 +9,5 @@ dist
 tomaster.sh
 conda_build.sh
 /site/*
-
+.vscode
+test/.ipynb_checkpoints
