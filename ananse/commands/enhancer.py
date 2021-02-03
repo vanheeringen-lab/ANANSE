@@ -1,48 +1,39 @@
-
-from __future__ import print_function
-import sys
-import os
-
+import ananse.utils
 import ananse.enhancer
 
 
-def enhancer(args):
-    # if not os.path.exists(args.fin_rpkm):
-    #     print("File %s does not exist!" % args.fin_rpkm)
-    #     sys.exit(1)
-    genome=args.genome
-    etype=args.etype
+def enhancer(**kwargs):
+    """
+    CLI parser for ananse.enhancer.Enhancer
+    """
+    # print(dict(**kwargs))
+    # print(kwargs.get("genome"))
 
-    if genome == "hg38" and etype == "hg38H3K27ac":
-        b = ananse.enhancer.Enhancer(
-            genome=args.genome, 
-            bam_input=args.bam_input,
-            epeak=args.epeak,
-            bed_output=args.bed_output
-        )
-        b.run_enhancer(
-            args.bam_input, args.epeak, args.bed_output
-        )
-    elif etype == "p300":
-        b = ananse.enhancer.P300Enhancer(
-            genome=args.genome, 
-            bam_input=args.bam_input,
-            epeak=args.epeak,
-            bed_output=args.bed_output
-        )
-        b.run_enhancer(
-            args.bam_input, args.epeak, args.bed_output
-        )
-    elif etype == "ATAC":
-        b = ananse.enhancer.AtacEnhancer(
-            genome=args.genome, 
-            bam_input=args.bam_input,
-            epeak=args.epeak,
-            bed_output=args.bed_output
-        )
-        b.run_enhancer(
-            args.bam_input, args.epeak, args.bed_output
-        )
+    genome = kwargs.get("genome")
+    genome = ananse.utils.check_genome(genome)
 
-       
-        
+    # etype = kwargs.get("type")
+    # etype = ananse.utils.check_type(etype)
+
+    bams = kwargs.get("bam")
+    bams = ananse.utils.check_bam(bam)
+
+    peaks = kwargs.get("peak")
+    peaks = ananse.utils.check_file(peak, "peak")
+
+    output = kwargs.get("output")
+    output = ananse.utils.check_output(output, "enhancer.bed")
+
+    width = kwargs.get("width")
+
+    summit_column = kwargs.get("summit")
+
+    b = ananse.enhancer.Enhancer(
+        genome=genome,
+        bams=bams,
+        peaks=peaks,
+        output=output,
+        width=width,
+        summit_column=summit_column
+    )
+    b.run_enhancer()

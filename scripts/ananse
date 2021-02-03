@@ -38,17 +38,14 @@ def cli():
     pass
 
 
-@click.command("enhancer", short_help="1: Collect enhancer peaks")  # TODO: only H3K27ac?
+@click.command("enhancer", short_help="1: Collect enhancer peaks")
 @click.option("-g", "--genome", help="Genome FASTA file")
-# @click.option("-t", "--type", help="Enhancer type: H3K27ac, p300, or ATAC", default="H3K27ac", show_default=True)  # TODO: hg38H3K27ac?
-# @click.option("-b", "--bam", help="A H3K27ac ChIP-seq or p300 ChIP-seq bam file")  # TODO: no ATAC?
-@click.option("-p", "--peak", help="A H3K27ac ChIP-seq broadPeak, or p300 ChIP-/ATAC-seq narrowPeak file")
-@click.option("--signal",
-              help="Column containing the signal value (0-based). 6 for narrowPeak, 13 for broadPeak.",
-              default=6, show_default=True)
-@click.option("--summit",
+@click.option("-b", "--bams", help="ATAC-seq, H3K27ac/p300 ChIP-seq bam file(s)")
+@click.option("-p", "--peaks", help="ATAC-seq, H3K27ac/p300 ChIP-seq peak file(s) (narrowPeak/broadPeak)")
+@click.option("-w", "--width", help="Peak region width", default=200, show_default=True)
+@click.option("-s", "--summit",
               help="Column containing the summit (0-based). 9 for narrowPeak, -1 if missing.",
-              default=9, show_default=True)
+              default=-1, show_default=True)
 @click.option("-o", "--output", help="Output filename or directory", default=".", show_default=True)
 def enhancer(**kwargs):
     """
@@ -58,67 +55,67 @@ def enhancer(**kwargs):
     ananse.commands.enhancer(**kwargs)
 
 
-@click.command("binding", short_help="2: Infer transcription factor binding sites in enhancer peaks")
-@click.option("-g", "--genome", help="Genome FASTA file")
-#@click.option("-t", "--type", help="Enhancer type: H3K27ac, p300, or ATAC")  # TODO: default was "hg38H3K27ac"!??  Can be automated super easily
-@click.option("-e", "--enhancers",
-              help="Output from ananse enhancer/a BED3+1 file containing a scoring method in the 4th column")
-@click.option("-p", "--pfm",
-              help="Position frequency matrix file for transcription factor binding motifs",
-              default="gimme.vertebrate.v5.0", show_default=True)
-# @click.option("-f", "--tf", help="TF file used in analysis")  # TODO: what is this? not in manual!
-# @click.option("--exclude-tfs", help="Exclude transcription factors from analysis", flag_value=True)  # TODO: include/exclude, what and how?
-@click.option("-n", "--ncpu", help="Number of cores used", default=min(os.cpu_count(), 8), show_default=True)
-@click.option("-o", "--output", help="Output filename or directory", default=".", show_default=True)
-def binding(**kwargs):
-    """
-    Predict TF binding network
-    """
-    ananse.commands.binding(**kwargs)
-
-
-@click.command("network", short_help="3: Build a transcription factor-enhancer network")
-@click.option("-g", "--genome", help="Genome FASTA file")
-@click.option("-a", "--annotation", help="Gene annotation in BED12 format")
-@click.option("-b", "--binding", help="Output from ananse binding")
-@click.option("-e", "--expression", help="Expression scores")  # TODO: what??? RNA-seq TPMs maybe?
-@click.option("-c", "--corrfiles", help="Files with correlation")  # TODO: what??
-@click.option("--select-peaks", help="Peak type(s) to use: enhancers (default), promoters or both", default="enhancers")
-# @click.option("--include-promoters", help="Include promoter peaks (TSS +/- 2kb) in network inference.", flag_value=True)
-# @click.option("--exclude-enhancers", help="Exclude enhancer peaks (TSS +/- 2kb) in network inference.", flag_value=True)
-@click.option("-n", "--ncpu", help="Number of cores used", default=min(os.cpu_count(), 8))
-@click.option("-o", "--output", help="Output location")
-def network():
-    """
-
-    Returns:
-
-    """
-    ananse.commands.network()
-
-
-@click.command("influence", short_help="4: Infer key transcription factors between two samples")
-@click.option("-s", "--source", help="ANANSE network output for the source sample(s)")
-@click.option("-t", "--target", help="ANANSE network output for the target sample(s)")
-@click.option("-e", "--expression", help="Expression scores in source sample")  # TODO: TPMs?
-@click.option("-d", "--DEgenes", help="DE genes between the source and target samples")  # TODO: format?
-@click.option("-i", "--edges", help="Number of edges used (def: 100000)", default=100000)
-@click.option("-p", "--plot", help="Create influence score plot?", flag_value=True)
-@click.option("-n", "--ncpu", help="Number of cores used", default=min(os.cpu_count(), 8))
-@click.option("-o", "--output", help="Output location")
-def influence():
-    """
-
-    Returns:
-
-    """
-    ananse.commands.influence()
+# @click.command("binding", short_help="2: Infer transcription factor binding sites in enhancer peaks")
+# @click.option("-g", "--genome", help="Genome FASTA file")
+# #@click.option("-t", "--type", help="Enhancer type: H3K27ac, p300, or ATAC")  # TODO: default was "hg38H3K27ac"!??  Can be automated super easily
+# @click.option("-e", "--enhancers",
+#               help="Output from ananse enhancer/a BED3+1 file containing a scoring method in the 4th column")
+# @click.option("-p", "--pfm",
+#               help="Position frequency matrix file for transcription factor binding motifs",
+#               default="gimme.vertebrate.v5.0", show_default=True)
+# # @click.option("-f", "--tf", help="TF file used in analysis")  # TODO: what is this? not in manual!
+# # @click.option("--exclude-tfs", help="Exclude transcription factors from analysis", flag_value=True)  # TODO: include/exclude, what and how?
+# @click.option("-n", "--ncpu", help="Number of cores used", default=min(os.cpu_count(), 8), show_default=True)
+# @click.option("-o", "--output", help="Output filename or directory", default=".", show_default=True)
+# def binding(**kwargs):
+#     """
+#     Predict TF binding network
+#     """
+#     ananse.commands.binding(**kwargs)
+#
+#
+# @click.command("network", short_help="3: Build a transcription factor-enhancer network")
+# @click.option("-g", "--genome", help="Genome FASTA file")
+# @click.option("-a", "--annotation", help="Gene annotation in BED12 format")
+# @click.option("-b", "--binding", help="Output from ananse binding")
+# @click.option("-e", "--expression", help="Expression scores")  # TODO: what??? RNA-seq TPMs maybe?
+# @click.option("-c", "--corrfiles", help="Files with correlation")  # TODO: what??
+# @click.option("--select-peaks", help="Peak type(s) to use: enhancers (default), promoters or both", default="enhancers")
+# # @click.option("--include-promoters", help="Include promoter peaks (TSS +/- 2kb) in network inference.", flag_value=True)
+# # @click.option("--exclude-enhancers", help="Exclude enhancer peaks (TSS +/- 2kb) in network inference.", flag_value=True)
+# @click.option("-n", "--ncpu", help="Number of cores used", default=min(os.cpu_count(), 8))
+# @click.option("-o", "--output", help="Output location")
+# def network():
+#     """
+#
+#     Returns:
+#
+#     """
+#     ananse.commands.network()
+#
+#
+# @click.command("influence", short_help="4: Infer key transcription factors between two samples")
+# @click.option("-s", "--source", help="ANANSE network output for the source sample(s)")
+# @click.option("-t", "--target", help="ANANSE network output for the target sample(s)")
+# @click.option("-e", "--expression", help="Expression scores in source sample")  # TODO: TPMs?
+# @click.option("-d", "--DEgenes", help="DE genes between the source and target samples")  # TODO: format?
+# @click.option("-i", "--edges", help="Number of edges used (def: 100000)", default=100000)
+# @click.option("-p", "--plot", help="Create influence score plot?", flag_value=True)
+# @click.option("-n", "--ncpu", help="Number of cores used", default=min(os.cpu_count(), 8))
+# @click.option("-o", "--output", help="Output location")
+# def influence():
+#     """
+#
+#     Returns:
+#
+#     """
+#     ananse.commands.influence()
 
 
 cli.add_command(enhancer)
-cli.add_command(binding)
-cli.add_command(network)
-cli.add_command(influence)
+# cli.add_command(binding)
+# cli.add_command(network)
+# cli.add_command(influence)
 
 if __name__ == "__main__":
     cli()

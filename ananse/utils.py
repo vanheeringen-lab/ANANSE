@@ -22,9 +22,9 @@ def mytmpdir():
 
 def set_width(genome, bed_in, bed_out, summit_col=-1, seqlen=200):
     """
-    Normalize BED region width to SEQLEN bp.
+    Set BED region width to SEQLEN bp.
     If summit_col is set, centers on the summit, else on the region center.
-    Shifts the peak to fit the chromosome near edges.
+    Shifts the region to fit the chromosome near edges.
     """
     half_seqlen = seqlen // 2
     chrom_sizes = Genome(genome).sizes
