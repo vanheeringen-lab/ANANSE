@@ -18,9 +18,9 @@ from loguru import logger
 
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import minmax_scale
 import dask.dataframe as dd
 from scipy.stats import rankdata
-from sklearn.preprocessing import minmax_scale
 
 from pybedtools import BedTool
 from genomepy import Genome
