@@ -1,29 +1,31 @@
-import atexit
-from os import getpid
-import shutil
-from tempfile import mkdtemp
-import logging
+from ananse.commands import binding, enhancer, influence, network
 
-
-def mytmpdir():
-    if not hasattr(mytmpdir, "dir") or not mytmpdir.dir:
-        mytmpdir.dir = mkdtemp(prefix="ananse.{0}.".format(getpid()))
-        atexit.register(shutil.rmtree, mytmpdir.dir)
-    return mytmpdir.dir
-
-
-logger = logging.getLogger("gnetwork")
-logger.setLevel(logging.DEBUG)
-logger.propagate = 0
-
-# nice format
-screen_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-
-# Log to screen
-sh = logging.StreamHandler()
-sh.setLevel(logging.INFO)
-sh.setFormatter(screen_formatter)
-logger.addHandler(sh)
+# import atexit
+# from os import getpid
+# import shutil
+# from tempfile import mkdtemp
+# import logging
+#
+#
+# def mytmpdir():
+#     if not hasattr(mytmpdir, "dir") or not mytmpdir.dir:
+#         mytmpdir.dir = mkdtemp(prefix="ananse.{0}.".format(getpid()))
+#         atexit.register(shutil.rmtree, mytmpdir.dir)
+#     return mytmpdir.dir
+#
+#
+# logger = logging.getLogger("gnetwork")
+# logger.setLevel(logging.DEBUG)
+# logger.propagate = 0
+#
+# # nice format
+# screen_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+#
+# # Log to screen
+# sh = logging.StreamHandler()
+# sh.setLevel(logging.INFO)
+# sh.setFormatter(screen_formatter)
+# logger.addHandler(sh)
 
 from ._version import get_versions
 
