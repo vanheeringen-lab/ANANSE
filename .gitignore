@@ -1,6 +1,8 @@
-/test/results/*
+test/results/*
 .idea/
 build/
+bld.bat
+build.sh
 pushgit.sh
 pullgit.sh
 __pycache__
@@ -9,4 +11,4 @@ dist
 tomaster.sh
 conda_build.sh
 /site/*
-
+**/*.DS_Store
