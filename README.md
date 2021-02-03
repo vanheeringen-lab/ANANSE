@@ -120,7 +120,7 @@ Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)**
 clone the repo from git
 checkout development branch
 install a development environment with conda:
-```conda env -f requirements.yaml```
+`conda env create -n ananse_dev -f requirements.yaml`
 activate the environment with `conda activate ananse_dev`
 install ANANSE with `python setup.py develop`
   
