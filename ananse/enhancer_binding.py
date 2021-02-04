@@ -253,13 +253,19 @@ def normalize(bam_coverage, bed_output, dist_func=lognorm_dist, **kwargs):
     ascending_scores_index = np.searchsorted(np.sort(scores), scores)
     norm_scores = [ascending_dist[i] for i in ascending_scores_index]
 
-    scaled = minmax_scale(norm_scores)
-    ranked = minmax_scale(stats.rankdata(norm_scores))
+    peak_score = np.expm1(norm_scores)
+    log10_peak_score = norm_scores
+    Scaled_peak_score = minmax_scale(norm_scores)
+    Ranked_peak_score = minmax_scale(stats.rankdata(norm_scores))
+
+    # scaled = minmax_scale(norm_scores)
+    # ranked = minmax_scale(stats.rankdata(norm_scores))
 
     bed = bed3
-    for col in [norm_scores, scaled, ranked]:
+    # for col in [norm_scores, scaled, ranked]:
+    for col in [peak_score, log10_peak_score, Scaled_peak_score, Ranked_peak_score]:
         bed = pd.concat([bed, pd.Series(col)], axis=1)
-    bed.columns = ["chrom", "start", "end", "logscore", "scaledscore", "rankedscore"]
+    bed.columns = ["chrom", "start", "end", "peak_score", "log10_peak_score", "Scaled_peak_score", "Ranked_peak_score"]
     bed.to_csv(bed_output, sep="\t", index=False)
 
 
@@ -293,3 +299,116 @@ class ScorePeaks:
 
         # fit bam read counts to specified distribution
         normalize(coverage_file, self.outfile, dist_func=dist_func)
+
+# TODO: still messy from here
+
+from tqdm import tqdm
+from gimmemotifs.scanner import Scanner
+from gimmemotifs.motif import read_motifs
+from gimmemotifs.utils import as_fasta, pfmfile_location
+import pickle
+import dask.dataframe as dd
+
+
+class Binding(object):
+    def __init__(self, genome, scored_peaks, outfile, model=None, pfmfile=None, ncore=1):
+        self.genome = genome
+        self.scored_peaks = scored_peaks
+        self.outfile = outfile
+        self.model = model
+        self.ncore = ncore
+
+        if self.model is None:
+            # dream_model.txt is a 2D logistic regression model.
+            package_dir = os.path.dirname(__file__)
+            self.model = os.path.join(package_dir, "db", "dream_model_p300.pickle")
+
+        # Motif information file
+        self.pfmfile = pfmfile_location(pfmfile)
+        self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
+
+    def setup_gimme_scanner(self):
+        s = Scanner(ncpus=self.ncore)
+        s.set_motifs(self.pfmfile)
+        s.set_genome(self.genome)
+        s.set_threshold(threshold=0.0)
+
+        # generate GC background index
+        _ = s.best_score([], zscore=True, gc=True)
+        return s
+
+    def get_motif_scores(self, enhancer_regions_bed, pfmscorefile):
+        """
+        Scan for TF binding motifs in potential enhancer regions.
+        """
+        s = self.setup_gimme_scanner()
+        with open(self.pfmfile) as f:
+            motifs = read_motifs(f)
+
+        # open an empty file (append results in chunks)
+        with open(pfmscorefile, 'w') as f:
+            # Quan: When we built model, rank and minmax normalization was used.
+            cols = ["enhancer", "zscore", "zscoreRank"]
+            f.write("\t".join(cols)+"\n")
+
+        seqs = [s.split(" ")[0] for s in as_fasta(enhancer_regions_bed, genome=self.genome).ids]
+        with tqdm(total=len(seqs)) as pbar:
+            # Run 10k regions per scan.
+            chunksize = 10000
+            for chunk in range(0, len(seqs), chunksize):
+                pfm_score = []
+                chunk_seqs = seqs[chunk:chunk+chunksize]
+                # We are using GC-normalization for motif scanning as many enhancer binding regions are GC-enriched.
+                chunk_scores = s.best_score(chunk_seqs, zscore=True, gc=True)
+                for seq, scores in zip(chunk_seqs, chunk_scores):
+                    for motif, score in zip(motifs, scores):
+                        pfm_score.append([motif.id, seq, score])
+                    pbar.update(1)
+                pfm_score = pd.DataFrame(pfm_score, columns=["motif", "enhancer", "zscore"])
+                pfm_score = pfm_score.set_index("motif")
+                pfm_score["zscoreRank"] = minmax_scale(stats.rankdata(pfm_score["zscore"]))
+
+                pfm_score[cols].to_csv(pfmscorefile, sep="\t", header=False, mode='a')
+
+    def get_binding_score(self, pfm, peak, outfile):
+        """Infer TF binding score from motif z-score and peak intensity.
+        Arguments:
+            pfm {[type]} -- [motif scan result]
+            peak {[type]} -- [peak intensity]
+        Returns:
+            [type] -- [the predicted tf binding table]
+        """
+        peak = dd.read_csv(peak, sep="\t", blocksize=200e6)
+        pfm = dd.read_csv(pfm, sep="\t")
+
+        # Load model
+        with open(self.model, "rb") as f:
+            clf = pickle.load(f)
+
+        # ft = self.filtermotifs2factors
+
+        r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
+            ["motif", "enhancer", "zscore", "log10_peakRPKM"]
+        ]
+        # r = r.merge(ft, left_on="motif", right_on="Motif")
+        r = r.groupby(["factor", "enhancer"])[["zscore", "log10_peakRPKM"]].mean()
+        r = r.dropna().reset_index()
+
+        table = r.compute(num_workers=self.ncore)
+        table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
+
+        table.to_csv(outfile, sep="\t", index=False)
+
+    def run(self):
+        tmpdir = tempfile.mkdtemp()
+        try:
+            pfm_weight = os.path.join(tmpdir, "peak_weight")
+            self.get_motif_scores(self.scored_peaks, pfm_weight)
+
+            peak_weight = self.scored_peaks
+            table = os.path.join(tmpdir, "table")
+            self.get_binding_score(pfm_weight, peak_weight, table)
+
+            shutil.copy2(table, self.outfile)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)

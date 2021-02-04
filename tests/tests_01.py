@@ -23,3 +23,9 @@ if os.path.exists(outfile):
 
 sp = ananse.enhancer_binding.ScorePeaks(bams, peaks, outfile)
 sp.run()
+
+
+scored_peaks = outfile
+outfile = "testdata/table.txt"
+b = ananse.enhancer_binding.Binding(genome, scored_peaks, outfile)
+b.run()
