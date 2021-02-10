@@ -1,31 +1,56 @@
-import ananse.enhancer_binding
 import os
+import genomepy.utils
+import ananse.enhancer_binding
+from tests.benchmark import distplot
 
 
-genome = "/home/siebrenf/genomes/hg38/hg38.fa"
-list_of_enhancer_region_peakfiles = ["testdata/hg38-fibroblast_H3K27ac_peaks.broadPeak",
-                                     "testdata/hg38-keratinocyte_H3K27ac_peaks.broadPeak"]
-outfile = "testdata/CombinePeaks.out.bed"
-if os.path.exists(outfile):
-    os.remove(outfile)
+# H3K27Ac
+genome = "tests/data/hg38.fa"
+peaks_file = "tests/data/hg38-keratinocyte_H3K27ac_peaks.broadPeak"
+bam_file = "tests/data/hg38-keratinocyte_H3K27ac_rep1.samtools-coordinate.bam"
 
-cpf = ananse.enhancer_binding.CombinePeakFiles(genome, list_of_enhancer_region_peakfiles, outfile)
-cpf.run()
+# # ATAC-seq
+# genome = "tests/data/GRCh38.p13.fa"
+# peaks_file = "tests/data/GRCh38.p13-GSM2264802_peaks.narrowPeak"
+# bam_file = "tests/data/GRCh38.p13-GSM2264802.samtools-coordinate.bam"
+#
+# # p300
+# genome = ""
+# peaks_file = ""
+# bam_file = ""
+
+# download test data locally
+for file in [genome, peaks_file, bam_file]:
+    if not os.path.exists(file):
+        url = "https://mbdata.science.ru.nl/ANANSE/" + file  # TODO upload data there
+        genomepy.utils.download_file(url, file)
+
+# genomepy.utils.rm_rf("tests/output")
+genomepy.utils.mkdir_p("tests/output")
+
+# run enhancer_binding.py
+cpf = ananse.enhancer_binding.CombinePeakFiles(genome, peaks_file)
+outfile = "tests/output/CombinePeaks.out.bed"
+cpf.run(outfile)
 
 
-peaks = outfile
-# bams = "testdata/hg38-fibroblast_H3K27ac_rep1.samtools-coordinate.bam"
-bams = ["testdata/hg38-fibroblast_H3K27ac_rep1.samtools-coordinate.bam",
-        "testdata/hg38-keratinocyte_H3K27ac_rep1.samtools-coordinate.bam"]
-outfile = "testdata/ScorePeaks.out.bed"
-if os.path.exists(outfile):
-    os.remove(outfile)
+peaks = "tests/output/CombinePeaks.out.bed"
+sp = ananse.enhancer_binding.ScorePeaks(bam_file, peaks)
+sp.run(outfile="tests/output/ScorePeaks_scale.out.bed", dist_func="scale_dist")
+sp.run(outfile="tests/output/ScorePeaks_logscale.out.bed", dist_func="log_scale_dist")
+sp.run(outfile="tests/output/ScorePeaks_lognorm.out.bed", dist_func="scipy_dist", **{"dist": "lognorm"})
+sp.run(outfile="tests/output/ScorePeaks_loglaplace.out.bed", dist_func="scipy_dist", **{"dist": "loglaplace"})
+sp.run(outfile="tests/output/ScorePeaks_peakrank.out.bed", dist_func="peak_rank_dist")
+sp.run(outfile="tests/output/ScorePeaks_peakrankfile.out.bed", dist_func="peak_rank_file_dist")
 
-sp = ananse.enhancer_binding.ScorePeaks(bams, peaks, outfile)
-sp.run()
+distplot("tests/output/ScorePeaks_scale.out.bed")
+distplot("tests/output/ScorePeaks_logscale.out.bed")
+distplot("tests/output/ScorePeaks_lognorm.out.bed")
+distplot("tests/output/ScorePeaks_loglaplace.out.bed")
+distplot("tests/output/ScorePeaks_peakrank.out.bed")
+distplot("tests/output/ScorePeaks_peakrankfile.out.bed")
 
-
-scored_peaks = outfile
-outfile = "testdata/table.txt"
-b = ananse.enhancer_binding.Binding(genome, scored_peaks, outfile)
-b.run()
+scored_peaks = "tests/output/ScorePeaks_peakrankfile.out.bed"  # from sp
+b = ananse.enhancer_binding.Binding(genome, scored_peaks)
+outfile = "tests/output/table.txt"
+b.run(outfile)

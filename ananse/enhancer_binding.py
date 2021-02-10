@@ -1,26 +1,15 @@
 import os
 import tempfile
 import shutil
-import warnings
 
 import genomepy
 import numpy as np
 import pandas as pd
-from pybedtools import BedTool
 from scipy import stats
 from sklearn.preprocessing import minmax_scale
 
-
-def shhh_bedtool(func):
-    """
-    Decorator that silences this pybedtools warning:
-    RuntimeWarning: line buffering (buffering=1) isn't supported in binary mode
-    """
-    def wrapper(*args, **kwargs):
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=RuntimeWarning)
-            func(*args, **kwargs)
-    return wrapper
+from ananse.utils import sort_bed, merge_bed_files, count_reads
+from ananse.distributions import Distributions
 
 
 def is_narrowpeak(bed, check_values=True):
@@ -136,57 +125,36 @@ def set_bed_width(genome, bed_in, bed_out, width=200, narrowpeak=False, fix_outl
 
     if missing_chrm:
         print(
-            f"The following contigs were present in "
-            f"'{os.path.basename(bed_in)}',\n"
-            f"but were missing in the genome file:",
-            ", ".join(list(set(missing_chrm))), "\n"
+            f"The following contigs were present in " +
+            f"'{os.path.basename(bed_in)}',\n" +
+            f"but were missing in the genome file: " +
+            f"{', '.join(list(set(missing_chrm)))}\n"
         )
     return bed_out
 
 
-@shhh_bedtool
-def sort_bed(bed):
-    """
-    Sort a bed file.
-    """
-    tmpdir = tempfile.mkdtemp()
-    tmpfile = os.path.join(tmpdir, "tmpfile")
-    try:
-        BedTool(bed).sort(output=tmpfile)
-        shutil.copy2(tmpfile, bed)
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
-
-
-@shhh_bedtool
-def merge_bed_files(list_of_beds, merged_bed):
-    """
-    merge any number of bed files
-    """
-    bed = BedTool(list_of_beds[0])
-    if list_of_beds[1:]:
-        bed = bed.cat(*list_of_beds[1:])
-    # bed.sort(output=merged_bed)
-    bed.moveto(merged_bed)
-
-
 class CombinePeakFiles:
-    def __init__(self, genome, peakfiles, outfile):
+    def __init__(self, genome, peakfiles):
         self.genome = genome
         self.list_of_peakfiles = peakfiles if isinstance(peakfiles, list) else [peakfiles]
-        self.outfile = outfile
 
-    def resize_n_combine_peakfiles(self, width=200):
+    def resize_n_combine_peakfiles(self, outfile, width=200):
         tmpdir = tempfile.mkdtemp()
         try:
             list_of_beds = []
             for peakfile in self.list_of_peakfiles:
                 # use narrowPeak Peak location for region centering if possible
-                narrowpeak = is_narrowpeak(peakfile)
+                is_np = is_narrowpeak(peakfile)
                 resized_peakfile = os.path.join(tmpdir, os.path.basename(peakfile))
 
                 # resize each BED region to 200 BP
-                set_bed_width(genome=self.genome, bed_in=peakfile, bed_out=resized_peakfile, width=width, narrowpeak=narrowpeak)
+                set_bed_width(
+                    genome=self.genome,
+                    bed_in=peakfile,
+                    bed_out=resized_peakfile,
+                    width=width,
+                    narrowpeak=is_np
+                )
                 sort_bed(resized_peakfile)
                 list_of_beds.append(resized_peakfile)
 
@@ -195,21 +163,12 @@ class CombinePeakFiles:
             merge_bed_files(list_of_beds=list_of_beds, merged_bed=merged_bed)
 
             sort_bed(merged_bed)
-            shutil.copy2(merged_bed, self.outfile)
+            shutil.copy2(merged_bed, outfile)
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
 
-    def run(self, width=200):
-        self.resize_n_combine_peakfiles(width=width)
-
-
-@shhh_bedtool
-def count_reads(bam_list, peakfile, bed_output):
-    """
-    Count bam reads in putative enhancer regions
-    """
-    bed = BedTool(peakfile)
-    bed.multi_bam_coverage(bams=bam_list, output=bed_output)
+    def run(self, outfile, width=200):
+        self.resize_n_combine_peakfiles(outfile, width=width)
 
 
 def sum_coverages(multi_bam_coverage, sum_bam_coverage):
@@ -226,54 +185,87 @@ def sum_coverages(multi_bam_coverage, sum_bam_coverage):
     bed.to_csv(sum_bam_coverage, sep="\t", header=False, index=False)
 
 
-def lognorm_dist(scores, **kwargs):
+def normalize(bam_coverage, bed_output, dist_func="lognorm_dist", **kwargs):
     """
-    fit scores to a log normal distribution
-    """
-    scores = scores + 1  # add pseudocount
-    s, loc, scale = stats.lognorm.fit(scores, floc=0)
-    x = range(len(scores))
-    dist = stats.lognorm.pdf(x=x, s=s, loc=loc, scale=scale)
-    return dist
-
-
-def normalize(bam_coverage, bed_output, dist_func=lognorm_dist, **kwargs):
-    """
-    Fit the bam coverage scores the a distribution
+    Fit the bam coverage scores to a distribution
     """
     bed = pd.read_csv(bam_coverage, header=None, sep="\t")
     bed3 = bed.iloc[:, :3]
-    scores = bed[3]
+    score = bed[3]
 
     # obtain a distribution
-    dist = dist_func(scores, **kwargs)
+    dist_func = Distributions().set(dist_func)
+    dist = dist_func(score, **kwargs)
 
     # replace scores with distribution values
     ascending_dist = np.sort(dist)
-    ascending_scores_index = np.searchsorted(np.sort(scores), scores)
-    norm_scores = [ascending_dist[i] for i in ascending_scores_index]
+    ascending_scores_index = np.searchsorted(np.sort(score), score)
+    norm_score = np.array([ascending_dist[i] for i in ascending_scores_index])
 
-    peak_score = np.expm1(norm_scores)
-    log10_peak_score = norm_scores
-    Scaled_peak_score = minmax_scale(norm_scores)
-    Ranked_peak_score = minmax_scale(stats.rankdata(norm_scores))
-
-    # scaled = minmax_scale(norm_scores)
-    # ranked = minmax_scale(stats.rankdata(norm_scores))
+    logn_score = np.log(norm_score + 1)
+    scaled_score = minmax_scale(logn_score)
+    # ranked_score = minmax_scale(stats.rankdata(norm_scores))
 
     bed = bed3
-    # for col in [norm_scores, scaled, ranked]:
-    for col in [peak_score, log10_peak_score, Scaled_peak_score, Ranked_peak_score]:
+    cols = {
+        "score": score,
+        "norm_score": norm_score,
+        "logn_score": logn_score,
+        "scaled_score": scaled_score,
+        # "ranked_score": ranked_score,
+    }
+    for col in cols.values():
         bed = pd.concat([bed, pd.Series(col)], axis=1)
-    bed.columns = ["chrom", "start", "end", "peak_score", "log10_peak_score", "Scaled_peak_score", "Ranked_peak_score"]
+    bed.columns = ["chrom", "start", "end"] + list(cols.keys())
     bed.to_csv(bed_output, sep="\t", index=False)
+
+    # # mimic Quans output
+    # peak = (
+    #     bed[0]
+    #     + ":"
+    #     + bed[1].astype(str)
+    #     + "-"
+    #     + bed[2].astype(str)
+    # )
+    # peak_score = np.expm1(norm_scores)  # was called 'peakRPKM'
+    # log10_peak_score = norm_scores  # was called 'log10_peakRPKM'
+    # scaled_peak_score = minmax_scale(norm_scores)  # was called 'peakRPKMScale'
+    # ranked_peak_score = minmax_scale(stats.rankdata(norm_scores))  # was called 'peakRPKMRank'
+    #
+    # bed = pd.Series(peak)
+    # for col in [peak_score, log10_peak_score, scaled_peak_score, ranked_peak_score]:
+    #     bed = pd.concat([bed, pd.Series(col)], axis=1)
+    # bed.columns = ["peak", "peak_score", "log10_peak_score", "scaled_peak_score", "ranked_peak_score"]
+    # bed.to_csv(bed_output, sep="\t", index=False)
+
+    # if plot:
+    #     from matplotlib import pyplot as plt
+    #     import seaborn as sns
+    #
+    #     outfile = bed_output.replace(".out", "").replace(".bed", ".png")
+    #     title = f"raw score vs {dist_func.__name__} score"
+    #
+    #     fig, (ax1, ax2) = plt.subplots(1, 2)
+    #     fig.suptitle(f"{title} score distribution")
+    #
+    #     sns.histplot(scores, ax=ax1) #, kde=True, stat="density")
+    #     ax1.set_title("raw score")
+    #     ax1.xaxis.set_label_text("Score")
+    #     # ax1.xaxis.set_major_locator(plt.MaxNLocator(6))
+    #     # ax1.xaxis.set_major_formatter(FormatStrFormatter('%i'))
+    #
+    #     sns.histplot(dist, ax=ax2) #, kde=True, stat="density")
+    #     ax2.set_title(f"distribution score")
+    #     ax2.xaxis.set_label_text("Score")
+    #
+    #     fig.set_size_inches(10, 5)
+    #     fig.savefig(outfile, orientation='landscape')
 
 
 class ScorePeaks:
-    def __init__(self, bams, peaks, outfile):
+    def __init__(self, bams, peaks):
         self.list_of_bams = bams if isinstance(bams, list) else [bams]
         self.peaks = peaks
-        self.outfile = outfile
 
     def count_reads(self, coverage_file):
         tmpdir = tempfile.mkdtemp()
@@ -290,15 +282,16 @@ class ScorePeaks:
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
 
-    def run(self, force=False, dist_func=lognorm_dist):
+    def run(self, outfile, force=False, dist_func="lognorm_dist", **kwargs):
         # save the results as it takes ages to run
-        coverage_file = os.path.join(os.path.dirname(self.outfile), "raw_enhancer_coverage.bed")
+        coverage_file = os.path.join(os.path.dirname(outfile), "raw_enhancer_coverage.bed")
         if force or not os.path.exists(coverage_file):
             print("running multi bam cov (slow)")
             self.count_reads(coverage_file)
 
         # fit bam read counts to specified distribution
-        normalize(coverage_file, self.outfile, dist_func=dist_func)
+        normalize(coverage_file, outfile, dist_func=dist_func, **kwargs)
+
 
 # TODO: still messy from here
 
@@ -311,10 +304,10 @@ import dask.dataframe as dd
 
 
 class Binding(object):
-    def __init__(self, genome, scored_peaks, outfile, model=None, pfmfile=None, ncore=1):
+    def __init__(self, genome, scored_peaks, model=None, pfmfile=None, ncore=1):
         self.genome = genome
         self.scored_peaks = scored_peaks
-        self.outfile = outfile
+        # self.outfile = outfile
         self.model = model
         self.ncore = ncore
 
@@ -399,7 +392,7 @@ class Binding(object):
 
         table.to_csv(outfile, sep="\t", index=False)
 
-    def run(self):
+    def run(self, outfile):
         tmpdir = tempfile.mkdtemp()
         try:
             pfm_weight = os.path.join(tmpdir, "peak_weight")
@@ -409,6 +402,6 @@ class Binding(object):
             table = os.path.join(tmpdir, "table")
             self.get_binding_score(pfm_weight, peak_weight, table)
 
-            shutil.copy2(table, self.outfile)
+            shutil.copy2(table, outfile)
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)

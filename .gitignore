@@ -1,4 +1,5 @@
-tests/results/
+tests/data/
+tests/output/
 .idea/
 .vscode/
 build/
@@ -14,3 +15,7 @@ pullgit.sh
 tomaster.sh
 conda_build.sh
 **/*.DS_Store
+
+# temporary dirs
+tests/old
+testdata
