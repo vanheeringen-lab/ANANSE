@@ -15,7 +15,7 @@ from scipy import stats
 from sklearn.preprocessing import minmax_scale
 from tqdm import tqdm
 
-from ananse.utils import bed_sort, bed_merge, count_reads, bam_merge, bam_sort
+from ananse.utils import bed_sort, bed_merge, count_reads, bam_index, bam_merge, bam_sort
 from ananse.distributions import Distributions
 
 
@@ -65,7 +65,7 @@ def is_narrowpeak(bed, check_values=True):
     return False
 
 
-def set_bed_width(genome, bed_in, bed_out, width=200, narrowpeak=False, fix_outliers=False, output_bed3=True):
+def bed_width(genome, bed_in, bed_out, width=200, narrowpeak=False, fix_outliers=False, output_bed3=True, verbose=True):
     """
     Set bed region width.
 
@@ -130,55 +130,82 @@ def set_bed_width(genome, bed_in, bed_out, width=200, narrowpeak=False, fix_outl
 
             new.write("\t".join([chrm, nstart, nend] + rest) + "\n")
 
-    if missing_chrm:
+    if missing_chrm and verbose:
         print(
             f"The following contigs were present in " +
-            f"'{os.path.basename(bed_in)}',\n" +
+            f"'{os.path.basename(bed_in)}', " +
             f"but were missing in the genome file: " +
             f"{', '.join(list(set(missing_chrm)))}\n"
         )
     return bed_out
 
 
-class CombinePeakFiles:
-    def __init__(self, genome, peakfiles):
+class CombineBedFiles:
+    def __init__(self, genome, peakfiles, verbose=True):
         self.genome = genome
         self.list_of_peakfiles = peakfiles if isinstance(peakfiles, list) else [peakfiles]
+        self.verbose = verbose
 
-    def resize_n_combine_peakfiles(self, outfile, width=200):
-        tmpdir = tempfile.mkdtemp()
-        try:
-            list_of_beds = []
-            for peakfile in self.list_of_peakfiles:
-                # use narrowPeak Peak location for region centering if possible
-                is_np = is_narrowpeak(peakfile)
-                resized_peakfile = os.path.join(tmpdir, os.path.basename(peakfile))
+    def run(self, outfile, width=200, force=False):
+        if force or not os.path.exists(outfile):
+            tmpdir = tempfile.mkdtemp()
+            try:
+                list_of_beds = []
+                for peakfile in self.list_of_peakfiles:
+                    # use narrowPeak Peak location for region centering if possible
+                    is_np = is_narrowpeak(peakfile)
+                    resized_peakfile = os.path.join(tmpdir, os.path.basename(peakfile))
 
-                # resize each BED region to 200 BP
-                set_bed_width(
-                    genome=self.genome,
-                    bed_in=peakfile,
-                    bed_out=resized_peakfile,
-                    width=width,
-                    narrowpeak=is_np
-                )
-                bed_sort(resized_peakfile)
-                list_of_beds.append(resized_peakfile)
+                    # resize each BED region to 200 BP
+                    bed_width(
+                        genome=self.genome,
+                        bed_in=peakfile,
+                        bed_out=resized_peakfile,
+                        width=width,
+                        narrowpeak=is_np,
+                        verbose=self.verbose
+                    )
+                    bed_sort(resized_peakfile)
+                    list_of_beds.append(resized_peakfile)
 
-            # merge resized beds into one
-            merged_bed = os.path.join(tmpdir, "merged")
-            bed_merge(list_of_beds=list_of_beds, merged_bed=merged_bed)
+                # merge resized beds into one
+                merged_bed = os.path.join(tmpdir, "merged")
+                bed_merge(list_of_beds=list_of_beds, merged_bed=merged_bed)
 
-            bed_sort(merged_bed)
-            shutil.copy2(merged_bed, outfile)
-        finally:
-            shutil.rmtree(tmpdir, ignore_errors=True)
-
-    def run(self, outfile, width=200):
-        self.resize_n_combine_peakfiles(outfile, width=width)
+                bed_sort(merged_bed)
+                shutil.copy2(merged_bed, outfile)
+            finally:
+                shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-def sum_coverages(multi_bam_coverage, sum_bam_coverage):
+class CombineBamFiles:
+    def __init__(self, bams):
+        self.list_of_bams = bams if isinstance(bams, list) else [bams]
+
+    def run(self, outfile, force=False):
+        if force or not os.path.exists(outfile):
+            tmpdir = tempfile.mkdtemp()
+            try:
+                # only sort & index bams if needed
+                try:
+                    for bam in self.list_of_bams:
+                        bam_index(bam, force=False)  # assumes sorted
+                    merged_bam = os.path.join(tmpdir, "merged.bam")
+                    bam_merge(self.list_of_bams, merged_bam)
+                except Exception:
+                    # sort, index & try again
+                    for bam in self.list_of_bams:
+                        bam_sort(bam)
+                    merged_bam = os.path.join(tmpdir, "merged.bam")
+                    bam_merge(self.list_of_bams, merged_bam)
+
+                shutil.copy2(merged_bam, outfile)
+                shutil.copy2(f"{merged_bam}.bai", f"{outfile}.bai")
+            finally:
+                shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+def bed_sum_coverages(multi_bam_coverage, sum_bam_coverage):
     """
     MultiBamCov returns a BED3+n with one column per bam.
     This function sums up all bam counts and returns a BED3+1.
@@ -192,12 +219,12 @@ def sum_coverages(multi_bam_coverage, sum_bam_coverage):
     bed.to_csv(sum_bam_coverage, sep="\t", header=False, index=False)
 
 
-def normalize(bam_coverage, bed_output, dist_func="lognorm_dist", **kwargs):
+def bed_normalize(bam_coverage, bed_output, dist_func="lognorm_dist", **kwargs):
     """
     Fit the bam coverage scores to a distribution
     """
     bed = pd.read_csv(bam_coverage, header=None, sep="\t")
-    bed3 = bed.iloc[:, :3]
+    peak = (bed[0] + ":" + bed[1].astype(str) + "-" + bed[2].astype(str))
     score = bed[3]
 
     # obtain a distribution
@@ -211,121 +238,65 @@ def normalize(bam_coverage, bed_output, dist_func="lognorm_dist", **kwargs):
 
     logn_score = np.log(norm_score + 1)
     scaled_score = minmax_scale(logn_score)
-    # ranked_score = minmax_scale(stats.rankdata(norm_scores))
 
-    bed = bed3
-    # cols = {
-    #     "score": score,
-    #     "norm_score": norm_score,
-    #     "logn_score": logn_score,
-    #     "scaled_score": scaled_score,
-    #     # "ranked_score": ranked_score,
-    # }
-    # for col in cols.values():
-    #     bed = pd.concat([bed, pd.Series(col)], axis=1)
-    # bed.columns = ["chrom", "start", "end"] + list(cols.keys())
-    cols = [score, norm_score, logn_score, scaled_score]
-    for col in cols:
-        bed = pd.concat([bed, pd.Series(col)], axis=1)
-    bed.to_csv(bed_output, sep="\t", index=False, header=False)
+    data = {
+        "peak": peak,
+        "score": score,
+        "norm_score": norm_score,
+        "logn_score": logn_score,
+        "scaled_score": scaled_score,
+    }
 
-    # # mimic Quans output
-    # peak = (
-    #     bed[0]
-    #     + ":"
-    #     + bed[1].astype(str)
-    #     + "-"
-    #     + bed[2].astype(str)
-    # )
-    # peak_score = np.expm1(norm_scores)  # was called 'peakRPKM'
-    # log10_peak_score = norm_scores  # was called 'log10_peakRPKM'
-    # scaled_peak_score = minmax_scale(norm_scores)  # was called 'peakRPKMScale'
-    # ranked_peak_score = minmax_scale(stats.rankdata(norm_scores))  # was called 'peakRPKMRank'
-    #
-    # bed = pd.Series(peak)
-    # for col in [peak_score, log10_peak_score, scaled_peak_score, ranked_peak_score]:
-    #     bed = pd.concat([bed, pd.Series(col)], axis=1)
-    # bed.columns = ["peak", "peak_score", "log10_peak_score", "scaled_peak_score", "ranked_peak_score"]
-    # bed.to_csv(bed_output, sep="\t", index=False)
+    bed = pd.DataFrame(data=data)
+    bed.to_csv(bed_output, sep="\t", index=False)
 
 
 class ScorePeaks:
-    def __init__(self, bams, peaks):
-        self.list_of_bams = bams if isinstance(bams, list) else [bams]
-        self.peaks = peaks
+    def __init__(self, bed, bam, verbose=True):
+        self.bam = bam  # one sorted & indexed bam file with reads representing enhancer activity
+        self.bed = bed  # one bed file with putative enhancer binding regions
+        self.verbose = verbose
 
     def count_reads(self, coverage_file):
         tmpdir = tempfile.mkdtemp()
         try:
-            # merge bams
-            try:
-                # assume bams are sorted and indexed
-                merged_bam = os.path.join(tmpdir, "merged.bam")
-                bam_merge(self.list_of_bams, merged_bam)
-            except Exception:
-                # sort, index & try again
-                for bam in self.list_of_bams:
-                    bam_sort(bam)
-                merged_bam = os.path.join(tmpdir, "merged.bam")
-                bam_merge(self.list_of_bams, merged_bam)
-
-            # bam read counts
             bam_coverage = os.path.join(tmpdir, "bam_coverage")
-            count_reads(merged_bam, self.peaks, bam_coverage)
+            count_reads(self.bam, self.bed, bam_coverage)
 
             shutil.copy2(bam_coverage, coverage_file)
-
-            # for bam in self.list_of_bams:
-            #     bam_index(bam, force=False)
-            #
-            # # bam read counts per bam file
-            # multi_bam_coverage = os.path.join(tmpdir, "multi_bam_coverage")
-            # count_reads(self.list_of_bams, self.peaks, multi_bam_coverage)
-            #
-            # # sum bam read counts
-            # sum_bam_coverage = os.path.join(tmpdir, "sum_bam_coverage")
-            # sum_coverages(multi_bam_coverage, sum_bam_coverage)
-            #
-            # shutil.copy2(sum_bam_coverage, coverage_file)
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
 
-    def run(self, outfile, force=False, dist_func="lognorm_dist", **kwargs):
+    def run(self, outfile, dist_func="lognorm_dist", force=False, **kwargs):
         # save the results as it takes ages to run
         coverage_file = os.path.join(os.path.dirname(outfile), "raw_enhancer_coverage.bed")
         if force or not os.path.exists(coverage_file):
-            print("running bam coverage (slow)")
+            if self.verbose:
+                print("Running bam coverage (slow)")
             self.count_reads(coverage_file)
 
         # fit bam read counts to specified distribution
-        normalize(coverage_file, outfile, dist_func=dist_func, **kwargs)
+        bed_normalize(coverage_file, outfile, dist_func=dist_func, **kwargs)
 
 
-class Binding(object):
-    def __init__(self, genome, scored_peaks, model=None, pfmfile=None, ncore=1):
+class ScoreMotifs:
+    def __init__(self, genome, bed, pfmfile=None, ncore=1, verbose=True):
         self.genome = genome
-        self.scored_peaks = scored_peaks
-        # self.outfile = outfile
-        self.model = model
-        self.ncore = ncore
-
-        if self.model is None:
-            # dream_model.txt is a 2D logistic regression model.
-            package_dir = os.path.dirname(__file__)
-            self.model = os.path.join(package_dir, "db", "dream_model_p300.pickle")
-
-        # Motif information file
+        self.bed = bed  # one bed file with putative enhancer binding regions
         self.pfmfile = pfmfile_location(pfmfile)
         self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
+        self.ncore = ncore
+        self.verbose = verbose
 
     def setup_gimme_scanner(self):
         s = Scanner(ncpus=self.ncore)
         s.set_motifs(self.pfmfile)
         s.set_genome(self.genome)
-        # s.set_threshold(threshold=0.0)
 
         # generate GC background index
         _ = s.best_score([], zscore=True, gc=True)
+        if self.verbose:
+            print("Scanner loaded")
         return s
 
     def get_motif_scores(self, enhancer_regions_bed, pfmscorefile):
@@ -333,9 +304,6 @@ class Binding(object):
         Scan for TF binding motifs in potential enhancer regions.
         """
         scanner = self.setup_gimme_scanner()
-        # scanner = Scanner(ncpus=self.ncore)
-        # scanner.set_motifs(self.pfmfile)
-        # scanner.set_genome(self.genome)
 
         with open(self.pfmfile) as f:
             motifs = read_motifs(f)
@@ -365,7 +333,33 @@ class Binding(object):
 
                 pfm_score[cols].to_csv(pfmscorefile, sep="\t", header=False, mode='a')
 
-    def get_binding_score(self, pfm, peak, outfile):
+    def run(self, outfile, force=False):
+        if force or not os.path.exists(outfile):
+            tmpdir = tempfile.mkdtemp()
+            try:
+                if self.verbose:
+                    print("Running gimme scan (really slow)")
+                pfm_weight = os.path.join(tmpdir, "peak_weight")
+                self.get_motif_scores(self.bed, pfm_weight)
+
+                shutil.copy2(pfm_weight, outfile)
+            finally:
+                shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+class Binding:
+    def __init__(self, peak_weights, motif_weights, model=None, ncore=1, verbose=True):
+        self.peak_weights = peak_weights  # output from ScorePeaks
+        self.motif_weights = motif_weights  # output from ScoreMotifs
+        self.model = model
+        if self.model is None:
+            # dream_model.txt is a 2D logistic regression model.
+            package_dir = os.path.dirname(__file__)
+            self.model = os.path.join(package_dir, "db", "dream_model_p300.pickle")
+        self.ncore = ncore
+        self.verbose = verbose
+
+    def get_binding_score(self, motif_weights, peak_weights, outfile):
         """
         Infer TF binding score from motif z-score and peak intensity.
         Arguments:
@@ -374,8 +368,8 @@ class Binding(object):
         Returns:
             [type] -- [the predicted tf binding table]
         """
-        peak = dd.read_csv(peak, sep="\t", blocksize=200e6)
-        pfm = dd.read_csv(pfm, sep="\t")
+        peak = dd.read_csv(peak_weights, sep="\t", blocksize=200e6)
+        pfm = dd.read_csv(motif_weights, sep="\t")
 
         # Load model
         with open(self.model, "rb") as f:
@@ -396,18 +390,174 @@ class Binding(object):
 
         table.to_csv(outfile, sep="\t", index=False)
 
-    def run(self, outfile):
-        tmpdir = tempfile.mkdtemp()
-        try:
-            print("running gimme scan (really slow)")
-            pfm_weight = os.path.join(tmpdir, "peak_weight")
-            self.get_motif_scores(self.scored_peaks, pfm_weight)
+    def run(self, outfile, force=False):
+        if force or not os.path.exists(outfile):
+            self.get_binding_score(self.peak_weights, self.motif_weights, outfile)
 
-            print("running classifier (slow)")
-            peak_weight = self.scored_peaks
-            table = os.path.join(tmpdir, "table")
-            self.get_binding_score(pfm_weight, peak_weight, table)
 
-            shutil.copy2(table, outfile)
-        finally:
-            shutil.rmtree(tmpdir, ignore_errors=True)
+# class ScorePeaks:
+#     def __init__(self, bams, peaks):
+#         self.list_of_bams = bams if isinstance(bams, list) else [bams]
+#         self.peaks = peaks
+#
+#     def count_reads(self, coverage_file):
+#         tmpdir = tempfile.mkdtemp()
+#         try:
+#             # merge bams
+#             try:
+#                 for bam in self.list_of_bams:
+#                     bam_index(bam, force=False)  # assumes sorted
+#                 merged_bam = os.path.join(tmpdir, "merged.bam")
+#                 bam_merge(self.list_of_bams, merged_bam)
+#             except Exception:
+#                 # sort, index & try again
+#                 for bam in self.list_of_bams:
+#                     bam_sort(bam)
+#                 merged_bam = os.path.join(tmpdir, "merged.bam")
+#                 bam_merge(self.list_of_bams, merged_bam)
+#
+#             # bam read counts
+#             bam_coverage = os.path.join(tmpdir, "bam_coverage")
+#             count_reads(merged_bam, self.peaks, bam_coverage)
+#
+#             shutil.copy2(bam_coverage, coverage_file)
+#
+#             # for bam in self.list_of_bams:
+#             #     bam_index(bam, force=False)
+#             #
+#             # # bam read counts per bam file
+#             # multi_bam_coverage = os.path.join(tmpdir, "multi_bam_coverage")
+#             # count_reads(self.list_of_bams, self.peaks, multi_bam_coverage)
+#             #
+#             # # sum bam read counts
+#             # sum_bam_coverage = os.path.join(tmpdir, "sum_bam_coverage")
+#             # sum_coverages(multi_bam_coverage, sum_bam_coverage)
+#             #
+#             # shutil.copy2(sum_bam_coverage, coverage_file)
+#         finally:
+#             shutil.rmtree(tmpdir, ignore_errors=True)
+#
+#     def run(self, outfile, force=False, dist_func="lognorm_dist", **kwargs):
+#         # save the results as it takes ages to run
+#         coverage_file = os.path.join(os.path.dirname(outfile), "raw_enhancer_coverage.bed")
+#         if force or not os.path.exists(coverage_file):
+#             print("running bam coverage (slow)")
+#             self.count_reads(coverage_file)
+#
+#         # fit bam read counts to specified distribution
+#         normalize(coverage_file, outfile, dist_func=dist_func, **kwargs)
+
+
+# class Binding(object):
+#     def __init__(self, genome, scored_peaks, model=None, pfmfile=None, ncore=1, verbose=True):
+#         self.genome = genome
+#         self.scored_peaks = scored_peaks
+#         # self.outfile = outfile
+#         self.model = model
+#         self.ncore = ncore
+#         self.verbose = verbose
+#
+#         if self.model is None:
+#             # dream_model.txt is a 2D logistic regression model.
+#             package_dir = os.path.dirname(__file__)
+#             self.model = os.path.join(package_dir, "db", "dream_model_p300.pickle")
+#
+#         # Motif information file
+#         self.pfmfile = pfmfile_location(pfmfile)
+#         self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
+#
+#     def setup_gimme_scanner(self):
+#         s = Scanner(ncpus=self.ncore)
+#         s.set_motifs(self.pfmfile)
+#         s.set_genome(self.genome)
+#         # s.set_threshold(threshold=0.0)
+#
+#         # generate GC background index
+#         _ = s.best_score([], zscore=True, gc=True)
+#         if self.verbose:
+#             print("Scanner loaded")
+#         return s
+#
+#     def get_motif_scores(self, enhancer_regions_bed, pfmscorefile):
+#         """
+#         Scan for TF binding motifs in potential enhancer regions.
+#         """
+#         scanner = self.setup_gimme_scanner()
+#         # scanner = Scanner(ncpus=self.ncore)
+#         # scanner.set_motifs(self.pfmfile)
+#         # scanner.set_genome(self.genome)
+#
+#         with open(self.pfmfile) as f:
+#             motifs = read_motifs(f)
+#
+#         # new file with header only (append data in chunks)
+#         with open(pfmscorefile, 'w') as f:
+#             # Quan: When we built model, rank and minmax normalization was used.
+#             cols = ["enhancer", "zscore", "zscoreRank"]
+#             f.write("\t".join(cols)+"\n")
+#
+#         seqs = [s.split(" ")[0] for s in as_fasta(enhancer_regions_bed, genome=self.genome).ids]
+#         with tqdm(total=len(seqs), unit="seq") as pbar:
+#             # Run 10k regions per scan.
+#             chunksize = 10000
+#             for chunk in range(0, len(seqs), chunksize):
+#                 pfm_score = []
+#                 chunk_seqs = seqs[chunk:chunk+chunksize]
+#                 # We are using GC-normalization for motif scanning as many enhancer binding regions are GC-enriched.
+#                 chunk_scores = scanner.best_score(chunk_seqs, zscore=True, gc=True)
+#                 for seq, scores in zip(chunk_seqs, chunk_scores):
+#                     for motif, score in zip(motifs, scores):
+#                         pfm_score.append([motif.id, seq, score])
+#                     pbar.update(1)
+#                 pfm_score = pd.DataFrame(pfm_score, columns=["motif", "enhancer", "zscore"])
+#                 pfm_score = pfm_score.set_index("motif")
+#                 pfm_score["zscoreRank"] = minmax_scale(stats.rankdata(pfm_score["zscore"]))
+#
+#                 pfm_score[cols].to_csv(pfmscorefile, sep="\t", header=False, mode='a')
+#
+#     def get_binding_score(self, pfm, peak, outfile):
+#         """
+#         Infer TF binding score from motif z-score and peak intensity.
+#         Arguments:
+#             pfm {[type]} -- [motif scan result]
+#             peak {[type]} -- [peak intensity]
+#         Returns:
+#             [type] -- [the predicted tf binding table]
+#         """
+#         peak = dd.read_csv(peak, sep="\t", blocksize=200e6)
+#         pfm = dd.read_csv(pfm, sep="\t")
+#
+#         # Load model
+#         with open(self.model, "rb") as f:
+#             clf = pickle.load(f)
+#
+#         # ft = self.filtermotifs2factors
+#
+#         r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
+#             ["motif", "enhancer", "zscore", "log10_peakRPKM"]
+#         ]
+#         # r = r.merge(ft, left_on="motif", right_on="Motif")
+#         r = r.groupby(["factor", "enhancer"])[["zscore", "log10_peakRPKM"]].mean()
+#         r = r.dropna().reset_index()
+#
+#         with dask.diagnostics.ProgressBar():
+#             table = r.compute(num_workers=self.ncore)
+#         table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
+#
+#         table.to_csv(outfile, sep="\t", index=False)
+#
+#     def run(self, outfile):
+#         tmpdir = tempfile.mkdtemp()
+#         try:
+#             print("running gimme scan (really slow)")
+#             pfm_weight = os.path.join(tmpdir, "peak_weight")
+#             self.get_motif_scores(self.scored_peaks, pfm_weight)
+#
+#             print("running classifier (slow)")
+#             peak_weight = self.scored_peaks
+#             table = os.path.join(tmpdir, "table")
+#             self.get_binding_score(pfm_weight, peak_weight, table)
+#
+#             shutil.copy2(table, outfile)
+#         finally:
+#             shutil.rmtree(tmpdir, ignore_errors=True)

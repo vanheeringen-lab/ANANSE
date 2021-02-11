@@ -36,7 +36,7 @@ def bed_sort(bed):
 @shhh_bedtool
 def bed_merge(list_of_beds, merged_bed):
     """
-    merge any number of bed files
+    merge any number of bed files (merges overlapping regions)
     """
     bed = BedTool(list_of_beds[0])
     if list_of_beds[1:]:

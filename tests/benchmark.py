@@ -10,7 +10,7 @@ import seaborn as sns
 # https://stackoverflow.com/questions/26406056/a-lognormal-distribution-in-python
 # https://stackoverflow.com/questions/15630647/fitting-lognormal-distribution-using-scipy-vs-matlab
 
-def distplot(infile, score_col=6, show=False):
+def distplot(infile, score_col=4, show=False):
     """
     generate simple distplot from bedfile
     """
