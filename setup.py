@@ -44,6 +44,6 @@ setup(
         "loguru",
         "networkx",
         "tables",
-        "genomepy >= 0.9.2",
+        "genomepy >= 0.9.3",
     ],
 )

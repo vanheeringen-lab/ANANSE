@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 
 from scipy import stats
-from ananse import __file__ as pkg_path
 from ananse.utils import cleanpath
 
 
@@ -38,7 +37,7 @@ def log_scale_dist(scores, **kwargs):
     """
     Scale the log of the scores between 0 and 1
     """
-    scores = np.log10(scores+1)
+    scores = np.log(scores+1)
     return (scores - np.min(scores)) / (np.max(scores) - np.min(scores))
 
 
@@ -137,7 +136,7 @@ def peak_rank_file_dist(scores, **kwargs):
 
     # internal data or user data
     if dist_filename in ["peak_rank.txt", "peak_rank_hg38_h3k27ac.txt"]:
-        package_dir = os.path.dirname(pkg_path)
+        package_dir = os.path.dirname(__file__)
         dist_filepath = os.path.join(package_dir, "db", dist_filename)
     else:
         dist_filepath = cleanpath(dist_filename)

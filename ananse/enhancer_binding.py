@@ -3,7 +3,7 @@ import tempfile
 import shutil
 
 import dask.dataframe as dd
-import dask.diagnostics #import diagnostics.ProgressBar
+import dask.diagnostics
 import genomepy
 from gimmemotifs.scanner import Scanner
 from gimmemotifs.motif import read_motifs

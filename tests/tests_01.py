@@ -48,7 +48,7 @@ sp.run(outfile="tests/output/ScorePeaks_peakrankfile.out.bed", dist_func="peak_r
 # distplot("tests/output/ScorePeaks_lognorm.out.bed")
 # distplot("tests/output/ScorePeaks_loglaplace.out.bed")
 # distplot("tests/output/ScorePeaks_peakrank.out.bed")
-# distplot("tests/output/ScorePeaks_peakrankfile.out.bed")
+distplot("tests/output/ScorePeaks_peakrankfile.out.bed")
 
 scored_peaks = "tests/output/ScorePeaks_peakrankfile.out.bed"  # from sp
 b = ananse.enhancer_binding.Binding(genome, scored_peaks, ncore=min(os.cpu_count() - 2, 1))
