@@ -36,21 +36,24 @@ cpf.run(outfile)
 
 peaks = "tests/output/CombinePeaks.out.bed"
 sp = ananse.enhancer_binding.ScorePeaks(bam_file, peaks)
-sp.run(outfile="tests/output/ScorePeaks_scale.out.bed", dist_func="scale_dist")
-sp.run(outfile="tests/output/ScorePeaks_logscale.out.bed", dist_func="log_scale_dist")
-sp.run(outfile="tests/output/ScorePeaks_lognorm.out.bed", dist_func="scipy_dist", **{"dist": "lognorm"})
-sp.run(outfile="tests/output/ScorePeaks_loglaplace.out.bed", dist_func="scipy_dist", **{"dist": "loglaplace"})
-sp.run(outfile="tests/output/ScorePeaks_peakrank.out.bed", dist_func="peak_rank_dist")
+# sp.run(outfile="tests/output/ScorePeaks_scale.out.bed", dist_func="scale_dist")
+# sp.run(outfile="tests/output/ScorePeaks_logscale.out.bed", dist_func="log_scale_dist")
+# sp.run(outfile="tests/output/ScorePeaks_lognorm.out.bed", dist_func="scipy_dist", **{"dist": "lognorm"})
+# sp.run(outfile="tests/output/ScorePeaks_loglaplace.out.bed", dist_func="scipy_dist", **{"dist": "loglaplace"})
+# sp.run(outfile="tests/output/ScorePeaks_peakrank.out.bed", dist_func="peak_rank_dist")
 sp.run(outfile="tests/output/ScorePeaks_peakrankfile.out.bed", dist_func="peak_rank_file_dist")
 
-distplot("tests/output/ScorePeaks_scale.out.bed")
-distplot("tests/output/ScorePeaks_logscale.out.bed")
-distplot("tests/output/ScorePeaks_lognorm.out.bed")
-distplot("tests/output/ScorePeaks_loglaplace.out.bed")
-distplot("tests/output/ScorePeaks_peakrank.out.bed")
-distplot("tests/output/ScorePeaks_peakrankfile.out.bed")
+# distplot("tests/output/ScorePeaks_scale.out.bed")
+# distplot("tests/output/ScorePeaks_logscale.out.bed")
+# distplot("tests/output/ScorePeaks_lognorm.out.bed")
+# distplot("tests/output/ScorePeaks_loglaplace.out.bed")
+# distplot("tests/output/ScorePeaks_peakrank.out.bed")
+# distplot("tests/output/ScorePeaks_peakrankfile.out.bed")
 
 scored_peaks = "tests/output/ScorePeaks_peakrankfile.out.bed"  # from sp
-b = ananse.enhancer_binding.Binding(genome, scored_peaks)
+b = ananse.enhancer_binding.Binding(genome, scored_peaks, ncore=min(os.cpu_count() - 2, 1))
+
+# gms_out = "tests/output/get_motif_scores.out"
+# b.get_motif_scores(scored_peaks, gms_out)
 outfile = "tests/output/table.txt"
 b.run(outfile)

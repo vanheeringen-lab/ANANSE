@@ -2,11 +2,18 @@ import os
 import tempfile
 import shutil
 
+import dask.dataframe as dd
+import dask.diagnostics #import diagnostics.ProgressBar
 import genomepy
+from gimmemotifs.scanner import Scanner
+from gimmemotifs.motif import read_motifs
+from gimmemotifs.utils import as_fasta, pfmfile_location
 import numpy as np
 import pandas as pd
+import pickle
 from scipy import stats
 from sklearn.preprocessing import minmax_scale
+from tqdm import tqdm
 
 from ananse.utils import sort_bed, merge_bed_files, count_reads
 from ananse.distributions import Distributions
@@ -207,17 +214,20 @@ def normalize(bam_coverage, bed_output, dist_func="lognorm_dist", **kwargs):
     # ranked_score = minmax_scale(stats.rankdata(norm_scores))
 
     bed = bed3
-    cols = {
-        "score": score,
-        "norm_score": norm_score,
-        "logn_score": logn_score,
-        "scaled_score": scaled_score,
-        # "ranked_score": ranked_score,
-    }
-    for col in cols.values():
+    # cols = {
+    #     "score": score,
+    #     "norm_score": norm_score,
+    #     "logn_score": logn_score,
+    #     "scaled_score": scaled_score,
+    #     # "ranked_score": ranked_score,
+    # }
+    # for col in cols.values():
+    #     bed = pd.concat([bed, pd.Series(col)], axis=1)
+    # bed.columns = ["chrom", "start", "end"] + list(cols.keys())
+    cols = [score, norm_score, logn_score, scaled_score]
+    for col in cols:
         bed = pd.concat([bed, pd.Series(col)], axis=1)
-    bed.columns = ["chrom", "start", "end"] + list(cols.keys())
-    bed.to_csv(bed_output, sep="\t", index=False)
+    bed.to_csv(bed_output, sep="\t", index=False, header=False)
 
     # # mimic Quans output
     # peak = (
@@ -237,29 +247,6 @@ def normalize(bam_coverage, bed_output, dist_func="lognorm_dist", **kwargs):
     #     bed = pd.concat([bed, pd.Series(col)], axis=1)
     # bed.columns = ["peak", "peak_score", "log10_peak_score", "scaled_peak_score", "ranked_peak_score"]
     # bed.to_csv(bed_output, sep="\t", index=False)
-
-    # if plot:
-    #     from matplotlib import pyplot as plt
-    #     import seaborn as sns
-    #
-    #     outfile = bed_output.replace(".out", "").replace(".bed", ".png")
-    #     title = f"raw score vs {dist_func.__name__} score"
-    #
-    #     fig, (ax1, ax2) = plt.subplots(1, 2)
-    #     fig.suptitle(f"{title} score distribution")
-    #
-    #     sns.histplot(scores, ax=ax1) #, kde=True, stat="density")
-    #     ax1.set_title("raw score")
-    #     ax1.xaxis.set_label_text("Score")
-    #     # ax1.xaxis.set_major_locator(plt.MaxNLocator(6))
-    #     # ax1.xaxis.set_major_formatter(FormatStrFormatter('%i'))
-    #
-    #     sns.histplot(dist, ax=ax2) #, kde=True, stat="density")
-    #     ax2.set_title(f"distribution score")
-    #     ax2.xaxis.set_label_text("Score")
-    #
-    #     fig.set_size_inches(10, 5)
-    #     fig.savefig(outfile, orientation='landscape')
 
 
 class ScorePeaks:
@@ -293,16 +280,6 @@ class ScorePeaks:
         normalize(coverage_file, outfile, dist_func=dist_func, **kwargs)
 
 
-# TODO: still messy from here
-
-from tqdm import tqdm
-from gimmemotifs.scanner import Scanner
-from gimmemotifs.motif import read_motifs
-from gimmemotifs.utils import as_fasta, pfmfile_location
-import pickle
-import dask.dataframe as dd
-
-
 class Binding(object):
     def __init__(self, genome, scored_peaks, model=None, pfmfile=None, ncore=1):
         self.genome = genome
@@ -324,7 +301,7 @@ class Binding(object):
         s = Scanner(ncpus=self.ncore)
         s.set_motifs(self.pfmfile)
         s.set_genome(self.genome)
-        s.set_threshold(threshold=0.0)
+        # s.set_threshold(threshold=0.0)
 
         # generate GC background index
         _ = s.best_score([], zscore=True, gc=True)
@@ -334,25 +311,29 @@ class Binding(object):
         """
         Scan for TF binding motifs in potential enhancer regions.
         """
-        s = self.setup_gimme_scanner()
+        scanner = self.setup_gimme_scanner()
+        # scanner = Scanner(ncpus=self.ncore)
+        # scanner.set_motifs(self.pfmfile)
+        # scanner.set_genome(self.genome)
+
         with open(self.pfmfile) as f:
             motifs = read_motifs(f)
 
-        # open an empty file (append results in chunks)
+        # new file with header only (append data in chunks)
         with open(pfmscorefile, 'w') as f:
             # Quan: When we built model, rank and minmax normalization was used.
             cols = ["enhancer", "zscore", "zscoreRank"]
             f.write("\t".join(cols)+"\n")
 
         seqs = [s.split(" ")[0] for s in as_fasta(enhancer_regions_bed, genome=self.genome).ids]
-        with tqdm(total=len(seqs)) as pbar:
+        with tqdm(total=len(seqs), unit="seq") as pbar:
             # Run 10k regions per scan.
             chunksize = 10000
             for chunk in range(0, len(seqs), chunksize):
                 pfm_score = []
                 chunk_seqs = seqs[chunk:chunk+chunksize]
                 # We are using GC-normalization for motif scanning as many enhancer binding regions are GC-enriched.
-                chunk_scores = s.best_score(chunk_seqs, zscore=True, gc=True)
+                chunk_scores = scanner.best_score(chunk_seqs, zscore=True, gc=True)
                 for seq, scores in zip(chunk_seqs, chunk_scores):
                     for motif, score in zip(motifs, scores):
                         pfm_score.append([motif.id, seq, score])
@@ -364,7 +345,8 @@ class Binding(object):
                 pfm_score[cols].to_csv(pfmscorefile, sep="\t", header=False, mode='a')
 
     def get_binding_score(self, pfm, peak, outfile):
-        """Infer TF binding score from motif z-score and peak intensity.
+        """
+        Infer TF binding score from motif z-score and peak intensity.
         Arguments:
             pfm {[type]} -- [motif scan result]
             peak {[type]} -- [peak intensity]
@@ -387,7 +369,8 @@ class Binding(object):
         r = r.groupby(["factor", "enhancer"])[["zscore", "log10_peakRPKM"]].mean()
         r = r.dropna().reset_index()
 
-        table = r.compute(num_workers=self.ncore)
+        with dask.diagnostics.ProgressBar():
+            table = r.compute(num_workers=self.ncore)
         table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
 
         table.to_csv(outfile, sep="\t", index=False)
