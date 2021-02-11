@@ -10,11 +10,11 @@ import seaborn as sns
 # https://stackoverflow.com/questions/26406056/a-lognormal-distribution-in-python
 # https://stackoverflow.com/questions/15630647/fitting-lognormal-distribution-using-scipy-vs-matlab
 
-def distplot(infile, score_col="scaled_score", show=False):
+def distplot(infile, score_col=6, show=False):
     """
     generate simple distplot from bedfile
     """
-    bed = pd.read_csv(infile, header=0, sep="\t")
+    bed = pd.read_csv(infile, header=None, sep="\t")
     scores = pd.Series(bed[score_col])
     bins = min(30, len(scores))  # too many bins = bad
     fig = sns.histplot(scores, kde=True, stat="density", bins=bins, alpha=0.2)
@@ -34,6 +34,7 @@ def distplot(infile, score_col="scaled_score", show=False):
     else:
         outfile = infile.replace(".bed", ".png")
         fig.figure.savefig(outfile, orientation='landscape')
+    fig.figure.clear()
 
 
 # distplot("../tests/output/ScorePeaks_scale.out.bed", show=True)
