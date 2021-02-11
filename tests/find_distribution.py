@@ -4,9 +4,10 @@
 import warnings
 import numpy as np
 import pandas as pd
-import scipy.stats as st
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import scipy.stats as st
 from tqdm import tqdm
 
 mpl.rcParams['figure.figsize'] = (16.0, 12.0)

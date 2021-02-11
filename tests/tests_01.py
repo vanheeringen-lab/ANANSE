@@ -1,5 +1,7 @@
 import os
+
 import genomepy.utils
+
 import ananse.enhancer_binding
 from tests.benchmark import distplot
 
