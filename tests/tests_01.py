@@ -22,6 +22,7 @@ bam_file = "tests/data/hg38-keratinocyte_H3K27ac_rep1.samtools-coordinate.bam"
 # bam_file = ""
 
 # download test data locally
+genomepy.utils.mkdir_p("tests/data")
 for file in [genome, peaks_file, bam_file]:
     if not os.path.exists(file):
         url = "https://mbdata.science.ru.nl/ANANSE/" + file  # TODO upload data there

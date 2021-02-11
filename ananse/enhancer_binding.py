@@ -15,7 +15,7 @@ from scipy import stats
 from sklearn.preprocessing import minmax_scale
 from tqdm import tqdm
 
-from ananse.utils import sort_bed, merge_bed_files, count_reads
+from ananse.utils import bed_sort, bed_merge, count_reads, bam_merge, bam_sort
 from ananse.distributions import Distributions
 
 
@@ -162,14 +162,14 @@ class CombinePeakFiles:
                     width=width,
                     narrowpeak=is_np
                 )
-                sort_bed(resized_peakfile)
+                bed_sort(resized_peakfile)
                 list_of_beds.append(resized_peakfile)
 
             # merge resized beds into one
             merged_bed = os.path.join(tmpdir, "merged")
-            merge_bed_files(list_of_beds=list_of_beds, merged_bed=merged_bed)
+            bed_merge(list_of_beds=list_of_beds, merged_bed=merged_bed)
 
-            sort_bed(merged_bed)
+            bed_sort(merged_bed)
             shutil.copy2(merged_bed, outfile)
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
@@ -257,15 +257,36 @@ class ScorePeaks:
     def count_reads(self, coverage_file):
         tmpdir = tempfile.mkdtemp()
         try:
-            # bam read counts per bam file
-            multi_bam_coverage = os.path.join(tmpdir, "multi_bam_coverage")
-            count_reads(self.list_of_bams, self.peaks, multi_bam_coverage)
+            # merge bams
+            try:
+                # assume bams are sorted and indexed
+                merged_bam = os.path.join(tmpdir, "merged.bam")
+                bam_merge(self.list_of_bams, merged_bam)
+            except Exception:
+                # sort, index & try again
+                for bam in self.list_of_bams:
+                    bam_sort(bam)
+                merged_bam = os.path.join(tmpdir, "merged.bam")
+                bam_merge(self.list_of_bams, merged_bam)
 
-            # sum bam read counts
-            sum_bam_coverage = os.path.join(tmpdir, "sum_bam_coverage")
-            sum_coverages(multi_bam_coverage, sum_bam_coverage)
+            # bam read counts
+            bam_coverage = os.path.join(tmpdir, "bam_coverage")
+            count_reads(merged_bam, self.peaks, bam_coverage)
 
-            shutil.copy2(sum_bam_coverage, coverage_file)
+            shutil.copy2(bam_coverage, coverage_file)
+
+            # for bam in self.list_of_bams:
+            #     bam_index(bam, force=False)
+            #
+            # # bam read counts per bam file
+            # multi_bam_coverage = os.path.join(tmpdir, "multi_bam_coverage")
+            # count_reads(self.list_of_bams, self.peaks, multi_bam_coverage)
+            #
+            # # sum bam read counts
+            # sum_bam_coverage = os.path.join(tmpdir, "sum_bam_coverage")
+            # sum_coverages(multi_bam_coverage, sum_bam_coverage)
+            #
+            # shutil.copy2(sum_bam_coverage, coverage_file)
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
 
@@ -273,7 +294,7 @@ class ScorePeaks:
         # save the results as it takes ages to run
         coverage_file = os.path.join(os.path.dirname(outfile), "raw_enhancer_coverage.bed")
         if force or not os.path.exists(coverage_file):
-            print("running multi bam cov (slow)")
+            print("running bam coverage (slow)")
             self.count_reads(coverage_file)
 
         # fit bam read counts to specified distribution
@@ -378,9 +399,11 @@ class Binding(object):
     def run(self, outfile):
         tmpdir = tempfile.mkdtemp()
         try:
+            print("running gimme scan (really slow)")
             pfm_weight = os.path.join(tmpdir, "peak_weight")
             self.get_motif_scores(self.scored_peaks, pfm_weight)
 
+            print("running classifier (slow)")
             peak_weight = self.scored_peaks
             table = os.path.join(tmpdir, "table")
             self.get_binding_score(pfm_weight, peak_weight, table)

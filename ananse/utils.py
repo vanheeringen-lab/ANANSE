@@ -4,6 +4,7 @@ import shutil
 import tempfile
 
 from pybedtools import BedTool
+import pysam
 
 
 def shhh_bedtool(func):
@@ -19,7 +20,7 @@ def shhh_bedtool(func):
 
 
 @shhh_bedtool
-def sort_bed(bed):
+def bed_sort(bed):
     """
     Sort a bed file.
     """
@@ -33,7 +34,7 @@ def sort_bed(bed):
 
 
 @shhh_bedtool
-def merge_bed_files(list_of_beds, merged_bed):
+def bed_merge(list_of_beds, merged_bed):
     """
     merge any number of bed files
     """
@@ -45,12 +46,44 @@ def merge_bed_files(list_of_beds, merged_bed):
 
 
 @shhh_bedtool
-def count_reads(bam_list, peakfile, bed_output):
+def count_reads(bams, peakfile, bed_output):
     """
     Count bam reads in putative enhancer regions
     """
     bed = BedTool(peakfile)
+    bam_list = bams if isinstance(bams, list) else [bams]
     bed.multi_bam_coverage(bams=bam_list, output=bed_output)
+
+
+def bam_index(bam, force=True):
+    if force or not os.path.exists(f"{bam}.bai"):
+        pysam.index(bam)
+
+
+def bam_sort(bam):
+    tmpdir = tempfile.mkdtemp()
+    try:
+        sorted_bam = os.path.join(tmpdir, os.path.basename(bam))
+        pysam.sort("-o", sorted_bam, bam)
+
+        shutil.copy2(sorted_bam, bam)
+        bam_index(bam)
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+def bam_merge(list_of_bams, merged_bam):
+    """
+    merge any number of bam files
+    """
+    if len(list_of_bams) > 1:
+        pysam.merge(merged_bam, *list_of_bams)
+        bam_index(merged_bam)
+    else:
+        # os.symlink() doesn't work with multi_bam_coverage()
+        bam = list_of_bams[0]
+        shutil.copy2(bam, merged_bam)
+        shutil.copy2(f"{bam}.bai", f"{merged_bam}.bai")
 
 
 def cleanpath(path):
