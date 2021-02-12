@@ -38,36 +38,36 @@ for file in [genome, peaks_file, bam_file]:
 
 
 # group 1 (can run simultaneously)
-print("Combining bed files")
+# print("Combining bed files")
 cbedf = ananse.enhancer_binding.CombineBedFiles(genome=genome, peakfiles=peaks_file)
 combined_bed = os.path.join(out_dir, "combined.bed")
 cbedf.run(outfile=combined_bed, width=200)
 
-print("Combining bam files")
+# print("Combining bam files")
 cbamf = ananse.enhancer_binding.CombineBamFiles(bams=bam_file)
 combined_bam = os.path.join(out_dir, "combined.bam")
 cbamf.run(outfile=combined_bam)
 
 # group 2 (can run when input is ready)
-print("Scoring peaks")
+# print("Scoring peaks")
 sp = ananse.enhancer_binding.ScorePeaks(bed=combined_bed, bam=combined_bam)
-scored_peaks = os.path.join(out_dir, "scoredpeaks_peakrankfile.bed")
+scored_peaks = os.path.join(out_dir, "scoredpeaks.bed")
 sp.run(outfile=scored_peaks, dist_func="peak_rank_file_dist", **{"dist": "loglaplace"})
 distplot(scored_peaks)
 
-print("Scoring motifs")
+# print("Scoring motifs")
 sm = ananse.enhancer_binding.ScoreMotifs(genome=genome, bed=combined_bed, ncore=max(os.cpu_count() - 2, 1))
 scored_motifs = os.path.join(out_dir, "scoredmotifs.bed")
 sm.run(outfile=scored_motifs)
 
 # group 3 (end result)
-print("Predict TF binding")
+# print("Predict TF binding")
 b = ananse.enhancer_binding.Binding(
     peak_weights=scored_peaks,
     motif_weights=scored_motifs,
     ncore=max(os.cpu_count() - 2, 1)
 )
-outfile = os.path.join(out_dir, "table.txt")
+outfile = os.path.join(out_dir, "binding.tsv")
 b.run(outfile=outfile)
 
 

@@ -86,6 +86,20 @@ def bam_merge(list_of_bams, merged_bam):
         shutil.copy2(f"{bam}.bai", f"{merged_bam}.bai")
 
 
+# def bed_sum_coverages(multi_bam_coverage, sum_bam_coverage):
+#     """
+#     MultiBamCov returns a BED3+n with one column per bam.
+#     This function sums up all bam counts and returns a BED3+1.
+#     """
+#     bed = pd.read_csv(multi_bam_coverage, header=None, sep="\t")
+#     columns = bed.shape[1]
+#     if columns != 4:
+#         bed3 = bed.iloc[:, :3]
+#         scores = bed.iloc[:, 3:].sum(axis=1)
+#         bed = pd.concat([bed3, scores], axis=1)
+#     bed.to_csv(sum_bam_coverage, sep="\t", header=False, index=False)
+
+
 def cleanpath(path):
     """Expand any path input to a literal path output"""
     return \
