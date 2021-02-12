@@ -422,7 +422,6 @@ class Binding:
 
         # combine scores
         m = m.groupby(["factor", "region"])[["zscore", "log10_score"]].mean()
-        m = m.groupby(["region"])[["zscore", "log10_score"]].mean()
         m = m.dropna().reset_index()
 
         with dask.diagnostics.ProgressBar():
@@ -433,7 +432,7 @@ class Binding:
             clf = pickle.load(f)
         m["binding"] = clf.predict_proba(m[["zscore", "log10_score"]])[:, 1]
 
-        m.to_csv(outfile, sep="\t", index=False)
+        m["factor", "region", "binding"].to_csv(outfile, sep="\t", index=False)
 
     def run(self, outfile, force=False):
         if force or not os.path.exists(outfile):

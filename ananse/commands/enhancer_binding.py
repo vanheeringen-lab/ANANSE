@@ -2,6 +2,7 @@ import os
 import shutil
 
 import genomepy.utils
+
 from ananse.enhancer_binding import CombineBedFiles, CombineBamFiles, ScorePeaks, ScoreMotifs, Binding
 
 
@@ -47,6 +48,8 @@ def run_binding(
     Returns:
         binding.tsv: the strongest transcription factor and its binding score for each region in the peakfile(s)
     """
+    # TODO: check inputs for validity
+
     intermediate_dir = os.path.join(outdir, "intermediate_results")
     genomepy.utils.mkdir_p(intermediate_dir)
 
