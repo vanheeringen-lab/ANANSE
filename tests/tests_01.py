@@ -56,7 +56,7 @@ sp.run(outfile=scored_peaks, dist_func="peak_rank_file_dist", **{"dist": "loglap
 distplot(scored_peaks)
 
 print("Scoring motifs")
-sm = ananse.enhancer_binding.ScoreMotifs(genome=genome, bed=combined_bed, ncore=min(os.cpu_count() - 2, 1))
+sm = ananse.enhancer_binding.ScoreMotifs(genome=genome, bed=combined_bed, ncore=max(os.cpu_count() - 2, 1))
 scored_motifs = os.path.join(out_dir, "scoredmotifs.bed")
 sm.run(outfile=scored_motifs)
 
@@ -65,7 +65,7 @@ print("Predict TF binding")
 b = ananse.enhancer_binding.Binding(
     peak_weights=scored_peaks,
     motif_weights=scored_motifs,
-    ncore=min(os.cpu_count() - 2, 1)
+    ncore=max(os.cpu_count() - 2, 1)
 )
 outfile = os.path.join(out_dir, "table.txt")
 b.run(outfile=outfile)

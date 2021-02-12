@@ -285,8 +285,6 @@ class ScoreMotifs:
         self.genome = genome
         self.bed = bed  # one bed file with putative enhancer binding regions
         self.pfm_file = pfmfile_location(pfmfile)
-        # self.motifs2factors_file = self.pfm_file.replace(".pfm", ".motif2factors.txt")
-        # self.motifs2factors = self.filter_transcription_factors(*args, **kwargs)
         self.ncore = ncore
         self.verbose = verbose
 
@@ -317,7 +315,7 @@ class ScoreMotifs:
             f.write("\t".join(cols)+"\n")
 
         seqs = [s.split(" ")[0] for s in as_fasta(enhancer_regions_bed, genome=self.genome).ids]
-        with tqdm(total=len(seqs), unit="seq") as pbar:
+        with tqdm(total=len(seqs), unit="regions") as pbar:
             # Run 10k regions per scan.
             chunksize = 10_000
             for chunk in range(0, len(seqs), chunksize):
@@ -346,7 +344,7 @@ class ScoreMotifs:
         bed.to_csv(
             bed_output, sep="\t",  # to_csv args
             single_file=True, compute_kwargs={"num_workers": self.ncore}  # dask args
-            )
+        )
 
     # def run(self, outfile, force=False):
     #     if force or not os.path.exists(outfile):
@@ -419,7 +417,8 @@ class Binding:
         tf_list: an optional, single-column file with (case-insensitive) transcription factor names.
         whitelist: if True (default), tf_list is used as a whitelist. If False, as a blacklist.
         """
-        m2f = pd.read_csv(self.motifs2factors_file, sep="\t")
+        # note: dask dataframe (returned before computing!)
+        m2f = dd.read_csv(self.motifs2factors_file, sep="\t")
 
         # rename stuff
         m2f.rename(columns={"Motif": "motif", "Factor": "factor", "Curated": "curated"}, inplace=True)
