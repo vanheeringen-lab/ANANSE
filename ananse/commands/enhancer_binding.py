@@ -68,6 +68,7 @@ def run_binding(
 
     cbam = CombineBamFiles(
         bams=bams,
+        ncore=ncore,
         verbose=verbose
     )
     combined_bam = os.path.join(intermediate_dir, "combined.bam")

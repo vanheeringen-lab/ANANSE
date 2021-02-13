@@ -184,9 +184,10 @@ class CombineBedFiles:
 
 
 class CombineBamFiles:
-    def __init__(self, bams, verbose=True):
+    def __init__(self, bams, ncore=1, verbose=True):
         self.list_of_bams = bams if isinstance(bams, list) else [bams]
         self.verbose = verbose
+        self.ncore = ncore
 
     def run(self, outfile, force=False):
         if force or not os.path.exists(outfile):
@@ -197,15 +198,15 @@ class CombineBamFiles:
                 # only sort & index bams if needed
                 try:
                     for bam in self.list_of_bams:
-                        bam_index(bam, force=False)  # assumes sorted
+                        bam_index(bam, force=False, ncore=self.ncore)  # assumes sorted
                     merged_bam = os.path.join(tmpdir, "merged.bam")
-                    bam_merge(self.list_of_bams, merged_bam)
+                    bam_merge(self.list_of_bams, merged_bam, self.ncore)
                 except Exception:
                     # sort, index & try again
                     for bam in self.list_of_bams:
-                        bam_sort(bam)
+                        bam_sort(bam, self.ncore)
                     merged_bam = os.path.join(tmpdir, "merged.bam")
-                    bam_merge(self.list_of_bams, merged_bam)
+                    bam_merge(self.list_of_bams, merged_bam, self.ncore)
 
                 shutil.copy2(merged_bam, outfile)
                 shutil.copy2(f"{merged_bam}.bai", f"{outfile}.bai")

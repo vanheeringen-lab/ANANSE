@@ -41,8 +41,7 @@ def bed_merge(list_of_beds, merged_bed):
     bed = BedTool(list_of_beds[0])
     if list_of_beds[1:]:
         bed = bed.cat(*list_of_beds[1:])
-    # bed.sort(output=merged_bed)
-    bed.moveto(merged_bed)
+    bed.saveas(merged_bed)
 
 
 @shhh_bedtool
@@ -55,29 +54,38 @@ def count_reads(bams, peakfile, bed_output):
     bed.multi_bam_coverage(bams=bam_list, output=bed_output)
 
 
-def bam_index(bam, force=True):
+def samc(ncore):
+    """set decent samtools range for samtools functions (1-5 total threads)"""
+    return max(0, min(ncore - 1, 4))
+
+
+def bam_index(bam, force=True, ncore=1):
     if force or not os.path.exists(f"{bam}.bai"):
-        pysam.index(bam)
+        index_parameters = [f"-@ {samc(ncore)}", bam]
+        pysam.index(*index_parameters)
 
 
-def bam_sort(bam):
+def bam_sort(bam, ncore=1):
     tmpdir = tempfile.mkdtemp()
     try:
         sorted_bam = os.path.join(tmpdir, os.path.basename(bam))
-        pysam.sort("-o", sorted_bam, bam)
+        sort_parameters = [f"-@ {samc(ncore)}", "-o", sorted_bam, bam]
+        pysam.sort(*sort_parameters)
 
         shutil.copy2(sorted_bam, bam)
-        bam_index(bam)
+        bam_index(bam, force=True, ncore=ncore)
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-def bam_merge(list_of_bams, merged_bam):
+def bam_merge(list_of_bams, merged_bam, ncore=1):
     """
-    merge any number of bam files
+    merge any number of (sorted) bam files
     """
+    [bam_index(bam, force=False, ncore=ncore) for bam in list_of_bams]
     if len(list_of_bams) > 1:
-        pysam.merge(merged_bam, *list_of_bams)
+        merge_parameters = ["-f", f"-@ {samc(ncore)}", merged_bam] + list_of_bams
+        pysam.merge(*merge_parameters)
         bam_index(merged_bam)
     else:
         # os.symlink() doesn't work with multi_bam_coverage()
