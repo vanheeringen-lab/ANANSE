@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import scipy.stats as st
 from tqdm import tqdm
 
-mpl.rcParams['figure.figsize'] = (16.0, 12.0)
-plt.style.use('ggplot')
+mpl.rcParams["figure.figsize"] = (16.0, 12.0)
+plt.style.use("ggplot")
 
 
 # Create models from data
@@ -135,7 +135,7 @@ def best_fit_distribution(data, bins=200, ax=None):
         try:
             # Ignore warnings from data that can't be fit
             with warnings.catch_warnings():
-                warnings.filterwarnings('ignore')
+                warnings.filterwarnings("ignore")
 
                 # fit dist to data
                 params = distribution.fit(data)
@@ -152,7 +152,9 @@ def best_fit_distribution(data, bins=200, ax=None):
                 # if ax is passed, add to plot
                 try:
                     if ax:
-                        pd.Series(pdf, x).plot(label=distribution.name, legend=True, ax=ax)
+                        pd.Series(pdf, x).plot(
+                            label=distribution.name, legend=True, ax=ax
+                        )
                 except Exception:
                     pass
 
@@ -177,8 +179,16 @@ def make_pdf(dist, params, size=10000):
     scale = params[-1]
 
     # Get sane start and end points of distribution
-    start = dist.ppf(0.01, *arg, loc=loc, scale=scale) if arg else dist.ppf(0.01, loc=loc, scale=scale)
-    end = dist.ppf(0.99, *arg, loc=loc, scale=scale) if arg else dist.ppf(0.99, loc=loc, scale=scale)
+    start = (
+        dist.ppf(0.01, *arg, loc=loc, scale=scale)
+        if arg
+        else dist.ppf(0.01, loc=loc, scale=scale)
+    )
+    end = (
+        dist.ppf(0.99, *arg, loc=loc, scale=scale)
+        if arg
+        else dist.ppf(0.99, loc=loc, scale=scale)
+    )
 
     # Build PDF and turn into pandas Series
     x = np.linspace(start, end, size)
@@ -196,8 +206,16 @@ def find_best_pdf(data, outfile=None):
     best_fit_name, best_fit_params = best_fit_distribution(data, 200, ax1)
     best_dist = getattr(st, best_fit_name)
 
-    data.plot(kind='hist', density=True, bins=50, alpha=0.5, label='Data', legend=True, ax=ax1,
-              color=mpl.rcParams['axes.prop_cycle'].by_key()['color'][1])
+    data.plot(
+        kind="hist",
+        density=True,
+        bins=50,
+        alpha=0.5,
+        label="Data",
+        legend=True,
+        ax=ax1,
+        color=mpl.rcParams["axes.prop_cycle"].by_key()["color"][1],
+    )
 
     # Save plot limits
     dataYLim = ax1.get_ylim()
@@ -206,24 +224,32 @@ def find_best_pdf(data, outfile=None):
     # Update plots
     ax1.set_ylim(dataYLim)
     ax1.set_xlim(dataXLim)
-    ax1.set_title('All Fitted Distributions\n')
-    ax1.set_xlabel('Score')
+    ax1.set_title("All Fitted Distributions\n")
+    ax1.set_xlabel("Score")
 
     # Make PDF with best params
     pdf = make_pdf(best_dist, best_fit_params)
 
     # Display
-    pdf.plot(lw=2, label='PDF', legend=True, ax=ax2)
-    data.plot(kind='hist', density=True, bins=50, alpha=0.5, label='Data', legend=True, ax=ax2)
+    pdf.plot(lw=2, label="PDF", legend=True, ax=ax2)
+    data.plot(
+        kind="hist", density=True, bins=50, alpha=0.5, label="Data", legend=True, ax=ax2
+    )
 
-    param_names = (best_dist.shapes + ', loc, scale').split(', ') if best_dist.shapes else ['loc', 'scale']
-    param_str = ', '.join(['{}={:0.2f}'.format(k, v) for k, v in zip(param_names, best_fit_params)])
-    dist_str = '{}({})'.format(best_fit_name, param_str)
+    param_names = (
+        (best_dist.shapes + ", loc, scale").split(", ")
+        if best_dist.shapes
+        else ["loc", "scale"]
+    )
+    param_str = ", ".join(
+        ["{}={:0.2f}".format(k, v) for k, v in zip(param_names, best_fit_params)]
+    )
+    dist_str = "{}({})".format(best_fit_name, param_str)
 
     ax2.set_ylim(dataYLim)
     ax2.set_xlim(dataXLim)
-    ax2.set_title('Best fit distribution \n' + dist_str)
-    ax2.set_xlabel('Score')
+    ax2.set_title("Best fit distribution \n" + dist_str)
+    ax2.set_xlabel("Score")
 
     if outfile:
         fig.savefig(outfile)

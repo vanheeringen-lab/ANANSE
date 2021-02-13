@@ -15,14 +15,23 @@ from scipy import stats
 from sklearn.preprocessing import minmax_scale
 from tqdm import tqdm
 
-from ananse.utils import bed_sort, bed_merge, count_reads, bam_index, bam_merge, bam_sort
+from ananse.utils import (
+    bed_sort,
+    bed_merge,
+    count_reads,
+    bam_index,
+    bam_merge,
+    bam_sort,
+)
 from ananse.distributions import Distributions
 
 
 class CombineBedFiles:
     def __init__(self, genome, peakfiles, verbose=True):
         self.genome = genome
-        self.list_of_peakfiles = peakfiles if isinstance(peakfiles, list) else [peakfiles]
+        self.list_of_peakfiles = (
+            peakfiles if isinstance(peakfiles, list) else [peakfiles]
+        )
         self.verbose = verbose
 
     @staticmethod
@@ -35,7 +44,7 @@ class CombineBedFiles:
         Returns bool
         """
         with open(bed) as b:
-            for n, line in enumerate(b):
+            for line in b:
                 if line.startswith("#"):
                     continue
                 line = line.split("\t")
@@ -72,8 +81,16 @@ class CombineBedFiles:
         return False
 
     @staticmethod
-    def bed_resize(genome, bed_in, bed_out, width=200, narrowpeak=False, fix_outliers=False, output_bed3=True,
-                   verbose=True):
+    def bed_resize(
+        genome,
+        bed_in,
+        bed_out,
+        width=200,
+        narrowpeak=False,
+        fix_outliers=False,
+        output_bed3=True,
+        verbose=True,
+    ):
         """
         Set bed region width.
 
@@ -91,11 +108,13 @@ class CombineBedFiles:
         missing_chrm = []
 
         if narrowpeak:
+
             def get_summit(_start, _, summit_offset):
                 return _start + int(summit_offset)
 
             summit_col = 9
         else:
+
             def get_summit(_start, _end, _):
                 return (_start + _end) // 2
 
@@ -142,10 +161,10 @@ class CombineBedFiles:
 
         if missing_chrm and verbose:
             print(
-                f"The following contigs were present in " +
-                f"'{os.path.basename(bed_in)}', " +
-                f"but were missing in the genome file: " +
-                f"{', '.join(list(set(missing_chrm)))}\n"
+                "The following contigs were present in "
+                + f"'{os.path.basename(bed_in)}', "
+                + "but were missing in the genome file: "
+                + f"{', '.join(list(set(missing_chrm)))}\n"
             )
         return bed_out
 
@@ -168,7 +187,7 @@ class CombineBedFiles:
                         bed_out=resized_peakfile,
                         width=width,
                         narrowpeak=is_np,
-                        verbose=self.verbose
+                        verbose=self.verbose,
                     )
                     bed_sort(resized_peakfile)
                     list_of_beds.append(resized_peakfile)
@@ -236,7 +255,7 @@ class ScorePeaks:
         Fit the bam coverage scores to a distribution
         """
         bed = pd.read_csv(bam_coverage, header=None, sep="\t")
-        region = (bed[0] + ":" + bed[1].astype(str) + "-" + bed[2].astype(str))
+        region = bed[0] + ":" + bed[1].astype(str) + "-" + bed[2].astype(str)
         score = bed[3]
 
         # obtain a distribution
@@ -305,18 +324,21 @@ class ScoreMotifs:
             motifs = read_motifs(f)
 
         # new file with header only (append data in chunks)
-        with open(pfmscorefile, 'w') as f:
+        with open(pfmscorefile, "w") as f:
             # Quan: When we built model, rank and minmax normalization was used.
             cols = ["motif", "region", "zscore"]
-            f.write("\t".join(cols)+"\n")
+            f.write("\t".join(cols) + "\n")
 
-        seqs = [s.split(" ")[0] for s in as_fasta(enhancer_regions_bed, genome=self.genome).ids]
+        seqs = [
+            s.split(" ")[0]
+            for s in as_fasta(enhancer_regions_bed, genome=self.genome).ids
+        ]
         with tqdm(total=len(seqs), unit="regions") as pbar:
             # Run 10k regions per scan.
             chunksize = 10_000
             for chunk in range(0, len(seqs), chunksize):
                 pfm_score = []
-                chunk_seqs = seqs[chunk:chunk+chunksize]
+                chunk_seqs = seqs[chunk : chunk + chunksize]
                 # We are using GC-normalization for motif scanning as many enhancer binding regions are GC-enriched.
                 chunk_scores = scanner.best_score(chunk_seqs, zscore=True, gc=True)
                 # for each seq, store the score of each motif
@@ -326,7 +348,9 @@ class ScoreMotifs:
                     pbar.update(1)
                 pfm_score = pd.DataFrame(pfm_score, columns=cols)
 
-                pfm_score[cols].to_csv(pfmscorefile, sep="\t", header=False, index=False, mode='a')
+                pfm_score[cols].to_csv(
+                    pfmscorefile, sep="\t", header=False, index=False, mode="a"
+                )
 
     @staticmethod
     def normalize_motifs(bed_input, bed_output):
@@ -338,7 +362,9 @@ class ScoreMotifs:
         bed.to_csv(bed_output, sep="\t", index=False)
 
     def run(self, outfile, force=False):
-        raw_motif_scores = os.path.join(os.path.dirname(outfile), "raw_scoredmotifs.bed")
+        raw_motif_scores = os.path.join(
+            os.path.dirname(outfile), "raw_scoredmotifs.bed"
+        )
         if force or not os.path.exists(raw_motif_scores):
             tmpdir = tempfile.mkdtemp()
             try:
@@ -356,12 +382,27 @@ class ScoreMotifs:
 
 
 class Binding:
-    def __init__(self, peak_weights, motif_weights, pfmfile=None, model=None, curation_filter=None, tf_list=None, whitelist=True, ncore=1, verbose=True):
+    def __init__(
+        self,
+        peak_weights,
+        motif_weights,
+        pfmfile=None,
+        model=None,
+        curation_filter=None,
+        tf_list=None,
+        whitelist=True,
+        ncore=1,
+        verbose=True,
+    ):
         self.peak_weights = peak_weights  # output from ScorePeaks
         self.motif_weights = motif_weights  # output from ScoreMotifs
 
-        self.motifs2factors_file = pfmfile_location(pfmfile).replace(".pfm", ".motif2factors.txt")
-        self.motifs2factors = self.filter_transcription_factors(curation_filter, tf_list, whitelist)
+        self.motifs2factors_file = pfmfile_location(pfmfile).replace(
+            ".pfm", ".motif2factors.txt"
+        )
+        self.motifs2factors = self.filter_transcription_factors(
+            curation_filter, tf_list, whitelist
+        )
 
         self.model = model
         if self.model is None:
@@ -372,7 +413,9 @@ class Binding:
         self.ncore = ncore
         self.verbose = verbose
 
-    def filter_transcription_factors(self, curation_filter=None, tf_list=None, whitelist=True):
+    def filter_transcription_factors(
+        self, curation_filter=None, tf_list=None, whitelist=True
+    ):
         """
         filter transcription factors from the motif database
 
@@ -386,8 +429,11 @@ class Binding:
         m2f = pd.read_csv(self.motifs2factors_file, sep="\t")
 
         # rename stuff
-        m2f.rename(columns={"Motif": "motif", "Factor": "factor", "Curated": "curated"}, inplace=True)
-        m2f['factor'] = m2f.factor.str.upper()  # make case-insensitive
+        m2f.rename(
+            columns={"Motif": "motif", "Factor": "factor", "Curated": "curated"},
+            inplace=True,
+        )
+        m2f["factor"] = m2f.factor.str.upper()  # make case-insensitive
         m2f.replace("T", "TBXT", inplace=True)  # rename T to TBXT
 
         # filter by curation
@@ -398,12 +444,20 @@ class Binding:
 
         # shrink table
         m2f = m2f[["motif", "factor"]]  # subset
-        m2f.drop_duplicates(inplace=True)  # case-insensitivity adds loads of duplicates (ex: Sox9 and SOX9)
+        m2f.drop_duplicates(
+            inplace=True
+        )  # case-insensitivity adds loads of duplicates (ex: Sox9 and SOX9)
 
         # filter by white/blacklist
         if tf_list:
-            tfs = pd.read_csv(tf_list, header=None)[0].str.upper().tolist()  # make case-insensitive
-            m2f = m2f.loc[m2f.Factor.isin(tfs)] if whitelist else m2f.loc[~m2f.Factor.isin(tfs)]
+            tfs = (
+                pd.read_csv(tf_list, header=None)[0].str.upper().tolist()
+            )  # make case-insensitive
+            m2f = (
+                m2f.loc[m2f.Factor.isin(tfs)]
+                if whitelist
+                else m2f.loc[~m2f.Factor.isin(tfs)]
+            )
 
         return m2f
 
@@ -413,10 +467,9 @@ class Binding:
         """
         # merge the scoring tables
         m = dd.read_csv(motif_weights, sep="\t")
-        m = m.merge(
-            dd.read_csv(peak_weights, sep="\t", blocksize=200e6),
-            on="region"
-        )[["motif", "region", "zscore", "log10_score"]]
+        m = m.merge(dd.read_csv(peak_weights, sep="\t", blocksize=200e6), on="region")[
+            ["motif", "region", "zscore", "log10_score"]
+        ]
 
         # filter scoring tables for motifs found in motifs2factors
         m = m.merge(self.motifs2factors, on="motif")  # also adds "factor" column
@@ -433,7 +486,9 @@ class Binding:
             clf = pickle.load(f)
         m["binding"] = clf.predict_proba(m[["zscore", "log10_score"]])[:, 1]
 
-        m.to_csv(outfile, sep="\t", index=False, columns=["factor", "region", "binding"])
+        m.to_csv(
+            outfile, sep="\t", index=False, columns=["factor", "region", "binding"]
+        )
 
     def run(self, outfile, force=False):
         if force or not os.path.exists(outfile):

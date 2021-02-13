@@ -40,10 +40,17 @@ cbam.run(outfile=combined_bam, force=True)
 # group 2 (can run when input is ready)
 sp = ananse.enhancer_binding.ScorePeaks(bed=combined_bed, bam=combined_bam)
 scored_peaks = os.path.join(outdir, "scoredpeaks.bed")
-sp.run(outfile=scored_peaks, dist_func="peak_rank_file_dist", **{"dist": "loglaplace"}, force=True)
-# distplot(scored_peaks)
+sp.run(
+    outfile=scored_peaks,
+    dist_func="peak_rank_file_dist",
+    **{"dist": "loglaplace"},
+    force=True
+)
+distplot(scored_peaks)
 
-sm = ananse.enhancer_binding.ScoreMotifs(genome=genome, bed=combined_bed, ncore=max(os.cpu_count() - 2, 1))
+sm = ananse.enhancer_binding.ScoreMotifs(
+    genome=genome, bed=combined_bed, ncore=max(os.cpu_count() - 2, 1)
+)
 scored_motifs = os.path.join(outdir, "scoredmotifs.bed")
 sm.run(outfile=scored_motifs, force=True)
 

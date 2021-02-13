@@ -35,6 +35,7 @@ def compare_contents(file1, file2, ftype="bed"):
 
 # test BED functions
 
+
 unsorted_bed = os.path.join(outdir, "unsorted.bed")
 write_file(unsorted_bed, ["chr1\t817046\t817246\n", "chr1\t778558\t778758\n"])
 
@@ -72,21 +73,28 @@ def test_bed_merge():
 
 # test BAM functions
 
+
 h0 = "@HD	VN:1.6	SO:coordinate"
 h1 = "@SQ	SN:chr1	LN:248956422"
-line1 = "GADGET:53:HF5JFBBXX:2:1228:15189:39594	147	chr1	10003	40	11S90M	=	10048	-46	" + \
-        "CCCTACCCTCTCCCTATCCCTAACCCTAACCCCAACCCTAACCCTATCCCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAA	" + \
-        "A77--7-7---7-7---A77---AA7----<7-AAJAA-7JJFF<--F-A-AFFFF<FJJJJF-AFJF7F-JJJFJFFFJFF<FJJJJFJJFJJFFFFFAA	" + \
-        "MC:Z:58M1I42M	MD:Z:5A15T13A3T50	PG:Z:MarkDuplicates	NM:i:4	AS:i:70	XS:i:70"
-line2 = "GADGET:53:HF5JFBBXX:2:2224:31010:36622	83	chr1	10004	30	2S45M1D54M	=	10074	-30	" + \
-        "ATCCCTAACCCTAACCCTAACCCTAACCCTACCCCTACCCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCT	" + \
-        "--JAA7F-FAFA-7JJFA--F<7-FF<<FAF7<7F7A-FFAF7-FJJJFJJ----J<JFA-JAF7JFJFJF<<JFJF<JJJFFJJJAAAA-JFFFA-FAA-	" + \
-        "XA:Z:chr3,-10471,31M1I69M,4;chr3,-10535,101M,5;chr21,+46699903,82M19S,2;	MC:Z:73M1D27M	" + \
-        "MD:Z:29A5A9^T54	PG:Z:MarkDuplicates	NM:i:3	AS:i:82	XS:i:81"
-line3 = "GADGET:53:HF5JFBBXX:3:1110:5051:22168	163	chr1	10027	40	100M	=	10032	105	" + \
-        "ACCCGAACCCTAACCCTAACCCTAACCCTAACCCGAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCGAACCCA	" + \
-        "AAFFFJJJJJJJJJJJFJJJFJJJFJFJJFJJJJ<-FJJFJAFFJA7AFAJJJJFJFJ-<F-AAJJ<FF7-J-AAJ--<JJJ--AAJ-77-AA-7A<-A-	" + \
-        "MC:Z:8M1D91M	MD:Z:4T29T58T5T0	PG:Z:MarkDuplicates	NM:i:4	AS:i:84	XS:i:82"
+line1 = (
+    "GADGET:53:HF5JFBBXX:2:1228:15189:39594	147	chr1	10003	40	11S90M	=	10048	-46	"
+    + "CCCTACCCTCTCCCTATCCCTAACCCTAACCCCAACCCTAACCCTATCCCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAA	"
+    + "A77--7-7---7-7---A77---AA7----<7-AAJAA-7JJFF<--F-A-AFFFF<FJJJJF-AFJF7F-JJJFJFFFJFF<FJJJJFJJFJJFFFFFAA	"
+    + "MC:Z:58M1I42M	MD:Z:5A15T13A3T50	PG:Z:MarkDuplicates	NM:i:4	AS:i:70	XS:i:70"
+)
+line2 = (
+    "GADGET:53:HF5JFBBXX:2:2224:31010:36622	83	chr1	10004	30	2S45M1D54M	=	10074	-30	"
+    + "ATCCCTAACCCTAACCCTAACCCTAACCCTACCCCTACCCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCT	"
+    + "--JAA7F-FAFA-7JJFA--F<7-FF<<FAF7<7F7A-FFAF7-FJJJFJJ----J<JFA-JAF7JFJFJF<<JFJF<JJJFFJJJAAAA-JFFFA-FAA-	"
+    + "XA:Z:chr3,-10471,31M1I69M,4;chr3,-10535,101M,5;chr21,+46699903,82M19S,2;	MC:Z:73M1D27M	"
+    + "MD:Z:29A5A9^T54	PG:Z:MarkDuplicates	NM:i:3	AS:i:82	XS:i:81"
+)
+line3 = (
+    "GADGET:53:HF5JFBBXX:3:1110:5051:22168	163	chr1	10027	40	100M	=	10032	105	"
+    + "ACCCGAACCCTAACCCTAACCCTAACCCTAACCCGAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCGAACCCA	"
+    + "AAFFFJJJJJJJJJJJFJJJFJJJFJFJJFJJJJ<-FJJFJAFFJA7AFAJJJJFJFJ-<F-AAJJ<FF7-J-AAJ--<JJJ--AAJ-77-AA-7A<-A-	"
+    + "MC:Z:8M1D91M	MD:Z:4T29T58T5T0	PG:Z:MarkDuplicates	NM:i:4	AS:i:84	XS:i:82"
+)
 
 unsorted_bam = os.path.join(outdir, "unsorted.bam")
 tmp_sam = os.path.join(outdir, "tmp.sam")
@@ -136,7 +144,9 @@ def test_bam_sort():
 
     # bam is identical to the already sorted bam
     ananse.utils.bam_index(sorted_bam, force=False)
-    assert os.path.getsize(f"{unsorted_bam}.bai") == os.path.getsize(f"{sorted_bam}.bai")
+    assert os.path.getsize(f"{unsorted_bam}.bai") == os.path.getsize(
+        f"{sorted_bam}.bai"
+    )
 
 
 def test_bam_merge():
@@ -157,7 +167,7 @@ def test_bam_merge():
 
 
 def test_cleanpath():
-    path = "./tests/01_utils.py"
+    path = "./tests/02_utils.py"
     expected = __file__
     res = ananse.utils.cleanpath(path)
     assert res == expected
@@ -169,6 +179,7 @@ def test_cleanpath():
 
 
 # test other functions
+
 
 def test_cleanup():
     genomepy.utils.rm_rf(outdir)

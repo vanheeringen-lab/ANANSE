@@ -1,6 +1,6 @@
 import os
 
-import numpy as np
+# import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -10,6 +10,7 @@ import seaborn as sns
 # https://stackoverflow.com/questions/26406056/a-lognormal-distribution-in-python
 # https://stackoverflow.com/questions/15630647/fitting-lognormal-distribution-using-scipy-vs-matlab
 
+
 def distplot(infile, score_col=4, show=False):
     """
     generate simple distplot from bedfile
@@ -18,7 +19,7 @@ def distplot(infile, score_col=4, show=False):
     scores = pd.Series(bed[score_col])
     bins = min(30, len(scores))  # too many bins = bad
     fig = sns.histplot(scores, kde=True, stat="density", bins=bins, alpha=0.2)
-    fig.set_yscale('log')  # most methods are log scaled
+    fig.set_yscale("log")  # most methods are log scaled
 
     # # exclude outliers from plot
     # y_min = np.percentile(scores, 1)
@@ -33,7 +34,7 @@ def distplot(infile, score_col=4, show=False):
         fig.figure.show()
     else:
         outfile = infile.replace(".bed", ".png")
-        fig.figure.savefig(outfile, orientation='landscape')
+        fig.figure.savefig(outfile, orientation="landscape")
     fig.figure.clear()
 
 

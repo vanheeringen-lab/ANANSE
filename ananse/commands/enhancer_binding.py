@@ -3,26 +3,32 @@ import shutil
 
 import genomepy.utils
 
-from ananse.enhancer_binding import CombineBedFiles, CombineBamFiles, ScorePeaks, ScoreMotifs, Binding
+from ananse.enhancer_binding import (
+    CombineBedFiles,
+    CombineBamFiles,
+    ScorePeaks,
+    ScoreMotifs,
+    Binding,
+)
 
 
 def run_binding(
-        genome,
-        peakfiles,
-        bams,
-        outdir,
-        peak_width=200,
-        dist_func="peak_rank_file_dist",
-        pfmfile=None,
-        curation_filter=None,
-        tf_list=None,
-        whitelist=True,
-        model=None,
-        ncore=1,
-        force=False,
-        keep_intermediates=True,
-        verbose=True,
-        **kwargs
+    genome,
+    peakfiles,
+    bams,
+    outdir,
+    peak_width=200,
+    dist_func="peak_rank_file_dist",
+    pfmfile=None,
+    curation_filter=None,
+    tf_list=None,
+    whitelist=True,
+    model=None,
+    ncore=1,
+    force=False,
+    keep_intermediates=True,
+    verbose=True,
+    **kwargs
 ):
     """
     Predict transcription factor binding in specified regions
@@ -54,49 +60,21 @@ def run_binding(
     genomepy.utils.mkdir_p(intermediate_dir)
 
     # group 1 (can run simultaneously)
-    cbed = CombineBedFiles(
-        genome=genome,
-        peakfiles=peakfiles,
-        verbose=verbose
-    )
+    cbed = CombineBedFiles(genome=genome, peakfiles=peakfiles, verbose=verbose)
     combined_bed = os.path.join(intermediate_dir, "combined.bed")
-    cbed.run(
-        outfile=combined_bed,
-        width=peak_width,
-        force=force
-    )
+    cbed.run(outfile=combined_bed, width=peak_width, force=force)
 
-    cbam = CombineBamFiles(
-        bams=bams,
-        ncore=ncore,
-        verbose=verbose
-    )
+    cbam = CombineBamFiles(bams=bams, ncore=ncore, verbose=verbose)
     combined_bam = os.path.join(intermediate_dir, "combined.bam")
-    cbam.run(
-        outfile=combined_bam,
-        force=force
-    )
+    cbam.run(outfile=combined_bam, force=force)
 
     # group 2 (can run when input is ready)
-    sp = ScorePeaks(
-        bed=combined_bed,
-        bam=combined_bam,
-        verbose=verbose
-    )
+    sp = ScorePeaks(bed=combined_bed, bam=combined_bam, verbose=verbose)
     scored_peaks = os.path.join(intermediate_dir, "scoredpeaks.bed")
-    sp.run(
-        outfile=scored_peaks,
-        dist_func=dist_func,
-        force=force,
-        **kwargs
-    )
+    sp.run(outfile=scored_peaks, dist_func=dist_func, force=force, **kwargs)
 
     sm = ScoreMotifs(
-        genome=genome,
-        bed=combined_bed,
-        pfmfile=pfmfile,
-        ncore=ncore,
-        verbose=verbose
+        genome=genome, bed=combined_bed, pfmfile=pfmfile, ncore=ncore, verbose=verbose
     )
     scored_motifs = os.path.join(intermediate_dir, "scoredmotifs.bed")
     sm.run(outfile=scored_motifs, force=force)
@@ -111,7 +89,7 @@ def run_binding(
         tf_list=tf_list,
         whitelist=whitelist,
         ncore=ncore,
-        verbose=verbose
+        verbose=verbose,
     )
     outfile = os.path.join(outdir, "binding.tsv")
     b.run(outfile=outfile, force=force)
