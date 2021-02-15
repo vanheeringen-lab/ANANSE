@@ -47,6 +47,9 @@ def replace_infs(dist):
     Replace positive and negative infinity with the closes real value in the array
     """
     # https://stackoverflow.com/questions/12937824/lognormal-random-numbers-centered-around-a-high-value
+    if not isinstance(dist, np.ndarray):
+        dist = np.array(dist)
+
     min_real_val = np.nanmin(dist[dist != -np.inf])
     dist[dist == -np.inf] = min_real_val
     max_real_val = np.nanmax(dist[dist != np.inf])
@@ -59,6 +62,8 @@ def scipy_dist(scores, **kwargs):
     fit scores to a scipy.stats distribution.
     specified distribution name via kwargs['dist']
     """
+    if not isinstance(scores, np.ndarray):
+        scores = np.array(scores)
     scores = scores + 1  # add pseudocount
     x = range(len(scores))
 
@@ -133,6 +138,8 @@ def peak_rank_file_dist(scores, **kwargs):
     fit scores to the distribution in kwargs['file'].
     builtin files: "peak_rank.txt" and "peak_rank_hg38_h3k27ac.txt"
     """
+    if not isinstance(scores, np.ndarray):
+        scores = np.array(scores)
     dist_filename = kwargs.get("file", "peak_rank.txt")
 
     # internal data or user data

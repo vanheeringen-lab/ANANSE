@@ -167,7 +167,7 @@ def test_bam_merge():
 
 
 def test_cleanpath():
-    path = "./tests/02_utils.py"
+    path = "./tests/test_02_utils.py"
     expected = __file__
     res = ananse.utils.cleanpath(path)
     assert res == expected
