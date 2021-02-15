@@ -7,8 +7,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
-        os: [ubuntu-latest, macos-latest]
+        python-version: [3.8]  # [3.7, 3.8]
+        os: [ubuntu-latest]  # [ubuntu-latest, macos-latest]
       fail-fast: false
 
     steps:
@@ -28,12 +28,12 @@ jobs:
     - name: Code formatting (black)
       if: always()
       run: |
-        black --check ananse/ tests/
+        black --check ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
 
     - name: Code formatting (flake8)
       if: always()
       run: |
-        flake8 ananse/ tests/
+        flake8 ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
 
     - name: Run tests
       if: always()
