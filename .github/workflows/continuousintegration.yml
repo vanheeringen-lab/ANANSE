@@ -28,14 +28,14 @@ jobs:
     - name: Code formatting (black)
       if: always()
       run: |
-        black --check peaksql/ test/
+        black --check ananse/ tests/
 
     - name: Code formatting (flake8)
       if: always()
       run: |
-        flake8 peaksql/ test/
+        flake8 ananse/ tests/
 
     - name: Run tests
       if: always()
       run: |
-        coverage run -m unittest discover -v test
+        pytest -vv
