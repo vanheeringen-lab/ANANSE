@@ -8,7 +8,7 @@ import ananse.utils
 
 # prep
 
-test_dir = os.path.dirname(__file__)
+test_dir = os.path.dirname(os.path.dirname(__file__))
 outdir = os.path.join(test_dir, "output")
 genomepy.utils.mkdir_p(outdir)
 
@@ -167,7 +167,7 @@ def test_bam_merge():
 
 
 def test_cleanpath():
-    path = "./tests/test_02_utils.py"
+    path = "./tests/continuous_integration/test_02_utils.py"
     expected = __file__
     res = ananse.utils.cleanpath(path)
     assert res == expected
