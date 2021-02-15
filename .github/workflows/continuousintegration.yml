@@ -22,8 +22,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install .
-        pip install pytest               # test related
-        pip install flake8 black         # code quality related
+        python -m pip install "dask[dataframe]"   # Install requirements for dask dataframe
+        pip install pytest                        # test related
+        pip install flake8 black                  # code quality related
 
     - name: Code formatting (black)
       if: always()
