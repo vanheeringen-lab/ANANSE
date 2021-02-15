@@ -1,6 +1,9 @@
 import subprocess as sp
 
-# run tests locally with: pytest -vv --disable-pytest-warnings
+# run tests locally with:
+# pytest -vv --disable-pytest-warnings
+# pytest -vv --disable-pytest-warnings tests/continuous_integration/test_01*
+# pytest -vv --disable-pytest-warnings -k [substring]
 
 # TODO: apply to all code --> targets = ["ananse/", "tests/"]
 targets = [
