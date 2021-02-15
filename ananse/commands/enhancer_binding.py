@@ -34,7 +34,7 @@ def run_binding(
     Predict transcription factor binding in specified regions
 
     Args:
-        genome: path to the genome fasta used to align the bams and peaks to.
+        genome: path to the genome fasta used to align the bams and peaks to
         peakfiles: one or more BED format files with putative enhancer regions (e.g. narrowPeak, broadPeak)
         bams: one or more BAM format files where reads mark enhancer activity (H3K27Ac/p300 ChIP-seq or ATAC-seq)
         outdir: directory where you wish to store the output
@@ -43,11 +43,11 @@ def run_binding(
         pfmfile: the pfm file of the transcription factors to search for (default gimme.vertebrate.v5.0)
         curation_filter: True = curated TFs, False = no curated TFs, None = all TFs (default: None)
         tf_list: optional file with single column TF names
-        whitelist: Trye = use tf_list as a whitelist. False = use tf_list as a blacklist
+        whitelist: True = use tf_list as a whitelist. False = use tf_list as a blacklist
         model: classification model to use (default: dream)
         ncore: number of cores to use
         force: overwrite earlier intermediate data? (default: False)
-        keep_intermediates: remove intermediate data after completion? (default: False)
+        keep_intermediates: keep intermediate data after completion? (default: True)
         verbose: keep you informed of the progress? (default: True)
         **kwargs: passed to the selected dist_func
 

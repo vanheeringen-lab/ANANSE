@@ -2,7 +2,7 @@ import atexit
 from os import getpid
 import shutil
 from tempfile import mkdtemp
-import logging
+# import logging
 
 
 def mytmpdir():
@@ -11,19 +11,20 @@ def mytmpdir():
         atexit.register(shutil.rmtree, mytmpdir.dir)
     return mytmpdir.dir
 
+# TODO: Quan implemented loguru somewhere else already
+# logger = logging.getLogger("gnetwork")
+# logger.setLevel(logging.DEBUG)
+# logger.propagate = 0
+#
+# # nice format
+# screen_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+#
+# # Log to screen
+# sh = logging.StreamHandler()
+# sh.setLevel(logging.INFO)
+# sh.setFormatter(screen_formatter)
+# logger.addHandler(sh)
 
-logger = logging.getLogger("gnetwork")
-logger.setLevel(logging.DEBUG)
-logger.propagate = 0
-
-# nice format
-screen_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-
-# Log to screen
-sh = logging.StreamHandler()
-sh.setLevel(logging.INFO)
-sh.setFormatter(screen_formatter)
-logger.addHandler(sh)
 
 from ._version import get_versions
 
