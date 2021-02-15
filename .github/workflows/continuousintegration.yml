@@ -24,6 +24,7 @@ jobs:
         pip install .
         python -m pip install "dask[dataframe]"   # Install requirements for dask dataframe
         pip install pyarrow                       # Install requirements for gimme motifs
+        apt-get install bedtools                  # Install requirements for pybedtools
         pip install pytest                        # test related
         pip install flake8 black                  # code quality related
 
