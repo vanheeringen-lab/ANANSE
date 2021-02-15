@@ -15,7 +15,8 @@ jobs:
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v2
+    - name: checkout 👀
+      uses: actions/checkout@v2
 
     - name: Install dependencies 🔨
       uses: conda-incubator/setup-miniconda@v2
@@ -27,17 +28,17 @@ jobs:
         activate-environment: ananse_dev
         environment-file: requirements.yaml
 
-    - name: Code formatting (black)
+    - name: Code formatting (black) 🖤
       if: always()
       run: |
         black --check ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
 
-    - name: Code formatting (flake8)
+    - name: Code formatting (flake8) 🎱
       if: always()
       run: |
         flake8 ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
 
-    - name: Run tests
+    - name: Run tests 🧬
       if: always()
       run: |
         pytest -vv --disable-pytest-warnings
