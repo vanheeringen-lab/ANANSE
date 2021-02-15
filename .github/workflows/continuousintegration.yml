@@ -27,34 +27,26 @@ jobs:
 #      run: |
 #        conda install conda-forge::mamba -y
       with:
-        python-version: ${{ matrix.python-version }}
-        mamba-version: "*"
+        miniconda-version: "latest"
+        auto-update-conda: true
         channels: bioconda,conda-forge,defaults
         channel-priority: true
-        activate-environment: ananse_dev
+        python-version: ${{ matrix.python-version }}
+        mamba-version: "*"
         environment-file: requirements.yaml
+        activate-environment: ananse_dev
 
-#    - name: Install dependencies 🔨
-#      run: |
-#        python -m pip install --upgrade pip
-#        pip install .
-#        python -m pip install "dask[dataframe]"   # Install requirements for dask dataframe
-#        pip install pyarrow                       # Install requirements for gimme motifs
-#        apt-get install bedtools                  # Install requirements for pybedtools
-#        pip install pytest                        # test related
-#        pip install flake8 black                  # code quality related
+      - name: Code formatting (black)
+        if: always()
+        run: |
+          black --check ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
 
-    - name: Code formatting (black)
-      if: always()
-      run: |
-        black --check ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
+      - name: Code formatting (flake8)
+        if: always()
+        run: |
+          flake8 ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
 
-    - name: Code formatting (flake8)
-      if: always()
-      run: |
-        flake8 ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
-
-    - name: Run tests
-      if: always()
-      run: |
-        pytest -vv --disable-pytest-warnings
+      - name: Run tests
+        if: always()
+        run: |
+          pytest -vv --disable-pytest-warnings
