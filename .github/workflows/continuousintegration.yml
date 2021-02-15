@@ -5,6 +5,9 @@ on: [push]
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
     strategy:
       matrix:
         python-version: [3.8]  # [3.7, 3.8]
@@ -13,7 +16,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - uses: conda-incubator/setup-miniconda@v2
+
+    - name: Install dependencies 🔨
+      uses: conda-incubator/setup-miniconda@v2
       with:
         python-version: ${{ matrix.python-version }}
         mamba-version: "*"
@@ -21,18 +26,18 @@ jobs:
         channel-priority: true
         activate-environment: ananse_dev
         environment-file: requirements.yaml
+
     - name: Code formatting (black)
       if: always()
-      shell: bash -l {0}
       run: |
         black --check ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
+
     - name: Code formatting (flake8)
       if: always()
-      shell: bash -l {0}
       run: |
         flake8 ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
+
     - name: Run tests
       if: always()
-      shell: bash -l {0}
       run: |
         pytest -vv --disable-pytest-warnings
