@@ -13,27 +13,23 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-
-    - uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
-
     - uses: conda-incubator/setup-miniconda@v2
       with:
-        miniconda-version: "latest"
-        auto-update-conda: true
-        channels: bioconda,conda-forge,defaults
-        channel-priority: true
         python-version: ${{ matrix.python-version }}
         mamba-version: "*"
-        environment-file: requirements.yaml
+        channels: bioconda,conda-forge,defaults
+        channel-priority: true
         activate-environment: ananse_dev
-      - name: Code formatting (black)
-        run: |
-          black --check ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
-      - name: Code formatting (flake8)
-        run: |
-          flake8 ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
-      - name: Run tests
-        run: |
-          pytest -vv --disable-pytest-warnings
+        environment-file: requirements.yaml
+    - name: Code formatting (black)
+      if: always()
+      run: |
+        black --check ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
+    - name: Code formatting (flake8)
+      if: always()
+      run: |
+        flake8 ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
+    - name: Run tests
+      if: always()
+      run: |
+        pytest -vv --disable-pytest-warnings
