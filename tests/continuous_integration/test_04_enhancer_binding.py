@@ -22,7 +22,7 @@ def write_file(filename, lines):
 
 
 genome = os.path.join(outdir, "genome.fa")
-write_file(genome, [">chr1", "N"*50000])
+write_file(genome, [">chr1", "N" * 50000])
 
 bed1 = os.path.join(outdir, "bed1.bed")
 write_file(bed1, ["chr1\t0\t1000\n", "chr1\t2000\t3000\n"])
@@ -103,7 +103,9 @@ def test_bed_resize():
 
 
 def test_cbedf():
-    cbed = ananse.enhancer_binding.CombineBedFiles(genome=genome, peakfiles=[bed1, bed2])
+    cbed = ananse.enhancer_binding.CombineBedFiles(
+        genome=genome, peakfiles=[bed1, bed2]
+    )
     width = 200
     cbed.run(outfile=combined_bed, width=width, force=True)
 
@@ -160,12 +162,15 @@ def test_get_motif_scores():
     # pfmfile = os.path.join(test_dir, "example_data", "debug.pfm")
     # sm = ananse.enhancer_binding.ScoreMotifs(genome, combined_bed, pfmfile=pfmfile)
     # sm.get_motif_scores(combined_bed, raw_motif_scores)
-    write_file(raw_motif_scores, [
-        "motif	region	zscore",
-        "GM.5.0.Sox.0001	chr1:400-600	-0.5444524936254616",
-        "GM.5.0.Homeodomain.0001	chr1:2400-2600	-0.3774763844954927",
-        "GM.5.0.Sox.0001	chr1:4400-4600	-0.5444524936254616",
-    ])
+    write_file(
+        raw_motif_scores,
+        [
+            "motif	region	zscore",
+            "GM.5.0.Sox.0001	chr1:400-600	-0.5444524936254616",
+            "GM.5.0.Homeodomain.0001	chr1:2400-2600	-0.3774763844954927",
+            "GM.5.0.Sox.0001	chr1:4400-4600	-0.5444524936254616",
+        ],
+    )
 
 
 def test_normalize_motifs():
@@ -214,9 +219,6 @@ def test_get_binding_score():
 
     assert os.path.exists(outfile)
 
-
-def test_cleanup():
-    genomepy.utils.rm_rf(outdir)
 
 # test_dir = os.path.dirname(os.path.dirname(__file__))
 # data_dir = os.path.join(test_dir, "data")

@@ -175,7 +175,3 @@ def test_cleanpath():
     expected = "/"
     res = ananse.utils.cleanpath(path)
     assert res == expected
-
-
-def test_cleanup():
-    genomepy.utils.rm_rf(outdir)
