@@ -19,13 +19,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - uses: conda-incubator/setup-miniconda@v2
-#      with:
-#        channels: conda-forge
-#        auto-activate-base: true
-#        activate-environment: ""
-#    - name: Install dependencies 🔨
-#      run: |
-#        conda install conda-forge::mamba -y
       with:
         miniconda-version: "latest"
         auto-update-conda: true
@@ -35,18 +28,12 @@ jobs:
         mamba-version: "*"
         environment-file: requirements.yaml
         activate-environment: ananse_dev
-
       - name: Code formatting (black)
-        if: always()
         run: |
           black --check ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
-
       - name: Code formatting (flake8)
-        if: always()
         run: |
           flake8 ananse/enhancer_binding.py ananse/commands/enhancer_binding.py tests/
-
       - name: Run tests
-        if: always()
         run: |
           pytest -vv --disable-pytest-warnings
