@@ -282,7 +282,7 @@ class ScorePeaks:
         bed = pd.DataFrame(data=data)
         bed.to_csv(bed_output, sep="\t", index=False)
 
-    def run(self, outfile, dist_func="lognorm_dist", force=False, **kwargs):
+    def run(self, outfile, dist_func="peak_rank_file_dist", force=False, **kwargs):
         # save the results as it takes ages to run
         coverage_file = os.path.join(os.path.dirname(outfile), "raw_scoredpeaks.bed")
         if force or not os.path.exists(coverage_file):
@@ -454,9 +454,9 @@ class Binding:
                 pd.read_csv(tf_list, header=None)[0].str.upper().tolist()
             )  # make case-insensitive
             m2f = (
-                m2f.loc[m2f.Factor.isin(tfs)]
+                m2f.loc[m2f.factor.isin(tfs)]
                 if whitelist
-                else m2f.loc[~m2f.Factor.isin(tfs)]
+                else m2f.loc[~m2f.factor.isin(tfs)]
             )
 
         return m2f

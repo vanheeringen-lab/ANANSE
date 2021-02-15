@@ -26,8 +26,3 @@ def test_black_formatting():
 def test_flake8_formatting():
     ret = sp.check_call(" ".join(["flake8 setup.py"] + targets), shell=True)
     assert ret == 0
-
-
-# class TestBasics:
-#     def test_import_ananse(self):
-#         import ananse

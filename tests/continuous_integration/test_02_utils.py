@@ -75,25 +75,21 @@ def test_bed_merge():
 
 
 h0 = "@HD	VN:1.6	SO:coordinate"
-h1 = "@SQ	SN:chr1	LN:248956422"
+h1 = "@SQ	SN:chr1	LN:50000"
 line1 = (
-    "GADGET:53:HF5JFBBXX:2:1228:15189:39594	147	chr1	10003	40	11S90M	=	10048	-46	"
+    "read1	147	chr1	10003	40	11S90M	=	10048	-46	"
     + "CCCTACCCTCTCCCTATCCCTAACCCTAACCCCAACCCTAACCCTATCCCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAA	"
     + "A77--7-7---7-7---A77---AA7----<7-AAJAA-7JJFF<--F-A-AFFFF<FJJJJF-AFJF7F-JJJFJFFFJFF<FJJJJFJJFJJFFFFFAA	"
-    + "MC:Z:58M1I42M	MD:Z:5A15T13A3T50	PG:Z:MarkDuplicates	NM:i:4	AS:i:70	XS:i:70"
 )
 line2 = (
-    "GADGET:53:HF5JFBBXX:2:2224:31010:36622	83	chr1	10004	30	2S45M1D54M	=	10074	-30	"
+    "read2	83	chr1	10004	30	2S45M1D54M	=	10074	-30	"
     + "ATCCCTAACCCTAACCCTAACCCTAACCCTACCCCTACCCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCT	"
     + "--JAA7F-FAFA-7JJFA--F<7-FF<<FAF7<7F7A-FFAF7-FJJJFJJ----J<JFA-JAF7JFJFJF<<JFJF<JJJFFJJJAAAA-JFFFA-FAA-	"
-    + "XA:Z:chr3,-10471,31M1I69M,4;chr3,-10535,101M,5;chr21,+46699903,82M19S,2;	MC:Z:73M1D27M	"
-    + "MD:Z:29A5A9^T54	PG:Z:MarkDuplicates	NM:i:3	AS:i:82	XS:i:81"
 )
 line3 = (
-    "GADGET:53:HF5JFBBXX:3:1110:5051:22168	163	chr1	10027	40	100M	=	10032	105	"
+    "read3	163	chr1	10027	40	100M	=	10032	105	"
     + "ACCCGAACCCTAACCCTAACCCTAACCCTAACCCGAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCGAACCCA	"
     + "AAFFFJJJJJJJJJJJFJJJFJJJFJFJJFJJJJ<-FJJFJAFFJA7AFAJJJJFJFJ-<F-AAJJ<FF7-J-AAJ--<JJJ--AAJ-77-AA-7A<-A-	"
-    + "MC:Z:8M1D91M	MD:Z:4T29T58T5T0	PG:Z:MarkDuplicates	NM:i:4	AS:i:84	XS:i:82"
 )
 
 unsorted_bam = os.path.join(outdir, "unsorted.bam")
@@ -166,6 +162,9 @@ def test_bam_merge():
     assert len(l1) + len(l2) == len(l3) == 3
 
 
+# test other functions
+
+
 def test_cleanpath():
     path = "./tests/continuous_integration/test_02_utils.py"
     expected = __file__
@@ -176,9 +175,6 @@ def test_cleanpath():
     expected = "/"
     res = ananse.utils.cleanpath(path)
     assert res == expected
-
-
-# test other functions
 
 
 def test_cleanup():
