@@ -69,7 +69,7 @@ def run_binding(
     cbam.run(outfile=combined_bam, force=force)
 
     # group 2 (can run when input is ready)
-    sp = ScorePeaks(bed=combined_bed, bam=combined_bam, verbose=verbose)
+    sp = ScorePeaks(bed=combined_bed, bam=combined_bam, ncore=ncore, verbose=verbose)
     scored_peaks = os.path.join(intermediate_dir, "scoredpeaks.bed")
     sp.run(outfile=scored_peaks, dist_func=dist_func, force=force, **kwargs)
 

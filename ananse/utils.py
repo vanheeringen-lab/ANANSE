@@ -1,6 +1,7 @@
 import os
 import warnings
 import shutil
+import subprocess as sp
 import tempfile
 
 from pybedtools import BedTool
@@ -52,6 +53,23 @@ def count_reads(bams, peakfile, bed_output):
     bed = BedTool(peakfile)
     bam_list = bams if isinstance(bams, list) else [bams]
     bed.multi_bam_coverage(bams=bam_list, output=bed_output)
+
+
+def mosdepth(bed, bam, outdir, ncore=1):
+    """
+    Count (median) bam reads in putative enhancer regions
+    """
+    ncore = min(4, ncore)
+    prefix = os.path.join(outdir, "bam_coverage")
+
+    cmd = f"mosdepth -nxm -t {ncore} -b {bed} {prefix} {bam}"
+    sp.check_call(cmd, shell=True)
+
+    outfile = f"{prefix}.regions.bed"
+    cmd = f"gunzip -f {outfile}.gz"
+    sp.check_call(cmd, shell=True)
+
+    return outfile
 
 
 def samc(ncore):

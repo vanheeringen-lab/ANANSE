@@ -243,7 +243,7 @@ def test_filter_transcription_factors():
 
 
 def test_get_binding_score():
-    pfmfile = os.path.join(test_dir, "example_data", "debug.pfm")
+    pfmfile = os.path.join(test_dir, "data", "debug.pfm")
     b = ananse.enhancer_binding.Binding(None, None, pfmfile=pfmfile)
     b.get_binding_score(scored_motifs, scored_peaks, outfile)
 

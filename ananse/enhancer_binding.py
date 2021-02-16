@@ -18,7 +18,7 @@ from tqdm import tqdm
 from ananse.utils import (
     bed_sort,
     bed_merge,
-    count_reads,
+    mosdepth,
     bam_index,
     bam_merge,
     bam_sort,
@@ -234,20 +234,11 @@ class CombineBamFiles:
 
 
 class ScorePeaks:
-    def __init__(self, bed, bam, verbose=True):
+    def __init__(self, bed, bam, ncore=1, verbose=True):
         self.bam = bam  # one sorted & indexed bam file with reads representing enhancer activity
         self.bed = bed  # one bed file with putative enhancer binding regions
+        self.ncore = ncore
         self.verbose = verbose
-
-    def count_reads(self, coverage_file):
-        tmpdir = tempfile.mkdtemp()
-        try:
-            bam_coverage = os.path.join(tmpdir, "bam_coverage")
-            count_reads(self.bam, self.bed, bam_coverage)
-
-            shutil.copy2(bam_coverage, coverage_file)
-        finally:
-            shutil.rmtree(tmpdir, ignore_errors=True)
 
     @staticmethod
     def normalize_peaks(bam_coverage, bed_output, dist_func="lognorm_dist", **kwargs):
@@ -284,15 +275,23 @@ class ScorePeaks:
 
     def run(self, outfile, dist_func="peak_rank_file_dist", force=False, **kwargs):
         # save the results as it takes ages to run
-        coverage_file = os.path.join(os.path.dirname(outfile), "raw_scoredpeaks.bed")
-        if force or not os.path.exists(coverage_file):
-            if self.verbose:
-                print("Scoring peaks (slow)")
-            self.count_reads(coverage_file)
+        raw_peak_scores = os.path.join(os.path.dirname(outfile), "raw_scoredpeaks.bed")
+        if force or not os.path.exists(raw_peak_scores):
+            tmpdir = tempfile.mkdtemp()
+            try:
+                if self.verbose:
+                    print("Scoring peaks (slow)")
+                tmp_peak_scores = mosdepth(self.bed, self.bam, tmpdir, self.ncore)
+
+                shutil.copy2(tmp_peak_scores, raw_peak_scores)
+            finally:
+                shutil.rmtree(tmpdir, ignore_errors=True)
 
         # fit bam read counts to specified distribution
         if force or not os.path.exists(outfile):
-            self.normalize_peaks(coverage_file, outfile, dist_func=dist_func, **kwargs)
+            self.normalize_peaks(
+                raw_peak_scores, outfile, dist_func=dist_func, **kwargs
+            )
 
 
 class ScoreMotifs:
