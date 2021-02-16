@@ -159,9 +159,39 @@ def test_sp():
 
 def test_get_motif_scores():
     # TODO: cant get gimmemotifs to skip making a GC background index
-    # pfmfile = os.path.join(test_dir, "example_data", "debug.pfm")
-    # sm = ananse.enhancer_binding.ScoreMotifs(genome, combined_bed, pfmfile=pfmfile)
-    # sm.get_motif_scores(combined_bed, raw_motif_scores)
+    # fake_cg_index = "~/.cache/gimmemotifs/genome.fa.gcfreq.100.feather"
+    # try:
+    #     import pandas as pd
+    #     import numpy as np
+    #     df = pd.DataFrame({
+    #         "chrom": ["chr1"],
+    #         "start": ["0"],
+    #         "end": ["100"],
+    #         "w100": ["0.0"],
+    #         "n100": ["0.0"],
+    #         "w200": [np.NaN],
+    #         "n200": [np.NaN],
+    #         "w500": [np.NaN],
+    #         "n500": [np.NaN],
+    #     })
+    #     df.to_feather(fake_cg_index)
+    #
+    #     pfmfile = os.path.join(test_dir, "example_data", "debug.pfm")
+    #     sm = ananse.enhancer_binding.ScoreMotifs(genome, combined_bed, pfmfile=pfmfile)
+    #     sm.get_motif_scores(combined_bed, raw_motif_scores)
+    # finally:
+    #     genomepy.utils.rm_rf(fake_cg_index)
+    #
+    #     write_file(
+    #         raw_motif_scores,
+    #         [
+    #             "motif	region	zscore",
+    #             "GM.5.0.Sox.0001	chr1:400-600	-0.5444524936254616",
+    #             "GM.5.0.Homeodomain.0001	chr1:2400-2600	-0.3774763844954927",
+    #             "GM.5.0.Sox.0001	chr1:4400-4600	-0.5444524936254616",
+    #         ],
+    #     )
+
     write_file(
         raw_motif_scores,
         [
@@ -186,13 +216,13 @@ def test_normalize_motifs():
 
 
 def test_sm():
-    pfmfile = os.path.join(test_dir, "example_data", "debug.pfm")
+    pfmfile = os.path.join(test_dir, "data", "debug.pfm")
     sm = ananse.enhancer_binding.ScoreMotifs(genome, combined_bed, pfmfile=pfmfile)
     sm.run(outfile=scored_motifs, force=False)
 
 
 def test_filter_transcription_factors():
-    pfmfile = os.path.join(test_dir, "example_data", "debug.pfm")
+    pfmfile = os.path.join(test_dir, "data", "debug.pfm")
     b = ananse.enhancer_binding.Binding(None, None, pfmfile=pfmfile)
 
     # curation filter
@@ -218,61 +248,3 @@ def test_get_binding_score():
     b.get_binding_score(scored_motifs, scored_peaks, outfile)
 
     assert os.path.exists(outfile)
-
-
-# test_dir = os.path.dirname(os.path.dirname(__file__))
-# data_dir = os.path.join(test_dir, "data")
-# genomepy.utils.mkdir_p(data_dir)
-# outdir = os.path.join(test_dir, "output")
-# genomepy.utils.mkdir_p(outdir)
-# examples_dir = os.path.join(test_dir, "example_data")
-
-
-# # H3K27Ac data
-# genome = os.path.join(data_dir, "hg38.fa")
-# peakfiles = os.path.join(data_dir, "hg38-keratinocyte_H3K27ac_peaks.broadPeak")
-# bams = os.path.join(data_dir, "hg38-keratinocyte_H3K27ac_rep1.samtools-coordinate.bam")
-#
-# assert "" == bams
-
-# # download test data locally
-# for file in [genome, peakfiles, bams]:
-#     if not os.path.exists(file):
-#         url = "https://mbdata.science.ru.nl/ANANSE/tests/data/" + file
-#         genomepy.utils.download_file(url, file)
-#
-#
-# # group 1 (can run simultaneously)
-# cbed = ananse.enhancer_binding.CombineBedFiles(genome=genome, peakfiles=peakfiles)
-# combined_bed = os.path.join(outdir, "combined.bed")
-# cbed.run(outfile=combined_bed, width=200, force=True)
-#
-# cbam = ananse.enhancer_binding.CombineBamFiles(bams=bams)
-# combined_bam = os.path.join(outdir, "combined.bam")
-# cbam.run(outfile=combined_bam, force=True)
-#
-# # group 2 (can run when input is ready)
-# sp = ananse.enhancer_binding.ScorePeaks(bed=combined_bed, bam=combined_bam)
-# scored_peaks = os.path.join(outdir, "scoredpeaks.bed")
-# sp.run(
-#     outfile=scored_peaks,
-#     dist_func="peak_rank_file_dist",
-#     **{"dist": "loglaplace"},
-#     force=True
-# )
-# # distplot(scored_peaks)
-#
-# sm = ananse.enhancer_binding.ScoreMotifs(
-#     genome=genome, bed=combined_bed, ncore=max(os.cpu_count() - 2, 1)
-# )
-# scored_motifs = os.path.join(outdir, "scoredmotifs.bed")
-# sm.run(outfile=scored_motifs, force=True)
-#
-# # group 3 (end result)
-# b = ananse.enhancer_binding.Binding(
-#     peak_weights=scored_peaks,
-#     motif_weights=scored_motifs,
-#     ncore=max(os.cpu_count() - 2, 1),
-# )
-# outfile = os.path.join(outdir, "binding.tsv")
-# b.run(outfile=outfile, force=True)
