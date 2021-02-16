@@ -52,7 +52,7 @@ if __name__ == "__main__":
         dest="peakfiles",
         help="one or more BED format files with putative enhancer regions (e.g. narrowPeak, broadPeak)",
         metavar="",
-        nargs='*',
+        nargs='+',  # >= 1 files
     )
     group.add_argument(
         "-b",
@@ -61,7 +61,7 @@ if __name__ == "__main__":
         dest="bams",
         help="one or more BAM format files where reads mark enhancer activity (H3K27Ac/p300 ChIP-seq or ATAC-seq)",
         metavar="",
-        nargs='*',
+        nargs='+',  # >= 1 files
     )
     group = p.add_argument_group("optional arguments")
     group.add_argument(

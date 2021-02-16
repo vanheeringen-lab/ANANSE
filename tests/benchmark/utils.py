@@ -5,16 +5,15 @@ import pandas as pd
 import seaborn as sns
 
 
-# https://stackoverflow.com/questions/18534562/scipy-lognormal-fitting
-# https://stackoverflow.com/questions/41940726/scipy-lognorm-fitting-to-histogram
-# https://stackoverflow.com/questions/26406056/a-lognormal-distribution-in-python
-# https://stackoverflow.com/questions/15630647/fitting-lognormal-distribution-using-scipy-vs-matlab
-
-
 def distplot(infile, score_col=4, show=False):
     """
     generate simple distplot from bedfile
     """
+    # https://stackoverflow.com/questions/18534562/scipy-lognormal-fitting
+    # https://stackoverflow.com/questions/41940726/scipy-lognorm-fitting-to-histogram
+    # https://stackoverflow.com/questions/26406056/a-lognormal-distribution-in-python
+    # https://stackoverflow.com/questions/15630647/fitting-lognormal-distribution-using-scipy-vs-matlab
+
     bed = pd.read_csv(infile, header=None, sep="\t")
     scores = pd.Series(bed[score_col])
     bins = min(30, len(scores))  # too many bins = bad
