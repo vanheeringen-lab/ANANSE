@@ -487,6 +487,7 @@ class Binding:
         m["binding"] = clf.predict_proba(m[["zscore", "log10_score"]])[:, 1]
 
         # "region" renames to "enhancer" for consistency with ANANSE network
+        m.rename(columns={"region": "enhancer"}, inplace=True)
         m.to_csv(
             outfile, sep="\t", index=False, columns=["factor", "enhancer", "binding"]
         )
