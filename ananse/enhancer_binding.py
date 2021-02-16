@@ -486,8 +486,9 @@ class Binding:
             clf = pickle.load(f)
         m["binding"] = clf.predict_proba(m[["zscore", "log10_score"]])[:, 1]
 
+        # "region" renames to "enhancer" for consistency with ANANSE network
         m.to_csv(
-            outfile, sep="\t", index=False, columns=["factor", "region", "binding"]
+            outfile, sep="\t", index=False, columns=["factor", "enhancer", "binding"]
         )
 
     def run(self, outfile, force=False):

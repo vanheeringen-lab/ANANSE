@@ -373,4 +373,7 @@ if __name__ == "__main__":
                     print("Alternatively, you can specify a FASTA file.")
                     exit(1)
 
-        args.func(args)
+        if args.func.__name__.startswith("run_"):
+            args.func(**vars(args))
+        else:
+            args.func(args)
