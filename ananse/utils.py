@@ -53,6 +53,7 @@ def count_reads(bams, peakfile, bed_output):
     """
     Count bam reads in putative enhancer regions
     """
+    # replace with gimmemotifs.preprocessing.coverage_table()
     bed = BedTool(peakfile)
     bam_list = bams if isinstance(bams, list) else [bams]
     bed.multi_bam_coverage(bams=bam_list, output=bed_output)

@@ -21,9 +21,9 @@ from tqdm import tqdm
 from ananse.utils import (
     bed_sort,
     bed_merge,
-    mosdepth,
     bam_index,
     bam_sort,
+    mosdepth,
 )
 from ananse.distributions import Distributions
 
