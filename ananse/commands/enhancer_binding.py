@@ -1,5 +1,4 @@
 import os
-import shutil
 
 import genomepy.utils
 
@@ -57,43 +56,54 @@ def run_binding(
     # clean up previous ANANSE tmp files
     clean_tmp()
 
-    # TODO: check inputs for validity
+    # check input file paths
+    files = []
+    for arg in [genome, peakfiles, bams, pfmfile, tf_list, model]:
+        if arg:
+            if isinstance(arg, list):
+                files.extend(arg)
+            else:
+                files.append(arg)
+    for file in files:
+        if not os.path.exists(file):
+            raise FileNotFoundError(f"Could not find {file}!")
 
-    intermediate_dir = os.path.join(outdir, "intermediate_results")
-    genomepy.utils.mkdir_p(intermediate_dir)
-
-    # group 1: list of all putative enhancer regions
-    cbed = CombineBedFiles(genome=genome, peakfiles=peakfiles, verbose=verbose)
-    combined_bed = os.path.join(intermediate_dir, "combined.bed")
-    cbed.run(outfile=combined_bed, width=peak_width, force=force)
-
-    # group 2 (can run when input is ready)
-    sp = ScorePeaks(bams=bams, bed=combined_bed, ncore=ncore, verbose=verbose)
-    scored_peaks = os.path.join(intermediate_dir, "scoredpeaks.bed")
-    sp.run(outfile=scored_peaks, dist_func=dist_func, force=force, **kwargs)
-
-    sm = ScoreMotifs(
-        genome=genome, bed=combined_bed, pfmfile=pfmfile, ncore=ncore, verbose=verbose
-    )
-    scored_motifs = os.path.join(intermediate_dir, "scoredmotifs.bed")
-    sm.run(outfile=scored_motifs, force=force)
-
-    # group 3 (end result)
-    b = Binding(
-        peak_weights=scored_peaks,
-        motif_weights=scored_motifs,
-        pfmfile=pfmfile,
-        model=model,
-        curation_filter=curation_filter,
-        tf_list=tf_list,
-        whitelist=whitelist,
-        ncore=ncore,
-        verbose=verbose,
-    )
     outfile = os.path.join(outdir, "binding.tsv")
-    b.run(outfile=outfile, force=force)
+    intermediate_dir = os.path.join(outdir, "intermediate_results")
+    if force or not os.path.exists(outfile):
+        genomepy.utils.mkdir_p(intermediate_dir)
+
+        # group 1: list of all putative enhancer regions
+        cbed = CombineBedFiles(genome=genome, peakfiles=peakfiles, verbose=verbose)
+        combined_bed = os.path.join(intermediate_dir, "combined.bed")
+        cbed.run(outfile=combined_bed, width=peak_width, force=force)
+
+        # group 2 (can run when input is ready)
+        sp = ScorePeaks(bams=bams, bed=combined_bed, ncore=ncore, verbose=verbose)
+        scored_peaks = os.path.join(intermediate_dir, "scoredpeaks.bed")
+        sp.run(outfile=scored_peaks, dist_func=dist_func, force=force, **kwargs)
+
+        sm = ScoreMotifs(
+            genome=genome, bed=combined_bed, pfmfile=pfmfile, ncore=ncore, verbose=verbose
+        )
+        scored_motifs = os.path.join(intermediate_dir, "scoredmotifs.bed")
+        sm.run(outfile=scored_motifs, force=force)
+
+        # group 3 (end result)
+        b = Binding(
+            peak_weights=scored_peaks,
+            motif_weights=scored_motifs,
+            pfmfile=pfmfile,
+            model=model,
+            curation_filter=curation_filter,
+            tf_list=tf_list,
+            whitelist=whitelist,
+            ncore=ncore,
+            verbose=verbose,
+        )
+        b.run(outfile=outfile, force=force)
 
     if not keep_intermediates:
-        shutil.rmtree(intermediate_dir, ignore_errors=True)
+        genomepy.utils.rm_rf(intermediate_dir)
     if verbose:
         print("ANANSE binding finished successfully!")
