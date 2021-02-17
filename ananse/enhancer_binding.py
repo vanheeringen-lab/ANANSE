@@ -6,9 +6,8 @@ import shutil
 import dask.dataframe as dd
 import dask.diagnostics
 import genomepy
-from gimmemotifs.scanner import Scanner
-from gimmemotifs.motif import read_motifs
-from gimmemotifs.utils import as_fasta, pfmfile_location
+from gimmemotifs.scanner import scan_regionfile_to_table
+from gimmemotifs.utils import pfmfile_location
 from loguru import logger
 import numpy as np
 import pandas as pd
@@ -16,7 +15,6 @@ import pickle
 import qnorm
 from scipy import stats
 from sklearn.preprocessing import minmax_scale
-from tqdm import tqdm
 
 from ananse.utils import (
     bed_sort,
@@ -333,59 +331,45 @@ class ScorePeaks:
 class ScoreMotifs:
     def __init__(self, genome, bed, pfmfile=None, ncore=1, verbose=True):
         self.genome = genome
-        self.bed = bed  # one bed file with putative enhancer binding regions
+        self.bed = bed  # putative enhancer regions in format chr:start-end (in column 0 with header)
         self.pfm_file = pfmfile_location(pfmfile)
         self.ncore = ncore
         self.verbose = verbose
 
-    def setup_gimme_scanner(self):
-        s = Scanner(ncpus=self.ncore)
-        s.set_motifs(self.pfm_file)
-        s.set_genome(self.genome)
-
-        # generate GC background index
-        _ = s.best_score([], zscore=True, gc=True)
-        if self.verbose:
-            logger.info("Scanner loaded")
-        return s
-
-    def motifs_get_scores(self, enhancer_regions_bed, pfmscorefile):
+    def motifs_get_scores(self, pfmscorefile, debug=False):
         """
         Scan for TF binding motifs in potential enhancer regions.
         """
-        scanner = self.setup_gimme_scanner()
+        if not debug:
+            df = scan_regionfile_to_table(
+                input_table=self.bed,
+                genome=self.genome,
+                scoring="score",
+                pfmfile=self.pfm_file,
+                ncpus=self.ncore,
+                zscore=True,
+                gc=True,
+            )
+        else:  # test output
+            df = pd.DataFrame(
+                {
+                    "region": ["chr1:400-600", "chr1:2400-2600", "chr1:10003-10203"],
+                    "GM.5.0.Sox.0001": [-0.544, -2.496, -0.544],
+                    "GM.5.0.Homeodomain.0001": [-0.750, -0.377, -7.544],
+                }
+            ).set_index("region")
 
-        with open(self.pfm_file) as f:
-            motifs = read_motifs(f)
+        df["motif"] = df.idxmax(axis=1)
+        df["zscore"] = df.max(axis=1)
+        df.reset_index(inplace=True)
 
-        # new file with header only (append data in chunks)
-        with open(pfmscorefile, "w") as f:
-            # Quan: When we built model, rank and minmax normalization was used.
-            cols = ["motif", "region", "zscore"]
-            f.write("\t".join(cols) + "\n")
-
-        seqs = [
-            s.split(" ")[0]
-            for s in as_fasta(enhancer_regions_bed, genome=self.genome).ids
-        ]
-        with tqdm(total=len(seqs), unit="regions") as pbar:
-            # Run 10k regions per scan.
-            chunksize = 10_000
-            for chunk in range(0, len(seqs), chunksize):
-                pfm_score = []
-                chunk_seqs = seqs[chunk : chunk + chunksize]  # noqa: black's decision
-                # We are using GC-normalization for motif scanning as many enhancer binding regions are GC-enriched.
-                chunk_scores = scanner.best_score(chunk_seqs, zscore=True, gc=True)
-                # for each seq, store the score of each motif
-                for seq, scores in zip(chunk_seqs, chunk_scores):
-                    for motif, score in zip(motifs, scores):
-                        pfm_score.append([motif.id, seq, score])
-                    pbar.update(1)
-                pfm_score = pd.DataFrame(pfm_score, columns=cols)
-
-                pfm_score[cols].to_csv(
-                    pfmscorefile, sep="\t", header=False, index=False, mode="a"
-                )
+        df.to_csv(
+            pfmscorefile,
+            sep="\t",
+            header=True,
+            index=False,
+            columns=["motif", "region", "zscore"],  # filter + order columns
+        )
 
     @staticmethod
     def motifs_normalize(bed_input, bed_output):
@@ -401,16 +385,19 @@ class ScoreMotifs:
             os.path.dirname(outfile), "raw_scoredmotifs.bed"
         )
         if force or not os.path.exists(raw_motif_scores):
-            tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
-            try:
-                if self.verbose:
-                    logger.info("Scoring motifs (really slow)")
-                tmp_motif_scores = os.path.join(tmpdir, "motif_scores")
-                self.motifs_get_scores(self.bed, tmp_motif_scores)
-
-                shutil.copy2(tmp_motif_scores, raw_motif_scores)
-            finally:
-                shutil.rmtree(tmpdir, ignore_errors=True)
+            if self.verbose:
+                logger.info("Scoring motifs (really slow)")
+            self.motifs_get_scores(raw_motif_scores)
+            # tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
+            # try:
+            #     if self.verbose:
+            #         logger.info("Scoring motifs (really slow)")
+            #     tmp_motif_scores = os.path.join(tmpdir, "motif_scores")
+            #     self.motifs_get_scores(tmp_motif_scores)
+            #
+            #     shutil.copy2(tmp_motif_scores, raw_motif_scores)
+            # finally:
+            #     shutil.rmtree(tmpdir, ignore_errors=True)
 
         if force or not os.path.exists(outfile):
             self.motifs_normalize(raw_motif_scores, outfile)

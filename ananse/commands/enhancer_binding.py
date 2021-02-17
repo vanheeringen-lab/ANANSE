@@ -76,19 +76,17 @@ def run_binding(
     if force or not os.path.exists(outfile):
         genomepy.utils.mkdir_p(intermediate_dir)
 
-        # group 1: list of all putative enhancer regions
         cbed = CombineBedFiles(genome=genome, peakfiles=peakfiles, verbose=verbose)
         combined_bed = os.path.join(intermediate_dir, "combined.bed")
         cbed.run(outfile=combined_bed, width=peak_width, force=force)
 
-        # group 2 (can run when input is ready)
         sp = ScorePeaks(bams=bams, bed=combined_bed, ncore=ncore, verbose=verbose)
         scored_peaks = os.path.join(intermediate_dir, "scoredpeaks.bed")
         sp.run(outfile=scored_peaks, dist_func=dist_func, force=force, **kwargs)
 
         sm = ScoreMotifs(
             genome=genome,
-            bed=combined_bed,
+            bed=scored_peaks,
             pfmfile=pfmfile,
             ncore=ncore,
             verbose=verbose,
@@ -96,7 +94,6 @@ def run_binding(
         scored_motifs = os.path.join(intermediate_dir, "scoredmotifs.bed")
         sm.run(outfile=scored_motifs, force=force)
 
-        # group 3 (end result)
         b = Binding(
             peak_weights=scored_peaks,
             motif_weights=scored_motifs,

@@ -12,8 +12,8 @@ from tests.benchmark.utils import distplot
 
 
 # prep
+run_gimme = False  # takes ages
 
-# test_dir = os.path.join(os.getcwd(), "tests")
 test_dir = os.path.dirname(os.path.dirname(__file__))
 data_dir = os.path.join(test_dir, "data")
 genomepy.utils.mkdir_p(data_dir)
@@ -37,12 +37,10 @@ for file in [genome, peakfiles, bams]:
         genomepy.utils.download_file(url, file)
 
 
-# group 1: list of all putative enhancer regions
 cbed = CombineBedFiles(genome=genome, peakfiles=peakfiles, verbose=True)
 combined_bed = os.path.join(intermediate_dir, "combined.bed")
 cbed.run(outfile=combined_bed, width=200, force=False)
 
-# group 2 (can run when input is ready)
 sp = ScorePeaks(bams=bams, bed=combined_bed, ncore=ncore, verbose=True)
 
 # benchmark peak normalization
@@ -64,19 +62,17 @@ for func, kwargs in zip(
     sp.run(outfile=scored_peaks, dist_func=func, force=False, **kwargs)
     distplot(scored_peaks, score_col=5)
 
-run_gimme = False
 if run_gimme:
     scored_peaks = os.path.join(intermediate_dir, "scoredpeaks.bed")
     sp = ScorePeaks(bams=bams, bed=combined_bed, ncore=ncore, verbose=True)
     sp.run(outfile=scored_peaks, dist_func="peak_rank_dist", force=False)
 
     sm = ScoreMotifs(
-        genome=genome, bed=combined_bed, pfmfile=None, ncore=ncore, verbose=True
+        genome=genome, bed=scored_peaks, pfmfile=None, ncore=ncore, verbose=True
     )
     scored_motifs = os.path.join(intermediate_dir, "scoredmotifs.bed")
     sm.run(outfile=scored_motifs, force=True)
 
-    # group 3 (end result)
     b = Binding(
         peak_weights=scored_peaks,
         motif_weights=scored_motifs,

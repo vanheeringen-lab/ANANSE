@@ -162,7 +162,28 @@ def test_sp():
 
 
 def test_motifs_get_scores():
-    # TODO: cant get gimmemotifs to skip making a GC background index
+    # scan_regionfile_to_table output:
+    # region                  GM.5.0.Sox.0001         GM.5.0.Mixed.0002
+    # chr1:10003-10203        -4.4961200165161355     -3.1206201127508577
+    # chr1:10203-10403        -4.4961200165161355     -3.1206201127508577
+
+    # desired output:
+    # motif              region           zscore
+    # GM.5.0.Mixed.0002  chr1:10003-10203 -3.1200
+    # GM.5.0.Sox.0001    chr1:10203-10403 -2.4961
+
+    sm = ananse.enhancer_binding.ScoreMotifs(None, None)
+    sm.motifs_get_scores(raw_motif_scores, debug=True)
+
+    with open(raw_motif_scores) as f:
+        content = f.readlines()
+
+    headers = content[0].strip().split("\t")
+    motif1 = content[1].strip().split("\t")
+    assert headers == ["motif", "region", "zscore"]
+    assert motif1 == ["GM.5.0.Sox.0001", "chr1:400-600", "-0.544"]
+
+    # TODO: get gimme to make small & quick(!) output for testing
     # fake_cg_index = "~/.cache/gimmemotifs/genome.fa.gcfreq.100.feather"
     # try:
     #     import pandas as pd
@@ -180,20 +201,9 @@ def test_motifs_get_scores():
     # finally:
     #     genomepy.utils.rm_rf(fake_cg_index)
 
-    write_file(
-        raw_motif_scores,
-        [
-            "motif	region	zscore",
-            "GM.5.0.Sox.0001	chr1:400-600	-0.5444524936254616",
-            "GM.5.0.Homeodomain.0001	chr1:2400-2600	-0.3774763844954927",
-            "GM.5.0.Sox.0001	chr1:10003-10203	-0.5444524936254616",
-        ],
-    )
-    pass
-
 
 def test_normalize_motifs():
-    sm = ananse.enhancer_binding.ScoreMotifs(genome, combined_bed)
+    sm = ananse.enhancer_binding.ScoreMotifs(None, None)
     sm.motifs_normalize(raw_motif_scores, scored_motifs)
 
     with open(raw_motif_scores) as f:
@@ -202,14 +212,6 @@ def test_normalize_motifs():
         lines2 = f.readlines()
 
     assert len(lines2[0].split()) == len(lines1[0].split()) + 1
-
-
-def test_sm():
-    # TODO: fix when get_motif_score can be run with toy data
-    # pfmfile = os.path.join(test_dir, "data", "debug.pfm")
-    # sm = ananse.enhancer_binding.ScoreMotifs(genome, combined_bed, pfmfile=pfmfile)
-    # sm.run(outfile=scored_motifs, force=True)
-    pass
 
 
 def test_filter_transcription_factors():
