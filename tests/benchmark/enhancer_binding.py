@@ -4,7 +4,6 @@ import genomepy.utils
 
 from ananse.enhancer_binding import (
     CombineBedFiles,
-    CombineBamFiles,
     ScorePeaks,
     ScoreMotifs,
     Binding,
@@ -38,17 +37,13 @@ for file in [genome, peakfiles, bams]:
         genomepy.utils.download_file(url, file)
 
 
-# group 1 (can run simultaneously)
+# group 1: list of all putative enhancer regions
 cbed = CombineBedFiles(genome=genome, peakfiles=peakfiles, verbose=True)
 combined_bed = os.path.join(intermediate_dir, "combined.bed")
 cbed.run(outfile=combined_bed, width=200, force=False)
 
-cbam = CombineBamFiles(bams=bams, ncore=ncore, verbose=True)
-combined_bam = os.path.join(intermediate_dir, "combined.bam")
-cbam.run(outfile=combined_bam, force=False)
-
 # group 2 (can run when input is ready)
-sp = ScorePeaks(bed=combined_bed, bam=combined_bam, ncore=ncore, verbose=True)
+sp = ScorePeaks(bams=bams, bed=combined_bed, ncore=ncore, verbose=True)
 
 # benchmark peak normalization
 for func, kwargs in zip(
@@ -72,7 +67,7 @@ for func, kwargs in zip(
 run_gimme = False
 if run_gimme:
     scored_peaks = os.path.join(intermediate_dir, "scoredpeaks.bed")
-    sp = ScorePeaks(bed=combined_bed, bam=combined_bam, ncore=ncore, verbose=True)
+    sp = ScorePeaks(bams=bams, bed=combined_bed, ncore=ncore, verbose=True)
     sp.run(outfile=scored_peaks, dist_func="peak_rank_dist", force=False)
 
     sm = ScoreMotifs(

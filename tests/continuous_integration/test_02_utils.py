@@ -1,4 +1,7 @@
+import getpass
 import os
+import pwd
+import tempfile
 import time
 
 import genomepy.utils
@@ -19,6 +22,13 @@ def write_file(filename, lines):
             if not line.endswith("\n"):
                 line = line + "\n"
             f.write(line)
+
+
+def write_bam(filename, lines):
+    tmp_sam = os.path.join(outdir, "tmp.sam")
+    write_file(tmp_sam, lines)
+    pysam.view(tmp_sam, "-b", "-o", filename, catch_stdout=False)
+    genomepy.utils.rm_rf(tmp_sam)
 
 
 def compare_contents(file1, file2, ftype="bed"):
@@ -93,19 +103,13 @@ line3 = (
 )
 
 unsorted_bam = os.path.join(outdir, "unsorted.bam")
-tmp_sam = os.path.join(outdir, "tmp.sam")
-write_file(tmp_sam, [h0, h1, line2, line1])
-pysam.view(tmp_sam, "-b", "-o", unsorted_bam, catch_stdout=False)
+write_bam(unsorted_bam, [h0, h1, line2, line1])
 
 sorted_bam = os.path.join(outdir, "sorted.bam")
-write_file(tmp_sam, [h0, h1, line1, line2])
-pysam.view(tmp_sam, "-b", "-o", sorted_bam, catch_stdout=False)
+write_bam(sorted_bam, [h0, h1, line1, line2])
 
 second_bam = os.path.join(outdir, "second.bam")
-write_file(tmp_sam, [h0, h1, line3])
-pysam.view(tmp_sam, "-b", "-o", second_bam, catch_stdout=False)
-
-genomepy.utils.rm_rf(tmp_sam)
+write_bam(second_bam, [h0, h1, line3])
 
 
 def test_bam_index():
@@ -162,6 +166,23 @@ def test_bam_merge():
     assert len(l1) + len(l2) == len(l3) == 3
 
 
+def test_mosdepth():
+    bed_input = os.path.join(outdir, "mosdepth_input.bed")
+    write_file(bed_input, ["chr1\t10003\t10203\n", "chr1\t10203\t10403\n"])
+
+    # bam = sorted & indexed (required)
+    bam_input = os.path.join(outdir, "mosdepth_input.bam")
+    write_bam(bam_input, [h0, h1, line1, line2, line3])
+    ananse.utils.bam_index(bam_input, ncore=os.cpu_count())
+
+    bed_output = os.path.join(outdir, "mosdepth_output.bed")
+    ananse.utils.mosdepth(bed_input, bam_input, bed_output, ncore=1)
+
+    with open(bed_output) as f:
+        score = f.readlines()[0].strip().split("\t")[3]
+    assert score == "1.00"
+
+
 # test other functions
 
 
@@ -175,3 +196,18 @@ def test_cleanpath():
     expected = "/"
     res = ananse.utils.cleanpath(path)
     assert res == expected
+
+
+def test_clean_tmp():
+    ananse.utils.clean_tmp()
+
+    tempdir = tempfile.gettempdir()
+    tmp_files = os.listdir(tempdir)
+    ananse_files = [f for f in tmp_files if f.startswith("ANANSE_")]
+
+    user = getpass.getuser()
+    user_files = [
+        f for f in ananse_files if pwd.getpwuid(os.stat(f).st_uid).pw_name == user
+    ]
+
+    assert len(user_files) == 0

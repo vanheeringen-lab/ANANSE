@@ -1,9 +1,12 @@
+import getpass
 import os
-import warnings
+import pwd
 import shutil
 import subprocess as sp
 import tempfile
+import warnings
 
+import genomepy.utils
 from pybedtools import BedTool
 import pysam
 
@@ -25,7 +28,7 @@ def bed_sort(bed):
     """
     Sort a bed file.
     """
-    tmpdir = tempfile.mkdtemp()
+    tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
     tmpfile = os.path.join(tmpdir, "tmpfile")
     try:
         BedTool(bed).sort(output=tmpfile)
@@ -55,23 +58,6 @@ def count_reads(bams, peakfile, bed_output):
     bed.multi_bam_coverage(bams=bam_list, output=bed_output)
 
 
-def mosdepth(bed, bam, outdir, ncore=1):
-    """
-    Count (median) bam reads in putative enhancer regions
-    """
-    ncore = min(4, ncore)
-    prefix = os.path.join(outdir, "bam_coverage")
-
-    cmd = f"mosdepth -nxm -t {ncore} -b {bed} {prefix} {bam}"
-    sp.check_call(cmd, shell=True)
-
-    outfile = f"{prefix}.regions.bed"
-    cmd = f"gunzip -f {outfile}.gz"
-    sp.check_call(cmd, shell=True)
-
-    return outfile
-
-
 def samc(ncore):
     """set decent samtools range for samtools functions (1-5 total threads)"""
     return max(0, min(ncore - 1, 4))
@@ -84,7 +70,7 @@ def bam_index(bam, force=True, ncore=1):
 
 
 def bam_sort(bam, ncore=1):
-    tmpdir = tempfile.mkdtemp()
+    tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
     try:
         sorted_bam = os.path.join(tmpdir, os.path.basename(bam))
         sort_parameters = [f"-@ {samc(ncore)}", "-o", sorted_bam, bam]
@@ -112,6 +98,26 @@ def bam_merge(list_of_bams, merged_bam, ncore=1):
         shutil.copy2(f"{bam}.bai", f"{merged_bam}.bai")
 
 
+def mosdepth(bed, bam, bed_output, ncore=1):
+    """
+    Count (median per base overlap of) bam reads in putative enhancer regions
+    """
+    ncore = min(4, ncore)
+    tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
+    try:
+        prefix = os.path.join(tmpdir, "bam_coverage")
+        cmd = f"mosdepth -nxm -t {ncore} -b {bed} {prefix} {bam}"
+        sp.check_call(cmd, shell=True)
+
+        tmp_bed_output = f"{prefix}.regions.bed"
+        cmd = f"gunzip -f {tmp_bed_output}.gz"
+        sp.check_call(cmd, shell=True)
+
+        shutil.copy2(tmp_bed_output, bed_output)
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 # def bed_sum_coverages(multi_bam_coverage, sum_bam_coverage):
 #     """
 #     MultiBamCov returns a BED3+n with one column per bam.
@@ -133,3 +139,19 @@ def cleanpath(path):
             os.path.expanduser(  # expand '~'
                 os.path.expandvars(  # expand '$VARIABLES'
                     path)))
+
+
+def clean_tmp():
+    """
+    try-finally does not work if the process was killed by the user
+    """
+    user = getpass.getuser()
+    tempdir = tempfile.gettempdir()
+
+    # all files/directories starting with "ANANSE_" & owner by the user
+    tmp_files = os.listdir(tempdir)
+    ananse_files = [f for f in tmp_files if f.startswith("ANANSE_")]
+    user_files = [f for f in ananse_files if pwd.getpwuid(os.stat(f).st_uid).pw_name == user]
+
+    # delete
+    [genomepy.utils.rm_rf(f) for f in user_files]

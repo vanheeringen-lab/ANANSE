@@ -5,11 +5,11 @@ import genomepy.utils
 
 from ananse.enhancer_binding import (
     CombineBedFiles,
-    CombineBamFiles,
     ScorePeaks,
     ScoreMotifs,
     Binding,
 )
+from ananse.utils import clean_tmp
 
 
 def run_binding(
@@ -54,22 +54,21 @@ def run_binding(
     Returns:
         binding.tsv: the strongest transcription factor and its binding score for each region in the peakfile(s)
     """
+    # clean up previous ANANSE tmp files
+    clean_tmp()
+
     # TODO: check inputs for validity
 
     intermediate_dir = os.path.join(outdir, "intermediate_results")
     genomepy.utils.mkdir_p(intermediate_dir)
 
-    # group 1 (can run simultaneously)
+    # group 1: list of all putative enhancer regions
     cbed = CombineBedFiles(genome=genome, peakfiles=peakfiles, verbose=verbose)
     combined_bed = os.path.join(intermediate_dir, "combined.bed")
     cbed.run(outfile=combined_bed, width=peak_width, force=force)
 
-    cbam = CombineBamFiles(bams=bams, ncore=ncore, verbose=verbose)
-    combined_bam = os.path.join(intermediate_dir, "combined.bam")
-    cbam.run(outfile=combined_bam, force=force)
-
     # group 2 (can run when input is ready)
-    sp = ScorePeaks(bed=combined_bed, bam=combined_bam, ncore=ncore, verbose=verbose)
+    sp = ScorePeaks(bams=bams, bed=combined_bed, ncore=ncore, verbose=verbose)
     scored_peaks = os.path.join(intermediate_dir, "scoredpeaks.bed")
     sp.run(outfile=scored_peaks, dist_func=dist_func, force=force, **kwargs)
 

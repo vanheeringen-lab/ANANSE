@@ -1,3 +1,4 @@
+import multiprocessing as mp
 import os
 import tempfile
 import shutil
@@ -11,6 +12,7 @@ from gimmemotifs.utils import as_fasta, pfmfile_location
 import numpy as np
 import pandas as pd
 import pickle
+import qnorm
 from scipy import stats
 from sklearn.preprocessing import minmax_scale
 from tqdm import tqdm
@@ -20,7 +22,6 @@ from ananse.utils import (
     bed_merge,
     mosdepth,
     bam_index,
-    bam_merge,
     bam_sort,
 )
 from ananse.distributions import Distributions
@@ -172,7 +173,7 @@ class CombineBedFiles:
         if force or not os.path.exists(outfile):
             if self.verbose:
                 print("Combining bed files")
-            tmpdir = tempfile.mkdtemp()
+            tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
             try:
                 list_of_beds = []
                 for peakfile in self.list_of_peakfiles:
@@ -196,54 +197,78 @@ class CombineBedFiles:
                 merged_bed = os.path.join(tmpdir, "merged")
                 bed_merge(list_of_beds=list_of_beds, merged_bed=merged_bed)
 
-                bed_sort(merged_bed)
                 shutil.copy2(merged_bed, outfile)
             finally:
                 shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-class CombineBamFiles:
-    def __init__(self, bams, ncore=1, verbose=True):
-        self.list_of_bams = bams if isinstance(bams, list) else [bams]
-        self.verbose = verbose
-        self.ncore = ncore
-
-    def run(self, outfile, force=False):
-        if force or not os.path.exists(outfile):
-            if self.verbose:
-                print("Combining bed files")
-            tmpdir = tempfile.mkdtemp()
-            try:
-                # only sort & index bams if needed
-                try:
-                    for bam in self.list_of_bams:
-                        bam_index(bam, force=False, ncore=self.ncore)  # assumes sorted
-                    merged_bam = os.path.join(tmpdir, "merged.bam")
-                    bam_merge(self.list_of_bams, merged_bam, self.ncore)
-                except Exception:
-                    # sort, index & try again
-                    for bam in self.list_of_bams:
-                        bam_sort(bam, self.ncore)
-                    merged_bam = os.path.join(tmpdir, "merged.bam")
-                    bam_merge(self.list_of_bams, merged_bam, self.ncore)
-
-                shutil.copy2(merged_bam, outfile)
-                shutil.copy2(f"{merged_bam}.bai", f"{outfile}.bai")
-            finally:
-                shutil.rmtree(tmpdir, ignore_errors=True)
-
-
 class ScorePeaks:
-    def __init__(self, bed, bam, ncore=1, verbose=True):
-        self.bam = bam  # one sorted & indexed bam file with reads representing enhancer activity
-        self.bed = bed  # one bed file with putative enhancer binding regions
-        self.ncore = ncore
+    def __init__(self, bams, bed, ncore=1, verbose=True):
+        self.list_of_bams = bams if isinstance(bams, list) else [bams]
+        self.bed = bed  # one bed file with all putative enhancer binding regions
         self.verbose = verbose
+        self.ncore = ncore
+
+    def peaks_count(self, outdir):
+        """
+        count bam reads in the bed regions
+        returns one bed file for each bam in outdir
+        """
+        # linear script:
+        # for bam in self.list_of_bams:
+        #     bed_output = os.path.join(outdir, os.path.basename(bam).replace(".bam", ".regions.bed"))
+        #     mosdepth(self.bed, bam, bed_output, self.ncore)
+
+        # parallel script:
+        nbams = len(self.list_of_bams)
+        npool = min(self.ncore, nbams)
+        ncore = min(4, self.ncore // npool)  # 1-4 cores/bam
+
+        # list with tuples. each tuple = one run
+        mosdepth_params = []
+        for bam in self.list_of_bams:
+            bed_output = os.path.join(
+                outdir, os.path.basename(bam).replace(".bam", ".regions.bed")
+            )
+            mosdepth_params.append((self.bed, bam, bed_output, ncore))
+
+        pool = mp.Pool(npool)
+        try:
+            pool.starmap_async(mosdepth, mosdepth_params)
+        finally:  # To make sure processes are closed in the end, even if errors happen
+            pool.close()
+            pool.join()
 
     @staticmethod
-    def normalize_peaks(bam_coverage, bed_output, dist_func="lognorm_dist", **kwargs):
+    def peaks_merge(indir, bed_output, ncore=1):
         """
-        Fit the bam coverage scores to a distribution
+        averages all peaks_count outputs
+        uses quantile normalization to normalize for read depth
+        returns one BED 3+1 file
+        """
+        ncore = min(4, ncore)
+        files = [
+            os.path.join(indir, f)
+            for f in os.listdir(indir)
+            if f.endswith(".regions.bed")
+        ]
+        bed = pd.read_csv(files[0], header=None, sep="\t")
+        if len(files) > 1:
+            for file in files[1:]:
+                scores = pd.read_csv(file, header=None, sep="\t")[3]
+                bed = pd.concat([bed, scores], axis=1)
+
+            scores = bed.iloc[:, 3:]
+            scores = qnorm.quantile_normalize(scores, axis=1, ncpus=ncore)
+            scores = scores.mean(axis=1)
+
+            bed = pd.concat([bed.iloc[:, :3], scores], axis=1)
+        bed.to_csv(bed_output, sep="\t", header=False, index=False)
+
+    @staticmethod
+    def peaks_fit(bam_coverage, bed_output, dist_func="lognorm_dist", **kwargs):
+        """
+        fit the peak scores to a distribution
         """
         bed = pd.read_csv(bam_coverage, header=None, sep="\t")
         region = bed[0] + ":" + bed[1].astype(str) + "-" + bed[2].astype(str)
@@ -277,11 +302,21 @@ class ScorePeaks:
         # save the results as it takes ages to run
         raw_peak_scores = os.path.join(os.path.dirname(outfile), "raw_scoredpeaks.bed")
         if force or not os.path.exists(raw_peak_scores):
-            tmpdir = tempfile.mkdtemp()
+            tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
             try:
                 if self.verbose:
                     print("Scoring peaks (slow)")
-                tmp_peak_scores = mosdepth(self.bed, self.bam, tmpdir, self.ncore)
+                try:  # assumes sorted
+                    for bam in self.list_of_bams:
+                        bam_index(bam, force=False, ncore=self.ncore)
+                    self.peaks_count(tmpdir)
+                except Exception:  # sort, index & try again
+                    for bam in self.list_of_bams:
+                        bam_sort(bam, self.ncore)
+                    self.peaks_count(tmpdir)
+
+                tmp_peak_scores = os.path.join(tmpdir, "raw_scoredpeaks.bed")
+                self.peaks_merge(tmpdir, tmp_peak_scores, self.ncore)
 
                 shutil.copy2(tmp_peak_scores, raw_peak_scores)
             finally:
@@ -289,9 +324,7 @@ class ScorePeaks:
 
         # fit bam read counts to specified distribution
         if force or not os.path.exists(outfile):
-            self.normalize_peaks(
-                raw_peak_scores, outfile, dist_func=dist_func, **kwargs
-            )
+            self.peaks_fit(raw_peak_scores, outfile, dist_func=dist_func, **kwargs)
 
 
 class ScoreMotifs:
@@ -313,7 +346,7 @@ class ScoreMotifs:
             print("Scanner loaded")
         return s
 
-    def get_motif_scores(self, enhancer_regions_bed, pfmscorefile):
+    def motifs_get_scores(self, enhancer_regions_bed, pfmscorefile):
         """
         Scan for TF binding motifs in potential enhancer regions.
         """
@@ -352,7 +385,7 @@ class ScoreMotifs:
                 )
 
     @staticmethod
-    def normalize_motifs(bed_input, bed_output):
+    def motifs_normalize(bed_input, bed_output):
         """
         Add normalized scores to the scored motifs
         """
@@ -365,19 +398,19 @@ class ScoreMotifs:
             os.path.dirname(outfile), "raw_scoredmotifs.bed"
         )
         if force or not os.path.exists(raw_motif_scores):
-            tmpdir = tempfile.mkdtemp()
+            tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
             try:
                 if self.verbose:
                     print("Scoring motifs (really slow)")
                 tmp_motif_scores = os.path.join(tmpdir, "motif_scores")
-                self.get_motif_scores(self.bed, tmp_motif_scores)
+                self.motifs_get_scores(self.bed, tmp_motif_scores)
 
                 shutil.copy2(tmp_motif_scores, raw_motif_scores)
             finally:
                 shutil.rmtree(tmpdir, ignore_errors=True)
 
         if force or not os.path.exists(outfile):
-            self.normalize_motifs(raw_motif_scores, outfile)
+            self.motifs_normalize(raw_motif_scores, outfile)
 
 
 class Binding:
