@@ -289,6 +289,9 @@ class Network(object):
     def create_expression_network(
         self, fin_expression, column="tpm", tfs=None, rank=True
     ):
+        if isinstance(fin_expression, str):
+            fin_expression = [fin_expression]
+
         expression = pd.DataFrame(
             pd.concat(
                 [pd.read_table(f, index_col=0)[[column]] for f in fin_expression],
@@ -356,8 +359,8 @@ class Network(object):
     def run_network(
         self,
         binding,
-        tfs=None,
         fin_expression=None,
+        tfs=None,
         corrfiles=None,
         outfile=None,
         up=1e5,
@@ -389,13 +392,19 @@ class Network(object):
 
             # This is where the heavy lifting of all delayed computations gets done
             logger.info("Computing network")
-            with ProgressBar():
-                result = df_expression.join(df_binding)
-                result = result.compute()
+            if fin_expression is not None:
+                with ProgressBar():
+                    result = df_expression.join(df_binding)
+                    result = result.compute()
                 result = result.fillna(0)
-                result["binding"] = minmax_scale(
-                    rankdata(result["weighted_binding"], method="min")
-                )
+            else:
+                result = df_binding
+            
+            result["binding"] = minmax_scale(
+                rankdata(result["weighted_binding"], method="min")
+            )
+            
+            if fin_expression is not None:
                 # Combine binding score with expression score
                 result["binding"] = result[
                     ["tf_expression", "target_expression", "binding"]
