@@ -1,8 +1,10 @@
 import os
 
 import genomepy.utils
+import pytest
 
 import ananse.enhancer_binding
+from ananse.commands.enhancer_binding import run_binding
 import ananse.utils
 from .test_02_utils import write_file, write_bam, h0, h1, line1, line2, line3
 
@@ -237,3 +239,17 @@ def test_get_binding_score():
     b.get_binding_score(scored_motifs, scored_peaks, outfile)
 
     assert os.path.exists(outfile)
+
+
+def test_run_binding():
+    # test API wrapper
+    run_binding(genome=genome, bams=[bam1], peakfiles=bed1, outdir=outdir, force=False)
+
+    with pytest.raises(FileNotFoundError):
+        run_binding(
+            genome="/not/a/real/genome.fa",
+            bams=[bam1],
+            peakfiles=bed1,
+            outdir=outdir,
+            force=False,
+        )

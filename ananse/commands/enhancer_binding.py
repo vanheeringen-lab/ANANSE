@@ -27,7 +27,7 @@ def run_binding(
     force=False,
     keep_intermediates=True,
     verbose=True,
-    **kwargs
+    **kwargs,
 ):
     """
     Predict transcription factor binding in specified regions
@@ -84,7 +84,11 @@ def run_binding(
         sp.run(outfile=scored_peaks, dist_func=dist_func, force=force, **kwargs)
 
         sm = ScoreMotifs(
-            genome=genome, bed=combined_bed, pfmfile=pfmfile, ncore=ncore, verbose=verbose
+            genome=genome,
+            bed=combined_bed,
+            pfmfile=pfmfile,
+            ncore=ncore,
+            verbose=verbose,
         )
         scored_motifs = os.path.join(intermediate_dir, "scoredmotifs.bed")
         sm.run(outfile=scored_motifs, force=force)
