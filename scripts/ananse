@@ -7,8 +7,11 @@
 
 import sys
 import argparse
-from ananse import commands, __version__
+
 from genomepy import Genome
+from loguru import logger
+
+from ananse import commands, __version__
 
 
 class NegateAction(argparse.Action):
@@ -367,13 +370,12 @@ if __name__ == "__main__":
             if args.genome is not None:
                 try:
                     Genome(args.genome)
-                except Exception:
-                    print(
-                        "Genome not found. Have you installed your genome with genomepy?"
+                except Exception:  # noqa
+                    logger.exception(
+                        f"Genome {args.genome} not found. Have you installed your genome with genomepy? "
+                        "See https://github.com/vanheeringen-lab/genomepy for details. "
+                        "Alternatively, you can specify a FASTA file."
                     )
-                    print("See https://github.com/vanheeringen-lab/genomepy for details.")
-                    print("Alternatively, you can specify a FASTA file.")
-                    exit(1)
 
         if args.func.__name__.startswith("run_"):
             args.func(**vars(args))

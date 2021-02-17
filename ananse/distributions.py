@@ -27,14 +27,14 @@ class Distributions:
         return self.functions[dist_func]
 
 
-def scale_dist(scores, **kwargs):
+def scale_dist(scores, **kwargs):  # noqa
     """
     Scale the scores between 0 and 1
     """
     return (scores - np.min(scores)) / (np.max(scores) - np.min(scores))
 
 
-def log_scale_dist(scores, **kwargs):
+def log_scale_dist(scores, **kwargs):  # noqa
     """
     Scale the log of the scores between 0 and 1
     """
@@ -102,7 +102,7 @@ def scipy_dist(scores, **kwargs):
 #     return dist
 
 
-def peak_rank_dist(scores, **kwargs):
+def peak_rank_dist(scores, **kwargs):  # noqa
     """
     Fit scores to a distribution similar to what the p300 model was trained on
     """

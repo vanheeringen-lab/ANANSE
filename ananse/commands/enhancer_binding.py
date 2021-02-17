@@ -1,6 +1,7 @@
 import os
 
 import genomepy.utils
+from loguru import logger
 
 from ananse.enhancer_binding import (
     CombineBedFiles,
@@ -11,6 +12,7 @@ from ananse.enhancer_binding import (
 from ananse.utils import clean_tmp
 
 
+@logger.catch
 def run_binding(
     genome,
     peakfiles,
@@ -110,4 +112,4 @@ def run_binding(
     if not keep_intermediates:
         genomepy.utils.rm_rf(intermediate_dir)
     if verbose:
-        print("ANANSE binding finished successfully!")
+        logger.info("ANANSE binding finished successfully!")

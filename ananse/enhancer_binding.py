@@ -9,6 +9,7 @@ import genomepy
 from gimmemotifs.scanner import Scanner
 from gimmemotifs.motif import read_motifs
 from gimmemotifs.utils import as_fasta, pfmfile_location
+from loguru import logger
 import numpy as np
 import pandas as pd
 import pickle
@@ -161,7 +162,7 @@ class CombineBedFiles:
                 new.write("\t".join([chrm, nstart, nend] + rest) + "\n")
 
         if missing_chrm and verbose:
-            print(
+            logger.warning(
                 "The following contigs were present in "
                 + f"'{os.path.basename(bed_in)}', "
                 + "but were missing in the genome file: "
@@ -172,7 +173,7 @@ class CombineBedFiles:
     def run(self, outfile, width=200, force=False):
         if force or not os.path.exists(outfile):
             if self.verbose:
-                print("Combining bed files")
+                logger.info("Combining bed files")
             tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
             try:
                 list_of_beds = []
@@ -276,6 +277,8 @@ class ScorePeaks:
 
         # obtain a distribution
         dist_func = Distributions().set(dist_func)
+        # with np.errstate(divide="ignore", invalid="ignore"):
+        #     dist = dist_func(score, **kwargs)
         dist = dist_func(score, **kwargs)
 
         # replace scores with distribution values
@@ -305,7 +308,7 @@ class ScorePeaks:
             tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
             try:
                 if self.verbose:
-                    print("Scoring peaks (slow)")
+                    logger.info("Scoring peaks (slow)")
                 try:  # assumes sorted
                     for bam in self.list_of_bams:
                         bam_index(bam, force=False, ncore=self.ncore)
@@ -343,7 +346,7 @@ class ScoreMotifs:
         # generate GC background index
         _ = s.best_score([], zscore=True, gc=True)
         if self.verbose:
-            print("Scanner loaded")
+            logger.info("Scanner loaded")
         return s
 
     def motifs_get_scores(self, enhancer_regions_bed, pfmscorefile):
@@ -370,7 +373,7 @@ class ScoreMotifs:
             chunksize = 10_000
             for chunk in range(0, len(seqs), chunksize):
                 pfm_score = []
-                chunk_seqs = seqs[chunk : chunk + chunksize]
+                chunk_seqs = seqs[chunk : chunk + chunksize]  # noqa: black's decision
                 # We are using GC-normalization for motif scanning as many enhancer binding regions are GC-enriched.
                 chunk_scores = scanner.best_score(chunk_seqs, zscore=True, gc=True)
                 # for each seq, store the score of each motif
@@ -401,7 +404,7 @@ class ScoreMotifs:
             tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
             try:
                 if self.verbose:
-                    print("Scoring motifs (really slow)")
+                    logger.info("Scoring motifs (really slow)")
                 tmp_motif_scores = os.path.join(tmpdir, "motif_scores")
                 self.motifs_get_scores(self.bed, tmp_motif_scores)
 
@@ -527,5 +530,5 @@ class Binding:
     def run(self, outfile, force=False):
         if force or not os.path.exists(outfile):
             if self.verbose:
-                print("Predict TF binding")
+                logger.info("Predict TF binding")
             self.get_binding_score(self.peak_weights, self.motif_weights, outfile)

@@ -74,7 +74,7 @@ def bam_sort(bam, ncore=1):
     try:
         sorted_bam = os.path.join(tmpdir, os.path.basename(bam))
         sort_parameters = [f"-@ {samc(ncore)}", "-o", sorted_bam, bam]
-        pysam.sort(*sort_parameters)
+        pysam.sort(*sort_parameters)  # noqa: pysam bug
 
         shutil.copy2(sorted_bam, bam)
         bam_index(bam, force=True, ncore=ncore)
@@ -89,7 +89,7 @@ def bam_merge(list_of_bams, merged_bam, ncore=1):
     [bam_index(bam, force=False, ncore=ncore) for bam in list_of_bams]
     if len(list_of_bams) > 1:
         merge_parameters = ["-f", f"-@ {samc(ncore)}", merged_bam] + list_of_bams
-        pysam.merge(*merge_parameters)
+        pysam.merge(*merge_parameters)  # noqa: pysam bug
         bam_index(merged_bam)
     else:
         # os.symlink() doesn't work with multi_bam_coverage()
