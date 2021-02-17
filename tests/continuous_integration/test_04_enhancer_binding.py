@@ -241,11 +241,11 @@ def test_get_binding_score():
     assert os.path.exists(outfile)
 
 
-def test_run_binding():
+def test_run_binding(capsys):
     # test API wrapper
     run_binding(genome=genome, bams=[bam1], peakfiles=bed1, outdir=outdir, force=False)
 
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(SystemExit):
         run_binding(
             genome="/not/a/real/genome.fa",
             bams=[bam1],
@@ -253,3 +253,5 @@ def test_run_binding():
             outdir=outdir,
             force=False,
         )
+        captured = capsys.readouterr().err.strip()
+        assert "Could not find /not/a/real/genome.fa!" in captured

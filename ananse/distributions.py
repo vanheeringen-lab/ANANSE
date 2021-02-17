@@ -150,7 +150,7 @@ def peak_rank_file_dist(scores, **kwargs):
         dist_filepath = cleanpath(dist_filename)
 
     if not os.path.exists(dist_filepath):
-        raise ValueError(f"Could not find file {dist_filepath}")
+        raise FileNotFoundError(f"Could not find file {dist_filepath}")
 
     dist = pd.read_csv(dist_filepath, header=None)
     n = scores.shape[0]

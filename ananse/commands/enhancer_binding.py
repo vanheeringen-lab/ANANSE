@@ -68,7 +68,8 @@ def run_binding(
                 files.append(arg)
     for file in files:
         if not os.path.exists(file):
-            raise FileNotFoundError(f"Could not find {file}!")
+            logger.exception(f"Could not find {file}!")
+            exit(1)
 
     outfile = os.path.join(outdir, "binding.tsv")
     intermediate_dir = os.path.join(outdir, "intermediate_results")
