@@ -7,8 +7,12 @@ import subprocess as sp
 
 # TODO: apply to all code --> targets = ["ananse/", "tests/"]
 targets = [
-    "ananse/enhancer_binding.py",
+    "ananse/commands/__init__.py",
     "ananse/commands/enhancer_binding.py",
+    "ananse/__init__.py",
+    "ananse/enhancer_binding.py",
+    "ananse/distributions.py",
+    "ananse/utils.py",
     "tests/",
 ]
 

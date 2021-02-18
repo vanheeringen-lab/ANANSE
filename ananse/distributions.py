@@ -10,7 +10,13 @@ from ananse.utils import cleanpath
 class Distributions:
     def __init__(self):
         # dist_functions = [f for f in dir(ananse.distributions) if f.endswith("_dist")]
-        dist_functions = [scale_dist, log_scale_dist, scipy_dist, peak_rank_dist, peak_rank_file_dist]
+        dist_functions = [
+            scale_dist,
+            log_scale_dist,
+            scipy_dist,
+            peak_rank_dist,
+            peak_rank_file_dist,
+        ]
         self.functions = {func.__name__: func for func in dist_functions}
 
     def get(self):
@@ -38,7 +44,7 @@ def log_scale_dist(scores, **kwargs):  # noqa
     """
     Scale the log of the scores between 0 and 1
     """
-    scores = np.log(scores+1)
+    scores = np.log(scores + 1)
     return (scores - np.min(scores)) / (np.max(scores) - np.min(scores))
 
 
@@ -156,7 +162,9 @@ def peak_rank_file_dist(scores, **kwargs):
     n = scores.shape[0]
     max_n = dist.shape[0]
     if max_n < n:
-        raise ValueError(f"Too many regions ({n}) to fit to '{dist_filename}' ({max_n})")
+        raise ValueError(
+            f"Too many regions ({n}) to fit to '{dist_filename}' ({max_n})"
+        )
 
     dist = dist.sample(n=n, random_state=1)[0].tolist()
     return dist

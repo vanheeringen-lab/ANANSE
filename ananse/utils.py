@@ -17,10 +17,12 @@ def shhh_bedtool(func):
     Decorator that silences pybedtools RuntimeWarnings such as
     `line buffering (buffering=1) isn't supported in binary mode`
     """
+
     def wrapper(*args, **kwargs):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)
             func(*args, **kwargs)
+
     return wrapper
 
 
@@ -136,11 +138,11 @@ def mosdepth(bed, bam, bed_output, ncore=1):
 
 def cleanpath(path):
     """Expand any path input to a literal path output"""
-    return \
-        os.path.abspath(  # expand relative paths (inc './' and '../')
-            os.path.expanduser(  # expand '~'
-                os.path.expandvars(  # expand '$VARIABLES'
-                    path)))
+    return os.path.abspath(  # expand relative paths (inc './' and '../')
+        os.path.expanduser(  # expand '~'
+            os.path.expandvars(path)  # expand '$VARIABLES'
+        )
+    )
 
 
 def mytmpdir():
@@ -165,8 +167,14 @@ def clean_tmp():
 
     # all tmp files/directories starting with "ANANSE_" & owner by the user
     tmp_files = os.listdir(tempdir)
-    ananse_files = [os.path.join(tempdir, f) for f in tmp_files if f.startswith("ANANSE_")]
-    user_files = [f for f in ananse_files if os.path.exists(f) and pwd.getpwuid(os.stat(f).st_uid).pw_name == user]
+    ananse_files = [
+        os.path.join(tempdir, f) for f in tmp_files if f.startswith("ANANSE_")
+    ]
+    user_files = [
+        f
+        for f in ananse_files
+        if os.path.exists(f) and pwd.getpwuid(os.stat(f).st_uid).pw_name == user
+    ]
 
     # delete
     _ = [genomepy.utils.rm_rf(f) for f in user_files]

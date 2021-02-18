@@ -16,6 +16,9 @@ tomaster.sh
 conda_build.sh
 **/*.DS_Store
 
+# code coverage results
+.coverage
+coverage.xml
+
 # temporary dirs
-tests/old
 testdata
