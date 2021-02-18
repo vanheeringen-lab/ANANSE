@@ -1,6 +1,4 @@
-import getpass
 import os
-import pwd
 import tempfile
 import time
 
@@ -198,16 +196,14 @@ def test_cleanpath():
     assert res == expected
 
 
+def test_mytmpdir():
+    tmpdir = ananse.utils.mytmpdir()
+    assert os.path.exists(tmpdir)
+    assert tempfile.gettempdir() in tmpdir
+
+
 def test_clean_tmp():
+    tmpdir = ananse.utils.mytmpdir()
+    assert os.path.exists(tmpdir)
     ananse.utils.clean_tmp()
-
-    tempdir = tempfile.gettempdir()
-    tmp_files = os.listdir(tempdir)
-    ananse_files = [f for f in tmp_files if f.startswith("ANANSE_")]
-
-    user = getpass.getuser()
-    user_files = [
-        f for f in ananse_files if pwd.getpwuid(os.stat(f).st_uid).pw_name == user
-    ]
-
-    assert len(user_files) == 0
+    assert not os.path.exists(tmpdir)

@@ -1,3 +1,4 @@
+import atexit
 import getpass
 import os
 import pwd
@@ -29,8 +30,8 @@ def bed_sort(bed):
     Sort a bed file.
     """
     tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
-    tmpfile = os.path.join(tmpdir, "tmpfile")
     try:
+        tmpfile = os.path.join(tmpdir, os.path.basename(bed))
         BedTool(bed).sort(output=tmpfile)
         shutil.copy2(tmpfile, bed)
     finally:
@@ -142,17 +143,30 @@ def cleanpath(path):
                     path)))
 
 
+def mytmpdir():
+    """
+    returns a temp directory that is removed when the process is completed
+    the directory is not removed if the process is killed by the user
+    """
+    if not hasattr(mytmpdir, "dir") or not mytmpdir.dir:
+        # can also be removed with clean_tmp()
+        mytmpdir.dir = tempfile.mkdtemp(prefix=f"ANANSE_{os.getpid()}.")
+        atexit.register(shutil.rmtree, mytmpdir.dir, ignore_errors=True)
+    return mytmpdir.dir
+
+
 def clean_tmp():
     """
-    try-finally does not work if the process was killed by the user
+    remove leftover temp dirs
+    temp dirs are left if ANANSE was killed by the user
     """
     user = getpass.getuser()
     tempdir = tempfile.gettempdir()
 
-    # all files/directories starting with "ANANSE_" & owner by the user
+    # all tmp files/directories starting with "ANANSE_" & owner by the user
     tmp_files = os.listdir(tempdir)
-    ananse_files = [f for f in tmp_files if f.startswith("ANANSE_")]
-    user_files = [f for f in ananse_files if pwd.getpwuid(os.stat(f).st_uid).pw_name == user]
+    ananse_files = [os.path.join(tempdir, f) for f in tmp_files if f.startswith("ANANSE_")]
+    user_files = [f for f in ananse_files if os.path.exists(f) and pwd.getpwuid(os.stat(f).st_uid).pw_name == user]
 
     # delete
-    [genomepy.utils.rm_rf(f) for f in user_files]
+    _ = [genomepy.utils.rm_rf(f) for f in user_files]

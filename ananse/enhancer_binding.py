@@ -390,16 +390,6 @@ class ScoreMotifs:
             if self.verbose:
                 logger.info("Scoring motifs (really slow)")
             self.motifs_get_scores(raw_motif_scores)
-            # tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
-            # try:
-            #     if self.verbose:
-            #         logger.info("Scoring motifs (really slow)")
-            #     tmp_motif_scores = os.path.join(tmpdir, "motif_scores")
-            #     self.motifs_get_scores(tmp_motif_scores)
-            #
-            #     shutil.copy2(tmp_motif_scores, raw_motif_scores)
-            # finally:
-            #     shutil.rmtree(tmpdir, ignore_errors=True)
 
         if force or not os.path.exists(outfile):
             self.motifs_normalize(raw_motif_scores, outfile)
