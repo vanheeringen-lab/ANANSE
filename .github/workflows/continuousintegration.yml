@@ -26,23 +26,20 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         mamba-version: "*"
-        # channels: bioconda,conda-forge,defaults
+        channels: bioconda,conda-forge,defaults
         channel-priority: true
         activate-environment: ananse_dev
         environment-file: requirements.yaml
 
     - name: Code formatting (black) 🖤
-      if: always()
       run: |
         black --check $(echo $TARGETS)
 
     - name: Code formatting (flake8) 🎱
-      if: always()
       run: |
         flake8 $(echo $TARGETS)
 
     - name: Run tests 🧬
-      if: always()
       run: |
         pytest -vv --disable-pytest-warnings \
         --cov=./ --cov-report=xml
