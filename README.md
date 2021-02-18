@@ -2,8 +2,12 @@
 [![bioconda-badge](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/version.svg)](https://anaconda.org/bioconda/ananse)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/downloads.svg)](https://anaconda.org/bioconda/ananse)
+
 [![Documentation Status](https://readthedocs.org/projects/anansepy/badge/?version=master)](https://anansepy.readthedocs.io/en/master/?badge=master)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/license.svg)](https://anaconda.org/bioconda/ananse)
+
+[![Maintainability](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/maintainability)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/test_coverage)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/test_coverage)
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
 ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to use these GRNs to identify the key transcription factors in cell fate determination. You can use it to generate a shortlist of transcription factors for trans-differentiation experiments, but also to study transcription regulation during development and differentiation. It is written in Python and it contains a user-friendly command-line script that includes `ananse binding`, `ananse network`, and `ananse influence`.
 
