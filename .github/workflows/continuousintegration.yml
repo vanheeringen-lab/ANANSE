@@ -32,17 +32,14 @@ jobs:
         environment-file: requirements.yaml
 
     - name: Code formatting (black) 🖤
-      if: always()
       run: |
         black --check $(echo $TARGETS)
 
     - name: Code formatting (flake8) 🎱
-      if: always()
       run: |
         flake8 $(echo $TARGETS)
 
     - name: Run tests 🧬
-      if: always()
       run: |
         pytest -vv --disable-pytest-warnings \
         --cov=./ --cov-report=xml
@@ -51,5 +48,3 @@ jobs:
       uses: paambaati/codeclimate-action@v2.7.5
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
-      with:
-        debug: true
