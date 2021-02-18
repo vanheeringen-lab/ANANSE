@@ -270,7 +270,7 @@ class ScorePeaks:
         fit the peak scores to a distribution
         """
         bed = pd.read_csv(bam_coverage, header=None, sep="\t")
-        region = bed[0] + ":" + bed[1].astype(str) + "-" + bed[2].astype(str)
+        region = bed[0].astype(str) + ":" + bed[1].astype(str) + "-" + bed[2].astype(str)
         score = bed[3]
 
         # obtain a distribution
