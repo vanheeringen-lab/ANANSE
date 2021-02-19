@@ -2,6 +2,7 @@ version: "2"
 
 plugins:
   duplication:  # default: 2
+    enabled: true
     config:
       count_threshold: 3
 
@@ -9,9 +10,6 @@ checks:
   method-complexity:  # default: 5
     config:
       threshold: 15
-  method-count:  # default: 20
-    config:
-      threshold: 20
   file-lines:  # default: 250
     enabled: false
   argument-count:  # default: 4
@@ -26,5 +24,7 @@ exclude_patterns:
   - "ananse/db/"
   - "docs/"
   - "*.yml"
+  - "*.yaml"
   - "setup.*"
+  - "tests/"
   - "versioneer.py"
