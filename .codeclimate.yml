@@ -26,5 +26,7 @@ exclude_patterns:
   - "ananse/db/"
   - "docs/"
   - "*.yml"
+  - "*.yaml"
   - "setup.*"
+  - "tests/"
   - "versioneer.py"
