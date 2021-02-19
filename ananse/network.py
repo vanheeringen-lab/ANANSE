@@ -13,7 +13,6 @@ import os
 import math
 import re
 import warnings
-from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pandas as pd
@@ -23,10 +22,9 @@ import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from loguru import logger
 
-from pybedtools import BedTool
 from genomepy import Genome
+import pyranges as pr
 
-from ananse import mytmpdir
 import ananse
 
 warnings.filterwarnings("ignore")
@@ -94,79 +92,38 @@ class Network(object):
 
         self.include_enhancer = include_enhancer
 
-    def get_gene_dataframe(
-        self,
-        peak_pr,
-        up=100_000,
-        down=100_000,
-        alpha=1e4,
-        promoter=2000,
-        full_weight_region=5000,
-    ):
-        """Couple enhancers to genes.
+    def unique_enhancers(self, fname, chrom=None):
+        """Extract a list of unique enhancers.
 
         Parameters
         ----------
-        peak_pr : PyRanges object
-            PyRanges object with enhancer regions.
-        up : int, optional
-            Upstream maximum distance, by default 100kb.
-        down : int, optional
-            Upstream maximum distabce, by default 100kb.
-        alpha : float, optional
-            Parameter to control weight decay, by default 1e4.
-        promoter : int, optional
-            Promoter region, by default 2000.
-        full_weight_region : int, optional
-            Region that will receive full weight, by default 5000.
+        fname : str
+            File name of a tab-separated file that contains an 'enhancer' column.
+
+        chrom : str, optional
+            Only return enhancers on this chromosome.
 
         Returns
         -------
-        pandas.DataFrame
-            DataFrame with enhancer regions, gene names, distance and weight.
+            PyRanges object with enhancers
         """
-        # Convert to DataFrame & we don't need intron/exon information
-        genes = genes.as_df().iloc[:,:6]
-        
-        # Get the TSS only
-        genes.loc[genes["Strand"] == "+", "End"] = genes.loc[genes["Strand"] == "+", "Start"]
-        genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[genes["Strand"] == "-", "End"]
-        
-        # Extend up and down
-        genes.loc[genes["Strand"] == "+", "Start"] -= up
-        genes.loc[genes["Strand"] == "+", "End"] += down
-        genes.loc[genes["Strand"] == "-", "Start"] -= down
-        genes.loc[genes["Strand"] == "-", "End"] += up
-        
-        # Perform the overlap
-        genes = pr.PyRanges(genes)
-        genes = genes.join(regions).as_df()
-        
-        # Get the distance from center of enhancer to TSS
-        # Correct for extension
-        genes["dist"] = np.abs(genes["Start"] - (genes["Start_b"] + genes["End_b"])/2).astype(int)
-        genes.loc[genes["Strand"] == "+", "dist"] += up
-        genes.loc[genes["Strand"] == "-", "dist"] += down
+        p = re.compile("[:-]")
+        logger.info("reading enhancers")
 
-        # Create region in chr:start:end format
-        genes["loc"] = genes["Chromosome"].astype(str) + ":" + genes["Start_b"].astype(str) + "-" + genes["End_b"].astype(str)
-        
-        # Keep the gene-enhancer combination with the smallest distance
-        genes = genes.sort_values("dist").drop_duplicates(subset=["loc", "Name"], keep="first")
-        
-        # Return the right stuff
-        genes = genes.set_index("loc")[["Name", "dist"]].rename(columns={"Name":"gene"})
+        # Read enhancers from binding file
+        # This is relatively slow for a large file. May need some optimization.
+        enhancers = pd.read_table(fname, usecols=["enhancer"])["enhancer"]
+        enhancers = enhancers.unique()
 
-        # Get distance-based wight
-        weight = self.distance_weight(
-            include_promoter=self.include_promoter,
-            include_enhancer=self.include_enhancer,
-            remove=promoter,
-            keep1=full_weight_region,
-        ).set_index("dist")      
-        genes = genes.join(weight, on="dist")
-
-        return genes
+        # Split into columns and create PyRanges object
+        p = re.compile("[:-]")
+        enhancers = pr.PyRanges(
+            pd.DataFrame(
+                [re.split(p, e) for e in enhancers],
+                columns=["Chromosome", "Start", "End"],
+            )
+        )
+        return enhancers
 
     def distance_weight(
         self,
@@ -258,6 +215,99 @@ class Network(object):
         weight = pd.concat([weight1, weight2, weight3])
         return weight
 
+    def enhancer2gene(
+        self,
+        peak_pr,
+        up=100_000,
+        down=100_000,
+        alpha=1e4,
+        promoter=2000,
+        full_weight_region=5000,
+    ):
+        """Couple enhancers to genes.
+
+        Parameters
+        ----------
+        peak_pr : PyRanges object
+            PyRanges object with enhancer regions.
+        up : int, optional
+            Upstream maximum distance, by default 100kb.
+        down : int, optional
+            Upstream maximum distabce, by default 100kb.
+        alpha : float, optional
+            Parameter to control weight decay, by default 1e4.
+        promoter : int, optional
+            Promoter region, by default 2000.
+        full_weight_region : int, optional
+            Region that will receive full weight, by default 5000.
+
+        Returns
+        -------
+        pandas.DataFrame
+            DataFrame with enhancer regions, gene names, distance and weight.
+        """
+        genes = pr.read_bed(self.gene_bed)
+        # Convert to DataFrame & we don't need intron/exon information
+        genes = genes.as_df().iloc[:, :6]
+
+        # Get the TSS only
+        genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
+            genes["Strand"] == "+", "Start"
+        ]
+        genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
+            genes["Strand"] == "-", "End"
+        ]
+
+        # Extend up and down
+        genes.loc[genes["Strand"] == "+", "Start"] -= up
+        genes.loc[genes["Strand"] == "+", "End"] += down
+        genes.loc[genes["Strand"] == "-", "Start"] -= down
+        genes.loc[genes["Strand"] == "-", "End"] += up
+
+        # Perform the overlap
+        genes = pr.PyRanges(genes)
+        genes = genes.join(peak_pr).as_df()
+
+        # Get the distance from center of enhancer to TSS
+        # Correct for extension
+        genes["dist"] = (
+            (genes["Start_b"] + genes["End_b"]) / 2 - genes["Start"]
+        ).astype(int)
+        genes.loc[genes["Strand"] == "+", "dist"] -= up
+        genes.loc[genes["Strand"] == "-", "dist"] -= down
+        genes["dist"] = np.abs(genes["dist"])
+
+        # Create region in chr:start:end format
+        genes["loc"] = (
+            genes["Chromosome"].astype(str)
+            + ":"
+            + genes["Start_b"].astype(str)
+            + "-"
+            + genes["End_b"].astype(str)
+        )
+
+        # Keep the gene-enhancer combination with the smallest distance
+        genes = genes.sort_values("dist").drop_duplicates(
+            subset=["loc", "Name"], keep="first"
+        )
+
+        # Return the right stuff
+        genes = genes.set_index("loc")[["Name", "dist"]].rename(
+            columns={"Name": "gene"}
+        )
+
+        # Get distance-based wight
+        weight = self.distance_weight(
+            include_promoter=self.include_promoter,
+            include_enhancer=self.include_enhancer,
+            alpha=alpha,
+            promoter_region=promoter,
+            full_weight_region=full_weight_region,
+        ).set_index("dist")
+        genes = genes.join(weight, on="dist")
+
+        return genes
+
     def aggregate_binding(
         self,
         binding_fname,
@@ -269,6 +319,37 @@ class Network(object):
         full_weight_region=5000,
         combine_function="sum",
     ):
+        """Summarize all binding signal per gene per TF.
+
+        Return a dask delayed computation object.
+
+        Parameters
+        ----------
+        binding_fname : str
+            Filename of binding network.
+        tfs : list, optional
+            List of transcription factor names, by default None, which means
+            that all TFs will be used.
+        up : int, optional
+            Maximum upstream region to include, by default 1e5
+        down : [type], optional
+            Maximum downstream region to include, by default 1e5
+        alpha : float, optional
+            Distance at which the weight will be half, by default None
+        promoter : int, optional
+            Promoter region, by default 2000
+        full_weight_region : int, optional
+            Region that will receive full weight, regardless of distance, by
+            default 5000.
+        combine_function : str, optional
+            How to combine signal of weighted enhancers, by default "sum".
+            Valid options are "sum", "mean" or "max".
+
+        Returns
+        -------
+        dask.DataFrame
+            DataFrame with delayed computations.
+        """
 
         if combine_function not in ["mean", "max", "sum"]:
             raise ValueError(
@@ -285,11 +366,11 @@ class Network(object):
             )
 
         # Get list of unique enhancers from the binding file
-        enhancer_pt = self.unique_enhancers(binding_fname)
+        enhancer_pr = self.unique_enhancers(binding_fname)
 
         # Link enhancers to genes on basis of distance to annotated TSS
-        gene_df = self.get_gene_dataframe(
-            enhancer_bed,
+        gene_df = self.enhancer2gene(
+            enhancer_pr,
             up=up,
             down=down,
             alpha=alpha,
@@ -302,6 +383,7 @@ class Network(object):
         ddf = dd.read_csv(
             binding_fname,
             sep="\t",
+            usecols=["factor", "enhancer", "binding"],
         )[["factor", "enhancer", "binding"]]
         if tfs is not None:
             ddf = ddf[ddf["factor"].isin(tfs)]
@@ -418,35 +500,6 @@ class Network(object):
 
         return network
 
-    def unique_enhancers(self, fname, chrom=None):
-        """Extract a list of unique enhancers.
-
-        Parameters
-        ----------
-        fname : str
-            File name of a tab-separated file that contains an 'enhancer' column.
-
-        chrom : str, optional
-            Only return enhancers on this chromosome.
-
-        Returns
-        -------
-            PyRanges object with enhancers
-        """
-        p = re.compile("[:-]")
-        logger.info("reading enhancers")
-        
-        # Read enhancers from binding file
-        # This is relatively slow for a large file. May need some optimization.
-        enhancers = pd.read_table(fname, usecols=["enhancer"])["enhancer"]
-        enhancers = enhancers.unique()
-    
-        # Split into columns and create PyRanges object
-        p = re.compile("[:-]") 
-        enhancers = pr.PyRanges(pd.DataFrame([re.split(p, e) for e in enhancers], columns=["Chromosome", "Start", "End"]))
-        return enhancers
-  
-
     def run_network(
         self,
         binding,
@@ -460,6 +513,32 @@ class Network(object):
         promoter=2000,
         full_weight_region=5000,
     ):
+        """Create network.
+
+        Parameters
+        ----------
+        binding : str
+            Filename with binding information. Should contain at least three
+            columns: "factor", "enhancer" and "binding".
+        fin_expression : str or list, optional
+            Filename of list of filenames with expression information.
+        tfs : list, optional
+            List of transcription factors to use, by default None, which means
+            all TFs will be used.
+        corrfiles : [type], optional
+            Correlation files by default None. CURRENTLY UNUSED.
+        outfile : str, optional
+            Output file.
+        up : int, optional
+            Upstream maximum distance, by default 100kb.
+        down : int, optional
+            Upstream maximum distabce, by default 100kb.
+        alpha : float, optional
+            Parameter to control weight decay, by default 1e4.
+        promoter : int, optional
+            Promoter region, by default 2000.
+        full_weight_region : int, optional
+            Region that will receive full weight, by default 5000."""
         # Expression base network
         logger.info("Loading expression")
         df_expression = self.create_expression_network(
