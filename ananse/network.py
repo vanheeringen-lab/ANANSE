@@ -97,8 +97,8 @@ class Network(object):
     def get_gene_dataframe(
         self,
         peak_bed,
-        up=100000,
-        down=100000,
+        up=100_000,
+        down=100_000,
         alpha=1e4,
         promoter=2000,
         full_weight_region=5000,
@@ -166,18 +166,53 @@ class Network(object):
         include_promoter=False,
         include_enhancer=True,
         alpha=1e4,
-        padding=100000,
-        keep1=5000,
-        remove=2000,
+        maximum_distance=100_000,
+        full_weight_region=5000,
+        promoter_region=2000,
     ):
-        """
-        Built weight distribution from TSS.
-        """
-        # alpha is half site, default setting is 1e4, which means at 1e4 position weight is 0.5
-        # padding is the full range we used
-        # remove is promoter removed range
-        # keep1 is keep full binding score range
+        """Build weight distribution based on distance to TSS.
 
+        The basic idea is similar to Wang et al. [1], with some modifications.
+        The resulting weight ranges from 0 (far from the TSS) to 1 (near the
+        TSS) and is based on several different variables.
+
+        If `include_promoter` is `True`, then distances smaller than
+        `promoter_region` are included, otherwise they are excluded, the weight
+        is set to 0.
+        The `full_weight_region` parameters determines the region where
+        the weight will be 1, regardless of distance. The `maximum_distance`
+        parameter sets the maximum distance to consider. The weight decays with
+        an increasing distance, starting from 1 at `full_weight_region` to 0
+        at `maximum_distance`. The `alpha` parameters controls the decay.
+
+        Parameters
+        ----------
+        include_promoer : bool, optional
+            Include promoter regions. Default is False.
+        include_enhancer : bool, optional
+            Include enhancer regions, ie. regions that are distal to the
+            promoter.
+        alpha : float, optional
+            Controls weight decay, default is 1e4.
+        maximum_distance : int, optional
+            Maximum distance from TSS to consider. Default is 100kb.
+        full_weight_region : int, optional
+            Distance where regions will receive the full weight. Default
+            is 5kb.
+        promoter_region : int, optional
+            Promoter region, default is 2kb.
+
+        Returns
+        -------
+        DataFrame with two columns: distance and weight.
+
+        References
+        ----------
+        ..[1] Wang S, Zang C, Xiao T, Fan J, Mei S, Qin Q, Wu Q, Li X, Xu K,
+        He HH, Brown M, Meyer CA, Liu XS. "Modeling cis-regulation with a
+        compendium of genome-wide histone H3K27ac profiles." Genome Res.
+        2016 Oct;26(10):1417-1429. doi: 10.1101/gr.201574.115. PMID: 27466232
+        """
         u = -math.log(1.0 / 3.0) * 1e5 / alpha
 
         promoter_weight = int(include_promoter)
@@ -185,15 +220,18 @@ class Network(object):
 
         weight1 = pd.DataFrame(
             {
-                "weight": [promoter_weight for z in range(0, remove + 1)],
-                "dist": range(0, remove + 1),
+                "weight": [promoter_weight for z in range(0, promoter_region + 1)],
+                "dist": range(0, promoter_region + 1),
             }
         )
 
         weight2 = pd.DataFrame(
             {
-                "weight": [enhancer_weight for z in range(remove + 1, keep1 + 1)],
-                "dist": range(remove + 1, keep1 + 1),
+                "weight": [
+                    enhancer_weight
+                    for z in range(promoter_region + 1, full_weight_region + 1)
+                ],
+                "dist": range(promoter_region + 1, full_weight_region + 1),
             }
         )
 
@@ -204,9 +242,9 @@ class Network(object):
                     * 2.0
                     * math.exp(-u * math.fabs(z) / 1e5)
                     / (1.0 + math.exp(-u * math.fabs(z) / 1e5))
-                    for z in range(1, padding - keep1 + 1)
+                    for z in range(1, maximum_distance - full_weight_region + 1)
                 ],
-                "dist": range(keep1 + 1, padding + 1),
+                "dist": range(full_weight_region + 1, maximum_distance + 1),
             }
         )
 
@@ -230,12 +268,14 @@ class Network(object):
                 "Unknown combine function, valid options are: mean, max, sum"
             )
 
-        padding = max(up, down)
+        maximum_distance = max(up, down)
         if alpha is None:
-            alpha = padding / 10
+            alpha = maximum_distance / 10
 
-        if promoter > padding:
-            raise ValueError("promoter region is > region to use")
+        if promoter > maximum_distance:
+            raise ValueError(
+                "promoter region is larger than the maximum distance to use"
+            )
 
         # Get list of unique enhancers from the binding file
         # This is relatively slow for a large file. May need some optimization.
@@ -289,9 +329,37 @@ class Network(object):
     def create_expression_network(
         self, fin_expression, column="tpm", tfs=None, rank=True
     ):
+        """Create a gene expression based network.
+
+        Based on a file with gene expression levels (a TPM column), a
+        dask DataFrame is generated with the combined expression levels
+        of the tf and the target gene. By default, the expresison levels
+        are ranked and subsequently scaled between 0 and 1.
+
+        Parameters
+        ----------
+        fin_expression : str or list
+            Filename of file that contains gene expression data (TPM), or a
+            list of filenames. First column should contain the gene name.
+
+        column : str, optional
+            Column name that contains gene expression, 'tpm' by default.
+
+        tfs : list, optional
+            List of TF gene names. All TFs will be used by default.
+
+        rank : bool, optional
+            Rank expression levels before scaling.
+
+        Returns
+        -------
+            Dask DataFrame with gene expression based values.
+        """
+        # Convert it to a list if it's not a list of files, but a single file name
         if isinstance(fin_expression, str):
             fin_expression = [fin_expression]
 
+        # Read all expression input files and take the mean expression per gene
         expression = pd.DataFrame(
             pd.concat(
                 [pd.read_table(f, index_col=0)[[column]] for f in fin_expression],
@@ -301,16 +369,17 @@ class Network(object):
         )
         expression[column] = np.log2(expression[column] + 1e-5)
 
+        # Create the target gene list, based on all genes
         expression.index.rename("target", inplace=True)
         expression = expression.reset_index()
         expression = expression.rename(columns={"tpm": "target_expression"})
 
+        # Create the TF list, based on valid transcription factors
         if tfs is None:
             package_dir = os.path.dirname(ananse.__file__)
             tffile = os.path.join(package_dir, "db", "tfs.txt")
             tfs = pd.read_csv(tffile, header=None)[0].tolist()
 
-        # print(expression)
         tfs = expression[expression.target.isin(tfs)]
         tfs = tfs.reset_index()
         tfs = tfs.drop(columns=["index"])
@@ -321,26 +390,46 @@ class Network(object):
         expression["key"] = 0
         tfs["key"] = 0
 
+        # Merge TF and target gene expression information
         network = expression.merge(tfs, how="outer")
         network = network[["tf", "target", "tf_expression", "target_expression"]]
 
+        # Rank and scale
         for col in ["tf_expression", "target_expression"]:
             if rank:
                 network[col] = rankdata(network[col])
             network[col] = minmax_scale(network[col])
 
+        # Use one-column index that contains TF and target genes.
+        # This is necessary for dask, as dask cannot merge on a MultiIndex.
+        # Otherwise this would be an inefficient and unnecessary step.
         network["tf_target"] = network["tf"] + "_" + network["target"]
         network = network.set_index("tf_target").drop(columns=["tf", "target"])
+
+        # Convert to a dask DataFrame.
         logger.info("creating expression dataframe")
         network = dd.from_pandas(network, npartitions=30)
-        # print(network)
+
         return network
 
     def unique_enhancers(self, binding_fname, chrom=None):
+        """Extract a list of unique enhancers.
+
+        Parameters
+        ----------
+        binding_fname : str
+            File name of a tab-separated file that contains an 'enhancer' column.
+
+        chrom : str, optional
+            Only return enhancers on this chromosome.
+
+        Returns
+        -------
+            File name of BED3 file with enhancer regions.
+        """
         p = re.compile("[:-]")
         logger.info("reading enhancers")
         enhancers = pd.read_table(binding_fname, usecols=["enhancer"])["enhancer"]
-        # enhancers = pd.read_table("/ceph/rimlsfnwi/data/moldevbio/heeringen/heeringen/atac_ananse/models/saved/H3K27ac.qnorm.ref.txt", usecols=[0]).iloc[:,0]
 
         if chrom:
             logger.info(f"filtering for {chrom}")
@@ -351,8 +440,6 @@ class Network(object):
         f = NamedTemporaryFile(mode="w+", dir=mytmpdir(), delete=False)
         for e in enhancers:
             print("{}\t{}\t{}".format(*re.split(p, e)), file=f)
-
-        # print(open(f.name).readlines()[:10])
 
         return f.name
 
@@ -399,11 +486,11 @@ class Network(object):
                 result = result.fillna(0)
             else:
                 result = df_binding
-            
+
             result["binding"] = minmax_scale(
                 rankdata(result["weighted_binding"], method="min")
             )
-            
+
             if fin_expression is not None:
                 # Combine binding score with expression score
                 result["binding"] = result[
