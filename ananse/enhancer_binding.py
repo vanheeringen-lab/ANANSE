@@ -12,6 +12,7 @@ from loguru import logger
 import numpy as np
 import pandas as pd
 import pickle
+import pysam
 import qnorm
 from scipy import stats
 from sklearn.preprocessing import minmax_scale
@@ -208,15 +209,48 @@ class ScorePeaks:
         self.verbose = verbose
         self.ncore = ncore
 
+    def compatibility_check(self):
+        """
+        Check if any chromosome in each bams file are found in the bed file.
+        This filters out datasets mapped to different genomes.
+        """
+        error = False
+        bed_chromosomes = set(
+            pd.read_csv(self.bed, sep="\t", header=None)[0].astype(str)
+        )
+        for bam in self.list_of_bams:
+            bam_header = pysam.view(bam, "-H").split("\n")  # noqa: pysam bug
+            for line in bam_header:
+                if not line.startswith("@SQ"):
+                    continue
+                # extract chrom (ex: '@SQ\tSN:chr11\tLN:100316')
+                chrom = line.split("\tSN:")[1].split("\tLN:")[0]
+                # if any chrom matches: next bam
+                if chrom in bed_chromosomes:
+                    break
+            else:
+                logger.exception(
+                    f"Chromosomes in the peak file(s) do not match any in bam file '{os.path.basename(bam)}'!\n"
+                    f"Does {self.bed} contain any regions, and "
+                    "are both bam- and peak file(s) mapped to the same genome assembly?\n"
+                )
+                error = True
+
+        if error:
+            exit(1)
+
     def peaks_count(self, outdir):
         """
         count bam reads in the bed regions
         returns one bed file for each bam in outdir
         """
         # linear script:
+        # coverage_files = []
         # for bam in self.list_of_bams:
         #     bed_output = os.path.join(outdir, os.path.basename(bam).replace(".bam", ".regions.bed"))
+        #     coverage_files.append(bed_output)
         #     mosdepth(self.bed, bam, bed_output, self.ncore)
+        # return coverage_files
 
         # parallel script:
         nbams = len(self.list_of_bams)
@@ -225,11 +259,13 @@ class ScorePeaks:
 
         # list with tuples. each tuple = one run
         mosdepth_params = []
+        coverage_files = []
         for bam in self.list_of_bams:
             bed_output = os.path.join(
                 outdir, os.path.basename(bam).replace(".bam", ".regions.bed")
             )
             mosdepth_params.append((self.bed, bam, bed_output, ncore))
+            coverage_files.append(bed_output)
 
         pool = mp.Pool(npool)
         try:
@@ -237,23 +273,19 @@ class ScorePeaks:
         finally:  # To make sure processes are closed in the end, even if errors happen
             pool.close()
             pool.join()
+        return coverage_files
 
     @staticmethod
-    def peaks_merge(indir, bed_output, ncore=1):
+    def peaks_merge(coverage_files, bed_output, ncore=1):
         """
         averages all peaks_count outputs
         uses quantile normalization to normalize for read depth
         returns one BED 3+1 file
         """
         ncore = min(4, ncore)
-        files = [
-            os.path.join(indir, f)
-            for f in os.listdir(indir)
-            if f.endswith(".regions.bed")
-        ]
-        bed = pd.read_csv(files[0], header=None, sep="\t")
-        if len(files) > 1:
-            for file in files[1:]:
+        bed = pd.read_csv(coverage_files[0], header=None, sep="\t")
+        if len(coverage_files) > 1:
+            for file in coverage_files[1:]:
                 scores = pd.read_csv(file, header=None, sep="\t")[3]
                 bed = pd.concat([bed, scores], axis=1)
 
@@ -305,6 +337,8 @@ class ScorePeaks:
         # save the results as it takes ages to run
         raw_peak_scores = os.path.join(os.path.dirname(outfile), "raw_scoredpeaks.bed")
         if force or not os.path.exists(raw_peak_scores):
+            self.compatibility_check()
+
             tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
             try:
                 if self.verbose:
@@ -312,14 +346,14 @@ class ScorePeaks:
                 try:  # assumes sorted
                     for bam in self.list_of_bams:
                         bam_index(bam, force=False, ncore=self.ncore)
-                    self.peaks_count(tmpdir)
+                    coverage_files = self.peaks_count(tmpdir)
                 except Exception:  # sort, index & try again
                     for bam in self.list_of_bams:
                         bam_sort(bam, self.ncore)
-                    self.peaks_count(tmpdir)
+                    coverage_files = self.peaks_count(tmpdir)
 
                 tmp_peak_scores = os.path.join(tmpdir, "raw_scoredpeaks.bed")
-                self.peaks_merge(tmpdir, tmp_peak_scores, self.ncore)
+                self.peaks_merge(coverage_files, tmp_peak_scores, self.ncore)
 
                 shutil.copy2(tmp_peak_scores, raw_peak_scores)
             finally:
@@ -383,6 +417,7 @@ class ScoreMotifs:
         bed.to_csv(bed_output, sep="\t", index=False)
 
     def run(self, outfile, force=False):
+        # save the results as it takes ages to run
         raw_motif_scores = os.path.join(
             os.path.dirname(outfile), "raw_scoredmotifs.bed"
         )

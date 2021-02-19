@@ -106,20 +106,33 @@ def test_cbedf():
         assert int(stop) - int(start) == width
 
 
+def test_compatibility_check():
+    incompatible = os.path.join(outdir, "incompatible.bed")
+    write_file(incompatible, ["1\t0\t200"])
+    sp = ananse.enhancer_binding.ScorePeaks(
+        bams=bam1, bed=incompatible, ncore=1, verbose=True
+    )
+    with pytest.raises(SystemExit):
+        sp.compatibility_check()
+
+
 def test_peaks_count():
     sp = ananse.enhancer_binding.ScorePeaks(
         bams=[bam1, bam2], bed=sp_bed_input, ncore=1, verbose=True
     )
-    sp.peaks_count(outdir)
-
-    files = os.listdir(outdir)
-    counts = [f for f in files if f.endswith(".regions.bed")]
-    assert len(counts) == 2
+    coverage_files = sp.peaks_count(outdir)
+    assert len(coverage_files) == 2
+    assert os.path.join(outdir, "bam1.regions.bed") in coverage_files
+    assert os.path.join(outdir, "bam2.regions.bed") in coverage_files
 
 
 def test_peaks_merge():
     sp = ananse.enhancer_binding.ScorePeaks(bams=[], bed=None, ncore=1, verbose=True)
-    sp.peaks_merge(outdir, raw_peak_scores, sp.ncore)
+    coverage_files = [
+        os.path.join(outdir, "bam1.regions.bed"),
+        os.path.join(outdir, "bam2.regions.bed"),
+    ]
+    sp.peaks_merge(coverage_files, raw_peak_scores, sp.ncore)
 
     with open(raw_peak_scores) as f:
         content = f.readlines()[0]

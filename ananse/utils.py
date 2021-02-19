@@ -145,6 +145,31 @@ def cleanpath(path):
     )
 
 
+# def non_empty_files(files, error_msg, size_threshold=10, verbose=True):
+#     """Check list of files for content
+#
+#     Args:
+#         files: list of filepaths
+#         error_msg: message for all empty files
+#         size_threshold: minimum size to be considered non-empty
+#         verbose: return warnings?
+#
+#     Returns:
+#         list of non-empty files
+#     """
+#     ret_files = []
+#     for file in files:
+#         if os.path.getsize(file) > size_threshold:
+#             ret_files.append(file)
+#         elif verbose:
+#             logger.warning(f"Empty file: '{os.path.basename(file)}'")
+#
+#     if not ret_files:
+#         logger.exception(error_msg)
+#         exit(1)
+#     return ret_files
+
+
 def mytmpdir():
     """
     returns a temp directory that is removed when the process is completed
