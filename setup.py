@@ -45,5 +45,6 @@ setup(
         "networkx",
         "tables",
         "genomepy >= 0.8.3",
+        "pyranges",
     ],
 )

@@ -96,70 +96,77 @@ class Network(object):
 
     def get_gene_dataframe(
         self,
-        peak_bed,
+        peak_pr,
         up=100_000,
         down=100_000,
         alpha=1e4,
         promoter=2000,
         full_weight_region=5000,
     ):
-        # all overlap Enh-TSS(100000-tss-100000) pair with distance
-        logger.info("relating enhancers to genes")
-        peaks = BedTool(peak_bed)
-        b = BedTool(self.gene_bed)
-        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(  # noqa: E741
-            l=up, r=down, g=self.gsize, s=True  # noqa: E741
-        )
-        # bedtools flank  -r 0 -l 1 -i b.bed -g
-        # #all gene upstream 1bp position (TSS), Chr01 12800   12801   in Chr01    4170    12800   Xetrov90000001m.g   0   -
-        # bedtools slop  -r down -l up -i b.bed -g
-        # # |100000--TSS--100000|
+        """Couple enhancers to genes.
 
-        vals = []
-        # for f in b.intersect(peaks, wo=True, nonamecheck=True):
-        for f in b.intersect(peaks, wo=True):
-            # bedtools intersect -wo -nonamecheck -b peaks.bed -a b.bed
-            chrom = f[0]
-            strand = f[5]
-            if strand == "+":
-                tss = f.start + up
-            else:
-                tss = f.start + down
-            gene = f[3]
-            peak_start, peak_end = int(f[-3]), int(f[-2])
-            vals.append([chrom, tss, gene, peak_start, peak_end])
-        p = pd.DataFrame(
-            vals, columns=["chrom", "tss", "gene", "peak_start", "peak_end"]
-        )
-        p["peak"] = [int(i) for i in (p["peak_start"] + p["peak_end"]) / 2]
-        # peak with int function, let distance int
-        p["dist"] = np.abs(p["tss"] - p["peak"])
-        p["loc"] = (
-            p["chrom"]
-            + ":"
-            + p["peak_start"].astype(str)
-            + "-"
-            + p["peak_end"].astype(str)
-        )
-        p = p.sort_values("dist").drop_duplicates(["loc", "gene"], keep="first")[
-            ["gene", "loc", "dist"]
-        ]
+        Parameters
+        ----------
+        peak_pr : PyRanges object
+            PyRanges object with enhancer regions.
+        up : int, optional
+            Upstream maximum distance, by default 100kb.
+        down : int, optional
+            Upstream maximum distabce, by default 100kb.
+        alpha : float, optional
+            Parameter to control weight decay, by default 1e4.
+        promoter : int, optional
+            Promoter region, by default 2000.
+        full_weight_region : int, optional
+            Region that will receive full weight, by default 5000.
 
-        # remove distance more than 100k interaction, for weight calculate
-        p = p[p["dist"] < up - 1]
+        Returns
+        -------
+        pandas.DataFrame
+            DataFrame with enhancer regions, gene names, distance and weight.
+        """
+        # Convert to DataFrame & we don't need intron/exon information
+        genes = genes.as_df().iloc[:,:6]
+        
+        # Get the TSS only
+        genes.loc[genes["Strand"] == "+", "End"] = genes.loc[genes["Strand"] == "+", "Start"]
+        genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[genes["Strand"] == "-", "End"]
+        
+        # Extend up and down
+        genes.loc[genes["Strand"] == "+", "Start"] -= up
+        genes.loc[genes["Strand"] == "+", "End"] += down
+        genes.loc[genes["Strand"] == "-", "Start"] -= down
+        genes.loc[genes["Strand"] == "-", "End"] += up
+        
+        # Perform the overlap
+        genes = pr.PyRanges(genes)
+        genes = genes.join(regions).as_df()
+        
+        # Get the distance from center of enhancer to TSS
+        # Correct for extension
+        genes["dist"] = np.abs(genes["Start"] - (genes["Start_b"] + genes["End_b"])/2).astype(int)
+        genes.loc[genes["Strand"] == "+", "dist"] += up
+        genes.loc[genes["Strand"] == "-", "dist"] += down
 
+        # Create region in chr:start:end format
+        genes["loc"] = genes["Chromosome"].astype(str) + ":" + genes["Start_b"].astype(str) + "-" + genes["End_b"].astype(str)
+        
+        # Keep the gene-enhancer combination with the smallest distance
+        genes = genes.sort_values("dist").drop_duplicates(subset=["loc", "Name"], keep="first")
+        
+        # Return the right stuff
+        genes = genes.set_index("loc")[["Name", "dist"]].rename(columns={"Name":"gene"})
+
+        # Get distance-based wight
         weight = self.distance_weight(
             include_promoter=self.include_promoter,
             include_enhancer=self.include_enhancer,
             remove=promoter,
             keep1=full_weight_region,
-        ).set_index("dist")
-        p = p.join(weight, on="dist")
+        ).set_index("dist")      
+        genes = genes.join(weight, on="dist")
 
-        p.gene = [i.upper() for i in list(p.gene)]
-        p = p.set_index("loc")
-        logger.info("done")
-        return p
+        return genes
 
     def distance_weight(
         self,
@@ -278,8 +285,7 @@ class Network(object):
             )
 
         # Get list of unique enhancers from the binding file
-        # This is relatively slow for a large file. May need some optimization.
-        enhancer_bed = self.unique_enhancers(binding_fname)
+        enhancer_pt = self.unique_enhancers(binding_fname)
 
         # Link enhancers to genes on basis of distance to annotated TSS
         gene_df = self.get_gene_dataframe(
@@ -412,12 +418,12 @@ class Network(object):
 
         return network
 
-    def unique_enhancers(self, binding_fname, chrom=None):
+    def unique_enhancers(self, fname, chrom=None):
         """Extract a list of unique enhancers.
 
         Parameters
         ----------
-        binding_fname : str
+        fname : str
             File name of a tab-separated file that contains an 'enhancer' column.
 
         chrom : str, optional
@@ -425,23 +431,21 @@ class Network(object):
 
         Returns
         -------
-            File name of BED3 file with enhancer regions.
+            PyRanges object with enhancers
         """
         p = re.compile("[:-]")
         logger.info("reading enhancers")
-        enhancers = pd.read_table(binding_fname, usecols=["enhancer"])["enhancer"]
-
-        if chrom:
-            logger.info(f"filtering for {chrom}")
-            enhancers = enhancers[enhancers.str.contains(f"^{chrom}:")]
-
+        
+        # Read enhancers from binding file
+        # This is relatively slow for a large file. May need some optimization.
+        enhancers = pd.read_table(fname, usecols=["enhancer"])["enhancer"]
         enhancers = enhancers.unique()
-        logger.info("writing temporary enhancers")
-        f = NamedTemporaryFile(mode="w+", dir=mytmpdir(), delete=False)
-        for e in enhancers:
-            print("{}\t{}\t{}".format(*re.split(p, e)), file=f)
-
-        return f.name
+    
+        # Split into columns and create PyRanges object
+        p = re.compile("[:-]") 
+        enhancers = pr.PyRanges(pd.DataFrame([re.split(p, e) for e in enhancers], columns=["Chromosome", "Start", "End"]))
+        return enhancers
+  
 
     def run_network(
         self,
