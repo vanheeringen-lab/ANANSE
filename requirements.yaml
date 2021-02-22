@@ -24,6 +24,7 @@ dependencies:
   - pandas=1.1.5  # tmp dependency due to gimmemotifs bug
   - pillow
   - pybedtools
+  - pyranges
   - pysam
   - pytables
   - pyyaml >=3.10
