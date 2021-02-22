@@ -12,13 +12,13 @@ from ananse.peakpredictor import predict_peaks
 
 def binding(args):
     if args.pfmfile is not None:
-        raise(NotImplementedError("pfmfile"))
-    
+        raise (NotImplementedError("pfmfile"))
+
     predict_peaks(
-        args.outfile,
+        args.outdir,
         atac_bams=args.atac_bams,
         histone_bams=args.histone_bams,
-        regions=args.regions,
+        regionfiles=args.regionfiles,
         factors=args.factors,
-        genome=args.genome
+        genome=args.genome,
     )

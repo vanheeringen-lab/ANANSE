@@ -72,28 +72,17 @@ if __name__ == "__main__":
     )
     group.add_argument(
         "-r",
-        "--regions",
-        required=True,
-        dest="peakfiles",
-        help="one or more BED format files with putative enhancer regions (e.g. narrowPeak, broadPeak)",
+        "--regionfiles",
+        dest="regionfiles",
+        help="one or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)",
         metavar="",
         nargs="+",  # >= 1 files
     )
     group.add_argument(
-        "-w",
-        "--width",
-        dest="peak_width",
-        help="peakfiles are resized to this width (default: 200)",
-        metavar="",
-        default=200,
-    )
-
-    group.add_argument(
         "-g",
         "--genome",
-        required=True,
         dest="genome",
-        help="path to the genome fasta used to align the bams and peaks to",
+        help="Genome name or path to the genome FASTA used to align the bams and peaks to",
         metavar="GENOME",
         default="hg38",
     )

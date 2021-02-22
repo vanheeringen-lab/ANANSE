@@ -4,6 +4,7 @@ import re
 from tempfile import NamedTemporaryFile
 
 from fluff.fluffio import load_heatmap_data
+from genomepy import Genome
 from gimmemotifs.motif import read_motifs
 from gimmemotifs.scanner import scan_regionfile_to_table
 import joblib
@@ -13,6 +14,8 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import scale
 import qnorm
+
+from ananse.enhancer_binding import CombineBedFiles
 
 # Note: there are currently 3 paths hardcoded:
 #  data_dir, _avg and _dist
@@ -365,8 +368,84 @@ def load_default_factors():
     return valid_factors
 
 
+def _check_input_factors(factors):
+    """Check factors.
+
+    Factors can eiher be a list of transcription factors, or a filename of a
+    file that containts TFs. Returns a list of factors.
+    If factors is None, it will return the defaylt transcription factors.
+
+    Returns
+    -------
+    list
+        List of TF names.
+    """
+    # Load factors
+    if factors is None:
+        factors = load_default_factors()
+    elif isinstance(factors, str) or (len(factors) == 1 and os.path.exists(factors[0])):
+        factors = [line.strip() for line in open(factors[0])]
+    return factors
+
+
+def _check_input_regions(regionfiles, genome, outdir=".", verbose=True, force=False):
+    # Load regions from BED or region text file
+    if regionfiles is None:
+        # Keep regions to None, use reference regions.
+        return
+
+    infile = regionfiles[0]
+    if len(regionfiles) > 1:
+        # merge files
+        peak_width = 200
+        cbed = CombineBedFiles(genome=genome, peakfiles=regionfiles, verbose=verbose)
+        combined_bed = os.path.join(outdir, "regions_combined.bed")
+        cbed.run(outfile=combined_bed, width=peak_width, force=force)
+        infile = combined_bed
+
+    df = pd.read_table(infile, header=None)
+    if df.shape[1] >= 3:
+        regions = (
+            df.iloc[:, 0].astype(
+                str
+            )  # For Ensembl genome names, make sure it's a string
+            + ":"
+            + df.iloc[:, 1].astype(str)
+            + "-"
+            + df.iloc[:, 2].astype(str)
+        ).tolist()
+    else:
+        regions = df.iloc[:, 0].tolist()
+    return regions
+
+
+def _check_input_files(*args):
+    files = []
+    for arg in args:
+        if arg is None:
+            continue
+        if isinstance(arg, list):
+            files.extend(arg)
+        else:
+            files.append(arg)
+
+    all_files_found = True
+    for fname in files:
+        if not os.path.exists(fname):
+            logger.exception(f"Could not find {fname}!")
+            all_files_found = False
+
+    if not all_files_found:
+        exit(1)
+
+
 def predict_peaks(
-    outfile, atac_bams=None, histone_bams=None, regions=None, factors=None, genome=None
+    outdir,
+    atac_bams=None,
+    histone_bams=None,
+    regionfiles=None,
+    factors=None,
+    genome=None,
 ):
     """Predict binding in a set of genomic regions.
 
@@ -383,36 +462,30 @@ def predict_peaks(
         List of BAM files, by default None
     histone_bams : [type], optional
         List of H3K27ac ChIP-seq BAM files, by default None
-    regions : list, optional
-        BED file or text file with regions. If None, then the reference
-        regions are used.
+    regionfiles : list, optional
+        BED file or text file with regions, or a list of BED, narrowPeak or
+        broadPeak files If None, then the reference regions are used.
     factors : list, optional
         List of TF names or file with TFs, one per line. If None (default),
         then all TFs are used.
     genome : str, optional
         Genome name. The default is hg38.
     """
-    # Load factors
-    if factors is None:
-        factors = load_default_factors()
-    elif isinstance(factors, str) or (len(factors) == 1 and os.path.exists(factors[0])):
-        factors = [line.strip() for line in open(factors[0])]
+    # Check if all specified BAM files exist
+    _check_input_files(atac_bams, histone_bams)
 
-    # Load regions from BED or region text file
-    if regions is not None:
-        df = pd.read_table(regions, header=None)
-        if df.shape[1] >= 3:
-            regions = (
-                df.iloc[:, 0].astype(
-                    str
-                )  # For Ensembl genome names, make sure it's a string
-                + ":"
-                + df.iloc[:, 1].astype(str)
-                + "-"
-                + df.iloc[:, 2].astype(str)
-            ).tolist()
-        else:
-            regions = df.iloc[:, 0].tolist()
+    # Read the factors, from a file if needed
+    factors = _check_input_factors(factors)
+
+    # Check genome, will fail if it is not a correct genome name or file
+    Genome(genome)
+
+    if not os.path.exists(outdir):
+        os.makedirs(outdir, exist_ok=True)
+
+    # If regions are specified, read them in, combining multiple files if
+    # necessary.
+    regions = _check_input_regions(regionfiles, genome, outdir=outdir)
 
     p = PeakPredictor(
         atac_bams=atac_bams,
@@ -420,6 +493,8 @@ def predict_peaks(
         regions=regions,
         genome=genome,
     )
+
+    outfile = os.path.join(outdir, "binding.tsv")
 
     # Make sure we create a new file
     with open(outfile, "w") as f:
@@ -438,4 +513,4 @@ def predict_peaks(
                     f, index=False, header=False, sep="\t", float_format="%.5f"
                 )
             except ValueError as e:
-                print(str(e))
+                logger.debug(str(e))

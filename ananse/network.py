@@ -474,7 +474,7 @@ class Network(object):
         tfs.rename(
             columns={"target": "tf", "target_expression": "tf_expression"}, inplace=True
         )
-        
+
         expression["key"] = 0
         tfs["key"] = 0
 
