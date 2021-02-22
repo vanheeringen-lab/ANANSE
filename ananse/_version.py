@@ -41,8 +41,8 @@ def get_config():
     cfg.VCS = "git"
     cfg.style = "pep440"
     cfg.tag_prefix = ""
-    cfg.parentdir_prefix = "gimmemotifs-"
-    cfg.versionfile_source = "gimmemotifs/_version.py"
+    cfg.parentdir_prefix = "ananse-"
+    cfg.versionfile_source = "ananse/_version.py"
     cfg.verbose = False
     return cfg
 
