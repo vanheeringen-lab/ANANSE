@@ -10,6 +10,8 @@ import argparse
 
 from genomepy import Genome
 from loguru import logger
+logger.remove()
+logger.add(sys.stderr, format='<green>{time:YYYY-MM-DD HH:mm:ss}</green> | {level} | {message}')
 
 from ananse import commands, __version__
 
