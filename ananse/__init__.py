@@ -2,30 +2,19 @@ import atexit
 from os import getpid
 import shutil
 from tempfile import mkdtemp
-import logging
 
 
+# TODO: switch to the version in ananse.utils
 def mytmpdir():
     if not hasattr(mytmpdir, "dir") or not mytmpdir.dir:
-        mytmpdir.dir = mkdtemp(prefix="ananse.{0}.".format(getpid()))
-        atexit.register(shutil.rmtree, mytmpdir.dir)
+        mytmpdir.dir = mkdtemp(
+            prefix=f"ANANSE_{getpid()}."
+        )  # can be cleaned by clean_tmp()
+        atexit.register(shutil.rmtree, mytmpdir.dir, ignore_errors=True)
     return mytmpdir.dir
 
 
-logger = logging.getLogger("gnetwork")
-logger.setLevel(logging.DEBUG)
-logger.propagate = 0
-
-# nice format
-screen_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-
-# Log to screen
-sh = logging.StreamHandler()
-sh.setLevel(logging.INFO)
-sh.setFormatter(screen_formatter)
-logger.addHandler(sh)
-
-from ._version import get_versions
+from ._version import get_versions  # noqa: actual versioneer method
 
 __version__ = get_versions()["version"]
 del get_versions
