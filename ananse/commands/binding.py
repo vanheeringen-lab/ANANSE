@@ -6,19 +6,13 @@
 # distribution.
 import sys
 import os
-
+import pandas as pd
 from ananse.peakpredictor import predict_peaks
 
 
 def binding(args):
     if args.pfmfile is not None:
         raise(NotImplementedError("pfmfile"))
-    if args.regions is not None:
-        raise(NotImplementedError("regions"))
-    if args.genome is not "hg38":
-        raise(NotImplementedError("genome"))
-    if args.factors is not None:
-        raise(NotImplementedError("factors"))
     
     predict_peaks(
         args.outfile,
@@ -26,4 +20,5 @@ def binding(args):
         histone_bams=args.histone_bams,
         regions=args.regions,
         factors=args.factors,
+        genome=args.genome
     )

@@ -96,9 +96,10 @@ if __name__ == "__main__":
         "-f",
         "--factors",
         dest="factors",
-        help="Transciption factors to use, comma-separated",
+        help="Transciption factors to use. Either a space-separated list or a file with one TF per line.",
         metavar="FACTORS",
         default=None,
+        nargs="*"
     )
     #group.add_argument(
     #    "-n", "--ncore", dest="ncore", help="Number of core used", type=int,
