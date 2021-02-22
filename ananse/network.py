@@ -384,7 +384,7 @@ class Network(object):
             binding_fname,
             sep="\t",
             usecols=["factor", "enhancer", "binding"],
-        )[["factor", "enhancer", "binding"]]
+        )
         if tfs is not None:
             ddf = ddf[ddf["factor"].isin(tfs)]
 
@@ -474,9 +474,6 @@ class Network(object):
         tfs.rename(
             columns={"target": "tf", "target_expression": "tf_expression"}, inplace=True
         )
-
-        expression["key"] = 0
-        tfs["key"] = 0
 
         # Merge TF and target gene expression information
         network = expression.merge(tfs, how="outer")
