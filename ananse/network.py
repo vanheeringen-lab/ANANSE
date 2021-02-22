@@ -474,6 +474,9 @@ class Network(object):
         tfs.rename(
             columns={"target": "tf", "target_expression": "tf_expression"}, inplace=True
         )
+        
+        expression["key"] = 0
+        tfs["key"] = 0
 
         # Merge TF and target gene expression information
         network = expression.merge(tfs, how="outer")
