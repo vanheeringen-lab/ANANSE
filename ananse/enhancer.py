@@ -20,7 +20,7 @@ import subprocess
 from pybedtools import BedTool
 from genomepy import Genome
 
-from ananse import mytmpdir
+from ananse.utils import mytmpdir
 import ananse
 
 class Enhancer(object):

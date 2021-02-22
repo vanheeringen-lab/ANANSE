@@ -28,7 +28,7 @@ from gimmemotifs.scanner import Scanner
 from gimmemotifs.motif import read_motifs
 from gimmemotifs.utils import as_fasta, pfmfile_location
 
-from ananse import mytmpdir
+from ananse.utils import mytmpdir
 import ananse
 
 warnings.filterwarnings("ignore")
