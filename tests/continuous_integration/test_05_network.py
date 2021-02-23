@@ -1,7 +1,10 @@
+import os
+
+import numpy as np
 import pytest
 
 from ananse.network import Network
-import numpy as np
+from .test_02_utils import write_file
 
 
 @pytest.fixture
@@ -11,7 +14,14 @@ def binding_fname():
 
 @pytest.fixture
 def network():
-    return Network()
+    genome = "tests/data/genome.fa"
+    if not os.path.exists(genome):
+        write_file(genome, [">chr1", "N"])
+
+    return Network(
+        genome=genome,
+        gene_bed="ananse/db/hg38.genes.bed"
+    )
 
 
 def test_unique_enhancer(network, binding_fname):
