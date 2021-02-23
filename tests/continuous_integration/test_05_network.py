@@ -18,10 +18,7 @@ def network():
     if not os.path.exists(genome):
         write_file(genome, [">chr1", "N"])
 
-    return Network(
-        genome=genome,
-        gene_bed="ananse/db/hg38.genes.bed"
-    )
+    return Network(genome=genome, gene_bed="ananse/db/hg38.genes.bed")
 
 
 def test_unique_enhancer(network, binding_fname):
