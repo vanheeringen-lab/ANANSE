@@ -11,7 +11,6 @@
 # Python imports
 from __future__ import print_function
 import sys
-import os
 import warnings
 from loguru import logger
 from tqdm import tqdm
@@ -26,7 +25,6 @@ from adjustText import adjust_text
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from ananse import mytmpdir
 
 warnings.filterwarnings("ignore")
 
