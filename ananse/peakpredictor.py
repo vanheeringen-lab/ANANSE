@@ -19,12 +19,8 @@ import qnorm
 
 from ananse.enhancer_binding import CombineBedFiles
 
-# Note: there are currently 3 paths hardcoded:
-#  data_dir, _avg and _dist
-# This should be changed to make it general
-# The motif files are also not created by default
+# This motif file is not created by default
 #   * f"{self.data_dir}/reference.factor.feather"
-#   * f"{factor}.motif.txt.gz"
 
 
 class PeakPredictor:
@@ -35,6 +31,9 @@ class PeakPredictor:
         histone_bams=None,
         regions=None,
         genome="hg38",
+        pfmfile=None,
+        factors=None,
+        ncpus=4,
     ):
         self.data_dir = reference
 
@@ -46,11 +45,13 @@ class PeakPredictor:
             genome = "hg38"
 
         # Set basic information
+        self.ncpus = ncpus
         self.genome = genome
         self._atac_data = None
         self._histone_data = None
         self.factor_models = {}
-        self._load_motifs()
+        self.pfmfile = pfmfile
+        self._load_motifs(factors=factors)
 
         # if the reference regions are used, we can use existing data such
         # as motif scores.
@@ -87,8 +88,11 @@ class PeakPredictor:
             for region in regions:
                 print(region, file=f)
             f.flush()
-
-            motif_df = scan_regionfile_to_table(f.name, self.genome, "score")
+            # TODO: we're still scanning for *all* motifs, even if we only have
+            # a few factors
+            motif_df = scan_regionfile_to_table(
+                f.name, self.genome, "score", ncpus=self.ncpus
+            )
 
             self._motifs = pd.DataFrame(index=motif_df.index)
             for factor in self.f2m:
@@ -132,7 +136,45 @@ class PeakPredictor:
         # Set regions
         self.regions = self._avg.index
 
-    def _load_motifs(self, indirect=True):
+    def _load_human_factors(self):
+        valid_factors = pd.read_excel(
+            "https://www.biorxiv.org/content/biorxiv/early/2020/12/07/2020.10.28.359232/DC1/embed/media-1.xlsx",
+            engine="openpyxl",
+            sheet_name=1,
+        )
+        valid_factors = valid_factors.loc[
+            valid_factors["Pseudogene"].isnull(), "HGNC approved gene symbol"
+        ].values
+        valid_factors = [f for f in valid_factors if f not in ["EP300"]]
+        return valid_factors
+
+    def _load_f2m(self, pfmfile=None, indirect=True, factors=None):
+        motifs = read_motifs(pfmfile, as_dict=True)
+        f2m = {}
+
+        if self.genome == "hg38" or self.genome.startswith("GRCh38"):
+            valid_factors = self._load_human_factors()
+
+        for name, motif in motifs.items():
+            for k, mfactors in motif.factors.items():
+                if k != "direct" and not indirect:
+                    print("skip")
+                    continue
+                for factor in mfactors:
+                    if factors is not None and factor not in factors:
+                        continue
+
+                    # TODO: this is temporary, while the motif database we use
+                    # not very clean...
+                    if self.genome == "hg38" or self.genome.startswith("GRCh38"):
+                        factor = factor.upper()
+                        if factor not in valid_factors:
+                            continue
+
+                    f2m.setdefault(factor, []).append(name)
+        return f2m
+
+    def _load_motifs(self, indirect=True, factors=None):
         """Load motif-associated data.
 
         For now, only default motifs are supported.
@@ -147,26 +189,39 @@ class PeakPredictor:
             based on ChIP-seq motif prediction, or binding inference. This will
             greatly increase TF coverage. By default True.
         """
-        self.motifs = read_motifs(as_dict=True)
+        if self.pfmfile is None:
+            logger.debug("Using default motif file")
+        else:
+            logger.debug(f"Motifs: {self.pfmfile}")
+        self.motifs = read_motifs(self.pfmfile, as_dict=True)
+        self.f2m = self._load_f2m(
+            pfmfile=self.pfmfile, indirect=indirect, factors=factors
+        )
 
-        self.f2m = {}
-        for name, motif in self.motifs.items():
-            for k, factors in motif.factors.items():
-                if k != "direct" and not indirect:
-                    print("skip")
-                    continue
-                for factor in factors:
-                    self.f2m.setdefault(factor.upper(), []).append(name)
-
+        if len(self.f2m) == 1:
+            logger.debug("using motifs for 1 factor")
+        else:
+            logger.debug(f"using motifs for {len(self.f2m)} factors")
         # Create a graph of TFs where edges are determined by the Jaccard index
         # of the motifs that they bind to. For instance, when TF 1 binds motif
         # A and B and TF 2 binds motif B and C, the edge weight will be 0.33.
+        tmp_f2m = {}
+        if self.pfmfile is not None:
+            logger.debug("Reading default file")
+            tmp_f2m = self._load_f2m(indirect=True)
+
+        for k, v in self.f2m.items():
+            if k in tmp_f2m:
+                tmp_f2m[k] += v
+            else:
+                tmp_f2m[k] = v
+
         self.motif_graph = nx.Graph()
         d = []
-        for f1 in self.f2m:
-            for f2 in self.f2m:
-                jaccard = len(set(self.f2m[f1]).intersection(set(self.f2m[f2]))) / len(
-                    set(self.f2m[f1]).union(set(self.f2m[f2]))
+        for f1 in tmp_f2m:
+            for f2 in tmp_f2m:
+                jaccard = len(set(tmp_f2m[f1]).intersection(set(tmp_f2m[f2]))) / len(
+                    set(tmp_f2m[f1]).union(set(tmp_f2m[f2]))
                 )
                 d.append([f1, f2, jaccard])
                 if jaccard > 0:
@@ -212,7 +267,9 @@ class PeakPredictor:
             mean_ref = pd.read_table(fname, index_col=0)
             if mean_ref.shape[0] == tmp.shape[0]:
                 mean_ref.index = tmp.index
-                tmp[f"{title}.relative"] = tmp[title] - mean_ref.loc[tmp.index]["mean_ref"].values
+                tmp[f"{title}.relative"] = (
+                    tmp[title] - mean_ref.loc[tmp.index]["mean_ref"].values
+                )
                 tmp[f"{title}.relative"] = scale(tmp[f"{title}.relative"])
             else:
                 logger.debug(f"Regions of {fname} are not the same as input regions.")
@@ -317,7 +374,7 @@ class PeakPredictor:
 
     def _load_data(self, factor):
         # if self.region_type == "reference":
-        #logger.debug("Reading motif data")
+        # logger.debug("Reading motif data")
 
         tmp = pd.DataFrame(
             {factor: self._motifs[factor]}, index=self.regions
@@ -333,7 +390,7 @@ class PeakPredictor:
             tmp = tmp.join(self._avg)
             tmp = tmp.join(self._dist)
         tmp = tmp.dropna()
-        #logger.debug(str(self._X_columns))
+        # logger.debug(str(self._X_columns))
         return tmp[self._X_columns]
 
     def _load_model(self, factor):
@@ -353,7 +410,7 @@ class PeakPredictor:
                 sub_factor = list(paths.keys())[0]
                 logger.info(f"Using {factor} motif with {sub_factor} model weights")
                 model = self.factor_models[sub_factor]
-                factor = sub_factor
+                # factor = sub_factor
             except Exception:
                 logger.info(f"No match for {factor} based on motifs")
         if model is None:
@@ -361,19 +418,6 @@ class PeakPredictor:
             model = self.factor_models["general"]
 
         return model, factor
-
-
-def load_default_factors():
-    valid_factors = pd.read_excel(
-        "https://www.biorxiv.org/content/biorxiv/early/2020/12/07/2020.10.28.359232/DC1/embed/media-1.xlsx",
-        engine="openpyxl",
-        sheet_name=1,
-    )
-    valid_factors = valid_factors.loc[
-        valid_factors["Pseudogene"].isnull(), "HGNC approved gene symbol"
-    ].values
-    valid_factors = [f for f in valid_factors if f != "EP300"]
-    return valid_factors
 
 
 def _check_input_factors(factors):
@@ -390,8 +434,8 @@ def _check_input_factors(factors):
     """
     # Load factors
     if factors is None:
-        factors = load_default_factors()
-    elif isinstance(factors, str) or (len(factors) == 1 and os.path.exists(factors[0])):
+        return
+    if isinstance(factors, str) or (len(factors) == 1 and os.path.exists(factors[0])):
         factors = [line.strip() for line in open(factors[0])]
     return factors
 
@@ -455,6 +499,8 @@ def predict_peaks(
     reference=None,
     factors=None,
     genome=None,
+    pfmfile=None,
+    ncpus=4,
 ):
     """Predict binding in a set of genomic regions.
 
@@ -479,15 +525,25 @@ def predict_peaks(
         then all TFs are used.
     genome : str, optional
         Genome name. The default is hg38.
+    pfmfile : str, optional
+        Motifs in PFM format, with associated motif2factors.txt file.
+    ncpus : int, optional
+        Number of threads to use. Default is 4.
     """
     if reference is None and regionfiles is None:
         logger.error("Need either input regions or location of a reference set!")
-        logger.error("For human, you can download the REMAP reference here: <zenodo link>")
-        logger.error("Otherwise you need to specify one or more BED or narrowPeak files")
-        logger.error("with potential enhancer regions, for instance, all ATAC-seq peaks")
+        logger.error(
+            "For human, you can download the REMAP reference here: <zenodo link>"
+        )
+        logger.error(
+            "Otherwise you need to specify one or more BED or narrowPeak files"
+        )
+        logger.error(
+            "with potential enhancer regions, for instance, all ATAC-seq peaks"
+        )
         logger.error("from your combined experiments.")
         sys.exit(1)
-    
+
     if reference is not None and regionfiles is not None:
         logger.error("Need either a reference location *or* or a set of input regions")
         sys.exit(1)
@@ -525,7 +581,12 @@ def predict_peaks(
         histone_bams=histone_bams,
         regions=regions,
         genome=genome,
+        pfmfile=pfmfile,
+        factors=factors,
+        ncpus=ncpus,
     )
+    if factors is None:
+        factors = list(p.f2m.keys())
 
     outfile = os.path.join(outdir, "binding.tsv")
 

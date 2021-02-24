@@ -10,8 +10,11 @@ import argparse
 
 from genomepy import Genome
 from loguru import logger
+
 logger.remove()
-logger.add(sys.stderr, format='<green>{time:YYYY-MM-DD HH:mm:ss}</green> | {level} | {message}')
+logger.add(
+    sys.stderr, format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | {level} | {message}"
+)
 
 from ananse import commands, __version__
 
@@ -23,7 +26,7 @@ class NegateAction(argparse.Action):
 
 if __name__ == "__main__":
     usage = "%(prog)s [-h] <command> [options]"
-    description = f"ANANSE: ANalysis Algorithm for Networks Specified by Enhancers"
+    description = "ANANSE: ANalysis Algorithm for Networks Specified by Enhancers"
     epilog = """
     commands:
         binding     infer TF binding sites in enhancer peaks
@@ -119,6 +122,14 @@ if __name__ == "__main__":
         metavar="FACTORS",
         default=None,
         nargs="*",
+    )
+    group.add_argument(
+        "-n",
+        "--ncpus",
+        dest="ncpus",
+        help="Number of processes used",
+        type=int,
+        default=4,
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
