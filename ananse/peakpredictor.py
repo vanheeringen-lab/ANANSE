@@ -1,6 +1,8 @@
 from glob import glob
+import inspect
 import os
 import re
+import sys
 from tempfile import NamedTemporaryFile
 
 from fluff.fluffio import load_heatmap_data
@@ -28,13 +30,13 @@ from ananse.enhancer_binding import CombineBedFiles
 class PeakPredictor:
     def __init__(
         self,
-        data_dir="/ceph/rimlsfnwi/data/moldevbio/heeringen/heeringen/atac_ananse/models/saved",
+        reference=None,
         atac_bams=None,
         histone_bams=None,
         regions=None,
         genome="hg38",
     ):
-        self.data_dir = data_dir
+        self.data_dir = reference
 
         if atac_bams is None and histone_bams is None:
             raise ValueError("Need either ATAC-seq or H3K27ac BAM file(s).")
@@ -190,7 +192,7 @@ class PeakPredictor:
                 )
                 tmp[result[0]] = result[2].T[0]
 
-        fname = f"{self.data_dir}/{title}.qnorm.ref.txt"
+        fname = f"{self.data_dir}/{title}.qnorm.ref.txt.gz"
         if os.path.exists(fname):
             logger.debug(f"quantile normalization for {title}")
             qnorm_ref = pd.read_table(fname, index_col=0)["qnorm_ref"].values
@@ -205,11 +207,16 @@ class PeakPredictor:
 
         tmp = tmp.mean(1).to_frame(title)
 
-        fname = f"{self.data_dir}/{title}.mean.ref.txt"
+        fname = f"{self.data_dir}/{title}.mean.ref.txt.gz"
         if self.region_type == "reference" and os.path.exists(fname):
             mean_ref = pd.read_table(fname, index_col=0)
-            tmp[f"{title}.relative"] = tmp[title] - mean_ref.loc[tmp.index]["mean_ref"]
-            tmp[f"{title}.relative"] = scale(tmp[f"{title}.relative"])
+            if mean_ref.shape[0] == tmp.shape[0]:
+                mean_ref.index = tmp.index
+                tmp[f"{title}.relative"] = tmp[title] - mean_ref.loc[tmp.index]["mean_ref"].values
+                tmp[f"{title}.relative"] = scale(tmp[f"{title}.relative"])
+            else:
+                logger.debug(f"Regions of {fname} are not the same as input regions.")
+                logger.debug("Skipping calculation of relative values.")
 
         tmp[title] = tmp[title] / tmp[title].max()
 
@@ -310,7 +317,7 @@ class PeakPredictor:
 
     def _load_data(self, factor):
         # if self.region_type == "reference":
-        logger.debug("Reading motif data")
+        #logger.debug("Reading motif data")
 
         tmp = pd.DataFrame(
             {factor: self._motifs[factor]}, index=self.regions
@@ -326,12 +333,13 @@ class PeakPredictor:
             tmp = tmp.join(self._avg)
             tmp = tmp.join(self._dist)
         tmp = tmp.dropna()
-        logger.debug(str(self._X_columns))
+        #logger.debug(str(self._X_columns))
         return tmp[self._X_columns]
 
     def _load_model(self, factor):
         model = None
         if factor in self.factor_models:
+            logger.info(f"Using {factor} model")
             model = self.factor_models[factor]
         elif factor in self.motif_graph:
             paths = {
@@ -343,13 +351,13 @@ class PeakPredictor:
             }
             try:
                 sub_factor = list(paths.keys())[0]
-                logger.info(f"Using {sub_factor} model for {factor}")
+                logger.info(f"Using {factor} motif with {sub_factor} model weights")
                 model = self.factor_models[sub_factor]
                 factor = sub_factor
             except Exception:
                 logger.info(f"No match for {factor} based on motifs")
         if model is None:
-            logger.info("Using general model")
+            logger.info(f"No related TF found for {factor}, using general model")
             model = self.factor_models["general"]
 
         return model, factor
@@ -444,6 +452,7 @@ def predict_peaks(
     atac_bams=None,
     histone_bams=None,
     regionfiles=None,
+    reference=None,
     factors=None,
     genome=None,
 ):
@@ -471,6 +480,18 @@ def predict_peaks(
     genome : str, optional
         Genome name. The default is hg38.
     """
+    if reference is None and regionfiles is None:
+        logger.error("Need either input regions or location of a reference set!")
+        logger.error("For human, you can download the REMAP reference here: <zenodo link>")
+        logger.error("Otherwise you need to specify one or more BED or narrowPeak files")
+        logger.error("with potential enhancer regions, for instance, all ATAC-seq peaks")
+        logger.error("from your combined experiments.")
+        sys.exit(1)
+    
+    if reference is not None and regionfiles is not None:
+        logger.error("Need either a reference location *or* or a set of input regions")
+        sys.exit(1)
+
     # Check if all specified BAM files exist
     _check_input_files(atac_bams, histone_bams)
 
@@ -487,7 +508,19 @@ def predict_peaks(
     # necessary.
     regions = _check_input_regions(regionfiles, genome, outdir=outdir)
 
+    if reference is None:
+        install_dir = os.path.dirname(
+            os.path.abspath(inspect.getfile(inspect.currentframe()))
+        )
+        reference = os.path.join(install_dir, "db", "default_reference")
+
+    if reference is not None:
+        if not os.path.exists(reference):
+            logger.error(f"Reference directory {reference} does not exist!")
+            sys.exit(1)
+
     p = PeakPredictor(
+        reference=reference,
         atac_bams=atac_bams,
         histone_bams=histone_bams,
         regions=regions,

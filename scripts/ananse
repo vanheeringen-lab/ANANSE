@@ -73,6 +73,13 @@ if __name__ == "__main__":
         default="./ANANSE_binding",
     )
     group.add_argument(
+        "-R",
+        "--reference",
+        dest="reference",
+        help="path to reference data directory",
+        metavar="PATH",
+    )
+    group.add_argument(
         "-r",
         "--regionfiles",
         dest="regionfiles",

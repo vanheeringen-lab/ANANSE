@@ -1,5 +1,5 @@
 include README.md
 include LICENSE
 include scripts/**
-include ananse/db/*
+graft ananse/db/**
 include versioneer.py

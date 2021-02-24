@@ -19,6 +19,7 @@ def binding(args):
         atac_bams=args.atac_bams,
         histone_bams=args.histone_bams,
         regionfiles=args.regionfiles,
+        reference=args.reference,
         factors=args.factors,
         genome=args.genome,
     )
