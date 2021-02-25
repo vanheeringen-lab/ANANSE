@@ -197,7 +197,6 @@ class PeakPredictor:
         self.f2m = self._load_f2m(
             pfmfile=self.pfmfile, indirect=indirect, factors=factors
         )
-
         if len(self.f2m) == 1:
             logger.debug("using motifs for 1 factor")
         else:
