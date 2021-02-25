@@ -3,3 +3,4 @@ include LICENSE
 include scripts/**
 graft ananse/db/**
 include versioneer.py
+include ananse/_version.py

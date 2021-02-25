@@ -9,9 +9,11 @@ import subprocess as sp
 targets = [
     "ananse/commands/__init__.py",
     "ananse/commands/enhancer_binding.py",
+    "ananse/commands/network.py",
     "ananse/__init__.py",
     "ananse/enhancer_binding.py",
     "ananse/distributions.py",
+    "ananse/network.py",
     "ananse/utils.py",
     "tests/",
 ]
