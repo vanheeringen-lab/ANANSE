@@ -197,6 +197,7 @@ class PeakPredictor:
         self.f2m = self._load_f2m(
             pfmfile=self.pfmfile, indirect=indirect, factors=factors
         )
+
         if len(self.f2m) == 1:
             logger.debug("using motifs for 1 factor")
         else:
@@ -508,17 +509,36 @@ def predict_peaks(
     on the input data. The most accurate model will be the one that uses the
     references regions in combination with both ATAC-seq and H3K27ac ChIP-seq.
 
+    The result will will be saved to an outputfile called `binding.tsv` in the
+    output directory, specified by the `outdir` argument. This file wil contain
+    three columns: factor, enhancer and binding. The binding columns represents
+    the binding probability.
+
+    To predict binding, `predict_peaks()` needs a set of input regions. For
+    human, you have two options. You can either use the reference set of
+    putative enhancer regions, as described in the ANANSE manuscript [1]. This
+    is specified by the `reference` argument.
+    Alternatively, you can specify one or more region files with the
+    `regionfiles` argument. These are files in BED or narrowPeak format, that
+    describe potential enhancers. For instance, a reference enhancer set, peaks
+    from your ATAC-seq experiments or any other collection of regions. For
+    accurate motif analysis, these should be as precise as possible. BroadPeaks
+    from histone ChIP-seq are not really suitable. NarrowPeaks from ATAC-seq,
+    DNase-seq or TF ChIP-seq will be fine.
+
     Parameters
     ----------
-    outfile : str
-        Name of output file.
+    outdir : str
+        Name of output directory.
     atac_bams : list, optional
         List of BAM files, by default None
-    histone_bams : [type], optional
+    histone_bams : list, optional
         List of H3K27ac ChIP-seq BAM files, by default None
     regionfiles : list, optional
         BED file or text file with regions, or a list of BED, narrowPeak or
         broadPeak files If None, then the reference regions are used.
+    reference : str, optional
+        Directory name to a reference.
     factors : list, optional
         List of TF names or file with TFs, one per line. If None (default),
         then all TFs are used.
