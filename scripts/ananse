@@ -48,13 +48,13 @@ if __name__ == "__main__":
     p = subparsers.add_parser(
         "binding", add_help=False
     )  # help added manually (more control)
-    group = p.add_argument_group("required arguments")
+    group = p.add_argument_group("Required arguments")
     group.add_argument(
         "-A",
         "--atac-bams",
         dest="atac_bams",
         metavar="BAM",
-        help="Input BAM file(s) (ATAC-seq)",
+        help="ATAC-seq input BAM file(s), can be used alone or in combination with the -H option",
         default=None,
         nargs="+",
     )
@@ -63,15 +63,16 @@ if __name__ == "__main__":
         "--histone-bams",
         dest="histone_bams",
         metavar="BAM",
-        help="Input BAM file(s) (H3K27ac ChIP-seq)",
+        help="H3K27ac ChIP-seq input BAM file(s), can be used alone or in combibation with the -A option",
         default=None,
         nargs="+",
     )
+    group = p.add_argument_group("Optional arguments")
     group.add_argument(
         "-o",
         "--outdir",
         dest="outdir",
-        help="directory where you wish to store the output (default: ./ANANSE_binding)",
+        help="Directory where you wish to store the output (default: ./ANANSE_binding)",
         metavar="",
         default="./ANANSE_binding",
     )
@@ -79,14 +80,14 @@ if __name__ == "__main__":
         "-R",
         "--reference",
         dest="reference",
-        help="path to reference data directory",
+        help="Path to reference data directory",
         metavar="PATH",
     )
     group.add_argument(
         "-r",
         "--regionfiles",
         dest="regionfiles",
-        help="one or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)",
+        help="One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)",
         metavar="",
         nargs="+",  # >= 1 files
     )
@@ -94,7 +95,7 @@ if __name__ == "__main__":
         "-g",
         "--genome",
         dest="genome",
-        help="Genome name or path to the genome FASTA used to align the bams and peaks to",
+        help="Genome name, as managed by genomepy, or path to the genome FASTA used to align the bams and peaks to",
         metavar="GENOME",
         default="hg38",
     )
@@ -110,7 +111,7 @@ if __name__ == "__main__":
         "-p",
         "--pfmfile",
         dest="pfmfile",
-        help="pfm file of the transcription factors to search for (default gimme.vertebrate.v5.0)",
+        help="PFM file of the transcription factors to search for (default gimme.vertebrate.v5.0)",
         metavar="",
         default=None,
     )
@@ -118,8 +119,8 @@ if __name__ == "__main__":
         "-f",
         "--factors",
         dest="factors",
-        help="Transciption factors to use. Either a space-separated list or a file with one TF per line.",
-        metavar="FACTORS",
+        help="Transcription factors to use. Either a space-separated list or a file with one TF per line.",
+        metavar="TF",
         default=None,
         nargs="*",
     )
@@ -127,12 +128,12 @@ if __name__ == "__main__":
         "-n",
         "--ncpus",
         dest="ncpus",
-        help="Number of processes used",
+        help="Number of processes to use for motif scanning",
         type=int,
         default=4,
     )
     group.add_argument(
-        "-h", "--help", action="help", help="show this help message and exit"
+        "-h", "--help", action="help", help="Show this help message and exit"
     )
     p.set_defaults(func=commands.binding)
 
