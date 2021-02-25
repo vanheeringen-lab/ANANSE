@@ -18,6 +18,7 @@ from sklearn.preprocessing import scale
 import qnorm
 
 from ananse.enhancer_binding import CombineBedFiles
+from ananse.utils import get_motif_factors
 
 # This motif file is not created by default
 #   * f"{self.data_dir}/reference.factor.feather"
@@ -148,30 +149,28 @@ class PeakPredictor:
         valid_factors = [f for f in valid_factors if f not in ["EP300"]]
         return valid_factors
 
-    def _load_f2m(self, pfmfile=None, indirect=True, factors=None):
+    def _load_factor2motifs(self, pfmfile=None, indirect=True, factors=None):
         motifs = read_motifs(pfmfile, as_dict=True)
         f2m = {}
 
-        if self.genome == "hg38" or self.genome.startswith("GRCh38"):
+        is_human = self.genome == "hg38" or self.genome.startswith("GRCh38")
+        if is_human:
             valid_factors = self._load_human_factors()
 
         for name, motif in motifs.items():
-            for k, mfactors in motif.factors.items():
-                if k != "direct" and not indirect:
-                    print("skip")
+            for factor in get_motif_factors(motif, indirect=indirect):
+                if factors is not None and factor not in factors:
                     continue
-                for factor in mfactors:
-                    if factors is not None and factor not in factors:
-                        continue
 
-                    # TODO: this is temporary, while the motif database we use
-                    # not very clean...
-                    if self.genome == "hg38" or self.genome.startswith("GRCh38"):
-                        factor = factor.upper()
-                        if factor not in valid_factors:
-                            continue
+                # TODO: this is temporary, while the motif database we use
+                # not very clean...
+                if is_human:
+                    factor = factor.upper()
 
-                    f2m.setdefault(factor, []).append(name)
+                if is_human and factor not in valid_factors:
+                    continue
+
+                f2m.setdefault(factor, []).append(name)
         return f2m
 
     def _load_motifs(self, indirect=True, factors=None):
@@ -194,7 +193,7 @@ class PeakPredictor:
         else:
             logger.debug(f"Motifs: {self.pfmfile}")
         self.motifs = read_motifs(self.pfmfile, as_dict=True)
-        self.f2m = self._load_f2m(
+        self.f2m = self._load_factor2motifs(
             pfmfile=self.pfmfile, indirect=indirect, factors=factors
         )
 
@@ -208,7 +207,7 @@ class PeakPredictor:
         tmp_f2m = {}
         if self.pfmfile is not None:
             logger.debug("Reading default file")
-            tmp_f2m = self._load_f2m(indirect=True)
+            tmp_f2m = self._load_factor2motifs(indirect=True)
 
         for k, v in self.f2m.items():
             if k in tmp_f2m:

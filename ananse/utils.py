@@ -203,3 +203,13 @@ def clean_tmp():
 
     # delete
     _ = [genomepy.utils.rm_rf(f) for f in user_files]
+
+
+def get_motif_factors(motif, indirect=True):
+    """Return all TFs that are associated with a motif.
+    """
+    motif_factors = []
+    for factor_type, factors in motif.factors.items():
+        if factor_type == "direct" or indirect:
+            motif_factors += factors
+    return motif_factors
