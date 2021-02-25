@@ -25,10 +25,7 @@ from adjustText import adjust_text
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-<<<<<<< HEAD
-=======
 
->>>>>>> refactor
 warnings.filterwarnings("ignore")
 
 
