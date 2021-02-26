@@ -149,12 +149,23 @@ class PeakPredictor:
         valid_factors = [f for f in valid_factors if f not in ["EP300"]]
         return valid_factors
 
+    def is_human_genome(self):
+        base_genome = os.path.basename(self.genome)
+        for name in ["hg38", "GRCh38", "hg19", "GRCh37"]:
+            if name in base_genome:
+                return True
+
+    def factors(self):
+        if self.is_human_genome():
+            valid_factors = self._load_human_factors()
+            return [f for f in self.f2m if f in valid_factors]
+        return list(self.f2m.keys())
+
     def _load_factor2motifs(self, pfmfile=None, indirect=True, factors=None):
         motifs = read_motifs(pfmfile, as_dict=True)
         f2m = {}
 
-        is_human = self.genome == "hg38" or self.genome.startswith("GRCh38")
-        if is_human:
+        if self.is_human_genome():
             valid_factors = self._load_human_factors()
 
         for name, motif in motifs.items():
@@ -164,10 +175,10 @@ class PeakPredictor:
 
                 # TODO: this is temporary, while the motif database we use
                 # not very clean...
-                if is_human:
+                if self.is_human_genome():
                     factor = factor.upper()
 
-                if is_human and factor not in valid_factors:
+                if self.is_human_genome() and factor not in valid_factors:
                     continue
 
                 f2m.setdefault(factor, []).append(name)
@@ -603,9 +614,6 @@ def predict_peaks(
         factors=factors,
         ncpus=ncpus,
     )
-    if factors is None:
-        factors = list(p.f2m.keys())
-
     outfile = os.path.join(outdir, "binding.tsv")
 
     # Make sure we create a new file
@@ -615,7 +623,7 @@ def predict_peaks(
     with open(outfile, "a") as f:
         print("factor\tenhancer\tbinding", file=f)
 
-        for factor in factors:
+        for factor in p.factors():
             try:
                 proba = p.predict_proba(factor)
                 proba = proba.reset_index()
