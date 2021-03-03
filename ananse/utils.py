@@ -213,3 +213,35 @@ def get_motif_factors(motif, indirect=True):
         if factor_type == "direct" or indirect:
             motif_factors += factors
     return motif_factors
+
+def check_input_factors(factors):
+    """Check factors.
+
+    Factors can eiher be a list of transcription factors, or a filename of a
+    file that containts TFs. Returns a list of factors.
+    If factors is None, it will return the default transcription factors.
+
+    Returns
+    -------
+    list
+        List of TF names.
+    """
+    # Load factors
+    if factors is None:
+        return
+
+    # factors is string, assuming it's a filename
+    if isinstance(factors, str):
+        if os.path.exists(factors):
+            fname = factors
+        else:
+            raise ValueError("Factors filename {factors} does not exist")
+
+    if len(factors) == 1 and os.path.exists(factors[0]):
+        fname = factors[0]
+    else:
+        # It's a list with more than one value, assuming it's a list of TF names.
+        return factors
+    
+    factors = [line.strip() for line in open(fname)]
+    return factors

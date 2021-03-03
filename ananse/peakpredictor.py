@@ -18,7 +18,7 @@ from sklearn.preprocessing import scale
 import qnorm
 
 from ananse.enhancer_binding import CombineBedFiles
-from ananse.utils import get_motif_factors
+from ananse.utils import get_motif_factors, check_input_factors
 
 # This motif file is not created by default
 #   * f"{self.data_dir}/reference.factor.feather"
@@ -270,7 +270,8 @@ class PeakPredictor:
         else:
             tmp = np.log1p(tmp)
 
-        tmp = tmp.mean(1).to_frame(title)
+        # Limit memory usage by using float16
+        tmp = tmp.mean(1).astype('float16').to_frame(title)
 
         fname = f"{self.data_dir}/{title}.mean.ref.txt.gz"
         if self.region_type == "reference" and os.path.exists(fname):
@@ -430,26 +431,6 @@ class PeakPredictor:
         return model, factor
 
 
-def _check_input_factors(factors):
-    """Check factors.
-
-    Factors can eiher be a list of transcription factors, or a filename of a
-    file that containts TFs. Returns a list of factors.
-    If factors is None, it will return the defaylt transcription factors.
-
-    Returns
-    -------
-    list
-        List of TF names.
-    """
-    # Load factors
-    if factors is None:
-        return
-    if isinstance(factors, str) or (len(factors) == 1 and os.path.exists(factors[0])):
-        factors = [line.strip() for line in open(factors[0])]
-    return factors
-
-
 def _check_input_regions(regionfiles, genome, outdir=".", verbose=True, force=False):
     # Load regions from BED or region text file
     if regionfiles is None:
@@ -581,7 +562,7 @@ def predict_peaks(
     _check_input_files(atac_bams, histone_bams)
 
     # Read the factors, from a file if needed
-    factors = _check_input_factors(factors)
+    factors = check_input_factors(factors)
 
     # Check genome, will fail if it is not a correct genome name or file
     Genome(genome)
