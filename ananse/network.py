@@ -582,6 +582,7 @@ class Network(object):
         else:
             result = df_expression
             result["binding"] = result[["tf_expression", "target_expression"]].mean(1)
+            result = result.compute()
 
         logger.info("Saving file")
         result[["binding"]].to_csv(outfile, sep="\t")
