@@ -139,7 +139,7 @@ class Binding(object):
         # When we built model, the peak intensity was ranked and scaled.
         peaks = pd.read_table(fin_rpkm, names=["chrom", "start", "end", "peakRPKM"])
         peaks["peak"] = (
-            peaks["chrom"]
+            peaks["chrom"].astype(str)
             + ":"
             + peaks["start"].astype(str)
             + "-"
