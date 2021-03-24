@@ -9,12 +9,14 @@ from fluff.fluffio import load_heatmap_data
 from genomepy import Genome
 from gimmemotifs.motif import read_motifs
 from gimmemotifs.scanner import scan_regionfile_to_table
+from gimmemotifs.moap import moap
 import joblib
 from loguru import logger
 import networkx as nx
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import scale
+from sklearn.preprocessing import scale, minmax_scale
+from scipy.stats import rankdata
 import qnorm
 
 from ananse.enhancer_binding import CombineBedFiles
@@ -271,7 +273,7 @@ class PeakPredictor:
             tmp = np.log1p(tmp)
 
         # Limit memory usage by using float16
-        tmp = tmp.mean(1).astype('float16').to_frame(title)
+        tmp = tmp.mean(1).astype("float16").to_frame(title)
 
         fname = f"{self.data_dir}/{title}.mean.ref.txt.gz"
         if self.region_type == "reference" and os.path.exists(fname):
@@ -429,6 +431,61 @@ class PeakPredictor:
             model = self.factor_models["general"]
 
         return model, factor
+
+    def predict_factor_activity(self, outfile, nregions=20000):
+        """Predict TF activity.
+
+        Predicted based on motif activity using ridge regression.
+
+        Parameters
+        ----------
+        outfile : str
+            Name of outputfile.
+        """
+        # Run ridge regression using motif score to predict (relative) ATAC/H3K27ac signal
+        activity = pd.DataFrame()
+        for df in (self._atac_data, self._histone_data):
+            if df is None:
+                continue
+
+            for col in df.columns:
+                with NamedTemporaryFile() as f:
+                    # float16 will give NaN's
+                    signal = df[col].astype("float32")
+                    signal = pd.DataFrame({col: scale(signal)}, index=df.index)
+                    if df.shape[0] < nregions:
+                        signal.to_csv(f.name, sep="\t")
+                    else:
+                        signal.sample(nregions).to_csv(f.name, sep="\t")
+                    try:
+                        activity = activity.join(
+                            moap(
+                                f.name,
+                                genome=self.genome,
+                                method="bayesianridge",
+                                motiffile=self.pfmfile,
+                            ),
+                            how="outer",
+                        )
+                    except Exception as e:
+                        print(e)
+                    print(activity)
+
+        # Rank aggregation
+        for col in activity:
+            activity[col] = rankdata(activity[col])
+        activity = activity.mean(1)
+        activity[:] = minmax_scale(activity)
+
+        # Take the maximum activity from the motifs of each factor
+        factor_activity = []
+        for factor, motifs in self.f2m.items():
+            act = activity.loc[motifs].max()
+            factor_activity.append([factor, act])
+
+        factor_activity = pd.DataFrame(factor_activity, columns=["factor", "activity"])
+
+        factor_activity.to_csv(outfile, sep="\t", index=False)
 
 
 def _check_input_regions(regionfiles, genome, outdir=".", verbose=True, force=False):
@@ -595,8 +652,19 @@ def predict_peaks(
         factors=factors,
         ncpus=ncpus,
     )
-    outfile = os.path.join(outdir, "binding.tsv")
 
+    logger.info("Predicting TF activity")
+    outfile = os.path.join(outdir, "atac.tsv.gz")
+    if p._atac_data is not None:
+        p._atac_data.to_csv(outfile, sep="\t", compression="gzip")
+    outfile = os.path.join(outdir, "h3k27ac.tsv.gz")
+    if p._histone_data is not None:
+        p._histone_data.to_csv(outfile, sep="\t", compression="gzip")
+
+    outfile = os.path.join(outdir, "factor_activity.tsv")
+    p.predict_factor_activity(outfile)
+
+    outfile = os.path.join(outdir, "binding.tsv")
     # Make sure we create a new file
     with open(outfile, "w") as f:
         pass
