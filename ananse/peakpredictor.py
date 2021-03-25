@@ -44,7 +44,7 @@ class PeakPredictor:
             raise ValueError("Need either ATAC-seq or H3K27ac BAM file(s).")
 
         if genome is None:
-            logger.info("Assuming genome is hg38")
+            logger.warning("Assuming genome is hg38")
             genome = "hg38"
 
         # Set basic information
@@ -108,8 +108,10 @@ class PeakPredictor:
 
         Will load three types of data:
         * Motif scores.
-        * The average peak coverage.
-        * The distance from the peak to nearest TSS.
+        * The average peak coverage (self._avg)
+        * The distance from the peak to nearest TSS. (self._dist)
+
+        All of these data are only used with the reference set of regions.
         """
         # Read motifs
         logger.info("loading motifs for reference")
@@ -150,7 +152,7 @@ class PeakPredictor:
         valid_factors = valid_factors.loc[
             valid_factors["Pseudogene"].isnull(), "HGNC approved gene symbol"
         ].values
-        valid_factors = [f for f in valid_factors if f not in ["EP300"]]
+        valid_factors = list(set(valid_factors) - set(["EP300"]))
         return valid_factors
 
     def is_human_genome(self):
@@ -329,7 +331,7 @@ class PeakPredictor:
 
         Basically, this will select the columns that are available,
         based on the different types of data that are loaded.
-        Reference regions will have the mmost information.
+        Reference regions will have the most information.
         """
         cols = ["motif"]
         if self._atac_data is not None:
