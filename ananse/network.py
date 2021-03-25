@@ -562,7 +562,7 @@ class Network(object):
             else:
                 result = df_binding
 
-            result["binding"] = minmax_scale(
+            result["prob"] = minmax_scale(
                 rankdata(result["weighted_binding"], method="min")
             )
 
@@ -571,12 +571,12 @@ class Network(object):
                 columns = [col for col in columns if col in result]
                 logger.info(f"Using {', '.join(columns)}")
                 # Combine binding score with expression score
-                result["binding"] = result[columns].mean(1)
+                result["prob"] = result[columns].mean(1)
 
         else:
             result = df_expression
-            result["binding"] = result[["tf_expression", "target_expression"]].mean(1)
+            result["prob"] = result[["tf_expression", "target_expression"]].mean(1)
             result = result.compute()
 
         logger.info("Saving file")
-        result[["binding"]].to_csv(outfile, sep="\t")
+        result[["prob"]].to_csv(outfile, sep="\t")
