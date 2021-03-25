@@ -5,5 +5,6 @@ graft ananse/db/**
 include ananse/db/tfs.txt
 include ananse/db/hg38.genes.bed
 include ananse/db/hg19.genes.bed
+include ananse/db/lovering.tfs.xlsx
 include versioneer.py
 include ananse/_version.py

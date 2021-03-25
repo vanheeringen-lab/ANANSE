@@ -140,8 +140,10 @@ class PeakPredictor:
         self.regions = self._avg.index
 
     def _load_human_factors(self):
+        package_dir = os.path.dirname(ananse.__file__)
+        tf_xlsx = os.path.join(package_dir, "db", "lovering.tfs.xlsx")
         valid_factors = pd.read_excel(
-            "https://www.biorxiv.org/content/biorxiv/early/2020/12/07/2020.10.28.359232/DC1/embed/media-1.xlsx",
+            tf_xlsx,
             engine="openpyxl",
             sheet_name=1,
         )
