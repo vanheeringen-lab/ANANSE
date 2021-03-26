@@ -12,6 +12,7 @@
 from __future__ import print_function
 import sys
 import warnings
+from collections import namedtuple
 from loguru import logger
 from tqdm import tqdm
 
@@ -77,37 +78,31 @@ def difference(S, R):
 
 
 def read_expression(fname):
-    """Read differential gene expression analysis output, return dictionary with abs fold change.
+    """Read differential gene expression analysis output, return dictionary with namedtuples of scores, absolute fold
+    change and "real" (directional) fold change.
 
     input:
     a tab-separated file containing 3 columns (HGNC gene symbols, (adjusted) p-values and log2foldchange)
     header is omitted if starting with "resid"
     """
+    Expression = namedtuple('Expression', ["score", "absfc", "realfc"])
+    expression_change = dict()
 
-    # Expression change
-    expression_change = {"score": {}, "fc": {}, "realfc": {}}
+    df = pd.read_table(fname, index_col=0, header=0, dtype={"resid": str,
+                                                            "log2FoldChange": float,
+                                                            "padj": float})
 
-    for line in open(fname):
-        if not line.startswith("resid"):
-            line = line.strip().split("\t")
-            gene = line[0].strip().upper()
-            if line[1]=='':
-                realFC = 0
-            else:
-                realFC = float(line[1])
-            foldchange = abs(realFC)
-            padj = float(line[2])
-            # if padj==0:
-            #     padj=1e-300
-            # gscore =foldchange * (-np.log10(padj))
-            if padj < 0.05:
-                # gscore = np.log2(foldchange+1)
-                gscore = foldchange
-            else:
-                gscore = 0
-            expression_change["score"][gene] = gscore
-            expression_change["fc"][gene] = foldchange
-            expression_change["realfc"][gene] = realFC
+    # convert to upper case (todo: this is not strictly necessary)
+    df.index = [index.upper() for index in df.index]
+
+    # absolute fold change
+    df["fc"] = df["log2FoldChange"].abs()
+
+    # get the gscore (absolute fold change if significanlty differential)
+    df["score"] = df["fc"] * (df["padj"] < 0.05)
+
+    for k, row in df.iterrows():
+        expression_change[row.name] = Expression(score=row.score, absfc=row.fc, realfc=row.log2FoldChange)
 
     return expression_change
 
@@ -278,13 +273,13 @@ class Influence(object):
         tfs = [node for node in self.G.nodes() if self.G.out_degree(node) > 0]
         
         # differentially expressed TFs
-        detfs = [tf for tf in tfs if tf in self.expression_change["realfc"]]
+        detfs = [tf for tf in tfs if tf in self.expression_change]
         if len(detfs) == 0:
             sys.stderr.write("no overlapping transcription factors found between the network file(s) "
                              "(-s/--source, -t/--target) and the differential expression data (-d/--degenes)\n")
             sys.exit(1)
 
-        detfs = [tf for tf in detfs if self.expression_change["realfc"][tf] > 0]
+        detfs = [tf for tf in detfs if self.expression_change[tf].realfc > 0]
         if len(detfs) == 0:
             sys.stderr.write("no differentially expressed TFs found with a log2 fold change above 0\n")
             sys.exit(1)
@@ -299,7 +294,7 @@ class Influence(object):
         with tqdm(total=len(jobs)) as pbar:
             for j in jobs:
                 (factor, score, direct_targets, total_targets, factor_fc, pval, target_fc) = j.get()
-                print(factor, direct_targets, total_targets, score, self.expression_change["score"][factor],
+                print(factor, direct_targets, total_targets, score, self.expression_change[factor].score,
                         factor_fc, pval, target_fc, file=influence_file, sep="\t")
                 pbar.update(1)
         print("\n", file=influence_file)
