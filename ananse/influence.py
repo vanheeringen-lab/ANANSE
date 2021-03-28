@@ -278,13 +278,13 @@ class Influence(object):
         tfs = [node for node in self.G.nodes() if self.G.out_degree(node) > 0]
         
         # differentially expressed TFs
-        detfs = [tf for tf in tfs if tf in self.expression_change["realfc"]]
-        if len(detfs) == 0:
+        alltfs = [tf for tf in tfs if tf in self.expression_change["realfc"]]
+        if len(alltfs) == 0:
             sys.stderr.write("no overlapping transcription factors found between the network file(s) "
                              "(-s/--source, -t/--target) and the differential expression data (-d/--degenes)\n")
             sys.exit(1)
 
-        detfs = [tf for tf in detfs if self.expression_change["realfc"][tf] > 0]
+        detfs = [tf for tf in alltfs if self.expression_change["realfc"][tf] > 0]
         if len(detfs) == 0:
             sys.stderr.write("no differentially expressed TFs found with a log2 fold change above 0\n")
             sys.exit(1)
