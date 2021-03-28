@@ -141,11 +141,11 @@ def targetScore(node, G, expression_change, max_degree=3):
             # print(target, path, weight)
 
             # outdegree of parent node of the target
-            d = np.log(G.out_degree(path[-2]) + 1)
+            # d = np.log(G.out_degree(path[-2]) + 1)
             # d = G.out_degree(path[-2])
 
             # the level (or the number of steps) that gene is away from transcription factor
-            l = len(path)
+            pathlen = len(path)
 
             # expression score of the target
             g = expression_change[target].score if target in expression_change else 0
@@ -157,7 +157,7 @@ def targetScore(node, G, expression_change, max_degree=3):
             # weight = np.cumprod(weight)[-1]
 
             # score = g / len(path) / d * weight
-            score = g / l * weight
+            score = g / pathlen * weight
             total_score += score
 
     # Get Mann-Whitney U p-value of direct targets vs. non-direct targets
@@ -196,11 +196,9 @@ def filter_TF(scores_df, network=None, tpmfile=None, tpm=20, overlap=0.98):
         for line in tpf:
             tpmscore[line.split()[0]] = float(line.split()[1])
 
-    meg = lambda tf: set(network[tf]) if tf in network else set()
-
     tftarget = {}
     for tf in scores_df.index:
-        tftarget[tf] = meg(tf)
+        tftarget[tf] = set(network[tf]) if tf in network else set()
 
     ltf = list(scores_df.index)
 
