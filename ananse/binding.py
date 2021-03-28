@@ -223,28 +223,19 @@ class Binding(object):
 
         ft = self.filtermotifs2factors
 
-        if self.etype == "hg38H3K27ac":
-            r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
-                ["motif", "enhancer", "zscore", "log10_peakRPKM"]
-            ]
-            r = r.merge(ft, left_on="motif", right_on="Motif")
-            r = r.groupby(["factor", "enhancer"])[["zscore", "log10_peakRPKM"]].mean()
-            r = r.dropna().reset_index()
-            table = r.compute(num_workers=self.ncore)
-            table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
+        if self.etype not in ["hg38H3K27ac", "p300", "ATAC"]:
+            raise TypeError(f"The input enhancer data type ({self.etype}) should hg38H3K27ac, p300 or ATAC. "
+                            f"Please provide a enhancer type with -e argument. Default is hg38H3K27ac.")
 
-        elif self.etype == "p300" or self.etype == "ATAC":
-            r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
-                ["motif", "enhancer", "zscore", "log10_peakRPKM"]
-            ]
-            r = r.merge(ft, left_on="motif", right_on="Motif")
-            r = r.groupby(["factor", "enhancer"])[["zscore", "log10_peakRPKM"]].mean()
-            r = r.dropna().reset_index()
+        r = pfm.merge(peak, left_on="enhancer", right_on="peak")[
+            ["motif", "enhancer", "zscore", "log10_peakRPKM"]
+        ]
+        r = r.merge(ft, left_on="motif", right_on="Motif")
+        r = r.groupby(["factor", "enhancer"])[["zscore", "log10_peakRPKM"]].mean()
+        r = r.dropna().reset_index()
 
-            table = r.compute(num_workers=self.ncore)
-            table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
-        else:
-            raise TypeError("The input enhancer data type should hg38H3K27ac, p300 or ATAC. Please provide a enhancer type with -e argument. By default is hg38H3K27ac.")
+        table = r.compute(num_workers=self.ncore)
+        table["binding"] = clf.predict_proba(table[["zscore", "log10_peakRPKM"]])[:, 1]
 
         return table
 
