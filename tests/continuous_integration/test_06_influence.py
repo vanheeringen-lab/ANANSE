@@ -1,5 +1,3 @@
-import pytest
-
 from ananse.influence import read_expression
 
 
