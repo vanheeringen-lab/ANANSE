@@ -19,7 +19,6 @@ from sklearn.preprocessing import scale, minmax_scale
 from scipy.stats import rankdata
 import qnorm
 
-import ananse
 from ananse.enhancer_binding import CombineBedFiles
 from ananse.utils import get_motif_factors, check_input_factors
 
