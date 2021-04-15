@@ -562,7 +562,7 @@ class Network(object):
             else:
                 result = df_binding
 
-            result["binding"] = minmax_scale(
+            result["prob"] = minmax_scale(
                 rankdata(result["weighted_binding"], method="min")
             )
 

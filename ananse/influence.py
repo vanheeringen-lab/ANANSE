@@ -42,7 +42,7 @@ def read_network(fname, edges=100000):
         usenet = nrnet[:edges]
 
     for vals in usenet.iterrows():
-        source, target = vals[1][0].split("_")
+        source, target = vals[1][0].split("_", 1)
         try:
             if len(vals[1]) > 1:
                 # weight = 1 - float(vals[1])
