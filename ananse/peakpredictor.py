@@ -468,7 +468,7 @@ class PeakPredictor:
                                 f.name,
                                 genome=self.genome,
                                 method="bayesianridge",
-                                motiffile=self.pfmfile,
+                                pfmfile=self.pfmfile,
                             ),
                             how="outer",
                         )
