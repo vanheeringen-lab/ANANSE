@@ -164,7 +164,13 @@ if __name__ == "__main__":
         action="store_false",
         default=True,
     )
-
+    group.add_argument(
+        "--pfmscorefile",
+        dest="pfmscorefile",
+        help="use precomputed gimmemotifs scores (gimme scan -T -g GENOME INPUTFILE)",
+        metavar="",
+        default=None,
+    )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )

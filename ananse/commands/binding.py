@@ -25,6 +25,7 @@ def binding(args):
         include_notfs=args.include_notfs,
         rm_curated=args.rm_curated,
         etype=args.etype,
-        tffile=args.tffile
+        tffile=args.tffile,
+        pfmscorefile=args.pfmscorefile
     )
     a.run_binding(args.fin_rpkm, args.outfile)

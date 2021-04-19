@@ -61,7 +61,7 @@ def clear_tfs(motifs2factors, tffile, include_notfs=False, rm_curated=True):
     return ft
 
 class Binding(object):
-    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, include_notfs=False, rm_curated=True, etype="hg38H3K27ac", tffile=None):
+    def __init__(self, ncore=1, genome="hg38", gene_bed=None, pfmfile=None, include_notfs=False, rm_curated=True, etype="hg38H3K27ac", tffile=None, pfmscorefile=None):
 
         self.ncore = ncore
         self.genome = genome
@@ -94,6 +94,8 @@ class Binding(object):
         self.pfmfile = pfmfile_location(pfmfile)
         self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
         self.filtermotifs2factors = clear_tfs(self.motifs2factors, self.tffile, self.include_notfs, self.rm_curated)
+
+        self.pfmscorefile = pfmscorefile
 
     def set_peak_size(self, peak_bed, seqlen=200):
         """set all input peaks to 200bp
@@ -165,6 +167,10 @@ class Binding(object):
         Returns:
             [type] -- [pfmscorefile]
         """
+        # if pre-calculated pfmscorefile, use that one
+        if self.pfmscorefile is not None:
+            logger.info(f"Skipping motif scanning, file {self.pfmscorefile} supplied.")
+            return self.pfmscorefile
         pfmscorefile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
         seqs = [s.split(" ")[0] for s in as_fasta(fin_regions_fa, genome=self.genome).ids]
 
