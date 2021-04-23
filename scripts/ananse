@@ -144,14 +144,14 @@ if __name__ == "__main__":
         "-b",
         "--binding",
         dest="binding",
-        help="All TFs binding file",
+        help="TF binding prediction file (from ananse binding).",
         metavar="FILE",
     )
     group.add_argument(
         "-e",
         "--expression",
         dest="fin_expression",
-        help="Expression scores",
+        help="Expression scores. Should have gene names in the first column and should contain a column named tpm." 
         metavar="FILE",
         nargs="*",
     )
@@ -160,7 +160,7 @@ if __name__ == "__main__":
         "--output",
         required=True,
         dest="outfile",
-        help="Output file",
+        help="Output network file.",
         metavar="FILE",
         default=None,
     )
@@ -169,7 +169,7 @@ if __name__ == "__main__":
         "-g",
         "--genome",
         dest="genome",
-        help="Genome",
+        help="Genome (genomepy name or FASTA file).",
         metavar="NAME",
         default="hg38",
     )
@@ -177,7 +177,7 @@ if __name__ == "__main__":
         "-a",
         "--annotation",
         dest="annotation",
-        help="Gene annotation in BED12 format",
+        help="Gene annotation in BED12 format.",
         metavar="BED",
     )
     group.add_argument(
@@ -198,8 +198,8 @@ if __name__ == "__main__":
     group.add_argument(
         "--include-promoter",
         "--exclude-promoter",
-        default=False,
-        help="Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are excluded.",
+        default=True,
+        help="Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are included.",
         dest="include_promoter",
         action=NegateAction,
         nargs=0,
