@@ -29,6 +29,8 @@ import seaborn as sns
 
 warnings.filterwarnings("ignore")
 
+# Here because of multiprocessing and pickling
+Expression = namedtuple("Expression", ["score", "absfc", "realfc"])
 
 def read_network(fname, edges=100000):
     """Read network file and return networkx DiGraph."""
@@ -84,7 +86,6 @@ def read_expression(fname):
     a tab-separated file containing 3 columns (HGNC gene symbols, (adjusted) p-values and log2foldchange)
     header is omitted if starting with "resid"
     """
-    Expression = namedtuple("Expression", ["score", "absfc", "realfc"])
     expression_change = dict()
 
     df = pd.read_table(
@@ -178,7 +179,7 @@ def targetScore(node, G, expression_change, max_degree=3):
         total_score,
         G.out_degree(node),
         len(targets),
-        expression_change[target].absfc if target in expression_change else 0,
+        expression_change[node].absfc if node in expression_change else 0,
         pval,
         target_fc_diff,
     )
