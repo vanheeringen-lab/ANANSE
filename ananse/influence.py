@@ -12,6 +12,7 @@
 from __future__ import print_function
 import sys
 import warnings
+from collections import namedtuple
 from loguru import logger
 from tqdm import tqdm
 
@@ -76,37 +77,36 @@ def difference(S, R):
 
 
 def read_expression(fname):
-    """Read differential gene expression analysis output, return dictionary with abs fold change.
+    """Read differential gene expression analysis output, return dictionary with namedtuples of scores, absolute fold
+    change and "real" (directional) fold change.
 
     input:
     a tab-separated file containing 3 columns (HGNC gene symbols, (adjusted) p-values and log2foldchange)
     header is omitted if starting with "resid"
     """
+    Expression = namedtuple("Expression", ["score", "absfc", "realfc"])
+    expression_change = dict()
 
-    # Expression change
-    expression_change = {"score": {}, "fc": {}, "realfc": {}}
+    df = pd.read_table(
+        fname,
+        index_col=0,
+        header=0,
+        dtype={"resid": str, "log2FoldChange": float, "padj": float},
+    )
 
-    for line in open(fname):
-        if not line.startswith("resid"):
-            line = line.strip().split("\t")
-            gene = line[0].strip().upper()
-            if line[1] == "":
-                realFC = 0
-            else:
-                realFC = float(line[1])
-            foldchange = abs(realFC)
-            padj = float(line[2])
-            # if padj==0:
-            #     padj=1e-300
-            # gscore =foldchange * (-np.log10(padj))
-            if padj < 0.05:
-                # gscore = np.log2(foldchange+1)
-                gscore = foldchange
-            else:
-                gscore = 0
-            expression_change["score"][gene] = gscore
-            expression_change["fc"][gene] = foldchange
-            expression_change["realfc"][gene] = realFC
+    # convert to upper case (todo: this is not strictly necessary)
+    df.index = [index.upper() for index in df.index]
+
+    # absolute fold change
+    df["fc"] = df["log2FoldChange"].abs()
+
+    # get the gscore (absolute fold change if significanlty differential)
+    df["score"] = df["fc"] * (df["padj"] < 0.05)
+
+    for k, row in df.iterrows():
+        expression_change[row.name] = Expression(
+            score=row.score, absfc=row.fc, realfc=row.log2FoldChange
+        )
 
     return expression_change
 
@@ -115,8 +115,9 @@ def targetScore(node, G, expression_change, max_degree=3):
     """Calculate the influence score."""
 
     # debug only.
-    if expression_change is None:
-        expression_change = {"score": {}, "fc": {}}
+    # todo
+    # if expression_change is None:
+    #     expression_change = {"score": {}, "fc": {}}
 
     total_score = 0
 
@@ -144,10 +145,10 @@ def targetScore(node, G, expression_change, max_degree=3):
             # d = G.out_degree(path[-2])
 
             # the level (or the number of steps) that gene is away from transcription factor
-            path_len = len(path)
+            pathlen = len(path)
 
             # expression score of the target
-            g = expression_change["score"].get(target, 0)
+            g = expression_change[target].score if target in expression_change else 0
 
             # weight is cumulative product of probabilities
             # weight = [G[s][t]["weight"] for s, t in zip(path[:-1], path[1:])]
@@ -156,19 +157,17 @@ def targetScore(node, G, expression_change, max_degree=3):
             # weight = np.cumprod(weight)[-1]
 
             # score = g / len(path) / d * weight
-            score = g / path_len * weight
+            score = g / pathlen * weight
             total_score += score
 
     # Get Mann-Whitney U p-value of direct targets vs. non-direct targets
-    direct_targets = [n for n in G[node] if n in expression_change["fc"]]
+    direct_targets = [n for n in G[node] if n in expression_change]
     non_direct_targets = [
-        n
-        for n in list(G.nodes)
-        if n in expression_change["fc"] and n not in direct_targets
+        n for n in list(G.nodes) if n in expression_change and n not in direct_targets
     ]
 
-    target_fc = [expression_change["fc"][t] for t in direct_targets]
-    non_target_fc = [expression_change["fc"][t] for t in non_direct_targets]
+    target_fc = [expression_change[t].absfc for t in direct_targets]
+    non_target_fc = [expression_change[t].absfc for t in non_direct_targets]
 
     pval = mannwhitneyu(target_fc, non_target_fc)[1]
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
@@ -179,7 +178,7 @@ def targetScore(node, G, expression_change, max_degree=3):
         total_score,
         G.out_degree(node),
         len(targets),
-        expression_change["fc"].get(node, 0),
+        expression_change[target].absfc if target in expression_change else 0,
         pval,
         target_fc_diff,
     )
@@ -197,11 +196,9 @@ def filter_TF(scores_df, network=None, tpmfile=None, tpm=20, overlap=0.98):
         for line in tpf:
             tpmscore[line.split()[0]] = float(line.split()[1])
 
-    meg = lambda tf: set(network[tf]) if tf in network else set()
-
     tftarget = {}
     for tf in scores_df.index:
-        tftarget[tf] = meg(tf)
+        tftarget[tf] = set(network[tf]) if tf in network else set()
 
     ltf = list(scores_df.index)
 
@@ -293,7 +290,7 @@ class Influence(object):
         tfs = [node for node in self.G.nodes() if self.G.out_degree(node) > 0]
 
         # differentially expressed TFs
-        detfs = [tf for tf in tfs if tf in self.expression_change["realfc"]]
+        detfs = [tf for tf in tfs if tf in self.expression_change]
         if len(detfs) == 0:
             sys.stderr.write(
                 "no overlapping transcription factors found between the network file(s) "
@@ -301,7 +298,7 @@ class Influence(object):
             )
             sys.exit(1)
 
-        detfs = [tf for tf in detfs if self.expression_change["realfc"][tf] > 0]
+        detfs = [tf for tf in detfs if self.expression_change[tf].realfc > 0]
         if len(detfs) == 0:
             sys.stderr.write(
                 "no differentially expressed TFs found with a log2 fold change above 0\n"
@@ -337,7 +334,7 @@ class Influence(object):
                     direct_targets,
                     total_targets,
                     score,
-                    self.expression_change["score"][factor],
+                    self.expression_change[factor].score,
                     factor_fc,
                     pval,
                     target_fc,
