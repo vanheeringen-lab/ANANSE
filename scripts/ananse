@@ -11,6 +11,11 @@ import argparse
 from genomepy import Genome
 from loguru import logger
 
+logger.remove()
+logger.add(
+    sys.stderr, format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | {level} | {message}"
+)
+
 from ananse import commands, __version__
 
 
@@ -21,7 +26,7 @@ class NegateAction(argparse.Action):
 
 if __name__ == "__main__":
     usage = "%(prog)s [-h] <command> [options]"
-    description = f"ANANSE: ANalysis Algorithm for Networks Specified by Enhancers"
+    description = "ANANSE: ANalysis Algorithm for Networks Specified by Enhancers"
     epilog = """
     commands:
         binding     infer TF binding sites in enhancer peaks
@@ -34,54 +39,65 @@ if __name__ == "__main__":
         epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument('-v', '--version', action='version', version=f'%(prog)s v{__version__}')
+    parser.add_argument(
+        "-v", "--version", action="version", version=f"%(prog)s v{__version__}"
+    )
     subparsers = parser.add_subparsers()
 
     # enhancer_binding.py
-    p = subparsers.add_parser("binding", add_help=False)  # help added manually (more control)
-    group = p.add_argument_group("required arguments")
+    p = subparsers.add_parser(
+        "binding", add_help=False
+    )  # help added manually (more control)
+    group = p.add_argument_group("Required arguments")
     group.add_argument(
-        "-g",
-        "--genome",
-        required=True,
-        dest="genome",
-        help="path to the genome fasta used to align the bams and peaks to",
-        metavar="",
+        "-A",
+        "--atac-bams",
+        dest="atac_bams",
+        metavar="BAM",
+        help="ATAC-seq input BAM file(s), can be used alone or in combination with the -H option",
+        default=None,
+        nargs="+",
     )
     group.add_argument(
-        "-p",
-        "--peaks",
-        required=True,
-        dest="peakfiles",
-        help="one or more BED format files with putative enhancer regions (e.g. narrowPeak, broadPeak)",
-        metavar="",
-        nargs='+',  # >= 1 files
+        "-H",
+        "--histone-bams",
+        dest="histone_bams",
+        metavar="BAM",
+        help="H3K27ac ChIP-seq input BAM file(s), can be used alone or in combibation with the -A option",
+        default=None,
+        nargs="+",
     )
-    group.add_argument(
-        "-b",
-        "--bams",
-        required=True,
-        dest="bams",
-        help="one or more BAM format files where reads mark enhancer activity (H3K27Ac/p300 ChIP-seq or ATAC-seq)",
-        metavar="",
-        nargs='+',  # >= 1 files
-    )
-    group = p.add_argument_group("optional arguments")
+    group = p.add_argument_group("Optional arguments")
     group.add_argument(
         "-o",
         "--outdir",
         dest="outdir",
-        help="directory where you wish to store the output (default: ./ANANSE_binding)",
+        help="Directory where you wish to store the output (default: ./ANANSE_binding)",
         metavar="",
         default="./ANANSE_binding",
     )
     group.add_argument(
-        "-w",
-        "--width",
-        dest="peak_width",
-        help="peakfiles are resized to this width (default: 200)",
+        "-R",
+        "--reference",
+        dest="reference",
+        help="Path to reference data directory",
+        metavar="PATH",
+    )
+    group.add_argument(
+        "-r",
+        "--regionfiles",
+        dest="regionfiles",
+        help="One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)",
         metavar="",
-        default=200,
+        nargs="+",  # >= 1 files
+    )
+    group.add_argument(
+        "-g",
+        "--genome",
+        dest="genome",
+        help="Genome name, as managed by genomepy, or path to the genome FASTA used to align the bams and peaks to",
+        metavar="GENOME",
+        default="hg38",
     )
     group.add_argument(
         "-d",
@@ -92,81 +108,32 @@ if __name__ == "__main__":
         default="peak_rank_file_dist",
     )
     group.add_argument(
-        "-i",
+        "-p",
         "--pfmfile",
         dest="pfmfile",
-        help="pfm file of the transcription factors to search for (default gimme.vertebrate.v5.0)",
+        help="PFM file of the transcription factors to search for (default gimme.vertebrate.v5.0)",
         metavar="",
         default=None,
-    )
-    group.add_argument(
-        "-c",
-        "--curation",
-        dest="curation_filter",
-        help="True = curated TFs, False = no curated TFs, None = all TFs (default: None)",
-        metavar="",
-        default=None,
-    )
-    group.add_argument(
-        "-t",
-        "--tf-list",
-        dest="tf_list",
-        help="optional file with single column TF names",
-        metavar="",
-        default=None,
-    )
-    group.add_argument(
-        "-l",
-        "--whitelist",
-        dest="whitelist",
-        help="True = use tf_list as a whitelist. False = use tf_list as a blacklist (default: True)",
-        metavar="",
-        default=True,
-    )
-    group.add_argument(
-        "-m",
-        "--model",
-        dest="model",
-        help="pickle with classification model to use (default: dream)",
-        metavar="",
-        default=None,
-    )
-    group.add_argument(
-        "-n",
-        "--ncore",
-        dest="ncore",
-        help="number of cores to use  (default: 1)",
-        metavar="",
-        type=int,
-        default=1,
     )
     group.add_argument(
         "-f",
-        "--force",
-        dest="force",
-        help="overwrite earlier intermediate data? (default: False)",
-        action="store_true",
-        default=False,
+        "--factors",
+        dest="factors",
+        help="Transcription factors to use. Either a space-separated list or a file with one TF per line.",
+        metavar="TF",
+        default=None,
+        nargs="*",
     )
     group.add_argument(
-        "-k",
-        "--keep",
-        dest="keep_intermediates",
-        help="keep intermediate data after completion? (default: True)",
-        action="store_false",
-        default=True,
+        "-n",
+        "--ncpus",
+        dest="ncpus",
+        help="Number of processes to use for motif scanning",
+        type=int,
+        default=4,
     )
     group.add_argument(
-        "-s",
-        "--silent",
-        dest="verbose",
-        help="operate silently? (default: False)",
-        action="store_false",
-        default=True,
-    )
-
-    group.add_argument(
-        "-h", "--help", action="help", help="show this help message and exit"
+        "-h", "--help", action="help", help="Show this help message and exit"
     )
     p.set_defaults(func=commands.binding)
 
@@ -174,7 +141,11 @@ if __name__ == "__main__":
     p = subparsers.add_parser("network", add_help=False)
     group = p.add_argument_group("required arguments")
     group.add_argument(
-        "-b", "--binding", dest="binding", help="All TFs binding file", metavar="FILE",
+        "-b",
+        "--binding",
+        dest="binding",
+        help="All TFs binding file",
+        metavar="FILE",
     )
     group.add_argument(
         "-e",
@@ -195,7 +166,12 @@ if __name__ == "__main__":
     )
     group = p.add_argument_group("optional arguments")
     group.add_argument(
-        "-g", "--genome", dest="genome", help="Genome", metavar="NAME", default="hg38",
+        "-g",
+        "--genome",
+        dest="genome",
+        help="Genome",
+        metavar="NAME",
+        default="hg38",
     )
     group.add_argument(
         "-a",
@@ -213,7 +189,11 @@ if __name__ == "__main__":
         nargs="*",
     )
     group.add_argument(
-        "-n", "--ncore", dest="ncore", help="Number of core used", type=int,
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of core used",
+        type=int,
     )
     group.add_argument(
         "--include-promoter",
@@ -310,7 +290,11 @@ if __name__ == "__main__":
         default=None,
     )
     group.add_argument(
-        "-d", "--degenes", dest="expression", help="DE genes file", metavar="FILE",
+        "-d",
+        "--degenes",
+        dest="expression",
+        help="DE genes file",
+        metavar="FILE",
     )
     group.add_argument(
         "-o",
@@ -354,7 +338,11 @@ if __name__ == "__main__":
         default=False,
     )
     group.add_argument(
-        "-n", "--ncore", dest="ncore", help="Number of core used", type=int,
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of core used",
+        type=int,
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"

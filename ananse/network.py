@@ -26,6 +26,7 @@ from genomepy import Genome
 import pyranges as pr
 
 import ananse
+from ananse.utils import region_gene_overlap
 
 warnings.filterwarnings("ignore")
 
@@ -246,27 +247,7 @@ class Network(object):
         pandas.DataFrame
             DataFrame with enhancer regions, gene names, distance and weight.
         """
-        genes = pr.read_bed(self.gene_bed)
-        # Convert to DataFrame & we don't need intron/exon information
-        genes = genes.as_df().iloc[:, :6]
-
-        # Get the TSS only
-        genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
-            genes["Strand"] == "+", "Start"
-        ]
-        genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
-            genes["Strand"] == "-", "End"
-        ]
-
-        # Extend up and down
-        genes.loc[genes["Strand"] == "+", "Start"] -= up
-        genes.loc[genes["Strand"] == "+", "End"] += down
-        genes.loc[genes["Strand"] == "-", "Start"] -= down
-        genes.loc[genes["Strand"] == "-", "End"] += up
-
-        # Perform the overlap
-        genes = pr.PyRanges(genes)
-        genes = genes.join(peak_pr).as_df()
+        genes = region_gene_overlap(peak_pr, self.gene_bed)
 
         # Get the distance from center of enhancer to TSS
         # Correct for extension
@@ -407,7 +388,7 @@ class Network(object):
         if combine_function == "mean":
             tmp = tmp.mean()
         elif combine_function == "max":
-            tmp = tmp.mean()
+            tmp = tmp.max()
         elif combine_function == "sum":
             tmp = tmp.sum()
 
@@ -492,7 +473,7 @@ class Network(object):
         # This is necessary for dask, as dask cannot merge on a MultiIndex.
         # Otherwise this would be an inefficient and unnecessary step.
         network["tf_target"] = network["tf"] + "_" + network["target"]
-        network = network.set_index("tf_target").drop(columns=["tf", "target"])
+        network = network.set_index("tf_target").drop(columns=["target"])
 
         # Convert to a dask DataFrame.
         logger.info("creating expression dataframe")
@@ -560,6 +541,17 @@ class Network(object):
                 combine_function="sum",
             )
 
+            activity_fname = binding.replace("binding.tsv", "factor_activity.tsv")
+            if os.path.exists(activity_fname):
+                logger.info("Reading factor activity")
+                act = pd.read_table(activity_fname, index_col=0)
+                act.index.name = "tf"
+                act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
+                df_expression = df_expression.merge(
+                    act, right_index=True, left_on="tf", how="left"
+                ).fillna(0.5)
+            df_expression = df_expression.drop(columns=["tf"])
+
             # This is where the heavy lifting of all delayed computations gets done
             logger.info("Computing network")
             if fin_expression is not None:
@@ -570,18 +562,19 @@ class Network(object):
             else:
                 result = df_binding
 
-            result["binding"] = minmax_scale(
+            result["weighted_binding"] = minmax_scale(
                 rankdata(result["weighted_binding"], method="min")
-            )
+            )            
+            columns = ["tf_expression", "target_expression", "weighted_binding", "activity"]
+            columns = [col for col in columns if col in result]
+            logger.info(f"Using {', '.join(columns)}")
+            # Combine the individual scores
+            result["prob"] = result[columns].mean(1)
 
-            if fin_expression is not None:
-                # Combine binding score with expression score
-                result["binding"] = result[
-                    ["tf_expression", "target_expression", "binding"]
-                ].mean(1)
         else:
             result = df_expression
-            result["binding"] = result[["tf_expression", "target_expression"]].mean(1)
+            result["prob"] = result[["tf_expression", "target_expression"]].mean(1)
+            result = result.compute()
 
         logger.info("Saving file")
-        result[["binding"]].to_csv(outfile, sep="\t")
+        result[["prob"]].to_csv(outfile, sep="\t")

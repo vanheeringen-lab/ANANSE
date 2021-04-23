@@ -10,6 +10,7 @@ import warnings
 import genomepy.utils
 from pybedtools import BedTool
 import pysam
+import pyranges as pr
 
 
 def shhh_bedtool(func):
@@ -203,3 +204,92 @@ def clean_tmp():
 
     # delete
     _ = [genomepy.utils.rm_rf(f) for f in user_files]
+
+
+def get_motif_factors(motif, indirect=True):
+    """Return all TFs that are associated with a motif."""
+    motif_factors = []
+    for factor_type, factors in motif.factors.items():
+        if factor_type == "direct" or indirect:
+            motif_factors += factors
+    return motif_factors
+
+
+def check_input_factors(factors):
+    """Check factors.
+
+    Factors can eiher be a list of transcription factors, or a filename of a
+    file that containts TFs. Returns a list of factors.
+    If factors is None, it will return the default transcription factors.
+
+    Returns
+    -------
+    list
+        List of TF names.
+    """
+    # Load factors
+    if factors is None:
+        return
+
+    # factors is string, assuming it's a filename
+    if isinstance(factors, str):
+        if os.path.exists(factors):
+            fname = factors
+        else:
+            raise ValueError("Factors filename {factors} does not exist")
+
+    if len(factors) == 1 and os.path.exists(factors[0]):
+        fname = factors[0]
+    else:
+        # It's a list with more than one value, assuming it's a list of TF names.
+        return factors
+
+    factors = [line.strip() for line in open(fname)]
+    return factors
+
+
+def region_gene_overlap(
+    region_pr,
+    gene_bed,
+    up=100_000,
+    down=100_000,
+):
+    """Couple enhancers to genes.
+
+    Parameters
+    ----------
+    pr : PyRanges object
+        PyRanges object with enhancer regions.
+    up : int, optional
+        Upstream maximum distance, by default 100kb.
+    down : int, optional
+        Upstream maximum distabce, by default 100kb.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with enhancer regions, gene names, distance and weight.
+    """
+    genes = pr.read_bed(gene_bed)
+    # Convert to DataFrame & we don't need intron/exon information
+    genes = genes.as_df().iloc[:, :6]
+
+    # Get the TSS only
+    genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
+        genes["Strand"] == "+", "Start"
+    ]
+    genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
+        genes["Strand"] == "-", "End"
+    ]
+
+    # Extend up and down
+    genes.loc[genes["Strand"] == "+", "Start"] -= up
+    genes.loc[genes["Strand"] == "+", "End"] += down
+    genes.loc[genes["Strand"] == "-", "Start"] -= down
+    genes.loc[genes["Strand"] == "-", "End"] += up
+
+    # Perform the overlap
+    genes = pr.PyRanges(genes)
+    genes = genes.join(region_pr).as_df()
+
+    return genes
