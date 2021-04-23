@@ -564,8 +564,13 @@ class Network(object):
 
             result["weighted_binding"] = minmax_scale(
                 rankdata(result["weighted_binding"], method="min")
-            )            
-            columns = ["tf_expression", "target_expression", "weighted_binding", "activity"]
+            )
+            columns = [
+                "tf_expression",
+                "target_expression",
+                "weighted_binding",
+                "activity",
+            ]
             columns = [col for col in columns if col in result]
             logger.info(f"Using {', '.join(columns)}")
             # Combine the individual scores
