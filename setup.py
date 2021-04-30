@@ -40,7 +40,7 @@ setup(
         "setuptools >= 0.7",
         "adjusttext",
         "dask",
-        "gimmemotifs >=0.14.4",
+        "gimmemotifs >=0.15.1",
         "loguru",
         "networkx",
         "openpyxl",
