@@ -43,6 +43,7 @@ setup(
         "gimmemotifs >=0.14.4",
         "loguru",
         "networkx",
+        "openpyxl",
         "tables",
         "genomepy >= 0.9.3",
         "pyranges",
