@@ -70,7 +70,7 @@ class PeakPredictor:
             if pfmscorefile is None:
                 self._scan_motifs(regions)
             else:
-                self._load_motifs(pfmscorefile)
+                self._load_prescanned_motifs(pfmscorefile)
 
         # Load ATAC data
         if atac_bams is not None:
@@ -108,7 +108,7 @@ class PeakPredictor:
                 #    continue
                 self._motifs[factor] = motif_df[self.f2m[factor]].mean(1)
 
-    def _load_motifs(self, pfmscorefile):
+    def _load_prescanned_motifs(self, pfmscorefile):
         """
         Use pre-scanned gimmemotifs motif scores.
 
@@ -119,7 +119,7 @@ class PeakPredictor:
         """
         logger.info("loading pre-scanned motif scores.")
 
-        motif_df = pd.read_table(pfmscorefile)
+        motif_df = pd.read_table(pfmscorefile, comment="#", index_col=0)
         self._motifs = pd.DataFrame(index=motif_df.index)
         for factor in self.f2m:
             # if factor not in valid_factors:
@@ -684,6 +684,7 @@ def predict_peaks(
         ncpus=ncpus,
     )
 
+    print(p._load_data("ENSDARG00000105028.2"))
     logger.info("Predicting TF activity")
     outfile = os.path.join(outdir, "atac.tsv.gz")
     if p._atac_data is not None:

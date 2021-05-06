@@ -133,30 +133,6 @@ if __name__ == "__main__":
         default=4,
     )
     group.add_argument(
-        "-f",
-        "--force",
-        dest="force",
-        help="overwrite earlier intermediate data? (default: False)",
-        action="store_true",
-        default=False,
-    )
-    group.add_argument(
-        "-k",
-        "--keep",
-        dest="keep_intermediates",
-        help="keep intermediate data after completion? (default: True)",
-        action="store_false",
-        default=True,
-    )
-    group.add_argument(
-        "-s",
-        "--silent",
-        dest="verbose",
-        help="operate silently? (default: False)",
-        action="store_false",
-        default=True,
-    )
-    group.add_argument(
         "--pfmscorefile",
         dest="pfmscorefile",
         help="use precomputed gimmemotifs scores (gimme scan -T -g GENOME INPUTFILE)",
