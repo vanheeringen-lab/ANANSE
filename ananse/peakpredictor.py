@@ -684,7 +684,6 @@ def predict_peaks(
         ncpus=ncpus,
     )
 
-    print(p._load_data("ENSDARG00000105028.2"))
     logger.info("Predicting TF activity")
     outfile = os.path.join(outdir, "atac.tsv.gz")
     if p._atac_data is not None:
