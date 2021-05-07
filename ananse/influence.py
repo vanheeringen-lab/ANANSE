@@ -32,6 +32,7 @@ warnings.filterwarnings("ignore")
 # Here because of multiprocessing and pickling
 Expression = namedtuple("Expression", ["score", "absfc", "realfc"])
 
+
 def read_network(fname, edges=100000):
     """Read network file and return networkx DiGraph."""
 

@@ -171,7 +171,7 @@ def best_fit_distribution(data, bins=200, ax=None):
 
 
 def make_pdf(dist, params, size=10000):
-    """Generate distributions's Probability Distribution Function """
+    """Generate distributions's Probability Distribution Function"""
 
     # Separate parts of parameters
     arg = params[:-2]
