@@ -37,6 +37,7 @@ class PeakPredictor:
         genome="hg38",
         pfmfile=None,
         factors=None,
+        pfmscorefile=None,
         ncpus=4,
     ):
         self.data_dir = reference
@@ -66,7 +67,10 @@ class PeakPredictor:
         else:
             self.region_type = "custom"
             self.regions = regions
-            self._scan_motifs(regions)
+            if pfmscorefile is None:
+                self._scan_motifs(regions)
+            else:
+                self._load_prescanned_motifs(pfmscorefile)
 
         # Load ATAC data
         if atac_bams is not None:
@@ -103,6 +107,24 @@ class PeakPredictor:
                 # if factor not in valid_factors:
                 #    continue
                 self._motifs[factor] = motif_df[self.f2m[factor]].mean(1)
+
+    def _load_prescanned_motifs(self, pfmscorefile):
+        """
+        Use pre-scanned gimmemotifs motif scores.
+
+        Parameters
+        ----------
+        pfmscorefile : str/file
+            pre-scanned gimmemotifs scores file
+        """
+        logger.info("loading pre-scanned motif scores.")
+
+        motif_df = pd.read_table(pfmscorefile, comment="#", index_col=0)
+        self._motifs = pd.DataFrame(index=motif_df.index)
+        for factor in self.f2m:
+            # if factor not in valid_factors:
+            #    continue
+            self._motifs[factor] = motif_df[self.f2m[factor]].mean(1)
 
     def _load_reference_data(self):
         """Load data for reference regions.
@@ -553,6 +575,7 @@ def predict_peaks(
     factors=None,
     genome=None,
     pfmfile=None,
+    pfmscorefile=None,
     ncpus=4,
 ):
     """Predict binding in a set of genomic regions.
@@ -599,6 +622,8 @@ def predict_peaks(
         Genome name. The default is hg38.
     pfmfile : str, optional
         Motifs in PFM format, with associated motif2factors.txt file.
+    pfmscorefile : str, optional
+        Path to file with pre-scanned motif scores.
     ncpus : int, optional
         Number of threads to use. Default is 4.
     """
@@ -655,6 +680,7 @@ def predict_peaks(
         genome=genome,
         pfmfile=pfmfile,
         factors=factors,
+        pfmscorefile=pfmscorefile,
         ncpus=ncpus,
     )
 

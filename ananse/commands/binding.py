@@ -17,5 +17,6 @@ def binding(args):
         factors=args.factors,
         genome=args.genome,
         pfmfile=args.pfmfile,
+        pfmscorefile=args.pfmscorefile,
         ncpus=args.ncpus,
     )

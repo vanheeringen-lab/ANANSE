@@ -133,7 +133,14 @@ if __name__ == "__main__":
         default=4,
     )
     group.add_argument(
-        "-h", "--help", action="help", help="Show this help message and exit"
+        "--pfmscorefile",
+        dest="pfmscorefile",
+        help="use precomputed gimmemotifs scores (gimme scan -T -g GENOME INPUTFILE)",
+        metavar="",
+        default=None,
+    )
+    group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.binding)
 
