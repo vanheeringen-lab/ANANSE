@@ -2,7 +2,7 @@
 
 ### Overview of ANANSE
 
-An overview of the workflow that ANANSE uses to prioritize transcription factors for cellular fate changes. ANANSE infers gene regulatory networks (GRNs) to predict key transcription factors (TFs) that drive cellular transitions.
+The following is overview of the full workflow that ANANSE uses to prioritize transcription factors for cellular fate changes. ANANSE infers gene regulatory networks (GRNs) to predict key transcription factors (TFs) that drive cellular transitions.
 
 ![](img/Fig2.png)
 
