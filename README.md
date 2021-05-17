@@ -9,41 +9,42 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/maintainability)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/test_coverage)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/test_coverage)
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
-ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to use these GRNs to identify the key transcription factors in cell fate determination. You can use it to generate a shortlist of transcription factors for trans-differentiation experiments, but also to study transcription regulation during development and differentiation. It is written in Python and it contains three command-line scripts: `ananse binding`, `ananse network`, and `ananse influence`.
+ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to use these GRNs to identify the key transcription factors in cell fate determination. You can use it to generate a shortlist of transcription factors for trans-differentiation experiments, but also to study transcription regulation during development and differentiation. It is written in Python and it contains three command-line scripts: `ananse binding`, `ananse network`, and `ananse influence`. A graphical overview of the tools is shown below.
 
 ![](docs/img/Fig2.png)
-(A), Data types required and utilized in ANANSE. These data include motif score of all TFs, gene expression data (e.g. RNA-seq) and enhancer data that can be obtained by ATAC-seq, EP300 ChIP-seq, or H3K27ac ChIP-seq from each cell type. The blue and orange peaks represent enhancers in two cell types. The four sequence-logos represent the motif of four TFs. The heatmap represents gene expression intensity in two cell types. (B), The TF binding profiles predicted from enhancer data and TF motif scores in each cell type. Two GRNs below show cell type-specific TF binding profiles in two cell types (source and target cell types). (C), The cell type-specific GRN predicted based on TF-Gene binding and TF/Gene expression. Two networks show cell type-specific GRN in two cell types. The orange circle represents a TF or a gene, and the size of the circle indicates the target gene number of the corresponding TF. The blue arrow indicates regulation between two TFs, and the color intensity represents regulation intensity. (D), The differential GRN between the two cell types. In this step, the interaction specific for the target cell type is kept constant, and if the interaction score of the target cell type is higher than that of the source cell type, the interaction score is further used. (E), The barplot shows the ranked influence score of all TFs calculated from the differential GRN. The influence score is calculated based on gene expression score, distance from the enhancer bound by TF to gene, and the interaction score between TF and gene.
-
-Read **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)** for detailed installation instructions and usage examples. For documentation on the **development version** see [here](https://anansepy.readthedocs.io/en/develop/).
-
-
 
 ## Quick start
-<!-- * ### **Detail documentation**
-  * The **full ANANSE documentation** at [https://anansepy.readthedocs.io](https://anansepy.readthedocs.io).  -->
 
-* ### **Easy installation**
-  <!-- * The most straightforward way to install ANANSE is via conda using the bioconda channel. -->
+Read the **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)** for detailed installation instructions and usage examples. For documentation on the **development version** see [here](https://anansepy.readthedocs.io/en/develop/).
 
-  #### ***1. If you have not used bioconda before, first set up the necessary channels (in this order!). You only have to do this once.***
+### Installation
 
-  ```
-  $ conda config --add channels defaults
-  $ conda config --add channels bioconda
-  $ conda config --add channels conda-forge
-  ```
-  #### ***2. Install ANANSE from bioconda***
-  ``` 
-  # Create an environment called ananse with all dependencies
-  $ conda create -n ananse ananse
+The most straightforward way to install ANANSE is via conda using the bioconda channel.
 
-  # Activate the environment
-  $ conda activate ananse
-  ```
-  <!-- * Don't forget to activate the environment with conda activate gimme whenever you want to use ANANSE. -->
+#### 1. If you have not used bioconda before, first set up the necessary channels (in this order!). You only have to do this once.
 
+```
+$ conda config --add channels defaults
+$ conda config --add channels bioconda
+$ conda config --add channels conda-forge
+```
 
-* ### **Usage**
+#### 2. Install ANANSE from bioconda
+
+``` 
+# Create an environment called ananse with all dependencies
+$ conda create -n ananse ananse
+
+# Activate the environment
+$ conda activate ananse
+```
+
+Don't forget to activate the environment with conda activate gimme whenever you want to use ANANSE.
+
+### Usage
+
+The three command-line tools (`binding`, `network` and `influence`) can be used separately, but are designed to work together. In general, for a full ANANSE analysis, you would infer binding and calculate the GRN for two (or more) different cell types and then use `ananse influence` to determine influential.
+
 
   #### ***0. Make enhancer file***
   ```
