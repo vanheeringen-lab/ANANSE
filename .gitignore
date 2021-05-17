@@ -1,4 +1,7 @@
-tests/results/
+tests/data/
+tests/output/
+tests/**/*pyc
+.cache/
 .idea/
 .vscode/
 build/
@@ -14,3 +17,10 @@ pullgit.sh
 tomaster.sh
 conda_build.sh
 **/*.DS_Store
+
+# code coverage results
+.coverage
+coverage.xml
+
+# temporary dirs
+testdata

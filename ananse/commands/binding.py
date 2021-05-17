@@ -4,27 +4,19 @@
 # This module is free software. You can redistribute it and/or modify it under
 # the terms of the MIT License, see the file COPYING included with this
 # distribution.
-
-from __future__ import print_function
-import sys
-import os
-
-import ananse.binding
+from ananse.peakpredictor import predict_peaks
 
 
 def binding(args):
-    if not os.path.exists(args.fin_rpkm):
-        print("File %s does not exist!" % args.fin_rpkm)
-        sys.exit(1)
-
-    a = ananse.binding.Binding(
-        ncore=args.ncore,
-        genome=args.genome, 
-        # gene_bed=args.annotation, 
+    predict_peaks(
+        args.outdir,
+        atac_bams=args.atac_bams,
+        histone_bams=args.histone_bams,
+        regionfiles=args.regionfiles,
+        reference=args.reference,
+        factors=args.factors,
+        genome=args.genome,
         pfmfile=args.pfmfile,
-        include_notfs=args.include_notfs,
-        rm_curated=args.rm_curated,
-        etype=args.etype,
-        tffile=args.tffile
+        pfmscorefile=args.pfmscorefile,
+        ncpus=args.ncpus,
     )
-    a.run_binding(args.fin_rpkm, args.outfile)
