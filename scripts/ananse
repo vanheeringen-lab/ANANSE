@@ -29,9 +29,9 @@ if __name__ == "__main__":
     description = "ANANSE: ANalysis Algorithm for Networks Specified by Enhancers"
     epilog = """
     commands:
-        binding     infer TF binding sites in enhancer peaks
-        network     built network for each sample
-        influence   infer key TFs between two samples
+        binding     predict TF binding sites in cis-regulatory region
+        network     infer gene regulatory network
+        influence   prioritize transcription factors
     """
     parser = argparse.ArgumentParser(
         usage=usage,
@@ -42,12 +42,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "-v", "--version", action="version", version=f"%(prog)s v{__version__}"
     )
+    
+    subparser_dict = {}
+
     subparsers = parser.add_subparsers()
 
-    # enhancer_binding.py
+    # ananse binding
     p = subparsers.add_parser(
         "binding", add_help=False
     )  # help added manually (more control)
+    subparser_dict["binding"] = p
+
     group = p.add_argument_group("Required arguments")
     group.add_argument(
         "-A",
@@ -139,6 +144,7 @@ if __name__ == "__main__":
 
     # network.py
     p = subparsers.add_parser("network", add_help=False)
+    subparser_dict["network"] = p
     group = p.add_argument_group("required arguments")
     group.add_argument(
         "-b",
@@ -146,21 +152,13 @@ if __name__ == "__main__":
         dest="binding",
         help="TF binding prediction file (from ananse binding).",
         metavar="FILE",
+        required=True,
     )
     group.add_argument(
         "-e",
         "--expression",
         dest="fin_expression",
-        help="Expression scores. Should have gene names in the first column and should contain a column named tpm." 
-        metavar="FILE",
-        nargs="*",
-    )
-    group.add_argument(
-        "-o",
-        "--output",
-        required=True,
-        dest="outfile",
-        help="Output network file.",
+        help="Expression scores. Should have gene names in the first column and should contain a column named tpm. Both the quant.sf from salmon or the abundances.tsv from kallisto will work fine.",
         metavar="FILE",
         default=None,
     )
@@ -177,22 +175,14 @@ if __name__ == "__main__":
         "-a",
         "--annotation",
         dest="annotation",
-        help="Gene annotation in BED12 format.",
+        help="Gene annotation in BED12 format. Not necessary if you use a genome that was installed using genomepy with the --annotation flag.",
         metavar="BED",
-    )
-    group.add_argument(
-        "-c",
-        "--corrfiles",
-        dest="corrfiles",
-        help="Files with correlation",
-        metavar="FILE",
-        nargs="*",
     )
     group.add_argument(
         "-n",
         "--ncore",
         dest="ncore",
-        help="Number of core used",
+        help="Number of core used.",
         type=int,
     )
     group.add_argument(
@@ -216,101 +206,45 @@ if __name__ == "__main__":
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
-
-    # p.add_argument(
-    #     "-r",
-    #     "--enhancers",
-    #     required=True,
-    #     dest="fin_rpkm",
-    #     help="BED file with RPKM on the 4th column",
-    #     metavar="FILE",
-    # )
-    # p.add_argument(
-    #     "-f",
-    #     "--filter_promoter",
-    #     dest="fpomoter",
-    #     help="Filter promoters, True or False, input should be either 'True' or 'False'.",
-    #     metavar="NAME",
-    #     type=ast.literal_eval,
-    #     default=True,
-    # )
-
-    # This not used currently
-    # group.add_argument(
-    #     "-i",
-    #     "--impute",
-    #     dest="impute",
-    #     help="Impute missing values",
-    #     default=False,
-    #     action="store_true",
-    # )
-
     p.set_defaults(func=commands.network)
+    
 
-    # # network.py
-    # p = subparsers.add_parser("network")
-    # p.add_argument(
-    #     "-f",
-    #     "--interaction",
-    #     dest="features",
-    #     help="HDF5 file with features",
-    #     metavar="FILE",
-    #     default=None,
-    #     required=True,
-    # )
-    # p.add_argument(
-    #     "-o",
-    #     "--outfile",
-    #     required=True,
-    #     dest="outfile",
-    #     help="Output file",
-    #     metavar="FILE",
-    #     default=None,
-    # )
-    # p.add_argument(
-    #     "-i",
-    #     "--impute",
-    #     dest="impute",
-    #     help="Impute missing values",
-    #     default=False,
-    #     action="store_true",
-    # )
-    # p.set_defaults(func=commands.network)
-
-    # influence.py
+    # ananse influnecei
     p = subparsers.add_parser("influence", add_help=False)
-
+    subparser_dict["influence"] = p
     group = p.add_argument_group("required arguments")
     group.add_argument(
         "-t",
         "--target",
         dest="Gaf",
-        help="network in second cell",
+        help="Network of target cell type.",
         metavar="FILE",
         default=None,
+        required=True,
     )
     group.add_argument(
         "-d",
         "--degenes",
         dest="expression",
-        help="DE genes file",
+        help="File with differential gene expression (DEseq2 output file).",
         metavar="FILE",
+        required=True,
     )
     group.add_argument(
         "-o",
         "--outfile",
-        required=True,
         dest="outfile",
-        help="Output file",
+        help="Output file.",
         metavar="FILE",
         default=None,
+        required=True,
     )
     group = p.add_argument_group("optional arguments")
     group.add_argument(
         "-s",
         "--source",
         dest="Gbf",
-        help="network in first cell",
+        help="Network of source cell type.",
         metavar="FILE",
         default=None,
     )
@@ -318,16 +252,9 @@ if __name__ == "__main__":
         "-i",
         "--edges",
         dest="edges",
-        help="Number of top edges used",
+        help="Number of top edges used (default is 100,000).",
         type=int,
         default=100000,
-    )
-    group.add_argument(
-        "-e",
-        "--expression",
-        dest="fin_expression",
-        help="Expression scores in first cell",
-        metavar="FILE",
     )
     group.add_argument(
         "-p",
@@ -341,7 +268,7 @@ if __name__ == "__main__":
         "-n",
         "--ncore",
         dest="ncore",
-        help="Number of core used",
+        help="Number of cores to use.",
         type=int,
     )
     group.add_argument(
@@ -349,11 +276,12 @@ if __name__ == "__main__":
     )
     p.set_defaults(func=commands.influence)
 
-    if "help" in sys.argv:
+    if len(sys.argv) == 1:
         parser.print_help()
+    if len(sys.argv) == 2 and sys.argv[-1] in subparser_dict:
+        subparser_dict[sys.argv[-1]].print_help()
     else:
         args = parser.parse_args()
-
         if hasattr(args, "genome"):
             if args.genome is not None:
                 try:
