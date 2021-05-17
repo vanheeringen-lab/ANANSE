@@ -9,7 +9,7 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/maintainability)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/test_coverage)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/test_coverage)
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
-ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to use these GRNs to identify the key transcription factors in cell fate determination. You can use it to generate a shortlist of transcription factors for trans-differentiation experiments, but also to study transcription regulation during development and differentiation. It is written in Python and it contains three command-line scripts: `ananse binding`, `ananse network`, and `ananse influence`. A graphical overview of the tools is shown below.
+ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to use these GRNs to identify the key transcription factors in cell fate determination. You can use it to generate a shortlist of transcription factors for trans-differentiation experiments, but also to generate cell type-specific gene regulatory networks or to study transcription regulation during development and differentiation. It is written in Python and it contains three command-line scripts: `ananse binding`, `ananse network`, and `ananse influence`. A graphical overview of the tools is shown below.
 
 ![](docs/img/Fig2.png)
 
@@ -39,110 +39,57 @@ $ conda create -n ananse ananse
 $ conda activate ananse
 ```
 
-Don't forget to activate the environment with conda activate gimme whenever you want to use ANANSE.
+Don't forget to activate the environment with `conda activate ananse` whenever you want to use ANANSE.
 
 ### Usage
 
-The three command-line tools (`binding`, `network` and `influence`) can be used separately, but are designed to work together. In general, for a full ANANSE analysis, you would infer binding and calculate the GRN for two (or more) different cell types and then use `ananse influence` to determine influential.
+The three command-line tools (`binding`, `network` and `influence`) can be used separately, but are designed to work together. In general, for a full ANANSE analysis, you would infer binding and calculate the GRN for two (or more) different cell types and then use `ananse influence` to determine influential TFs for the transition from one cell type to the other.
+
+Before you can use the ANANSE tools, you have to install your genome with corresponding annotation using [genomepy](https://github.com/vanheeringen-lab/genomepy). For instance, to use `hg38`:
+
+```
+genomepy install hg38 --annotation
+```
 
 
-  #### ***0. Make enhancer file***
-  ```
-  $ ananse enhancer -g hg38 -t hg38H3K27ac \
-                    -b data/KRT_H3K27ac_rep1.bam \
-                    -p data/KRT_H3K27ac_peaks.broadPeak \
-                    -o data/KRT_enhancer.bed 
-  ```
+#### Genome-wide prediction of transcription factor binding: ananse binding
 
-  * `-t, --etype`. Enhancer type, hg38H3K27ac, p300, or ATAC. 
-  * `-g, --genome`. The genome of the data.
-  * `-b, --bam_input`. The H3K27ac or p300 ChIP-seq bam file.
-  * `-p, --epeak`. The H3K27ac ChIP-seq broadPeak, or the p300 ChIP-seq / ATAC-seq narrowPeak.
-  * `-o, --bed_output`. The output enhancer file.
-  * `-h, --help`. Show the help message and exit.
+To predict binding, you need either ATAC-seq and/or H3K27ac ChIP-seq data as BAM files. Using both of these types of data will give the most accurate results, however, either of the two will also work. ANANSE will automatically choose the relevant model depending on which data you use as input. If you have human data, mapped to `hg38`, you can use a more advanced model based on 
+
+```
+ananse binding -A <ATAC.bam> -H <H3k27ac.bam> -o out
+```
+
+
+#### Gene regulatory network inference: ananse network
+
+To create a gene regulatory network you will need a binding prediction from `ananse binding` and one or more files with gene expression quantification. The file should have the gene identifier in the first column and a column with `TPM` as a head. Both the `quant.sf` from salmon or the `abundances.tsv` from kallisto will work fine. Here we will run `ananse network` with 4 threads:
+
+```
+ananse network -b out/binding.tsv -e xxx -o network.txt -n 4
+```
+
+#### Transcription factor influence score: ananse influence
+
+```
+```
+
+## Development installation
+
+* Clone the repo from git.
+* Checkout the `develop` branch.
+* Install a development environment with conda: `conda env create -n ananse_dev -f requirements.yaml`.
+* Activate the environment with `conda activate ananse_dev`.
+* Install ANANSE with `python setup.py develop`.
   
-  <!-- * **All the example dataset and result files are able to find at [***http://mbdata.science.ru.nl/qxu/ananse/ananse.html***](http://mbdata.science.ru.nl/qxu/ananse/ananse.html).** -->
-  <!-- --- -->
-  #### ***1. Build TF binding network***  
-  <!-- > Predict cell type-specific transcription factor binding with enhancer intensity and motif z-score. -->
-
-  <!-- * Example:  -->
-  ```
-  $ ananse binding  -r data/KRT_enhancer.bed \
-                    -o results/binding.txt \
-                    -g hg38 -t hg38H3K27ac
-  ```
-
-  * `-r, --enhancers`. The input enhancer peak file. 
-  * `-t, --etype`. Enhancer type, hg38H3K27ac, p300, or ATAC. 
-  * `-o, --output`. The output file.
-  * `-g, --genome`. The genome of the data.
-  * `-h, --help`. Show the help message and exit.
-
-  <!-- --- -->
-  #### ***2. Built gene regulatory network***  
-  <!-- > Infer cell type-specific gene regulatory network with TF binding and distance to promoter. -->
-
-  <!-- * Example: -->
-  ```
-  $ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                    -b results/binding.txt \
-                    -o results/KRT_full_features.txt \
-                    -g hg38 \
-                    --exclude-promoter --include-enhancer
-  ```
-
-  <!-- * Required arguments: -->
-  * `-e, --expression`. The expression file of your interested cell type or tissue. 
-  * `-b, --binding`. The binding network from `Build binding network` step. 
-  * `-o, --output`. The output file. 
-  * `-g, --genome`. The genome of your data. 
-  * `--include-promoter, --exclude-promoter`. Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are **excluded**.
-  * `--include-enhancer, --exclude-enhancer`. Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. By default enhancer peaks are **included**.
-  * `-h, --help`. Show the help message and exit.
-
-  <!-- --- -->
-  #### ***3. Infer TF influence score***  
-  <!-- > Infer key TFs during cell fate determination with TF expression and gene regulatory network. -->
-
-  <!-- * Example: -->
-  ```
-  $ ananse influence  -s results/FB_full_network.txt \
-                      -t results/KRT_full_network.txt \
-                      -d data/FB2KRT_degenes.csv \
-                      -o results/FB2KRT.txt 
-  ```
-
-  <!-- * Required arguments: -->
-  * `-s, --source`. The network in source cell (optional).     
-  * `-t, --target`. The network in target cell.  
-  * `-d, --degenes`. The differential expression table between two cells.  
-  * `-o, --output`. The output file.  
-  * `-h, --help`. Show the help message and exit.
-
-### **Development installation**
-clone the repo from git
-checkout development branch
-install a development environment with conda:
-`conda env create -n ananse_dev -f requirements.yaml`
-activate the environment with `conda activate ananse_dev`
-install ANANSE with `python setup.py develop`
-  
-<!-- ___ -->
 ## Citation
+
   > Xu Q, Georgiou G, Veenstra G J C, et al. ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination[J]. [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.06.05.135798v2), 2020.
 
 <!-- --- -->
 ## Help and Support
 
-  * The preferred way to get support is through the [Github issues page](https://github.com/vanheeringen-lab/ANANSE/issues).
-
-  * Reach out to me at one of the following places!
-
-    - Website at <a href="https://github.com/vanheeringen-lab" target="_blank">`vanheeringen-lab`</a>
-    - Email to <a href="mailto:qxuchn@gmail.com" target="_blank">`Quan Xu`</a> or <a href="mailto:simon.vanheeringen@gmail.com" target="_blank">`Simon J. van Heeringen`</a>
-
-<!-- --- -->
+* The preferred way to get support is through the [Github issues page](https://github.com/vanheeringen-lab/ANANSE/issues).
 
 ## License
 
