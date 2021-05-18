@@ -1,6 +1,7 @@
 ## Input data
 
 To run ANANSE you need the following data:
+
 * Genome with gene annotation
 * For `ananse binding`: enhancer regions (optional for `hg38`)
 * For `ananse binding`: enhancer activity:
