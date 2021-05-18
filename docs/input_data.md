@@ -1,5 +1,15 @@
 ## Input data
 
+To run ANANSE you need the following data:
+* Genome with gene annotation
+* For `ananse binding`: enhancer activity:
+   *  ATAC-seq BAM file(s)
+   *  H3K27ac ChIP-seq BAM files(s)
+*  Gene expression data:
+   *  For `ananse network`: gene expression quantification (TPM, for instance `quant.sf` from salmon)
+   *  For `ananse influence`: gene differential expression (DESeq2 output)
+* Motif database
+
 ### Genome
 
 To run `ANANSE` on your sample(s), a matching genome and gene annotation is necessary. We recommand that you download your genome file with [genomepy](https://github.com/vanheeringen-lab/genomepy). Genomepy is a Python package with command-line interface to easily download and install genomes, generates associated files and more.
