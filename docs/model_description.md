@@ -6,31 +6,15 @@ The following is overview of the full workflow that ANANSE uses to prioritize tr
 
 ![](img/Fig2.png)
 
-A) An overview of the data types required by ANANSE. These data include motif score of all TFs and gene expression data (e.g. RNA-seq) and enhancer activity data for each cell type. The enhancer data can be obtained by ATAC-seq, EP300 ChIP-seq or H3K27ac ChIP-seq. The blue and orange peaks represent enhancers in two different cell types. The four sequence logos represent the motif of four TFs. The heatmap represents gene expression intensity in the two cell types. 
-
-B) The TF binding profiles predicted from the enhancer data and TF motif scores in each cell type. Two GRNs below show cell type-specific TF binding profiles in two cell types (source and target cell types). 
-
-C) The cell type-specific GRN predicted based on TF-gene binding, TF expression and target gene expression. The two networks show cell type-specific GRNs in two cell types. The orange circle represents a TF or a gene, and the size of the circle indicates the target gene number of the corresponding TF. The blue arrow indicates regulation between two TFs, and the color intensity represents regulation intensity as the edge weight.
-
-D) The differential GRN between the two cell types. In this step, the interaction specific for the target cell type is kept constant, and if the interaction score of the target cell type is higher than that of the source cell type, the interaction score is further used. 
-
-E) The barplot shows the ranked influence score of all TFs calculated from the differential GRN. The influence score is calculated based on gene expression score, distance from the enhancer bound by TF to gene, and the interaction score between TF and gene.
-
-
 ### Prediction of transcription factor binding
 
-The enhancer intensity is combined with sequence features in enhancer peaks to infer cell type-specific TF binding profiles.  
-For human (hg38) data, a built-in enhancer location file is located in ANANSE, and it does not need be provided. To determine the enhancer activity, we recommend to use H3K27ac ChIP-seq.   
-For other genome data, The enhancer locations can be obtained from ChIP-seq analyses of the transcriptional co-activator EP300, chromatin accessibility data such as ATAC-seq or a combination of TF ChIP peaks. Basically any type that gives sharp peaks would be usable. To determine the enhancer activity, we recommend to use either EP300 ChIP-seq or H3K27ac ChIP-seq, as both of these have been shown to correlate with enhancer activity (Creyghton et al., 2010; Rada-Iglesias et al., 2011).   
-The enhancer activity is combined with TF motif scores in the enhancer sequences usin logistic regression. The motif analysis is performed using [GimmeMotifs](https://gimmemotifs.readthedocs.org).
+The enhancer intensity is combined with sequence features in enhancer peaks to infer cell type-specific TF binding profiles (**A** in the figure).  
 
-### Inference of TF binding networks
-
-**TODO**
+ANANSE uses a logistic classifier, trained on ChIP-seq peaks of 237 TFs (from the [REMAP database](http://remap.univ-amu.fr/)). The classifier combines the ATAC-seq signal, the H3K27ac signal and the motif score to predict the probability of binding. When the default enhancer regions are used (based on combining all ChIP-seq data from REMAP), the classifier also uses the average ChIP-seq signal, which improves the performance. 
 
 ### Inference of gene regulatory networks
 
-ANANSE infers cell type-specific GRNs based on the predicted TF binding sites and the expression levels both TFs as well as their target genes. TF-gene interaction scores, the edge weights in the network, are calculated based on the predicted TF binding probability, the distance between the enhancer and the target gene, and expression of both TF and the target gene. By integrating these data, ANANSE determines the interaction score of each TF-gene pair. 
+ANANSE infers cell type-specific GRNs based on the predicted TF binding sites, the predicted TF activity score, and the expression levels both TFs as well as their target genes (see **B**). TF-gene interaction scores, the edge weights in the network, are calculated based on the predicted TF binding probability, the distance between the enhancer and the target gene, and expression of both TF and the target gene. By integrating these data using mean rank aggegation, ANANSE determines the interaction score of each TF-gene pair. 
 
 The weighted sum of TF predicted enhancer intensity within 100kb around TSS is defined as the TF-gene binding score (Eq. 1). 
 
@@ -62,4 +46,4 @@ I_{x,r} = \frac{B_{x,r} + E_x + E_r}{3} \tag{3}
 
 ### Calculation of influence score
 
-**TODO**
+To calculate the influence score for the transition from a source cell type to a target cell type, a differential GRN i used. This network consists of the difference of the interaction score (edge weight) between a *source* and a *target* cell type. A local network is used for each TF, up to a maximal number of three edges. A target score isscalculated for each node in the network, based on 1) its edge distance from the TF of interest, 2) the interaction score and 3) the change in expression between the source cell type and the target cell type. The target score for each TF is defined as the sum of the scores from all the nodes in its local network. Nodes present in multiple edges are calculated only for the edge closest to the TF of interest. Self-regulating nodes are not considered. The target score and the expression of each TF are scaled from 0 to 1, and the mean is defined as the influence score of this TF. 
