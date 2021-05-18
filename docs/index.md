@@ -21,7 +21,7 @@ ANANSE is free and open source research software. If you find it useful please c
 
 * The easiest way to install ANANSE is using [bioconda](https://bioconda.github.io/) on Linux (including [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10) ) or Mac. 
 * Have a look at these simple [examples](examples.md) to get a taste of what is possible.
-* Check out the more detailed [command-line usage tutorials](command-line_reference.md).
+* Check out the more detailed [command-line reference](command-line_reference.md).
 * There’s also an [python API documentation](API_documentation.md) for Python users.
 
 ### Get help
