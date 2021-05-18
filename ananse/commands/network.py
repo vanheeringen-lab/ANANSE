@@ -28,6 +28,5 @@ def network(args):
     b.run_network(
         binding=args.binding,
         fin_expression=args.fin_expression,
-        corrfiles=args.corrfiles,
         outfile=args.outfile,
     )

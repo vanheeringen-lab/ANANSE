@@ -1,13 +1,37 @@
-## Examples
+# Examples
 
-### Prepare code and dataset
-* Install `ANANSE` from `bioconda`  
-Please flow the [Installation](installation.md) to install `ANANSE`.
+## Prerequisites
 
-* Activate the environment before you use ANANSE  
+1. Please install ANANSE if you haven't done so already, using the [installation documentation](installation.md).
+
+2. If you installed ANANSE via conda, which is recommended, make sure to activate the environment before you run it.
+
 ```
 conda activate ananse
 ```
+
+##  Data
+
+To run a full ANANSE analysis you will need:
+
+* ATAC-seq and/or H3K27ac ChIP-seq BAM files.
+* RNA-seq expression quantification file (which contains TPM).
+* RNA-seq differential expresson file (DEseq2).
+
+Details for the different steps are described below.
+
+### Prediction of TF binding
+
+To predict TF binding, the main data that you'll need is ATAC-seq and/or H3K27ac ChIP-seq BAM files for all samples, conditions or cell types that you want to analyze. The TF binding prediction works best with both ATAC-seq and H3K27ac, but either of the two will still work.
+You can use any number of replicates. The data of different replicates will be combined.
+You can supply your own set of (putative) cis-regulatory regions (CREs), however, the default model uses a set of cis-regulatory regions that was created by combining all REMAP ChIP-seq peaks (see [here](ananse-cre.md)). Using this set of regions, the binding prediction will be more accurate.
+
+
+
+
+* RNA-seq data,
+
+
 
 * Install the `ANANSE` version used in the paper  
 ```

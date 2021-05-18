@@ -630,7 +630,8 @@ def predict_peaks(
     if reference is None and regionfiles is None:
         logger.error("Need either input regions or location of a reference set!")
         logger.error(
-            "For human, you can download the REMAP reference here: <zenodo link>"
+            "For human, you can download the REMAP reference here: https://doi.org/10.5281/zenodo.4768075 "
+            "(please see the docs on how to install this)."
         )
         logger.error(
             "Otherwise you need to specify one or more BED or narrowPeak files"
