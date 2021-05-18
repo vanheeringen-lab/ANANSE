@@ -450,7 +450,9 @@ class Network(object):
         if tfs is None:
             activity_fname = bindingfile.replace("binding.tsv", "factor_activity.tsv")
             if os.path.exists(activity_fname):
-                tfs = list(set(pd.read_table(activity_fname, index_col=0).index.tolist()))
+                tfs = list(
+                    set(pd.read_table(activity_fname, index_col=0).index.tolist())
+                )
             else:
                 package_dir = os.path.dirname(ananse.__file__)
                 tffile = os.path.join(package_dir, "db", "tfs.txt")
