@@ -1,0 +1,50 @@
+name: continuous-integration
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      matrix:
+        python-version: [3.8]  # [3.7, 3.8]
+        os: [ubuntu-latest]  # [ubuntu-latest, macos-latest]
+      fail-fast: false
+
+    env:  # TODO: switch to "ananse/ tests/"
+      TARGETS: "ananse/commands/__init__.py ananse/commands/enhancer_binding.py ananse/commands/network.py ananse/__init__.py ananse/enhancer_binding.py ananse/distributions.py ananse/network.py ananse/utils.py tests/"
+
+    steps:
+    - name: checkout 👀
+      uses: actions/checkout@v2
+
+    - name: Install dependencies 🔨
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        mamba-version: "*"
+        channels: bioconda,conda-forge,defaults
+        channel-priority: true
+        activate-environment: ananse_dev
+        environment-file: requirements.yaml
+
+    - name: Code formatting (black) 🖤
+      run: |
+        black --check $(echo $TARGETS)
+
+    - name: Code formatting (flake8) 🎱
+      run: |
+        flake8 $(echo $TARGETS)
+
+    - name: Run tests 🧬
+      run: |
+        pytest -vv --disable-pytest-warnings \
+        --cov=./ --cov-report=xml
+
+    - name: Upload code coverage ☂️
+      uses: paambaati/codeclimate-action@v2.7.5
+      env:
+        CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}

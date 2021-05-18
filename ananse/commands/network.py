@@ -6,8 +6,7 @@
 # distribution.
 
 from __future__ import print_function
-import sys
-import os
+
 
 import ananse.network
 
@@ -19,13 +18,15 @@ def network(args):
 
     b = ananse.network.Network(
         ncore=args.ncore,
-        genome=args.genome, 
-        gene_bed=args.annotation, 
+        genome=args.genome,
+        gene_bed=args.annotation,
         include_promoter=args.include_promoter,
         include_enhancer=args.include_enhancer
         # pfmfile=args.pfmfile,
         # promoter=args.promoter
     )
     b.run_network(
-        args.binding, args.fin_expression, args.corrfiles, args.outfile
+        binding=args.binding,
+        fin_expression=args.fin_expression,
+        outfile=args.outfile,
     )

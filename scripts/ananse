@@ -6,10 +6,17 @@
 # distribution.
 
 import sys
-import ast
 import argparse
-from ananse import commands, __version__
+
 from genomepy import Genome
+from loguru import logger
+
+logger.remove()
+logger.add(
+    sys.stderr, format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | {level} | {message}"
+)
+
+from ananse import commands, __version__
 
 
 class NegateAction(argparse.Action):
@@ -18,162 +25,178 @@ class NegateAction(argparse.Action):
 
 
 if __name__ == "__main__":
-    description = """
-    ananse v{0}
-    """.format(
-        __version__
-    )
-
+    usage = "%(prog)s [-h] <command> [options]"
+    description = "ANANSE: ANalysis Algorithm for Networks Specified by Enhancers"
     epilog = """
     commands:
-        enhancer    make normalized H3K27ac enahncer file
-        binding     infer TF binding sites in enhancer peaks
-        network     built network for each sample
-        influence   infer key TFs between two samples
-
-    type `ananse <command> -h` for more details
+        binding     predict TF binding sites in cis-regulatory region
+        network     infer gene regulatory network
+        influence   prioritize transcription factors
     """
-    usage = "%(prog)s [-h] <subcommand> [options]"
-
     parser = argparse.ArgumentParser(
         usage=usage,
         description=description,
         epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    parser.add_argument(
+        "-v", "--version", action="version", version=f"%(prog)s v{__version__}"
+    )
+    
+    subparser_dict = {}
+
     subparsers = parser.add_subparsers()
 
-    # binding.py
-    p = subparsers.add_parser("binding", add_help=False)
-    group = p.add_argument_group("required arguments")
+    # ananse binding
+    p = subparsers.add_parser(
+        "binding", add_help=False
+    )  # help added manually (more control)
+    subparser_dict["binding"] = p
+
+    group = p.add_argument_group("Required arguments")
     group.add_argument(
-        "-r",
-        "--enhancers",
-        required=True,
-        dest="fin_rpkm",
-        help="BED file with RPKM on the 4th column",
-        metavar="FILE",
+        "-A",
+        "--atac-bams",
+        dest="atac_bams",
+        metavar="BAM",
+        help="ATAC-seq input BAM file(s), can be used alone or in combination with the -H option",
+        default=None,
+        nargs="+",
     )
+    group.add_argument(
+        "-H",
+        "--histone-bams",
+        dest="histone_bams",
+        metavar="BAM",
+        help="H3K27ac ChIP-seq input BAM file(s), can be used alone or in combibation with the -A option",
+        default=None,
+        nargs="+",
+    )
+    group = p.add_argument_group("Optional arguments")
     group.add_argument(
         "-o",
-        "--output",
-        required=True,
-        dest="outfile",
-        help="Output file",
-        metavar="FILE",
-        default=None,
-    )
-    group = p.add_argument_group("optional arguments")
-    group.add_argument(
-        "-g", "--genome", dest="genome", help="Genome", metavar="GENOME", default="hg38"
+        "--outdir",
+        dest="outdir",
+        help="Directory where you wish to store the output (default: ./ANANSE_binding)",
+        metavar="",
+        default="./ANANSE_binding",
     )
     group.add_argument(
-        "-t", 
-        "--etype", 
-        dest="etype", 
-        help="The input enhancer data, hg38H3K27ac, p300 or ATAC. By default is H3K27ac.",
-        default="hg38H3K27ac"
+        "-R",
+        "--reference",
+        dest="reference",
+        help="Path to reference data directory",
+        metavar="PATH",
+    )
+    group.add_argument(
+        "-r",
+        "--regionfiles",
+        dest="regionfiles",
+        help="One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)",
+        metavar="",
+        nargs="+",  # >= 1 files
+    )
+    group.add_argument(
+        "-g",
+        "--genome",
+        dest="genome",
+        help="Genome name, as managed by genomepy, or path to the genome FASTA used to align the bams and peaks to",
+        metavar="GENOME",
+        default="hg38",
+    )
+    group.add_argument(
+        "-d",
+        "--dist-func",
+        dest="dist_func",
+        help="bam reads are normalized to the selected distribution (default: an empirical distribution)",
+        metavar="",
+        default="peak_rank_file_dist",
     )
     group.add_argument(
         "-p",
         "--pfmfile",
         dest="pfmfile",
-        help="PFM file with motifs",
-        metavar="FILE",
+        help="PFM file of the transcription factors to search for (default gimme.vertebrate.v5.0)",
+        metavar="",
         default=None,
     )
     group.add_argument(
         "-f",
-        "--tffile",
-        dest="tffile",
-        help="TF file used in analysis",
-        metavar="FILE",
+        "--factors",
+        dest="factors",
+        help="Transcription factors to use. Either a space-separated list or a file with one TF per line.",
+        metavar="TF",
+        default=None,
+        nargs="*",
+    )
+    group.add_argument(
+        "-n",
+        "--ncpus",
+        dest="ncpus",
+        help="Number of processes to use for motif scanning",
+        type=int,
+        default=4,
+    )
+    group.add_argument(
+        "--pfmscorefile",
+        dest="pfmscorefile",
+        help="use precomputed gimmemotifs scores (gimme scan -T -g GENOME INPUTFILE)",
+        metavar="",
         default=None,
     )
     group.add_argument(
-        "-n", "--ncore", dest="ncore", help="Number of core used", type=int,
-    )
-    group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
-    )
-    # p.add_argument(
-    #     "-d",
-    #     "--keep_detail",
-    #     dest="detail",
-    #     help="Keep detailed output files, by default they are removed",
-    #     action="store_true",
-    #     default=False,
-    # )
-    group.add_argument(
-        "--include-notfs",
-        "--exclude-notfs",
-        default=False,
-        help="Include or exclude noTFs from database. By default no tfs are exclude.",
-        dest="include_notfs",
-        action=NegateAction,
-        nargs=0,
-    )
-    group.add_argument(
-        "--unremove-curated",
-       # "--remove-curated",
-        default=True,
-        help="Include or exclude noTFs from database. By default no tfs are exclude.",
-        dest="rm_curated",
-        action=NegateAction,
-        nargs=0,
     )
     p.set_defaults(func=commands.binding)
 
     # network.py
     p = subparsers.add_parser("network", add_help=False)
+    subparser_dict["network"] = p
     group = p.add_argument_group("required arguments")
     group.add_argument(
-        "-b", "--binding", dest="binding", help="All TFs binding file", metavar="FILE",
+        "-b",
+        "--binding",
+        dest="binding",
+        help="TF binding prediction file (from ananse binding).",
+        metavar="FILE",
+        required=True,
     )
     group.add_argument(
         "-e",
         "--expression",
         dest="fin_expression",
-        help="Expression scores",
-        metavar="FILE",
-        nargs="*",
-    )
-    group.add_argument(
-        "-o",
-        "--output",
-        required=True,
-        dest="outfile",
-        help="Output file",
+        help="Gene-level expression expression levels. The gene name (HGNC symbol in case of human) should be present in the first column and there should be a column named tpm. This file can be created by summarizing transcript-level TPMs (the quant.sf from salmon or the abundances.tsv from kallisto) to gene-level TPMs with tximeta.",
         metavar="FILE",
         default=None,
     )
     group = p.add_argument_group("optional arguments")
     group.add_argument(
-        "-g", "--genome", dest="genome", help="Genome", metavar="NAME", default="hg38",
+        "-g",
+        "--genome",
+        dest="genome",
+        help="Genome (genomepy name or FASTA file).",
+        metavar="NAME",
+        default="hg38",
     )
     group.add_argument(
         "-a",
         "--annotation",
         dest="annotation",
-        help="Gene annotation in BED12 format",
+        help="Gene annotation in BED12 format. Not necessary if you use a genome that was installed using genomepy with the --annotation flag.",
         metavar="BED",
     )
     group.add_argument(
-        "-c",
-        "--corrfiles",
-        dest="corrfiles",
-        help="Files with correlation",
-        metavar="FILE",
-        nargs="*",
-    )
-    group.add_argument(
-        "-n", "--ncore", dest="ncore", help="Number of core used", type=int,
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of core used.",
+        type=int,
     )
     group.add_argument(
         "--include-promoter",
         "--exclude-promoter",
-        default=False,
-        help="Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are excluded.",
+        default=True,
+        help="Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are included.",
         dest="include_promoter",
         action=NegateAction,
         nargs=0,
@@ -190,97 +213,45 @@ if __name__ == "__main__":
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
-
-    # p.add_argument(
-    #     "-r",
-    #     "--enhancers",
-    #     required=True,
-    #     dest="fin_rpkm",
-    #     help="BED file with RPKM on the 4th column",
-    #     metavar="FILE",
-    # )
-    # p.add_argument(
-    #     "-f",
-    #     "--filter_promoter",
-    #     dest="fpomoter",
-    #     help="Filter promoters, True or False, input should be either 'True' or 'False'.",
-    #     metavar="NAME",
-    #     type=ast.literal_eval,
-    #     default=True,
-    # )
-
-    # This not used currently
-    # group.add_argument(
-    #     "-i",
-    #     "--impute",
-    #     dest="impute",
-    #     help="Impute missing values",
-    #     default=False,
-    #     action="store_true",
-    # )
-
     p.set_defaults(func=commands.network)
+    
 
-    # # network.py
-    # p = subparsers.add_parser("network")
-    # p.add_argument(
-    #     "-f",
-    #     "--interaction",
-    #     dest="features",
-    #     help="HDF5 file with features",
-    #     metavar="FILE",
-    #     default=None,
-    #     required=True,
-    # )
-    # p.add_argument(
-    #     "-o",
-    #     "--outfile",
-    #     required=True,
-    #     dest="outfile",
-    #     help="Output file",
-    #     metavar="FILE",
-    #     default=None,
-    # )
-    # p.add_argument(
-    #     "-i",
-    #     "--impute",
-    #     dest="impute",
-    #     help="Impute missing values",
-    #     default=False,
-    #     action="store_true",
-    # )
-    # p.set_defaults(func=commands.network)
-
-    # influence.py
+    # ananse influnecei
     p = subparsers.add_parser("influence", add_help=False)
-
+    subparser_dict["influence"] = p
     group = p.add_argument_group("required arguments")
     group.add_argument(
         "-t",
         "--target",
         dest="Gaf",
-        help="network in second cell",
+        help="Network of target cell type.",
         metavar="FILE",
         default=None,
+        required=True,
     )
     group.add_argument(
-        "-d", "--degenes", dest="expression", help="DE genes file", metavar="FILE",
+        "-d",
+        "--degenes",
+        dest="expression",
+        help="File with differential gene expression (DEseq2 output file).",
+        metavar="FILE",
+        required=True,
     )
     group.add_argument(
         "-o",
         "--outfile",
-        required=True,
         dest="outfile",
-        help="Output file",
+        help="Output file.",
         metavar="FILE",
         default=None,
+        required=True,
     )
     group = p.add_argument_group("optional arguments")
     group.add_argument(
         "-s",
         "--source",
         dest="Gbf",
-        help="network in first cell",
+        help="Network of source cell type.",
         metavar="FILE",
         default=None,
     )
@@ -288,16 +259,9 @@ if __name__ == "__main__":
         "-i",
         "--edges",
         dest="edges",
-        help="Number of top edges used",
+        help="Number of top edges used (default is 100,000).",
         type=int,
         default=100000,
-    )
-    group.add_argument(
-        "-e",
-        "--expression",
-        dest="fin_expression",
-        help="Expression scores in first cell",
-        metavar="FILE",
     )
     group.add_argument(
         "-p",
@@ -308,57 +272,35 @@ if __name__ == "__main__":
         default=False,
     )
     group.add_argument(
-        "-n", "--ncore", dest="ncore", help="Number of core used", type=int,
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of cores to use.",
+        type=int,
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.influence)
 
-    # enhancer.py
-    p = subparsers.add_parser("enhancer", add_help=False)
-    group = p.add_argument_group("required arguments")
-    group.add_argument(
-        "-g", "--genome", dest="genome", help="Genome", metavar="NAME", default="hg38",
-    )
-    group.add_argument(
-        "-t", "--etype", dest="etype", help="Enhancer type, hg38H3K27ac, p300, or ATAC", metavar="NAME", default="hg38H3K27ac",
-    )
-    group.add_argument(
-        "-b", "--bam_input", dest="bam_input", help="The original H3K27ac ChIP-seq bam file, or the p300 ChIP-seq bam file", metavar="FILE",
-    )
-    group.add_argument(
-        "-p", "--epeak", dest="epeak", help="The original H3K27ac ChIP-seq broadPeak, or the p300 ChIP-seq / ATAC-seq narrowPeak", metavar="FILE",
-    ) 
-    group.add_argument(
-        "-o", "--bed_output", dest="bed_output", help="The normalized H3K27ac enahncer file", metavar="FILE",
-    )
-    group.add_argument(
-        "-h", "--help", action="help", help="show this help message and exit"
-    )
-    p.set_defaults(func=commands.enhancer)
-
     if len(sys.argv) == 1:
         parser.print_help()
+    if len(sys.argv) == 2 and sys.argv[-1] in subparser_dict:
+        subparser_dict[sys.argv[-1]].print_help()
     else:
-        if len(sys.argv) == 2:
-            print(
-                "\033[93mtype `ananse {} -h` for more details\033[0m\n".format(
-                    sys.argv[-1]
-                )
-            )
         args = parser.parse_args()
-
         if hasattr(args, "genome"):
             if args.genome is not None:
                 try:
                     Genome(args.genome)
-                except Exception:
-                    print(
-                        "Genome not found. Have you installed your genome with genomepy?"
+                except Exception:  # noqa
+                    logger.exception(
+                        f"Genome {args.genome} not found. Have you installed your genome with genomepy? "
+                        "See https://github.com/vanheeringen-lab/genomepy for details. "
+                        "Alternatively, you can specify a FASTA file."
                     )
-                    print("See https://github.com/simonvh/genomepy for details.")
-                    print("Alternatively, you can specify a FASTA file.")
-                    exit(1)
 
-        args.func(args)
+        if args.func.__name__.startswith("run_"):
+            args.func(**vars(args))
+        else:
+            args.func(args)

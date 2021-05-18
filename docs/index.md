@@ -2,25 +2,27 @@
 
 ### What is ANANSE?
 
-ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to use these GRNs to identify the key transcription factors in cell fate determination. You can use it to generate a shortlist of transcription factors for trans-differentiation experiments, but also to study transcription regulation during development and differentiation. It is written in Python and it contains a user-friendly command-line script that includes the following three tools:
+ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to use these GRNs to identify the key transcription factors in cell fate determination. You can use it to study transcription regulation during development and differentiation, or to generate a shortlist of transcription factors for trans-differentiation experiments. It is written in Python and it contains command-line script that includes the following three tools:
 
 | Command           | Function                                                       |
 | ----------------- | -------------------------------------------------------------- |
-|  ananse enhancer   | establish ANANSE input enhancer file   |
-|  ananse binding   | predict cell type-specific transcription factor binding profile   |
-|  ananse network   | infer cell type-specific gene regulatory network           |
+|  ananse binding   | predict cell type-specific transcription factor binding profiles   |
+|  ananse network   | infer a cell type-specific gene regulatory network           |
 |  ananse influence | infer key transcription factors during cell fate determination |   
 
-ANANSE is free and open source research software. If you find it useful please cite our paper:
+
+All functionality is also available through a Python API.
+
+ANANSE is free and open source research software. If you find it useful please cite our preprint:
 
 !!! note "Citation"
-    > Xu, Q., Georgiou, G., Veenstra, G.J.C., Zhou, H., and van Heeringen, S.J. (2020). **ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination.** [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.06.05.135798v1).
+    > Xu, Q., Georgiou, G., Veenstra, G.J.C., Zhou, H., and van Heeringen, S.J. (2020). **ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination.** [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.06.05.135798v2).
 
 ### Getting started
 
 * The easiest way to install ANANSE is using [bioconda](https://bioconda.github.io/) on Linux (including [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10) ) or Mac. 
 * Have a look at these simple [examples](examples.md) to get a taste of what is possible.
-* Check out the more detailed [command-line usage tutorials](command-line_reference.md).
+* Check out the more detailed [command-line reference](command-line_reference.md).
 * There’s also an [python API documentation](API_documentation.md) for Python users.
 
 ### Get help

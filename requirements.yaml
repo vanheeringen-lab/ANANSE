@@ -1,0 +1,47 @@
+name: ananse_dev
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python >= 3.7
+  - setuptools >=0.7
+  - adjusttext
+  - chest
+  - configparser
+  - dask
+  - diskcache
+  - future
+  - genomepy >=0.9.3
+  - gimmemotifs >=0.14.4
+  - jinja2
+  - loguru
+  - matplotlib >=2
+  - mosdepth
+  - networkx
+  - numpy
+  - openpyxl
+  - pandas=1.1.5  # tmp dependency due to gimmemotifs bug
+  - pillow
+  - pybedtools
+  - pyranges
+  - pysam
+  - pytables
+  - pyyaml >=3.10
+  - scikit-learn
+  - scipy >=0.9.0
+  - seaborn
+  - six
+  - sklearn-contrib-lightning
+  - statsmodels
+  - tqdm
+  - xdg
+  - xgboost >=0.71
+  - xxhash
+
+  # Testing
+  - black
+  - flake8
+  - flake8-bugbear
+  - pytest
+  - pytest-cov

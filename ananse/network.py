@@ -6,14 +6,13 @@
 # the terms of the MIT License, see the file COPYING included with this
 # distribution.
 
-"""Built gene regulatory network"""
+"""Build gene regulatory network"""
 
 # Python imports
 import os
 import math
+import re
 import warnings
-from tempfile import NamedTemporaryFile
-import itertools
 
 import numpy as np
 import pandas as pd
@@ -23,22 +22,24 @@ import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from loguru import logger
 
-from pybedtools import BedTool
 from genomepy import Genome
+import pyranges as pr
 
-from ananse import mytmpdir
 import ananse
+from ananse.utils import region_gene_overlap
 
 warnings.filterwarnings("ignore")
 
 
-def cartesian(df1, df2):
-    rows = itertools.product(df1.iterrows(), df2.iterrows())
-    df = pd.DataFrame(left.append(right) for (_, left), (_, right) in rows)
-    return df.reset_index(drop=True)
-
 class Network(object):
-    def __init__(self, ncore=1, genome="hg38", gene_bed=None, include_promoter=False, include_enhancer=True):
+    def __init__(
+        self,
+        ncore=1,
+        genome="hg38",
+        gene_bed=None,
+        include_promoter=False,
+        include_enhancer=True,
+    ):
         """[infer cell type-specific gene regulatory network]
 
         Arguments:
@@ -73,548 +74,364 @@ class Network(object):
         # Gene information file
         if self.genome == "hg38":
             if gene_bed is None:
-                self.gene_bed =  os.path.join(package_dir, "db", "hg38.genes.bed")
+                self.gene_bed = os.path.join(package_dir, "db", "hg38.genes.bed")
             else:
                 self.gene_bed = gene_bed
         elif self.genome == "hg19":
             if gene_bed is None:
-                self.gene_bed =  os.path.join(package_dir, "db", "hg19.genes.bed")
+                self.gene_bed = os.path.join(package_dir, "db", "hg19.genes.bed")
             else:
-                self.gene_bed = gene_bed            
+                self.gene_bed = gene_bed
         else:
             if gene_bed is None:
                 raise TypeError("Please provide a gene bed file with -a argument.")
             else:
                 self.gene_bed = gene_bed
-        
+
         # self.promoter = promoter
         self.include_promoter = include_promoter
 
         self.include_enhancer = include_enhancer
 
-    def clear_peak(self, ddf):
+    def unique_enhancers(self, fname, chrom=None):
+        """Extract a list of unique enhancers.
+
+        Parameters
+        ----------
+        fname : str
+            File name of a tab-separated file that contains an 'enhancer' column.
+
+        chrom : str, optional
+            Only return enhancers on this chromosome.
+
+        Returns
+        -------
+            PyRanges object with enhancers
         """
-        Filter the enhancer peaks in promoter range.
-        """
-        ddf = ddf.compute()
+        p = re.compile("[:-]")
+        logger.info("reading enhancers")
 
-        global alltfs
-        alltfs = list(set(ddf.factor))
+        # Read enhancers from binding file
+        # This is relatively slow for a large file. May need some optimization.
+        enhancers = pd.read_table(fname, usecols=["enhancer"])["enhancer"]
+        enhancers = enhancers.unique()
 
-        enhancerbed = pd.DataFrame(set(ddf.enhancer))
-        enhancerbed[["chr","site"]]=enhancerbed[0].str.split(":",expand=True)
-        enhancerbed[["start","end"]]=enhancerbed.site.str.split("-",expand=True)
-        enhancerbed.drop(columns=[0,"site"], inplace=True)
-
-        enhancerfile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        enhancerbed.to_csv(enhancerfile, sep="\t", header=False, index=False)
-        # print(enhancerfile.name)
-        return alltfs, enhancerfile.name
-
-    def clear_peak_df(self, ddf):
-        """
-        Filter the enhancer peaks in promoter range.
-        """
-
-        global alltfs
-        alltfs = list(set(ddf.factor))
-
-        enhancerbed = pd.DataFrame(set(ddf.enhancer))
-        enhancerbed[["chr","site"]]=enhancerbed[0].str.split(":",expand=True)
-        enhancerbed[["start","end"]]=enhancerbed.site.str.split("-",expand=True)
-        enhancerbed.drop(columns=[0,"site"], inplace=True)
-
-        enhancerfile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        enhancerbed.to_csv(enhancerfile, sep="\t", header=False, index=False)
-        # print(enhancerfile.name)
-        return alltfs, enhancerfile.name
-
-    def get_promoter_dataframe(self, peak_bed, up=2000, down=2000):
-        # all overlap Enh-TSS(up2000 to down2000) pair
-        peaks = BedTool(peak_bed)
-        b = BedTool(self.gene_bed)
-        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(  # noqa: E741
-            l=up, r=down, g=self.gsize, s=True  # noqa: E741
+        # Split into columns and create PyRanges object
+        p = re.compile("[:-]")
+        enhancers = pr.PyRanges(
+            pd.DataFrame(
+                [re.split(p, e) for e in enhancers],
+                columns=["Chromosome", "Start", "End"],
+            )
         )
-        vals = []
-        # for f in b.intersect(peaks, wo=True, nonamecheck=True):
-        for f in b.intersect(peaks, wo=True):
-            chrom = f[0]
-            gene = f[3]
-            peak_start, peak_end = int(f[13]), int(f[14])
-            vals.append([chrom, gene, peak_start, peak_end])
-        prom = pd.DataFrame(vals, columns=["chrom", "gene", "peak_start", "peak_end"])
-        prom["loc"] = (
-            prom["chrom"]
-            + ":"
-            + prom["peak_start"].astype(str)
-            + "-"
-            + prom["peak_end"].astype(str)
-        )
-        prom.gene = [i.upper() for i in list(prom.gene)]
-        return prom
+        return enhancers
 
-    def get_gene_dataframe(self, peak_bed, up=100000, down=100000):
-        # all overlap Enh-TSS(100000-tss-100000) pair with distance
-        peaks = BedTool(peak_bed)
-        b = BedTool(self.gene_bed)
-        b = b.flank(l=1, r=0, s=True, g=self.gsize).slop(  # noqa: E741
-            l=up, r=down, g=self.gsize, s=True  # noqa: E741
-        )
-        # bedtools flank  -r 0 -l 1 -i b.bed -g
-        # #all gene upstream 1bp position (TSS), Chr01 12800   12801   in Chr01    4170    12800   Xetrov90000001m.g   0   -
-        # bedtools slop  -r down -l up -i b.bed -g
-        # # |100000--TSS--100000|
+    def distance_weight(
+        self,
+        include_promoter=False,
+        include_enhancer=True,
+        alpha=1e4,
+        maximum_distance=100_000,
+        full_weight_region=5000,
+        promoter_region=2000,
+    ):
+        """Build weight distribution based on distance to TSS.
 
-        vals = []
-        # for f in b.intersect(peaks, wo=True, nonamecheck=True):
-        for f in b.intersect(peaks, wo=True):
-            # bedtools intersect -wo -nonamecheck -b peaks.bed -a b.bed
-            chrom = f[0]
-            strand = f[5]
-            if strand == "+":
-                tss = f.start + up
-            else:
-                tss = f.start + down
-            gene = f[3]
-            peak_start, peak_end = int(f[13]), int(f[14])
-            vals.append([chrom, tss, gene, peak_start, peak_end])
-        p = pd.DataFrame(
-            vals, columns=["chrom", "tss", "gene", "peak_start", "peak_end"]
-        )
-        p["peak"] = [int(i) for i in (p["peak_start"] + p["peak_end"]) / 2]
-        # peak with int function, let distance int
-        p["dist"] = np.abs(p["tss"] - p["peak"])
-        p["loc"] = (
-            p["chrom"]
-            + ":"
-            + p["peak_start"].astype(str)
-            + "-"
-            + p["peak_end"].astype(str)
-        )
-        p = p.sort_values("dist").drop_duplicates(["loc", "gene"], keep="first")[
-            ["gene", "loc", "dist"]
-        ]
+        The basic idea is similar to Wang et al. [1], with some modifications.
+        The resulting weight ranges from 0 (far from the TSS) to 1 (near the
+        TSS) and is based on several different variables.
 
-        p = p[p["dist"] < up - 1]
-        # remove distance more than 100k interaction, for weight calculate
-        p.gene = [i.upper() for i in list(p.gene)]
+        If `include_promoter` is `True`, then distances smaller than
+        `promoter_region` are included, otherwise they are excluded, the weight
+        is set to 0.
+        The `full_weight_region` parameters determines the region where
+        the weight will be 1, regardless of distance. The `maximum_distance`
+        parameter sets the maximum distance to consider. The weight decays with
+        an increasing distance, starting from 1 at `full_weight_region` to 0
+        at `maximum_distance`. The `alpha` parameters controls the decay.
 
-        return p
+        Parameters
+        ----------
+        include_promoer : bool, optional
+            Include promoter regions. Default is False.
+        include_enhancer : bool, optional
+            Include enhancer regions, ie. regions that are distal to the
+            promoter.
+        alpha : float, optional
+            Controls weight decay, default is 1e4.
+        maximum_distance : int, optional
+            Maximum distance from TSS to consider. Default is 100kb.
+        full_weight_region : int, optional
+            Distance where regions will receive the full weight. Default
+            is 5kb.
+        promoter_region : int, optional
+            Promoter region, default is 2kb.
 
-    def distance_weight(self, include_promoter=False, include_enhancer=True, alpha=1e4, padding=100000, keep1=5000, remove=2000):
+        Returns
+        -------
+        DataFrame with two columns: distance and weight.
+
+        References
+        ----------
+        ..[1] Wang S, Zang C, Xiao T, Fan J, Mei S, Qin Q, Wu Q, Li X, Xu K,
+        He HH, Brown M, Meyer CA, Liu XS. "Modeling cis-regulation with a
+        compendium of genome-wide histone H3K27ac profiles." Genome Res.
+        2016 Oct;26(10):1417-1429. doi: 10.1101/gr.201574.115. PMID: 27466232
         """
-        Built weight distribution from TSS.
-        """
-        # alpha is half site, default setting is 1e4, which means at 1e4 position weight is 0.5
-        # padding is the full range we used
-        # remove is promoter removed range
-        # keep1 is keep full binding score range
-
         u = -math.log(1.0 / 3.0) * 1e5 / alpha
 
-        if include_promoter and include_enhancer:
-            weight1 = pd.DataFrame(
-                {"weight": [1 for z in range(1, remove + 1)], "dist": range(1, remove + 1)}
-            )
-            weight2 = pd.DataFrame(
-                {
-                    "weight": [1 for z in range(remove + 1, keep1 + 1)],
-                    "dist": range(remove + 1, keep1 + 1),
-                }
-            )
-            weight3 = pd.DataFrame(
-                {
-                    "weight": [
-                        2.0
-                        * math.exp(-u * math.fabs(z) / 1e5)
-                        / (1.0 + math.exp(-u * math.fabs(z) / 1e5))
-                        for z in range(1, padding - keep1 + 1)
-                    ],
-                    "dist": range(keep1 + 1, padding + 1),
-                }
-            )
-        elif not include_promoter and include_enhancer:
-            weight1 = pd.DataFrame(
-                {"weight": [0 for z in range(1, remove + 1)], "dist": range(1, remove + 1)}
-            )
-            weight2 = pd.DataFrame(
-                {
-                    "weight": [1 for z in range(remove + 1, keep1 + 1)],
-                    "dist": range(remove + 1, keep1 + 1),
-                }
-            )
-            weight3 = pd.DataFrame(
-                {
-                    "weight": [
-                        2.0
-                        * math.exp(-u * math.fabs(z) / 1e5)
-                        / (1.0 + math.exp(-u * math.fabs(z) / 1e5))
-                        for z in range(1, padding - keep1 + 1)
-                    ],
-                    "dist": range(keep1 + 1, padding + 1),
-                }
-            )
-        elif include_promoter and not include_enhancer:
-            weight1 = pd.DataFrame(
-                {"weight": [1 for z in range(1, remove + 1)], "dist": range(1, remove + 1)}
-            )
-            weight2 = pd.DataFrame(
-                {
-                    "weight": [0 for z in range(remove + 1, keep1 + 1)],
-                    "dist": range(remove + 1, keep1 + 1),
-                }
-            )
-            weight3 = pd.DataFrame(
-                {
-                    "weight": [0 for z in range(1, padding - keep1 + 1)],
-                    "dist": range(keep1 + 1, padding + 1),
-                }
-            )
-        else:
-            weight1 = pd.DataFrame(
-                {"weight": [0 for z in range(1, remove + 1)], "dist": range(1, remove + 1)}
-            )
-            weight2 = pd.DataFrame(
-                {
-                    "weight": [0 for z in range(remove + 1, keep1 + 1)],
-                    "dist": range(remove + 1, keep1 + 1),
-                }
-            )
-            weight3 = pd.DataFrame(
-                {
-                    "weight": [0 for z in range(1, padding - keep1 + 1)],
-                    "dist": range(keep1 + 1, padding + 1),
-                }
-            )
+        promoter_weight = int(include_promoter)
+        enhancer_weight = int(include_enhancer)
+
+        weight1 = pd.DataFrame(
+            {
+                "weight": [promoter_weight for z in range(0, promoter_region + 1)],
+                "dist": range(0, promoter_region + 1),
+            }
+        )
+
+        weight2 = pd.DataFrame(
+            {
+                "weight": [
+                    enhancer_weight
+                    for z in range(promoter_region + 1, full_weight_region + 1)
+                ],
+                "dist": range(promoter_region + 1, full_weight_region + 1),
+            }
+        )
+
+        weight3 = pd.DataFrame(
+            {
+                "weight": [
+                    enhancer_weight
+                    * 2.0
+                    * math.exp(-u * math.fabs(z) / 1e5)
+                    / (1.0 + math.exp(-u * math.fabs(z) / 1e5))
+                    for z in range(1, maximum_distance - full_weight_region + 1)
+                ],
+                "dist": range(full_weight_region + 1, maximum_distance + 1),
+            }
+        )
 
         weight = pd.concat([weight1, weight2, weight3])
+        return weight
 
-        weightfile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        weight.to_csv(weightfile)
-        return weightfile.name
+    def enhancer2gene(
+        self,
+        peak_pr,
+        up=100_000,
+        down=100_000,
+        alpha=1e4,
+        promoter=2000,
+        full_weight_region=5000,
+    ):
+        """Couple enhancers to genes.
 
-    def aggregate_binding(self, ddf, prom, p, weight):
+        Parameters
+        ----------
+        peak_pr : PyRanges object
+            PyRanges object with enhancer regions.
+        up : int, optional
+            Upstream maximum distance, by default 100kb.
+        down : int, optional
+            Upstream maximum distabce, by default 100kb.
+        alpha : float, optional
+            Parameter to control weight decay, by default 1e4.
+        promoter : int, optional
+            Promoter region, by default 2000.
+        full_weight_region : int, optional
+            Region that will receive full weight, by default 5000.
 
-        # ddf = dd.read_hdf(binding, key="/binding")[["factor", "enhancer", "binding"]]
-        # ddf = dd.read_csv(binding, sep="\t")[["factor", "enhancer", "binding"]]
-        prom_table = ddf.merge(prom, left_on="enhancer", right_on="loc")
-        prom_table = prom_table.groupby(["factor", "gene"])[["binding"]].max()
-        prom_table = prom_table.rename(columns={"binding": "max_binding_in_promoter"})
-        prom_table = prom_table.reset_index()
-        prom_table["source_target"] = (
-            prom_table["factor"].map(str) + "_" + prom_table["gene"].map(str)
+        Returns
+        -------
+        pandas.DataFrame
+            DataFrame with enhancer regions, gene names, distance and weight.
+        """
+        genes = region_gene_overlap(peak_pr, self.gene_bed)
+
+        # Get the distance from center of enhancer to TSS
+        # Correct for extension
+        genes["dist"] = (
+            (genes["Start_b"] + genes["End_b"]) / 2 - genes["Start"]
+        ).astype(int)
+        genes.loc[genes["Strand"] == "+", "dist"] -= up
+        genes.loc[genes["Strand"] == "-", "dist"] -= down
+        genes["dist"] = np.abs(genes["dist"])
+
+        # Create region in chr:start:end format
+        genes["loc"] = (
+            genes["Chromosome"].astype(str)
+            + ":"
+            + genes["Start_b"].astype(str)
+            + "-"
+            + genes["End_b"].astype(str)
         )
 
-        f_table = ddf.merge(p, left_on="enhancer", right_on="loc")
-        sum_enh = f_table.groupby(["factor", "gene"])[["binding"]].count()
-        f_table["sum_weighted_logodds"] = (
-            f_table["binding"]
-            .div(f_table["binding"].mean())
-            .apply(np.log, meta=("binding", np.float64))
-            .rmul(50000)
-            .div(f_table["dist"])
-        )
-        f_table["sum_logodds"] = (
-            f_table["binding"]
-            .div(f_table["binding"].mean())
-            .apply(np.log, meta=("binding", np.float64))
+        # Keep the gene-enhancer combination with the smallest distance
+        genes = genes.sort_values("dist").drop_duplicates(
+            subset=["loc", "Name"], keep="first"
         )
 
-        weight = dd.read_csv(weight)
-        f_table = f_table.merge(weight, how="left", on="dist")
-        f_table["sum_dist_weight"] = f_table["binding"] * f_table["weight"]
-
-        f_table_sum = f_table.groupby(["factor", "gene"]).sum()[
-            ["sum_weighted_logodds", "sum_logodds", "binding", "sum_dist_weight"]
-        ]
-        f_table_max = f_table.groupby(["factor", "gene"])[
-            ["binding", "sum_dist_weight"]
-        ].max()
-
-        f_table_sum = f_table_sum.rename(columns={"binding": "sum_binding"})
-        f_table_max = f_table_max.rename(columns={"binding": "max_binding"})
-        f_table_max = f_table_max.rename(
-            columns={"sum_dist_weight": "max_sum_dist_weight"}
+        # Return the right stuff
+        genes = genes.set_index("loc")[["Name", "dist"]].rename(
+            columns={"Name": "gene"}
         )
 
-        sum_enh = sum_enh.rename(columns={"binding": "enhancers"})
-        f_table_sum = f_table_sum.reset_index()
-        f_table_max = f_table_max.reset_index()
+        # Get distance-based wight
+        weight = self.distance_weight(
+            include_promoter=self.include_promoter,
+            include_enhancer=self.include_enhancer,
+            alpha=alpha,
+            promoter_region=promoter,
+            full_weight_region=full_weight_region,
+        ).set_index("dist")
+        genes = genes.join(weight, on="dist")
 
-        f_table = f_table.reset_index()
-        sum_enh = sum_enh.reset_index()
+        return genes
 
-        f_table_sum["source_target"] = f_table_sum["factor"] + "_" + f_table_sum["gene"]
-        f_table_max["source_target"] = f_table_max["factor"] + "_" + f_table_max["gene"]
+    def aggregate_binding(
+        self,
+        binding_fname,
+        tfs=None,
+        up=1e5,
+        down=1e5,
+        alpha=None,
+        promoter=2000,
+        full_weight_region=5000,
+        combine_function="sum",
+    ):
+        """Summarize all binding signal per gene per TF.
 
-        f_table["source_target"] = f_table["factor"] + "_" + f_table["gene"]
-        sum_enh["source_target"] = sum_enh["factor"] + "_" + sum_enh["gene"]
-        f_table_max = f_table_max.rename(columns={"factor": "factor2"})
-        f_table_max = f_table_max.rename(columns={"gene": "gene2"})
+        Return a dask delayed computation object.
 
-        f_table = f_table_sum.merge(
-            f_table_max, left_on="source_target", right_on="source_target", how="outer"
-        )
-        f_table = f_table.merge(
-            sum_enh, left_on="source_target", right_on="source_target", how="outer"
-        )
-        f_table = f_table.merge(
-            prom_table, left_on="source_target", right_on="source_target", how="outer"
-        )
-        f_table = f_table[
-            [
-                "source_target",
-                "factor",
-                "gene",
-                "sum_weighted_logodds",
-                "sum_dist_weight",
-                "sum_logodds",
-                "sum_binding",
-                "enhancers",
-                "max_binding_in_promoter",
-                "max_binding",
-                "max_sum_dist_weight",
-            ]
-        ]
-        f_table["log_sum_binding"] = (
-            f_table["sum_binding"]
-            .add(1e-5)
-            .apply(np.log, meta=("sum_binding", np.float64))
-        )
-        f_table["log_enhancers"] = (
-            f_table["enhancers"].add(1).apply(np.log, meta=("enhancers", np.float64))
-        )
-        f_table["factor"] = f_table["source_target"].str.replace("_.*", "")
-        f_table["gene"] = f_table["source_target"].str.replace(".*_", "")
-        f_table["max_binding_in_promoter"] = f_table["max_binding_in_promoter"].fillna(
-            0
-        )
+        Parameters
+        ----------
+        binding_fname : str
+            Filename of binding network.
+        tfs : list, optional
+            List of transcription factor names, by default None, which means
+            that all TFs will be used.
+        up : int, optional
+            Maximum upstream region to include, by default 1e5
+        down : [type], optional
+            Maximum downstream region to include, by default 1e5
+        alpha : float, optional
+            Distance at which the weight will be half, by default None
+        promoter : int, optional
+            Promoter region, by default 2000
+        full_weight_region : int, optional
+            Region that will receive full weight, regardless of distance, by
+            default 5000.
+        combine_function : str, optional
+            How to combine signal of weighted enhancers, by default "sum".
+            Valid options are "sum", "mean" or "max".
 
-        features_file = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        # print("computing, output file {}".format(features_file.name))
-        with ProgressBar():
-            f_table.compute(num_workers = self.ncore)
-        f_table.to_hdf(features_file.name, key="/features")
+        Returns
+        -------
+        dask.DataFrame
+            DataFrame with delayed computations.
+        """
 
-        return features_file.name
-
-        # return f_table
-
-    def get_expression(self, fin_expression, features, min_tpm=1e-10, column="tpm"):
-        # df = dd.read_hdf(features)
-        # print(features.head())
-        # features = dd.from_pandas(features, chunksize=100000)
-        df = pd.read_hdf(features, key="/features", 
-                    columns=["source_target", "factor", "gene"])
-        # df = features
-        # df = df[["source_target", "factor", "gene"]]
-        df.source_target = [i.upper() for i in list(df.source_target)]
-        df.gene = [i.upper() for i in list(df.gene)]
-        df = df.set_index("source_target")
-        # fa2name={}
-        # fa2=open("/home/qxu/projects/regulatoryNetwork/run20180716/scripts/data/gene2name.txt","r")
-
-        # #switch the Factor name to gene name
-        # for i in fa2:
-        #     a=i.split()
-        #     if a[0].startswith("gene"):
-        #         fa2name[a[1]]=a[0]
-
-        # flist=[]
-        # for f in list(df["factor"]):
-        #     if str.lower(f) in fa2name:
-        #         flist.append(fa2name[str.lower(f)])
-        #     elif f in fa2name:
-        #         flist.append(fa2name[f])
-        #     else:
-        #         flist.append("")
-        # df["gfactor"]=flist
-
-        # Take mean of all TPMs
-        expression = pd.DataFrame(
-            pd.concat(
-                [pd.read_table(f, index_col=0)[[column]] for f in fin_expression],
-                axis=1,
-            ).mean(1),
-            columns=[column],
-        )
-        expression.index = [i.upper() for i in list(expression.index)]
-        # print(expression)
-        expression[column] = np.log2(expression[column] + 1e-5)
-        df = df.join(expression, on="factor")
-        df = df.rename(columns={column: "factor_expression"})
-        df = df.join(expression, on="gene")
-        df = df.rename(columns={column: "target_expression"})
-
-        df = df.dropna()
-
-        for col in ["factor_expression", "target_expression"]:
-            df[col + ".scale"] = minmax_scale(df[col])
-            df[col + ".rank.scale"] = minmax_scale(rankdata(df[col]))
-
-        # with ProgressBar():
-        #     df.compute(num_workers = self.ncore)
-        expression_file = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        # outfile = os.path.join(outdir, "expression.txt")
-        df.to_csv(expression_file, sep="\t")
-        return expression_file.name
-
-    def get_factorExpression(self, fin_expression):
-        import numpy as np
-        import pandas as pd
-        from scipy.stats import rankdata
-        from sklearn import preprocessing
-        import warnings
-
-        warnings.filterwarnings("ignore")
-        factorsExpression = {}
-
-        # for line in open(self.motifs2factors):
-        #     if not line.split("\t")[1].strip().split(",") == [""]:
-        #         for factor in line.split("\t")[1].strip().split(","):
-        #             factorsExpression[factor.upper()] = []
-        
-        for tf in alltfs:
-            factorsExpression[tf] = []
-
-        for f in fin_expression:
-            with open(f) as fa:
-                for line in fa:
-                    if not line.startswith("target_id"):
-                        gene = line.split("\t")[0].upper()
-                        expression = float(line.split("\t")[1])
-                        if gene in factorsExpression:
-                            if expression < 1e-10:
-                                expression = 1e-10
-                            factorsExpression[gene].append(np.log10(expression))
-
-        # for line in open(fin_b):
-        #     if not line.startswith('target_id'):
-        #         gene = line.split('\t')[0].upper()
-        #         expression = float(line.split('\t')[4])
-        #         if gene in factorsExpression:
-        #             if expression < 1e-10:
-        #                 expression = 1e-10
-        #             factorsExpression[gene].append(np.log10(expression))
-
-        factors_expression_file = NamedTemporaryFile(
-            mode="w", dir=mytmpdir(), delete=False
-        )
-        factors_expression_file.write("#factor\tfactorExpression\n")
-        for factor in factorsExpression:
-            if len(factorsExpression[factor]) == 0:
-                factors_expression_file.write(
-                    "{}\t{}\n".format(factor, np.log10(1e-10))
-                )
-            else:
-                factors_expression_file.write(
-                    "{}\t{}\n".format(factor, np.mean(factorsExpression[factor]))
-                )
-
-        scores_df = pd.read_table(factors_expression_file.name, sep="\t", index_col=0)
-        # scores_df['factorExpressionRank'] = preprocessing.MinMaxScaler().fit_transform(rankdata(scores_df['factorExpression'], method='average'))
-        scores_df["factorExpressionRank"] = preprocessing.MinMaxScaler().fit_transform(
-            rankdata(scores_df["factorExpression"], method="average").reshape(-1, 1)
-        )
-
-        scores_df.to_csv(factors_expression_file.name, sep="\t")
-        return factors_expression_file.name
-
-    def get_correlation(self, corrfiles, features):
-        df = pd.read_hdf(features)
-        df = df[["source_target"]]
-        df.source_target = [i.upper() for i in list(df.source_target)]
-        df = df.set_index("source_target")
-
-        for i, corrfile in enumerate(corrfiles):
-            corr = pd.read_table(corrfile, sep="\t", index_col=0)
-            corr = corr.rename(columns={corr.columns[0]: "corr_file{}".format(i + 1)})
-            df = df.join(corr)
-
-        corr_file = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        # outfile = os.path.join(outdir, "correlation.txt")
-        df.to_csv(corr_file, sep="\t")
-        return corr_file.name
-
-    def join_features(self, features, other):
-        network = pd.read_hdf(features, key="/features")
-
-        for fname in other:
-            df = pd.read_table(fname, sep="\t")
-            for col in ["factor", "gene"]:
-                if col in df.columns:
-                    df = df.drop(col, 1)
-            network = network.merge(
-                df, left_on="source_target", right_on="source_target",
+        if combine_function not in ["mean", "max", "sum"]:
+            raise ValueError(
+                "Unknown combine function, valid options are: mean, max, sum"
             )
 
-        # Compute before saving, will result in an error otherwise
-        # network = network.compute()
-        # with ProgressBar():
-            # network.compute(num_workers = self.ncore)
-        # featurefile = NamedTemporaryFile(mode="w", dir=mytmpdir(), delete=False)
-        # print(network.head())
-        # network.to_csv(featurefile, sep="\t", index=False)
-        # network.to_hdf(featurefile, key="/features")
-        # return featurefile.name
-        return network
+        maximum_distance = max(up, down)
+        if alpha is None:
+            alpha = maximum_distance / 10
 
-    def create_network(self, featurefile, outfile, impute=False):
+        if promoter > maximum_distance:
+            raise ValueError(
+                "promoter region is larger than the maximum distance to use"
+            )
 
-        # network = dd.read_hdf(featurefile, key="/features")
-        # network = dd.read_csv(featurefile, sep="\t")
-        network = featurefile
-        exclude_cols = [
-            "sum_weighted_logodds",
-            "enhancers",
-            "log_enhancers",
-            "sum_binding",
-            "sum_logodds",
-            "log_sum_binding",
-            "factorExpression",
-            "targetExpression",
-            "factor",
-            "gene",
-            "factor_expression",
-            "target_expression",
-            "factor_expression.scale",
-            "target_expression.scale",
-            # "factor_expression.rank.scale", 
-            # "target_expression.rank.scale",
-            "corr_file1",
-            "correlation",
-            "correlationRank",
-            "max_binding_in_promoter",
-            "max_binding",
-            "max_sum_dist_weight",
-            # "sum_dist_weight"
-        ]
-        network = network[[c for c in network.columns if c not in exclude_cols]]
-        network = network.set_index("source_target")
-        network["binding"] = minmax_scale(
-            rankdata(network["sum_dist_weight"], method="dense")
-        )
-        network.drop(["sum_dist_weight"], axis=1, inplace=True)
+        # Get list of unique enhancers from the binding file
+        enhancer_pr = self.unique_enhancers(binding_fname)
 
-        bp = network.mean(axis=1)
-        bpd = pd.DataFrame(bp)
-        bpd = bpd.rename(columns={0: "binding"})
-        bpd["prob"] = minmax_scale(rankdata(bpd["binding"], method="dense"))
-
-        # with ProgressBar():
-        #     bpd.compute(num_workers = self.ncore)
-        bpd.to_csv(outfile, sep="\t")
-
-    def create_promoter_network(self, ddf, prom, fin_expression, outfile, column="tpm"):
-        prom_table = ddf.merge(prom, left_on="enhancer", right_on="loc")
-        prom_table = prom_table.groupby(["factor", "gene"])[["binding"]].max()
-        prom_table = prom_table.rename(columns={"binding": "max_binding_in_promoter"})
-        prom_table = prom_table.reset_index()
-        prom_table["source_target"] = (
-            prom_table["factor"].map(str) + "_" + prom_table["gene"].map(str)
+        # Link enhancers to genes on basis of distance to annotated TSS
+        gene_df = self.enhancer2gene(
+            enhancer_pr,
+            up=up,
+            down=down,
+            alpha=alpha,
+            promoter=promoter,
+            full_weight_region=full_weight_region,
         )
 
+        # print(gene_df)
+        logger.info("Reading binding file...")
+        ddf = dd.read_csv(
+            binding_fname,
+            sep="\t",
+            usecols=["factor", "enhancer", "binding"],
+        )
+        if tfs is not None:
+            ddf = ddf[ddf["factor"].isin(tfs)]
+
+        # Merge binding information with gene information.
+        # This may be faster than creating index on enhancer first, but need to check!
+        tmp = ddf.merge(gene_df, left_on="enhancer", right_index=True)
+
+        # Remove everything with weight 0
+        tmp = tmp[tmp["weight"] > 0]
+
+        # Modify the binding by the weight, which is based on distance to TSS
+        tmp["weighted_binding"] = tmp["weight"] * tmp["binding"]
+
+        logger.info("Grouping by tf and target gene...")
+        # Using one column that combines TF and target as dask cannot handle MultiIndex
+        tmp["tf_target"] = tmp["factor"] + "_" + tmp["gene"]
+
+        tmp = tmp.groupby("tf_target")[["weighted_binding"]]
+
+        if combine_function == "mean":
+            tmp = tmp.mean()
+        elif combine_function == "max":
+            tmp = tmp.max()
+        elif combine_function == "sum":
+            tmp = tmp.sum()
+
+        logger.info("Done grouping...")
+        return tmp
+
+    def create_expression_network(
+        self, fin_expression, column="tpm", tfs=None, rank=True, bindingfile=None
+    ):
+        """Create a gene expression based network.
+
+        Based on a file with gene expression levels (a TPM column), a
+        dask DataFrame is generated with the combined expression levels
+        of the tf and the target gene. By default, the expresison levels
+        are ranked and subsequently scaled between 0 and 1.
+
+        Parameters
+        ----------
+        fin_expression : str or list
+            Filename of file that contains gene expression data (TPM), or a
+            list of filenames. First column should contain the gene name.
+
+        column : str, optional
+            Column name that contains gene expression, 'tpm' by default.
+
+        tfs : list, optional
+            List of TF gene names. All TFs will be used by default.
+
+        rank : bool, optional
+            Rank expression levels before scaling.
+
+        bindingfile : str, optional
+            Filename with binding information.
+
+        Returns
+        -------
+            Dask DataFrame with gene expression based values.
+        """
+        # Convert it to a list if it's not a list of files, but a single file name
+        if isinstance(fin_expression, str):
+            fin_expression = [fin_expression]
+
+        # Read all expression input files and take the mean expression per gene
         expression = pd.DataFrame(
             pd.concat(
                 [pd.read_table(f, index_col=0)[[column]] for f in fin_expression],
@@ -622,178 +439,156 @@ class Network(object):
             ).mean(1),
             columns=[column],
         )
-        expression.index = [i.upper() for i in list(expression.index)]
-        # print(expression)
         expression[column] = np.log2(expression[column] + 1e-5)
 
+        # Create the target gene list, based on all genes
+        expression.index.rename("target", inplace=True)
         expression = expression.reset_index()
-        expression=expression.rename(columns={"index":"gene", "tpm":"target_expression"})
+        expression = expression.rename(columns={"tpm": "target_expression"})
 
-        network = prom_table.merge(expression, how='left', left_on="gene",right_on="gene")
-        network = network.merge(expression, how='left', left_on="factor",right_on="gene")
-        network = network.rename(columns={"gene_x":"gene", "target_expression_x":"target_expression", "target_expression_y":"factor_expression"})
-        network = network.drop(columns=["gene_y"])
+        # Create the TF list, based on valid transcription factors
+        if tfs is None:
+            activity_fname = bindingfile.replace("binding.tsv", "factor_activity.tsv")
+            if os.path.exists(activity_fname):
+                tfs = list(
+                    set(pd.read_table(activity_fname, index_col=0).index.tolist())
+                )
+            else:
+                package_dir = os.path.dirname(ananse.__file__)
+                tffile = os.path.join(package_dir, "db", "tfs.txt")
+                tfs = pd.read_csv(tffile, header=None)[0].tolist()
 
-        # network = network.compute()
-        with ProgressBar():
-            network = network.compute(num_workers = self.ncore)
-
-        for col in ["factor_expression", "target_expression", "max_binding_in_promoter"]:
-            network[col + ".scale"] = minmax_scale(network[col])
-            network[col + ".rank.scale"] = minmax_scale(rankdata(network[col]))
-
-        exclude_cols = [
-            "factor",
-            "gene",
-            "factor_expression",
-            "target_expression",
-            "factor_expression.scale",
-            "target_expression.scale",
-            # "factor_expression.rank.scale", 
-            # "target_expression.rank.scale",
-            # "max_binding_in_promoter",
-            "max_binding_in_promoter.scale",
-            "max_binding_in_promoter.rank.scale",
-        ]
-        network = network[[c for c in network.columns if c not in exclude_cols]]
-        network = network.set_index("source_target")
-
-        bp = network.mean(axis=1)
-        bpd = pd.DataFrame(bp)
-        bpd = bpd.rename(columns={0: "binding"})
-        bpd["prob"] = minmax_scale(rankdata(bpd["binding"], method="dense"))
-
-        bpd.to_csv(outfile, sep="\t")
-
-    def create_expression_network(self, fin_expression, outfile, column="tpm"):
-        expression = pd.DataFrame(
-            pd.concat(
-                [pd.read_table(f, index_col=0)[[column]] for f in fin_expression],
-                axis=1,
-            ).mean(1),
-            columns=[column],
-        )
-        expression.index = [i.upper() for i in list(expression.index)]
-        # print(expression)
-        expression[column] = np.log2(expression[column] + 1e-5)
-
-        expression = expression.reset_index()
-        expression=expression.rename(columns={"index":"gene", "tpm":"target_expression"})
-        
-        package_dir = os.path.dirname(ananse.__file__)
-        tffile = os.path.join(package_dir, "db", "tfs.txt")
-        tfs = pd.read_csv(tffile, header=None)[0].tolist()
-
-        tfs = expression[expression.gene.isin(tfs)]
+        tfs = expression[expression.target.isin(tfs)]
         tfs = tfs.reset_index()
         tfs = tfs.drop(columns=["index"])
-        tfs.rename(columns={"gene":"factor","target_expression":"factor_expression"},inplace=True)
+        tfs.rename(
+            columns={"target": "tf", "target_expression": "tf_expression"}, inplace=True
+        )
 
-        # network = cartesian(expression, tfs)
-        expression['key'] = 0
-        tfs['key'] = 0
+        expression["key"] = 0
+        tfs["key"] = 0
 
-        network = expression.merge(tfs, how='outer')
+        # Merge TF and target gene expression information
+        network = expression.merge(tfs, how="outer")
+        network = network[["tf", "target", "tf_expression", "target_expression"]]
 
-        for col in ["factor_expression", "target_expression"]:
-            network[col + ".scale"] = minmax_scale(network[col])
-            network[col + ".rank.scale"] = minmax_scale(rankdata(network[col]))
+        # Rank and scale
+        for col in ["tf_expression", "target_expression"]:
+            if rank:
+                network[col] = rankdata(network[col])
+            network[col] = minmax_scale(network[col])
 
-        network["source_target"] = network.factor + "_" + network.gene  
+        # Use one-column index that contains TF and target genes.
+        # This is necessary for dask, as dask cannot merge on a MultiIndex.
+        # Otherwise this would be an inefficient and unnecessary step.
+        network["tf_target"] = network["tf"] + "_" + network["target"]
+        network = network.set_index("tf_target").drop(columns=["target"])
 
-        exclude_cols = [
-            "key",
-            "factor",
-            "gene",
-            "factor_expression",
-            "target_expression",
-            "factor_expression.scale",
-            "target_expression.scale",
-            # "factor_expression.rank.scale", 
-            # "target_expression.rank.scale",
-        ]
-        network = network[[c for c in network.columns if c not in exclude_cols]]
-        network = network.set_index("source_target")
+        # Convert to a dask DataFrame.
+        logger.info("creating expression dataframe")
+        network = dd.from_pandas(network, npartitions=30)
 
-        bp = network.mean(axis=1)
-        bpd = pd.DataFrame(bp)
-        bpd = bpd.rename(columns={0: "binding"})
-        bpd["prob"] = minmax_scale(rankdata(bpd["binding"], method="dense"))
+        return network
 
-        bpd.to_csv(outfile, sep="\t")
+    def run_network(
+        self,
+        binding,
+        fin_expression=None,
+        tfs=None,
+        corrfiles=None,
+        outfile=None,
+        up=1e5,
+        down=1e5,
+        alpha=None,
+        promoter=2000,
+        full_weight_region=5000,
+    ):
+        """Create network.
 
-    def run_network(self, binding, fin_expression, corrfiles, outfile):
-        # gene_bed="/home/qxu/.local/share/genomes/hg38/hg38_gffbed_piroteinCoding.bed"
-        # peak_bed="data/krt_enhancer.bed"
-        # pfmfile="../data/gimme.vertebrate.v5.1.pfm"
-        # binding="results/binding.predicted.h5"
+        Parameters
+        ----------
+        binding : str
+            Filename with binding information. Should contain at least three
+            columns: "factor", "enhancer" and "binding".
+        fin_expression : str or list, optional
+            Filename of list of filenames with expression information.
+        tfs : list, optional
+            List of transcription factors to use, by default None, which means
+            all TFs will be used.
+        corrfiles : [type], optional
+            Correlation files by default None. CURRENTLY UNUSED.
+        outfile : str, optional
+            Output file.
+        up : int, optional
+            Upstream maximum distance, by default 100kb.
+        down : int, optional
+            Upstream maximum distabce, by default 100kb.
+        alpha : float, optional
+            Parameter to control weight decay, by default 1e4.
+        promoter : int, optional
+            Promoter region, by default 2000.
+        full_weight_region : int, optional
+            Region that will receive full weight, by default 5000."""
+        # Expression base network
+        logger.info("Loading expression")
+        df_expression = self.create_expression_network(
+            fin_expression, tfs=tfs, rank=True, bindingfile=binding
+        )
 
-        # b=self.interaction.Interaction(genome=self.genome, gene_bed= self.gene_bed, pfmfile=self.pfmfile)
-        if not self.include_promoter and not self.include_enhancer:
-            logger.info("Create network")
-            self.create_expression_network(fin_expression, outfile)
-        elif self.include_promoter and not self.include_enhancer:
-            logger.info("Read data")
-            ddf = dd.read_csv(binding, sep="\t")[["factor", "enhancer", "binding"]]
-            tfdf, filter_bed = self.clear_peak(ddf)
-            
-            prom = self.get_promoter_dataframe(filter_bed)
+        # Use a version of the binding network, either promoter-based, enhancer-based
+        # or both.
+        if self.include_promoter or self.include_enhancer:
+            logger.info("Aggregate binding")
+            df_binding = self.aggregate_binding(
+                binding,
+                tfs=tfs,
+                up=up,
+                down=down,
+                alpha=alpha,
+                promoter=promoter,
+                full_weight_region=full_weight_region,
+                combine_function="sum",
+            )
 
-            logger.info("Create network")
-            self.create_promoter_network(ddf, prom, fin_expression, outfile)
+            activity_fname = binding.replace("binding.tsv", "factor_activity.tsv")
+            if os.path.exists(activity_fname):
+                logger.info("Reading factor activity")
+                act = pd.read_table(activity_fname, index_col=0)
+                act.index.name = "tf"
+                act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
+                df_expression = df_expression.merge(
+                    act, right_index=True, left_on="tf", how="left"
+                ).fillna(0.5)
+            df_expression = df_expression.drop(columns=["tf"])
+
+            # This is where the heavy lifting of all delayed computations gets done
+            logger.info("Computing network")
+            if fin_expression is not None:
+                with ProgressBar():
+                    result = df_expression.join(df_binding)
+                    result = result.compute()
+                result = result.fillna(0)
+            else:
+                result = df_binding
+
+            result["weighted_binding"] = minmax_scale(
+                rankdata(result["weighted_binding"], method="min")
+            )
+            columns = [
+                "tf_expression",
+                "target_expression",
+                "weighted_binding",
+                "activity",
+            ]
+            columns = [col for col in columns if col in result]
+            logger.info(f"Using {', '.join(columns)}")
+            # Combine the individual scores
+            result["prob"] = result[columns].mean(1)
 
         else:
-            logger.info("Read data")
-            ddf = dd.read_csv(binding, sep="\t")[["factor", "enhancer", "binding"]]
+            result = df_expression
+            result["prob"] = result[["tf_expression", "target_expression"]].mean(1)
+            result = result.compute()
 
-            tfdf, filter_bed = self.clear_peak(ddf)
-
-            prom = self.get_promoter_dataframe(filter_bed)
-            p = self.get_gene_dataframe(filter_bed)
-
-            weight = self.distance_weight(self.include_promoter, self.include_enhancer)
-
-            logger.info("Aggregate binding")
-            features = self.aggregate_binding(ddf, prom, p, weight)
-
-            logger.info("Join expression")
-
-            expression_file = self.get_expression(fin_expression, features)
-            # factors_expression_file = self.get_factorExpression(fin_expression)
-
-            if corrfiles is None:
-                other = [
-                    expression_file,
-                ]
-            else:
-                corr_file = self.get_correlation(corrfiles, features)
-                other = [
-                    expression_file,
-                    corr_file,
-                ]
-
-            # outfile = 'full_features.h5'
-            logger.info("Join features")
-            featurefile = self.join_features(features, other)
-
-            logger.info("Create network")
-            self.create_network(featurefile, outfile)
-
-        # if self.include_promoter and self.include_enhancer:
-        #     self.create_network(featurefile, outfile)
-
-        # elif not self.include_promoter and self.include_enhancer:
-        #     self.create_network(featurefile, outfile)
-
-        # elif self.include_promoter and not self.include_enhancer:
-        #     self.create_promoter_network(featurefile, outfile)
-
-        # if self.include_promoter and not self.include_enhancer:
-        #     self.create_promoter_network(featurefile, outfile)
-        # else:
-        #     self.create_network(featurefile, outfile)
-
-        # if self.promoter:
-        #     self.create_promoter_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter."+outfile.split(".")[-1])
-        #     self.create_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_expression."+outfile.split(".")[-1])
-        #     self.create_promoter_expression_network(featurefile, ".".join(outfile.split(".")[:-1])+"_promoter_expression."+outfile.split(".")[-1])
+        logger.info("Saving file")
+        result[["prob"]].to_csv(outfile, sep="\t")
