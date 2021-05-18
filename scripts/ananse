@@ -158,7 +158,7 @@ if __name__ == "__main__":
         "-e",
         "--expression",
         dest="fin_expression",
-        help="Expression scores. Should have gene names in the first column and should contain a column named tpm. Both the quant.sf from salmon or the abundances.tsv from kallisto will work fine.",
+        help="Gene-level expression expression levels. The gene name (HGNC symbol in case of human) should be present in the first column and there should be a column named tpm. This file can be created by summarizing transcript-level TPMs (the quant.sf from salmon or the abundances.tsv from kallisto) to gene-level TPMs with tximeta.",
         metavar="FILE",
         default=None,
     )
