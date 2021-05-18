@@ -36,49 +36,8 @@ Alternatively, you can specify the genome manually. In this case you'll need:
 
 You can then specify the genome as follows: `-g /path/to/genome.fa`. For `ananse network`, you need to add the annotation BED file with `-a /path/to/annotation.bed`.
 
-### Motif database
 
-By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: `gimme.vertebrate.v5.0`. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. [Large-scale benchmarks](https://www.biorxiv.org/content/10.1101/474403v1.full) using ChIP-seq peaks show that this database shows good performance and should be a good default choice. 
-
-!!! warning
-    If you would like to use your own motif database, please make sure your database include following two files: 1) **a motif file** and 2) **a motif2factors file**.
-    The `motif` file should contain positional frequency matrices and should end with the `.pfm` extension. The `motif2factors` file should have the same name as  the `motif` file and end with `.motif2factors.txt` instead of `.pfm`.
-
-#### Motif file
-
-```    
-# Comments are allowd
->GM.5.0.Sox.0001
-0.7213	0.0793	0.1103	0.0891
-0.9259	0.0072	0.0062	0.0607
-0.0048	0.9203	0.0077	0.0672
-0.9859	0.0030	0.0030	0.0081
-0.9778	0.0043	0.0128	0.0051
-0.1484	0.0050	0.0168	0.8299
-```
-
-#### Motif2factors file  
-
-```
-Motif	Factor	Evidence	Curated
-GM.5.0.Sox.0001	SRY	JASPAR	Y
-GM.5.0.Sox.0001	SOX9	Transfac	Y
-GM.5.0.Sox.0001	Sox9	Transfac	N
-GM.5.0.Sox.0001	SOX9	SELEX	Y
-GM.5.0.Sox.0001	Sox9	SELEX	N
-GM.5.0.Sox.0001	SOX13	ChIP-seq	Y
-GM.5.0.Sox.0001	SOX9	ChIP-seq	Y
-GM.5.0.Sox.0001	Sox9	ChIP-seq	N
-GM.5.0.Sox.0001	SRY	SELEX	Y
-```
-
-!!! note  
-    The default motif database (`gimme.vertebrate.v5.0`) from the [GimmeMotifs](https://github.com/vanheeringen-lab/gimmemotifs) package[^1] can be found here:  
-
-    * [gimme.vertebrate.v5.0.pfm](https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.pfm)  
-    * [gimme.vertebrate.v5.0.motif2factors.txt](https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.motif2factors.txt)
-
-### Enhancer data
+### Enhancer activity
 
 The enhancer data file that ANANSE needs as input should contain putative enhancer regions with an associated enhancer signal for the specific cell type or tissue. This signal can be any measure that is related to enhancer activity. We have used p300 or H3K27ac ChIP-seq signal. p300 ChIP-seq peaks can be used directly, however the H3K27ac signal is not specific enough. Peaks from a H3K27ac ChIP-seq experiment are too broad for the motif analysis. This means that you will have to use another source of data to determine the putative enhancer regions. For human data, we estblished a enhancer peak database. For other genome, we have used ATAC-seq peaks, but other data such as DNase I could also work.
 
@@ -127,6 +86,9 @@ chr14	32484901	32485101	2
 
 The expression data normally comes from an RNA-seq experiment. We use the `TPM` score to represent the gene expression in ANANSE. In the expression input file, the 1st column (named as `target_id`) should contain the **gene name**, and the second column should be named `tpm`. At the moment TFs are coupled to motifs my HGNC symbol, so all gene identifiers should be the approved HGNC gene names.
 
+
+https://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html
+
 This is an example of the input expression file:
 
 ```
@@ -170,6 +132,44 @@ DMKN	-11.6435948368453	0
     You can find our example differential expression input file here:  
 
     * [FB2KRT_degenes.csv](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB2KRT_degenes.csv)  
+
+
+### Motif database
+
+By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: `gimme.vertebrate.v5.0`. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. [Large-scale benchmarks](https://www.biorxiv.org/content/10.1101/474403v1.full) using ChIP-seq peaks show that this database shows good performance and should be a good default choice. 
+
+Alternatively, you can use any of the other motif databases included with [GimmeMotifs](https://gimmemotifs.readthedocs.io/en/master/overview.html#motif-databases) (such as `JASPAR2020_vertebrates` or `HOMER`). If you would like to use your own motif database, please make sure you create the following two files: 1) a motif file and 2) a file containing mapping of motifs to factors.  The motif file should contain positional frequency matrices and should end with the `.pfm` extension. The motif mapping file should have the same base name as  the `motif` file and end with `.motif2factors.txt` instead of `.pfm`. Examples are shown below.
+
+**Please note:** if you want to use ANANSE for a species other than human or mouse, you will have to use the default motif database. This enables mapping of the transcription factors to motifs.
+
+#### Motif file
+
+```    
+# Comments are allowd
+>GM.5.0.Sox.0001
+0.7213	0.0793	0.1103	0.0891
+0.9259	0.0072	0.0062	0.0607
+0.0048	0.9203	0.0077	0.0672
+0.9859	0.0030	0.0030	0.0081
+0.9778	0.0043	0.0128	0.0051
+0.1484	0.0050	0.0168	0.8299
+```
+
+#### Motif2factors file  
+
+```
+Motif	Factor	Evidence	Curated
+GM.5.0.Sox.0001	SRY	JASPAR	Y
+GM.5.0.Sox.0001	SOX9	Transfac	Y
+GM.5.0.Sox.0001	Sox9	Transfac	N
+GM.5.0.Sox.0001	SOX9	SELEX	Y
+GM.5.0.Sox.0001	Sox9	SELEX	N
+GM.5.0.Sox.0001	SOX13	ChIP-seq	Y
+GM.5.0.Sox.0001	SOX9	ChIP-seq	Y
+GM.5.0.Sox.0001	Sox9	ChIP-seq	N
+GM.5.0.Sox.0001	SRY	SELEX	Y
+```
+
 
 [^1]: van Heeringen, S.J., and Veenstra, G.J.C. (2010). GimmeMotifs: a de novo motif prediction pipeline for ChIP-sequencing experiments. Bioinformatics 27, 270-271.
 [^2]: Kent, J., ENCODE DCC. (2014). kentUtils: Jim Kent command line bioinformatic utilities. Available from: https://github.com/ENCODE-DCC/kentUtils.
