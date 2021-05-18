@@ -421,7 +421,7 @@ class Network(object):
             Rank expression levels before scaling.
 
         bindingfile : str, optional
-            blabla
+            Filename with binding information.
 
         Returns
         -------
