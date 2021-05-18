@@ -1,135 +1,153 @@
 ## Command-line reference
 
-* **All the example input data and result files can be found here:**
-  [http://mbdata.science.ru.nl/qxu/ananse/ananse.html](http://mbdata.science.ru.nl/qxu/ananse/ananse.html).
+In general, a full analysis with ANANSE will consist of the following steps:
 
-In general, an analysis with ANANSE will consist of the following steps:
+1. Generate binding networks for a *source* and a *target* cell type using `ananse binding`.
+2. Generate a gene regulatory network (GRN) for the *source* and *target* cell type using `ananse network`, based on the binding network from step 1.
+3. Run `ananse influence` based on the GRN of the *source* cell type and the GRN of the *target* cell type (step 2)
 
-1. Generate ANANSE input enhancer file for *target* cell type using `ananse enhancer`.
-2. Generate binding network for *target* cell type using `ananse binding`, based on the enhancer file from step 1.
-3. Generate gene regulatory network (GRN) for *target* cell type using `ananse network`, based on the binding network from step 2.
-4. Generate ANANSE input enhancer file for *source* cell type using `ananse enhancer`.
-5. Generate a binding network for a *source* cell type using `ananse binding`, based on the enhancer file from step 4.
-6. Generate a GRN for a *source* cell type using `ananse network`, based on the binding network from step 5.
-7. Run `ananse influence` based on the GRN of the *source* cell type (step 4) and the GRN of the *target* cell type (step 6)
+### ananse binding
 
-### Establish ANANSE input enhancer file: ananse enhancer
-
-The following command generate KRT enhancer file from KRT H3K27ac ChIP-seq BAM file and KRT H3K27ac ChIP-seq BoardPeak file (***Only for hg38***). It is also possible generate this enhancer file from 1) p300 ChIP-seq BAM file and p3000 ChIP-seq narrowPeak file; 2) H3K27ac BAM file and ATAC-seq narrowPeak file (***for other genome***).
+The `ananse binding` command predicts binding for all transcription factors with an associated motif.
 
 Example command:
 
 ``` bash
-$ ananse enhancer -g hg38 -t hg38H3K27ac \
-                  -b data/KRT_H3K27ac.sorted.bam \
-                  -p data/KRT_H3K27ac.broadPeak \
-                  -o data/KRT_enhancer.bed
+ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
+               -H IPS.H3K27ac.rep1.bam IPS.H3K27ac.rep2.bam \
+               -o IPS.binding
 ```
-!!! tip
-    Please use `-h/--help` for the details of all options.
 
-**Required arguments:**  
+This command will use `hg38` by default and quantify the ATAC and H3K27ac signal in [putative enhancers](https://doi.org/10.5281/zenodo.4066424). This signal will be used together with the motif scores to predict transcription factor binding. If you use `hg38` and the default enhancer regions you can get significantly better predictions by using a more detailed model that also includes the average ChIP-seq signal. You will first have to download this model (you only need to do this once):
 
-* `-t, --etype`  
-    Enhancer type, `hg38H3K27ac`, `p300`, or `ATAC`. If you would like to run ANANSE in human data, we recommend you using hg38 genome and H3k27ac data as enhancer type. For other genome or human data not H3K27ac, you can use `-t` to `p300` or `ATAC`. 
+```
+DATA_DIR=/path/to/data  # set to your preference
+mkdir -p $DATA_DIR/ANANSE.REMAP.model.v1.0
+cd $DATA_DIR/ANANSE.REMAP.model.v1.0
+wget https://zenodo.org/record/4768075/files/ANANSE.REMAP.model.v1.0.tgz
+tar xvzf ANANSE.REMAP.model.v1.0.tgz
+rm ANANSE.REMAP.model.v1.0.tgz
+```
 
-!!! note 
-    There are 3 type of enhancer data for `-t, --etype`: `hg38H3K27ac`, `p300`, or `ATAC`.  
-    
-    * For human with H3K27ac ChIP-seq data, using `hg38H3K27ac`: 1, hg38 genome; 2, H3K27ac ChIP-seq BAM file; 3, H3K27ac ChIP-seq BoardPeak file.  
-    * For p300 ChIP-seq data, using `p300`: 1, p300 ChIP-seq BAM file; 2, p3000 ChIP-seq narrowPeak file.  
-    * For ATAC-seq data, using `ATAC`: 1, H3K27ac BAM file; 2, ATAC-seq narrowPeak file.  
-
-* `-g, --genome`  
-    The genome that is used for the gene annotation and the enhancer location. This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. You can find the method to generate genome files in the section [Input data](input_data/#genome). The default genome is `hg38`.   * `-b, --bam_input`. The H3K27ac or p300 ChIP-seq bam file.
-* `-p, --epeak`  
-    The H3K27ac ChIP-seq broadPeak, or the p300 ChIP-seq / ATAC-seq narrowPeak.
-* `-o, --bed_output`  
-    The output enhancer file.
-
-**Optional arguments:**  
-
-* `-h, --help`  
-    Show the help message and exit.
-
-
-### Build transcription factor binding network: ananse binding
-
-The following command combines genome-wide enhancer intensities (EP300 ChIP-seq, H3K27ac ChIP-seq, ATAC-seq) with sequence features in enhancer peaks to infer cell type-specific TF binding profiles.
-
-Example command:
+You can now specify this model when running `ananse binding`:
 
 ``` bash
-$ ananse binding  -r data/KRT_enhancer.bed \
-                  -o results/KRT_binding.txt \
-                  -g hg38 -t hg38H3K27ac \
-                  -p data/gimme.vertebrate.v5.1.pfm
+ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
+               -H IPS.H3K27ac.rep1.bam IPS.H3K27ac.rep2.bam \
+               -o IPS.binding
+               -R $DATA_DIR/ANANSE.REMAP.model.v1.0
 ```
-!!! tip
-    Please use `-h/--help` for the details of all options.
 
-**Required arguments:**  
-
-* `-r, --enhancers`  
-    The name of the input enhancer peak file. This should be a BED-formatted file with 4 columns. The first column is the chromosome name, the second and third columns are the start and end point of peak. We recommend that all peaks have a size of 200bp. If the peak is not 200bp, ANANSE will change it to 200bp. The fourth column is intensity of the peak, this can be the number of reads, RPKM or equivalent value. You can find the method to generate the enhancer file and an example of an enhancer input file in the section [Input data](input_data/#enhancer-data).  
-* `-t, --etype`  
-    Enhancer type, `hg38H3K27ac`, `p300`, or `ATAC`.  
-* `-o, --output`  
-    The name of the output file.
-
-**Optional arguments:**  
-
-* `-g, --genome`  
-    The genome that is used for the gene annotation and the enhancer location. This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. You can find the method to generate genome files in the section [Input data](input_data/#genome). The default genome is `hg38`.   
-* `-p, --pfmfile`  
-    The input motif file with positional frequence matrices. You can find the definition of the motif file and the default motif files in the section [Input data](input_data/#motif-database).
-* `-n, --ncore`  
-    Specifies the number of threads to use during analysis.   
-* `-h, --help`  
-    Show the help message and exit.
-
-### Build gene regulatory network: ananse network
-
-This command infers cell type-specific GRNs based on the predicted TF binding sites using `ananse binding` and the expression levels of both TFs as well as their target genes. TF-gene interaction scores, the edge weights in the network, are calculated based on the predicted TF binding probability, the distance between the enhancer and the target gene, and expression of both TF and the target gene.
-
-Example command:
+Alternatively, you can use your own set of enhancer regions or putative cis-regulatory elements. For instance, to use the candidate cis-Regulatory Elements by ENCODE (from [SCREEN](https://screen.encodeproject.org/)):
 
 ``` bash
-$ ananse network  -e data/KRT_rep1_TPM.txt data/KRT_rep2_TPM.txt \
-                  -b results/KRT_binding.txt \
-                  -o results/KRT_network.txt \
-                  -a data/hg38_genes.bed \
-                  -g hg38 \
-                  --exclude-promoter --include-enhancer
+ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
+               -H IPS.H3K27ac.rep1.bam IPS.H3K27ac.rep2.bam \
+               -o IPS.binding
+               -r https://api.wenglab.org/screen_v13/fdownloads/GRCh38-ccREs.bed
 ```
-!!! tip
-    Please use `-h/--help` for the details of all options.
 
-**Required arguments:**  
+Or to use the union of peaks from several ATAC-seq experiments:
 
-* `-b, --binding`  
-    The binding network from the `Build binding network` step, generated with `ananse binding`. An example `binding network` can be found [***here***](http://mbdata.science.ru.nl/qxu/ananse/results/binding.txt).  
-* `-e, --expression`  
-    The expression file(s) of your cell type or tissue of interest. You can supply one or more gene expression file(s). In these files, the 1st column should contain gene name and it should contain a column with the name `tpm`. [***This***](/test/data/KRT_rep1_TPM.txt) is an example of a valid expression file.  
-* `-o, --output`  
-    The folder to save results. 
+``` bash
+ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
+               -H IPS.H3K27ac.rep1.bam IPS.H3K27ac.rep2.bam \
+               -o IPS.binding
+               -r ATAC.cell_type1.narrowPeak ATAC.cell_type2.narrowPeak
+```
 
-**Optional arguments:**  
- 
-* `-g, --genome`  
-    The genome that is used for the gene annotation and the enhancer location. This can be either the name of a genome installed with [genomepy](https://github.com/vanheeringen-lab/genomepy), for example `hg38`, or the name of a genome FASTA file, for example `/data/genomes/hg38/hg38.fa`. It is recommended to use a genome installed by `genomepy`. You can find the method to generate genome files at [Genome](input_data/#genome) part. The default genome is `hg38`.  
-* `-a, --annotation`  
-    Gene annotation for the genome specified with `-g` as a 12 column BED file. You can find the method to generate this annotation BED file and example BED files in the section [Input data](input_data/#genome).    
-* `-c, --corrfiles`  
-    A file with gene-gene correlation values. The human gene expression correlation can be found at [***here***](http://mbdata.science.ru.nl/qxu/ananse/data/expressioncorrelation.txt). 
-* `--include-promoter, --exclude-promoter`
-    Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are **excluded**.
-  * `--include-enhancer, --exclude-enhancer`
-    Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. By default enhancer peaks are **included**.
-* `-n, --ncore`  
-    Specifies the number of threads to use during analysis. 
-* `-h, --help`  
-    Show the help message and exit.  
+#### Output files
+
+The output directory of `ananse binding` will contain three or four files, depending on the input data used. The file called `binding.tsv` contains three columns called `factor`, `enhancer` and `binding`. The `factor` column contains the TF name, the `enhancer` column the location of the enhancer (in `chrom:start-end` format) and the `binding` column the probability of the logistic classifier.
+
+The `factor_activity.tsv` contains the predicted factor activity (based on the TF motif activity) for all transcription factors. The motif activity is based on the contribution of motif score to the enhancer activity (the coefficient from a linear regression;  see [The FANTOM Consortium & Riken Omics Science Center 2009](https://doi.org/10.1038/ng.375) and [Balwierz et al. 2014](https://doi.org/10.1101/gr.169508.113)). In the implementation of ANANSE the motif activity is calculated based on a regression using the ATAC-seq signal and/or a regression using the H3K27ac signal. 
+
+Depending on the input data, the output directory will also contain `atac.tsv` and/or `h3k27ac.tsv`, which provide the quantified and normalized signal of ATAC-seq and/or H3K27ac ChIP-seq data in the enhancer regions. If the `ANANSE.REMAP.model.v1.0` model is used, these files will also contain the relative signal. 
+
+
+#### Full options
+
+Usage:
+
+```
+ananse [-h] <command> [options] binding [-A BAM [BAM ...]] [-H BAM [BAM ...]] [-o] [-R PATH] [-r  [...]] [-g GENOME]
+                                               [-d] [-p] [-f [TF [TF ...]]] [-n NCPUS] [-h]
+```
+
+Required arguments:
+
+```
+  -A BAM [BAM ...], --atac-bams BAM [BAM ...]
+                        ATAC-seq input BAM file(s), can be used alone or in combination with the -H option
+  -H BAM [BAM ...], --histone-bams BAM [BAM ...]
+                        H3K27ac ChIP-seq input BAM file(s), can be used alone or in combibation with the -A option
+```
+
+Optional arguments:
+
+```
+  -o , --outdir         Directory where you wish to store the output (default: ./ANANSE_binding)
+  -R PATH, --reference PATH
+                        Path to reference data directory
+  -r  [ ...], --regionfiles  [ ...]
+                        One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)
+  -g GENOME, --genome GENOME
+                        Genome name, as managed by genomepy, or path to the genome FASTA used to align the bams and peaks
+                        to
+  -d , --dist-func      bam reads are normalized to the selected distribution (default: an empirical distribution)
+  -p , --pfmfile        PFM file of the transcription factors to search for (default gimme.vertebrate.v5.0)
+  -f [TF [TF ...]], --factors [TF [TF ...]]
+                        Transcription factors to use. Either a space-separated list or a file with one TF per line.
+  -n NCPUS, --ncpus NCPUS
+                        Number of processes to use for motif scanning
+  -h, --help            Show this help message and exit
+```
+
+
+### ananse network
+
+The `ananse network` command infers a cell type-specific GRN based on the predicted TF binding sites using `ananse binding` and the expression levels of both TFs as well as their target genes. TF-gene interaction scores, the edge weights in the network, are calculated based on the predicted TF binding probability in enhancers and the distance between the enhancers and the target gene, the predicted TF activity and the expression level of both TF and the target gene.
+
+
+#### Full options
+
+
+Usage: 
+
+```
+ananse [-h] <command> [options] network -b FILE [-e FILE] [-g NAME] [-a BED] [-n NCORE] [--include-promoter]
+                                        [--include-enhancer] [-h]
+```
+
+Required arguments:
+
+```
+  -b FILE, --binding FILE
+                        TF binding prediction file (from ananse binding).
+  -e FILE, --expression FILE
+                        Expression scores. Should have gene names in the first column and should contain a column named
+                        tpm. Both the quant.sf from salmon or the abundances.tsv from kallisto will work fine.
+```
+
+Optional arguments:
+
+```
+  -g NAME, --genome NAME
+                        Genome (genomepy name or FASTA file).
+  -a BED, --annotation BED
+                        Gene annotation in BED12 format. Not necessary if you use a genome that was installed using
+                        genomepy with the --annotation flag.
+  -n NCORE, --ncore NCORE
+                        Number of core used.
+  --include-promoter, --exclude-promoter
+                        Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks
+                        are included.
+  --include-enhancer, --exclude-enhancer
+                        Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. By default enhancer peaks
+                        are included.
+  -h, --help            show this help message and exit
+```
+
 
 ### Infer TF influence score: ananse influence
 
