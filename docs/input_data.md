@@ -12,7 +12,7 @@ To run ANANSE you need the following data:
 
 ### Genome
 
-To run `ANANSE` on your sample(s), a matching genome and gene annotation is necessary. We recommand that you download your genome file with [genomepy](https://github.com/vanheeringen-lab/genomepy). Genomepy is a Python package with command-line interface to easily download and install genomes, generates associated files and more.
+To run `ANANSE` on your sample(s), a matching genome and gene annotation is necessary. We recommand that you download your genome file with [genomepy](https://github.com/vanheeringen-lab/genomepy). Genomepy is a Python package with command-line interface to easily download, install and use genome sequences.
 
 To install the genome with `genomepy` you can use this command, which will download both the `FASTA` file and the annotation `BED` file, and exports them to the PATH.
 
@@ -27,29 +27,14 @@ genomepy install hg38 UCSC -a
 genomepy install GRCh38.p13 Ensembl -a
 ```
 
-You can then direct to the genome like so: `-g hg38`
+You can then use the `-g` argument to specify your genome by name when running the ANANSE tools: `-g hg38`.
 
-If you wish to manually set the files required for ANANSE, create a folder containing:  
+Alternatively, you can specify the genome manually. In this case you'll need:  
 
-    * A genome FASTA file   
+* A genome FASTA file   
+* A BED12 file with genome annotation.  
 
-    * A BED12 file with genome annotation.  
-
-!!! note  
-    Some model organism gene bed12 files are included in ANANSE:  
-
-    * [hg19](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/hg19.genes.bed)  
-
-    * [hg38](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/hg38.genes.bed)  
-
-    * [mm10](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/mm10.gene.bed)  
-
-    * [xt9.1](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/xt9.1.gene.bed)  
-    
-    * [xt10.0](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/xt10.0.gene.bed)  
-
-
-You can then direct to the genome like so: `-g /path/to/genome.fa`
+You can then specify the genome as follows: `-g /path/to/genome.fa`. For `ananse network`, you need to add the annotation BED file with `-a /path/to/annotation.bed`.
 
 ### Motif database
 
