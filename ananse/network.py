@@ -396,7 +396,7 @@ class Network(object):
         return tmp
 
     def create_expression_network(
-        self, fin_expression, column="tpm", tfs=None, rank=True
+        self, fin_expression, column="tpm", tfs=None, rank=True, bindingfile=None
     ):
         """Create a gene expression based network.
 
@@ -419,6 +419,9 @@ class Network(object):
 
         rank : bool, optional
             Rank expression levels before scaling.
+
+        bindingfile : str, optional
+            Filename with binding information.
 
         Returns
         -------
@@ -445,9 +448,15 @@ class Network(object):
 
         # Create the TF list, based on valid transcription factors
         if tfs is None:
-            package_dir = os.path.dirname(ananse.__file__)
-            tffile = os.path.join(package_dir, "db", "tfs.txt")
-            tfs = pd.read_csv(tffile, header=None)[0].tolist()
+            activity_fname = bindingfile.replace("binding.tsv", "factor_activity.tsv")
+            if os.path.exists(activity_fname):
+                tfs = list(
+                    set(pd.read_table(activity_fname, index_col=0).index.tolist())
+                )
+            else:
+                package_dir = os.path.dirname(ananse.__file__)
+                tffile = os.path.join(package_dir, "db", "tfs.txt")
+                tfs = pd.read_csv(tffile, header=None)[0].tolist()
 
         tfs = expression[expression.target.isin(tfs)]
         tfs = tfs.reset_index()
@@ -523,7 +532,7 @@ class Network(object):
         # Expression base network
         logger.info("Loading expression")
         df_expression = self.create_expression_network(
-            fin_expression, tfs=tfs, rank=True
+            fin_expression, tfs=tfs, rank=True, bindingfile=binding
         )
 
         # Use a version of the binding network, either promoter-based, enhancer-based
