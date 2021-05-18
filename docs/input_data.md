@@ -1,8 +1,19 @@
 ## Input data
 
+To run ANANSE you need the following data:
+* Genome with gene annotation
+* For `ananse binding`: enhancer regions (optional for `hg38`)
+* For `ananse binding`: enhancer activity:
+   *  ATAC-seq BAM file(s) and/or
+   *  H3K27ac ChIP-seq BAM files(s)
+*  Gene expression data:
+   *  For `ananse network`: gene expression quantification (TPM, for instance `quant.sf` from salmon)
+   *  For `ananse influence`: gene differential expression (DESeq2 output)
+* Motif database
+
 ### Genome
 
-To run `ANANSE` on your sample(s), a matching genome and gene annotation is necessary. We recommand that you download your genome file with [genomepy](https://github.com/vanheeringen-lab/genomepy). Genomepy is a Python package with command-line interface to easily download and install genomes, generates associated files and more.
+To run `ANANSE` on your sample(s), a matching genome and gene annotation is necessary. We recommand that you download your genome file with [genomepy](https://github.com/vanheeringen-lab/genomepy). Genomepy is a Python package with command-line interface to easily download, install and use genome sequences.
 
 To install the genome with `genomepy` you can use this command, which will download both the `FASTA` file and the annotation `BED` file, and exports them to the PATH.
 
@@ -17,37 +28,69 @@ genomepy install hg38 UCSC -a
 genomepy install GRCh38.p13 Ensembl -a
 ```
 
-You can then direct to the genome like so: `-g hg38`
+You can then use the `-g` argument to specify your genome by name when running the ANANSE tools: `-g hg38`.
 
-If you wish to manually set the files required for ANANSE, create a folder containing:  
+Alternatively, you can specify the genome manually. In this case you'll need:  
 
-    * A genome FASTA file   
+* A genome FASTA file   
+* A BED12 file with genome annotation.  
 
-    * A BED12 file with genome annotation.  
+You can then specify the genome as follows: `-g /path/to/genome.fa`. For `ananse network`, you need to add the annotation BED file with `-a /path/to/annotation.bed`.
 
-!!! note  
-    Some model organism gene bed12 files are included in ANANSE:  
+### Enhancer regions
 
-    * [hg19](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/hg19.genes.bed)  
+The `ananse binding` command requires a database of putative enhancer regions. For human data (`hg38` only), ANANSE provides a [database of cis-regulatory regions](https://doi.org/10.5281/zenodo.4066424) (putative enhancers). This is used by default. Optionally, you can specify your own set of putative enhancers. This is **required** for genomes other than `hg38`. 
 
-    * [hg38](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/hg38.genes.bed)  
+To define enhancer regions, you can use any type of genome-wide data that is associated with enhancers and *gives narrow peaks*. H3K27ac signal, for instance, would not work well, as peaks from a H3K27ac ChIP-seq experiment are too broad to provide a precise region for the motif analysis. Examples of data that is suitable would be DNaseI, ATAC-seq or EP300 ChIP-seq. The enhancer regions should be specified as a BED file, centered at the summit. You can also provide one or more `narrowPeak` files, for instance from  [MACS2](https://github.com/taoliu/MACS). In this case all the peaks will be merged and overlapping peaks will be centered at the summit of the highest peak. If you analyze multiple samples with ANANSE, you would include all the peaks from every sample, thereby creating a union of all the peaks in your experiment.
 
-    * [mm10](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/mm10.gene.bed)  
+### Enhancer activity
 
-    * [xt9.1](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/xt9.1.gene.bed)  
-    
-    * [xt10.0](https://github.com/vanheeringen-lab/ANANSE/blob/master/ananse/db/xt10.0.gene.bed)  
+ANANSE can use ATAC-seq and/or H3K27ac ChIP-seq data to predict binding. Using both will give the best performance, however, either one will also work well (see Fig. 3A in the ANANSE paper). These data should be in BAM format, mapped to the relevant genome, duplicates be marked (or removed), sorted and indexed. You can use [seq2science](https://github.com/vanheeringen-lab/seq2science) to map your own or publicly available data. For both types of data you can supply one or more files (replicates). Replicates will be averaged.
 
+### Expression data
 
-You can then direct to the genome like so: `-g /path/to/genome.fa`
+The expression data normally comes from an RNA-seq experiment. We use the **gene-level** `TPM` score to represent the gene expression in ANANSE. In the expression input file, the 1st column (named as `target_id`) should contain the **gene name**, and the second column should be named `tpm`. At the moment TFs are coupled to motifs by HGNC symbol, so all gene identifiers should be the approved HGNC gene names.
+
+This is an example of the input expression file:
+
+```
+target_id	tpm
+A1BG	9.579771
+A1CF	0.0223
+A2M	0.25458
+A2ML1	664.452
+A3GALT2	0.147194
+```
+
+You can create this file with salmon or kallisto, followed by summing transcript-level TPMs to gene-level TPMS using [tximport](https://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html).
+
+### Differential expression data
+
+The differential expression data normally comes from an RNA-seq experiment. This file can be created using, for instance, [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html). In the differential expression file, the 1st column (named as `resid`) should contain **gene name** (the HGNC symbol), the second column should be named as `log2FoldChange` which is **log2 FoldChange score** of gene, and the third column should be named as `padj`, which is the adjusted **p-value** of the differential gene expression test. 
+
+This is an example of a differential expression input file:
+
+```
+resid	log2FoldChange	padj
+ANPEP	7.44242618323665	0
+CD24	-8.44520139575174	0
+COL1A2	8.265875689393	0
+COL6A1	7.41947749996406	0
+COL6A2	9.62485194293185	0
+COL6A3	11.0553152937569	0
+DAB2	7.46610079411987	0
+DMKN	-11.6435948368453	0
+```
+
+**Note:**  The `log2FoldChange` should be a **positive number** if this gene is upregulated from the source to the target cell type, and **negative number** if this gene is downregulated from the source to the target cell type.
 
 ### Motif database
 
 By default ANANSE uses a non-redundant, clustered database of known vertebrate motifs: `gimme.vertebrate.v5.0`. These motifs come from CIS-BP (http://cisbp.ccbr.utoronto.ca/) and other sources. [Large-scale benchmarks](https://www.biorxiv.org/content/10.1101/474403v1.full) using ChIP-seq peaks show that this database shows good performance and should be a good default choice. 
 
-!!! warning
-    If you would like to use your own motif database, please make sure your database include following two files: 1) **a motif file** and 2) **a motif2factors file**.
-    The `motif` file should contain positional frequency matrices and should end with the `.pfm` extension. The `motif2factors` file should have the same name as  the `motif` file and end with `.motif2factors.txt` instead of `.pfm`.
+Alternatively, you can use any of the other motif databases included with [GimmeMotifs](https://gimmemotifs.readthedocs.io/en/master/overview.html#motif-databases) (such as `JASPAR2020_vertebrates` or `HOMER`). If you would like to use your own motif database, please make sure you create the following two files: 1) a motif file and 2) a file containing mapping of motifs to factors.  The motif file should contain positional frequency matrices and should end with the `.pfm` extension. The motif mapping file should have the same base name as  the `motif` file and end with `.motif2factors.txt` instead of `.pfm`. Examples are shown below.
+
+**Please note:** if you want to use ANANSE for a species other than human or mouse, you will have to use the default motif database. This enables mapping of the transcription factors to motifs.
 
 #### Motif file
 
@@ -76,105 +119,3 @@ GM.5.0.Sox.0001	SOX9	ChIP-seq	Y
 GM.5.0.Sox.0001	Sox9	ChIP-seq	N
 GM.5.0.Sox.0001	SRY	SELEX	Y
 ```
-
-!!! note  
-    The default motif database (`gimme.vertebrate.v5.0`) from the [GimmeMotifs](https://github.com/vanheeringen-lab/gimmemotifs) package[^1] can be found here:  
-
-    * [gimme.vertebrate.v5.0.pfm](https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.pfm)  
-    * [gimme.vertebrate.v5.0.motif2factors.txt](https://github.com/vanheeringen-lab/gimmemotifs/blob/master/data/motif_databases/gimme.vertebrate.v5.0.motif2factors.txt)
-
-### Enhancer data
-
-The enhancer data file that ANANSE needs as input should contain putative enhancer regions with an associated enhancer signal for the specific cell type or tissue. This signal can be any measure that is related to enhancer activity. We have used p300 or H3K27ac ChIP-seq signal. p300 ChIP-seq peaks can be used directly, however the H3K27ac signal is not specific enough. Peaks from a H3K27ac ChIP-seq experiment are too broad for the motif analysis. This means that you will have to use another source of data to determine the putative enhancer regions. For human data, we estblished a enhancer peak database. For other genome, we have used ATAC-seq peaks, but other data such as DNase I could also work.
-
-In practice these are examples of approaches that will work: Use [STAR]()/[bwa]() or your tool of choice to map your `fastq` files to the genome. Use [MACS2](https://github.com/taoliu/MACS) or your tool of choice to identify the peaks. Then establish enhancer peak normalize it with `ananse enhancer` command.  
-
-
-* For **H3K27ac ChIP-seq for human hg38** data. The `ananse enhancer` command will generate enhancer file based on built-in human enhancer database (200bp) and H3K27ac ChIP-seq intensity (2000bp).   
-
-!!! tip "Example"
-    `ananse enhancer -g hg38 -t H3K27ac -b KRT_H3K27ac.sorted.bam -p KRT_H3K27ac.broadPeak -o KRT_enhancer.bed`
-
-
-* For **p300 ChIP-seq** data. The `ananse enhancer` command will generate enhancer file based on p300 ChIP-seq peak (200bp) and p300 ChIP-seq intensity (200bp).   
-
-!!! tip "Example"
-    `ananse enhancer -g hg19 -t p300 -b KRT_p300.sorted.bam -p KRT_p300.narrowPeak -o KRT_enhancer.bed`
-
-
-* For **ATAC-seq and H3K27ac ChIP-seq** data. The `ananse enhancer` command will generate enhancer file based on ATAC-seq peak (200bp) and H3K27ac ChIP-seq intensity (2000bp).  
-
-!!! tip "Example"
-    `ananse enhancer -g hg19 -t ATAC -b KRT_H3K27ac.sorted.bam -p KRT_ATAC.narrowPeak -o KRT_enhancer.bed`
-
-
-
-This is an example of an input BED file:
-
-```
-chr2	148881617	148881817	7
-chr7	145997204	145997404	4
-chr7	145997304	145997404	4
-chr7	145997104	145997404	4
-chr13	109424160	109424360	20
-chr14	32484901	32485101	2
-
-```
-
-!!! note 
-    You can find our example enhancer files at here: 
-
-    * [FB_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_enhancer.bed)  
-    * [KRT_enhancer.bed](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_enhancer.bed)
-
-
-### Expression data
-
-The expression data normally comes from an RNA-seq experiment. We use the `TPM` score to represent the gene expression in ANANSE. In the expression input file, the 1st column (named as `target_id`) should contain the **gene name**, and the second column should be named `tpm`. At the moment TFs are coupled to motifs my HGNC symbol, so all gene identifiers should be the approved HGNC gene names.
-
-This is an example of the input expression file:
-
-```
-target_id	tpm
-A1BG	9.579771
-A1CF	0.0223
-A2M	0.25458
-A2ML1	664.452
-A3GALT2	0.147194
-```
-
-!!! note 
-    You can find our example expression files here:  
-
-    * [FB_rep1_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_rep1_TPM.txt)  
-    * [FB_rep2_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB_rep2_TPM.txt)  
-    * [KRT_rep1_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_rep1_TPM.txt)  
-    * [KRT_rep2_TPM.txt](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/KRT_rep2_TPM.txt)  
-
-### Differential expression data
-
-The differential expression data normally comes from an RNA-seq experiment. This file can be created using, for instance, [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html). In the differential expression file, the 1st column (named as `resid`) should contain **gene name** (the HGNC symbol), the second column should be named as `log2FoldChange` which is **log2 FoldChange score** of gene, and the third column should be named as `padj`, which is the adjusted **p-value** of the differential gene expression test. 
-
-This is an example of a differential expression input file:
-
-```
-resid	log2FoldChange	padj
-ANPEP	7.44242618323665	0
-CD24	-8.44520139575174	0
-COL1A2	8.265875689393	0
-COL6A1	7.41947749996406	0
-COL6A2	9.62485194293185	0
-COL6A3	11.0553152937569	0
-DAB2	7.46610079411987	0
-DMKN	-11.6435948368453	0
-```
-!!! warning
-    The `log2FoldChange` should be a **positive number** if this gene is up regulated, and **negative number** if this gene is down regulated.
-
-!!! note 
-    You can find our example differential expression input file here:  
-
-    * [FB2KRT_degenes.csv](https://github.com/vanheeringen-lab/ANANSE/blob/master/test/data/FB2KRT_degenes.csv)  
-
-[^1]: van Heeringen, S.J., and Veenstra, G.J.C. (2010). GimmeMotifs: a de novo motif prediction pipeline for ChIP-sequencing experiments. Bioinformatics 27, 270-271.
-[^2]: Kent, J., ENCODE DCC. (2014). kentUtils: Jim Kent command line bioinformatic utilities. Available from: https://github.com/ENCODE-DCC/kentUtils.
