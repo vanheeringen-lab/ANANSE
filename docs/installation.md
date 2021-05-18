@@ -44,7 +44,3 @@ $ git checkout develop
 $ python setup.py develop
 $ python setup.py build
 ```
-
-**TODO**
-
-ANANSE requires Python>=3.7. 
