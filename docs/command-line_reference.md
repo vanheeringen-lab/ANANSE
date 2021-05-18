@@ -34,7 +34,7 @@ You can now specify this model when running `ananse binding`:
 ``` bash
 ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -H IPS.H3K27ac.rep1.bam IPS.H3K27ac.rep2.bam \
-               -o IPS.binding
+               -o IPS.binding \
                -R $DATA_DIR/ANANSE.REMAP.model.v1.0
 ```
 
@@ -43,7 +43,7 @@ Alternatively, you can use your own set of enhancer regions or putative cis-regu
 ``` bash
 ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -H IPS.H3K27ac.rep1.bam IPS.H3K27ac.rep2.bam \
-               -o IPS.binding
+               -o IPS.binding \
                -r https://api.wenglab.org/screen_v13/fdownloads/GRCh38-ccREs.bed
 ```
 
@@ -52,7 +52,7 @@ Or to use the union of peaks from several ATAC-seq experiments:
 ``` bash
 ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -H IPS.H3K27ac.rep1.bam IPS.H3K27ac.rep2.bam \
-               -o IPS.binding
+               -o IPS.binding \
                -r ATAC.cell_type1.narrowPeak ATAC.cell_type2.narrowPeak
 ```
 
