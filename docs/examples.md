@@ -20,11 +20,9 @@ genomepy install hg38 --annotation
 
 ```
 mkdir -p ANANSE.REMAP.model.v1.0
-cd ANANSE.REMAP.model.v1.0
 wget https://zenodo.org/record/4768075/files/ANANSE.REMAP.model.v1.0.tgz
-tar xvzf ANANSE.REMAP.model.v1.0.tgz
+tar xvzf ANANSE.REMAP.model.v1.0.tgz -C ANANSE.REMAP.model.v1.0
 rm ANANSE.REMAP.model.v1.0.tgz
-cd ..
 ```
 
 5. Download and unpack the example data:
