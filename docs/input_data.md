@@ -5,11 +5,11 @@ To run ANANSE you need the following data:
 * Genome with gene annotation
 * For `ananse binding`: enhancer regions (optional for `hg38`)
 * For `ananse binding`: enhancer activity:
-   *  ATAC-seq BAM file(s) and/or
-   *  H3K27ac ChIP-seq BAM files(s)
+    *  ATAC-seq BAM file(s) and/or
+    *  H3K27ac ChIP-seq BAM files(s) 
 *  Gene expression data:
-   *  For `ananse network`: gene expression quantification (TPM, for instance `quant.sf` from salmon)
-   *  For `ananse influence`: gene differential expression (DESeq2 output)
+    *  For `ananse network`: gene expression quantification (TPM)
+    *  For `ananse influence`: gene differential expression (DESeq2 output)
 * Motif database
 
 ### Genome
