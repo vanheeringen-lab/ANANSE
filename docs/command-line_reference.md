@@ -38,6 +38,8 @@ ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -R $DATA_DIR/ANANSE.REMAP.model.v1.0
 ```
 
+Note that the BAM file(s) should be indexed, for instance with `samtools index`.
+
 Alternatively, you can use your own set of enhancer regions or putative cis-regulatory elements. For instance, to use the candidate cis-Regulatory Elements by ENCODE (from [SCREEN](https://screen.encodeproject.org/)):
 
 ``` bash
