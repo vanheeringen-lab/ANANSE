@@ -100,6 +100,8 @@ Optional arguments:
                         Transcription factors to use. Either a space-separated list or a file with one TF per line.
   -n NCPUS, --ncpus NCPUS
                         Number of processes to use for motif scanning
+  --pfmscorefile        use precomputed gimmemotifs scores (gimme scan -T -g
+                        GENOME INPUTFILE)
   -h, --help            Show this help message and exit
 ```
 
