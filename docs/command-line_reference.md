@@ -157,6 +157,8 @@ Optional arguments:
 
 To calculate the influence score for the transition from a *source* cell type (`-s` or `--source`) to a *target* cell type (`t` or `--target`), `ananse influence` uses the GRNs for both cell types, predicted by `ananse network`. For each network, the top 100k interactions are selected, based on the rank of the interaction scores (edge weights). Using the differential GRN, capturing the difference between the two networks, a local network is built for each TF, up to a maximal number of three edges. Using this network, the influence score is calculated based on 1) the edge distance from the TF of interest to the target gene, 2) the predicted interaction score and 3) the change in expression between the source cell type and the target cell type.
 
+The number of edges used is 100,000 by default but in some cases you'll get better performance with more edges. You can, for instance, try to increase to 500,000 edges by using `-i 500_000`. 
+
 Example command: 
 
 ``` bash
