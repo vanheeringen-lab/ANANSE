@@ -5,8 +5,8 @@ To run ANANSE you need the following data:
 * Genome with gene annotation
 * For `ananse binding`: enhancer regions (optional for `hg38`)
 * For `ananse binding`: enhancer activity:
-    *  ATAC-seq BAM file(s) and/or
-    *  H3K27ac ChIP-seq BAM files(s) 
+    *  indexed ATAC-seq BAM file(s) and/or
+    *  indexed H3K27ac ChIP-seq BAM files(s) 
 *  Gene expression data:
     *  For `ananse network`: gene expression quantification (TPM)
     *  For `ananse influence`: gene differential expression (DESeq2 output)
@@ -46,7 +46,7 @@ To define enhancer regions, you can use any type of genome-wide data that is ass
 
 ### Enhancer activity
 
-ANANSE can use ATAC-seq and/or H3K27ac ChIP-seq data to predict binding. Using both will give the best performance, however, either one will also work well (see Fig. 3A in the ANANSE paper). These data should be in BAM format, mapped to the relevant genome, duplicates be marked (or removed), sorted and indexed. You can use [seq2science](https://github.com/vanheeringen-lab/seq2science) to map your own or publicly available data. For both types of data you can supply one or more files (replicates). Replicates will be averaged.
+ANANSE can use ATAC-seq and/or H3K27ac ChIP-seq data to predict binding. Using both will give the best performance, however, either one will also work well (see Fig. 3A in the ANANSE paper). These data should be in BAM format, mapped to the relevant genome, duplicates be marked (or removed), sorted and indexed. You can use [seq2science](https://github.com/vanheeringen-lab/seq2science) to map your own or publicly available data. For both types of data you can supply one or more files (replicates). Replicates will be averaged. The BAM file(s) should be indexed, for instance with `samtools index`.
 
 ### Expression data
 
