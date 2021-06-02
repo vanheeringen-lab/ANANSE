@@ -119,7 +119,7 @@ The `ananse network` command infers a cell type-specific GRN based on the predic
 Usage: 
 
 ```
-ananse [-h] <command> [options] network -b FILE [-e FILE] [-g NAME] [-a BED] [-n NCORE] [--include-promoter]
+ananse [-h] <command> [options] network -b FILE -e FILE -o FILE [-g NAME] [-a BED] [-n NCORE] [--include-promoter]
                                         [--include-enhancer] [-h]
 ```
 
@@ -131,6 +131,7 @@ Required arguments:
   -e FILE, --expression FILE
                         Expression scores. Should have gene names in the first column and should contain a column named
                         tpm. Both the quant.sf from salmon or the abundances.tsv from kallisto will work fine.
+  -o FILE, --outfile	Name of output file.
 ```
 
 Optional arguments:
