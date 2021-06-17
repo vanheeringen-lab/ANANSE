@@ -121,14 +121,20 @@ class Network(object):
         enhancers = np.array([])
         while True:
             try:
-                tmp = pd.read_table(fname, usecols=[idx], header=None, nrows=chunksize, skiprows=skiprows)
+                tmp = pd.read_table(
+                    fname,
+                    usecols=[idx],
+                    header=None,
+                    nrows=chunksize,
+                    skiprows=skiprows,
+                )
             except pd.errors.EmptyDataError:
                 break
-            if tmp.shape[0] == 0 or tmp.iloc[0,0] in enhancers:
+            if tmp.shape[0] == 0 or tmp.iloc[0, 0] in enhancers:
                 break
 
             skiprows += chunksize
-            enhancers = np.hstack((enhancers, tmp.iloc[:,0].unique()))
+            enhancers = np.hstack((enhancers, tmp.iloc[:, 0].unique()))
         enhancers = np.unique(enhancers)
 
         # Split into columns and create PyRanges object

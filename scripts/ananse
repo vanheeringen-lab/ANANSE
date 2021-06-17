@@ -42,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-v", "--version", action="version", version=f"%(prog)s v{__version__}"
     )
-    
+
     subparser_dict = {}
 
     subparsers = parser.add_subparsers()
@@ -196,22 +196,22 @@ if __name__ == "__main__":
         help="Gene annotation in BED12 format. Not necessary if you use a genome that was installed using genomepy with the --annotation flag.",
         metavar="BED",
     )
-    group.add_argument(
-        "-n",
-        "--ncore",
-        dest="ncore",
-        help="Number of core used.",
-        type=int,
-        default=4,
-    )
-    group.add_argument(
-        "-m",
-        "--memory-limit",
-        dest="memory_limit",
-        help="Memory limit (default 24G). Regardless of this limit, ANANSE will use at least ~12GB for a typical analysis of human networks. Setting the memory limit higher will result in faster computation.",
-        type=str,
-        default='24GB',
-    )
+    #    group.add_argument(
+    #        "-n",
+    #        "--ncore",
+    #        dest="ncore",
+    #        help="Number of core used.",
+    #        type=int,
+    #        default=4,
+    #    )
+    #    group.add_argument(
+    #        "-m",
+    #        "--memory-limit",
+    #        dest="memory_limit",
+    #        help="Memory limit (default 24G). Regardless of this limit, ANANSE will use at least ~12GB for a typical analysis of human networks. Setting the memory limit higher will result in faster computation.",
+    #        type=str,
+    #        default='24GB',
+    #    )
     group.add_argument(
         "--include-promoter",
         "--exclude-promoter",
@@ -234,7 +234,6 @@ if __name__ == "__main__":
         "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.network)
-    
 
     # ananse influnecei
     p = subparsers.add_parser("influence", add_help=False)
