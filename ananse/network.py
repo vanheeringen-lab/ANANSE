@@ -614,6 +614,6 @@ class Network(object):
 
         logger.info("Saving file")
         
-        dirname = os.path.dirname(outfile):
-            os.makedirs(dirname, exist_ok=True)
+        dirname = os.path.dirname(outfile)
+        os.makedirs(dirname, exist_ok=True)
         result[["prob"]].to_csv(outfile, sep="\t")
