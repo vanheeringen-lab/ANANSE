@@ -112,6 +112,7 @@ Optional arguments:
 
 The `ananse network` command infers a cell type-specific GRN based on the predicted TF binding sites using `ananse binding` and the expression levels of both TFs as well as their target genes. TF-gene interaction scores, the edge weights in the network, are calculated based on the predicted TF binding probability in enhancers and the distance between the enhancers and the target gene, the predicted TF activity and the expression level of both TF and the target gene.
 
+Note: `ananse network` needs ~12-15GB of memory for a typical analysis of a human network.
 
 #### Full options
 
