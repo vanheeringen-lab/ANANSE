@@ -9,12 +9,25 @@ from __future__ import print_function
 
 
 import ananse.network
-
+from dask.distributed import Client
 
 def network(args):
     # if not os.path.exists(args.fin_rpkm):
     #     print("File %s does not exist!" % args.fin_rpkm)
     #     sys.exit(1)
+
+    ncore = args.ncore
+    if ncore is None:
+       ncore = 4
+    ncore = int(ncore)
+
+    memory_limit = args.memory_limit
+    if args.memory_limit is None:
+        memory_limit = '24GB'
+
+    client = Client(n_workers=ncore, 
+                threads_per_worker=1,
+                memory_limit=memory_limit)
 
     b = ananse.network.Network(
         ncore=args.ncore,
@@ -30,3 +43,5 @@ def network(args):
         fin_expression=args.fin_expression,
         outfile=args.outfile,
     )
+
+    client.close()

@@ -202,6 +202,15 @@ if __name__ == "__main__":
         dest="ncore",
         help="Number of core used.",
         type=int,
+        default=4,
+    )
+    group.add_argument(
+        "-m",
+        "--memory-limit",
+        dest="memory_limit",
+        help="Memory limit (default 24G). Regardless of this limit, ANANSE will use at least ~12GB for a typical analysis of human networks. Setting the memory limit higher will result in faster computation.",
+        type=str,
+        default='24GB',
     )
     group.add_argument(
         "--include-promoter",

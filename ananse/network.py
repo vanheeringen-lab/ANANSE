@@ -20,6 +20,8 @@ from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
+
+from dask.distributed import progress
 from loguru import logger
 
 from genomepy import Genome
@@ -112,9 +114,22 @@ class Network(object):
         logger.info("reading enhancers")
 
         # Read enhancers from binding file
-        # This is relatively slow for a large file. May need some optimization.
-        enhancers = pd.read_table(fname, usecols=["enhancer"])["enhancer"]
-        enhancers = enhancers.unique()
+        header = pd.read_table(fname, nrows=0)
+        idx = header.columns.get_loc("enhancer")
+        skiprows = 1
+        chunksize = 2_000_000
+        enhancers = np.array([])
+        while True:
+            try:
+                tmp = pd.read_table(fname, usecols=[idx], header=None, nrows=chunksize, skiprows=skiprows)
+            except pd.errors.EmptyDataError:
+                break
+            if tmp.shape[0] == 0 or tmp.iloc[0,0] in enhancers:
+                break
+
+            skiprows += chunksize
+            enhancers = np.hstack((enhancers, tmp.iloc[:,0].unique()))
+        enhancers = np.unique(enhancers)
 
         # Split into columns and create PyRanges object
         p = re.compile("[:-]")
@@ -564,9 +579,10 @@ class Network(object):
             # This is where the heavy lifting of all delayed computations gets done
             logger.info("Computing network")
             if fin_expression is not None:
-                with ProgressBar():
-                    result = df_expression.join(df_binding)
-                    result = result.compute()
+                result = df_expression.join(df_binding)
+                result = result.persist()
+                progress(result)
+                result = result.compute()
                 result = result.fillna(0)
             else:
                 result = df_binding
