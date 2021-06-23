@@ -13,6 +13,7 @@ import os
 import math
 import re
 import warnings
+import gc
 
 import numpy as np
 import pandas as pd
@@ -20,9 +21,10 @@ from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
-
+from tempfile import NamedTemporaryFile
 from dask.distributed import progress
 from loguru import logger
+from time import sleep
 
 from genomepy import Genome
 import pyranges as pr
@@ -507,7 +509,7 @@ class Network(object):
 
         # Convert to a dask DataFrame.
         logger.info("creating expression dataframe")
-        network = dd.from_pandas(network, npartitions=30)
+        network = dd.from_pandas(network, npartitions=16)
 
         return network
 
@@ -583,13 +585,13 @@ class Network(object):
             df_expression = df_expression.drop(columns=["tf"])
 
             # This is where the heavy lifting of all delayed computations gets done
-            logger.info("Computing network")
+            #logger.info("Computing network")
             if fin_expression is not None:
                 result = df_expression.join(df_binding)
                 result = result.persist()
+                result = result.fillna(0)
                 progress(result)
                 result = result.compute()
-                result = result.fillna(0)
             else:
                 result = df_binding
 
@@ -612,8 +614,7 @@ class Network(object):
             result["prob"] = result[["tf_expression", "target_expression"]].mean(1)
             result = result.compute()
 
-        logger.info("Saving file")
-        
+        logger.info("Computing network")
         dirname = os.path.dirname(outfile)
         os.makedirs(dirname, exist_ok=True)
         result[["prob"]].to_csv(outfile, sep="\t")

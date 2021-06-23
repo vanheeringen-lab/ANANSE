@@ -17,20 +17,19 @@ def network(args):
     #     print("File %s does not exist!" % args.fin_rpkm)
     #     sys.exit(1)
 
-    #    ncore = args.ncore
-    #    if ncore is None:
-    #       ncore = 4
-    #    ncore = int(ncore)
+    ncore = args.ncore
+    if ncore is None:
+        ncore = 4
+    ncore = int(ncore)
     #
     #    memory_limit = args.memory_limit
     #    if args.memory_limit is None:
     #        memory_limit = '24GB'
     #
-    ncore = 2
-    memory_limit = "24GB"
-
+    memory_limit = "12GB"
+    
     with Client(
-        n_workers=ncore, threads_per_worker=1, memory_limit=memory_limit
+        n_workers=ncore, threads_per_worker=1, memory_limit=memory_limit,
     ) as client:
 
         b = ananse.network.Network(

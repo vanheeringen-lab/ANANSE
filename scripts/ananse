@@ -196,14 +196,14 @@ if __name__ == "__main__":
         help="Gene annotation in BED12 format. Not necessary if you use a genome that was installed using genomepy with the --annotation flag.",
         metavar="BED",
     )
-    #    group.add_argument(
-    #        "-n",
-    #        "--ncore",
-    #        dest="ncore",
-    #        help="Number of core used.",
-    #        type=int,
-    #        default=4,
-    #    )
+    group.add_argument(
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of core used.",
+        type=int,
+        default=4,
+    )
     #    group.add_argument(
     #        "-m",
     #        "--memory-limit",

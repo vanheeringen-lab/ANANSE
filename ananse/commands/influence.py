@@ -25,6 +25,4 @@ def influence(args):
         degenes=args.expression,  # --degenes (HGNC gene names, padj and log2foldchanges)
         edges=args.edges,  # --edges (optional)
     )
-    a.run_influence(
-        args.plot
-    )  # -p 
+    a.run_influence(args.plot)  # -p
