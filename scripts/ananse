@@ -169,6 +169,7 @@ if __name__ == "__main__":
         metavar="FILE",
         default=None,
         required=True,
+        nargs="+",
     )
     group.add_argument(
         "-o",
