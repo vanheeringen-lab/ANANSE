@@ -591,6 +591,7 @@ class Network(object):
                 result = df_expression.join(df_binding)
                 result = result.persist()
                 result = result.fillna(0)
+                logger.info("Computing network")
                 progress(result)
                 result = result.compute()
             else:
@@ -615,7 +616,7 @@ class Network(object):
             result["prob"] = result[["tf_expression", "target_expression"]].mean(1)
             result = result.compute()
 
-        logger.info("Computing network")
+        logger.info("Writing network")
         dirname = os.path.dirname(outfile)
         os.makedirs(dirname, exist_ok=True)
         result[["prob"]].to_csv(outfile, sep="\t")
