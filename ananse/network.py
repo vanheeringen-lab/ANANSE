@@ -13,18 +13,15 @@ import os
 import math
 import re
 import warnings
-import gc
 
 import numpy as np
 import pandas as pd
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
 import dask.dataframe as dd
-from dask.diagnostics import ProgressBar
 from tempfile import NamedTemporaryFile
 from dask.distributed import progress
 from loguru import logger
-from time import sleep
 
 from genomepy import Genome
 import pyranges as pr
