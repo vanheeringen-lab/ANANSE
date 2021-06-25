@@ -63,6 +63,7 @@ class Network(object):
         self.genome = genome
         g = Genome(self.genome)
         self.gsize = g.sizes_file
+        self._tmp_files = []
 
         # # Motif information file
         # if pfmfile is None:
@@ -464,12 +465,19 @@ class Network(object):
         )
         expression[column] = np.log2(expression[column] + 1e-5)
 
-        # Create the target gene list, based on all genes
-        expression.index.rename("target", inplace=True)
-        expression = expression.reset_index()
-        expression = expression.rename(columns={"tpm": "target_expression"})
+        tmp = expression.rename(columns={"tpm": "target_expression"})
+        tmp["target_expression"] = minmax_scale(tmp["target_expression"].rank())
+        tmp.index.rename("target", inplace=True)
+        tmp["key"] = 0
+        target_fname = NamedTemporaryFile(
+            prefix="ananse.", suffix=".target.parquet", delete=False
+        ).name
+        self._tmp_files.append(target_fname)
+        tmp.reset_index().to_parquet(target_fname, index=False)
 
         # Create the TF list, based on valid transcription factors
+        if bindingfile is None:
+            bindingfile = "/na/"
         if tfs is None:
             activity_fname = bindingfile.replace("binding.tsv", "factor_activity.tsv")
             if os.path.exists(activity_fname):
@@ -481,35 +489,28 @@ class Network(object):
                 tffile = os.path.join(package_dir, "db", "tfs.txt")
                 tfs = pd.read_csv(tffile, header=None)[0].tolist()
 
-        tfs = expression[expression.target.isin(tfs)]
-        tfs = tfs.reset_index()
-        tfs = tfs.drop(columns=["index"])
-        tfs.rename(
-            columns={"target": "tf", "target_expression": "tf_expression"}, inplace=True
-        )
+        idx = expression.index[expression.index.isin(tfs)]
+        tmp = expression.rename(columns={"tpm": "tf_expression"}).loc[idx]
+        tmp["tf_expression"] = minmax_scale(tmp["tf_expression"].rank())
+        tmp["key"] = 0
+        tmp.index.rename("tf", inplace=True)
+        tf_fname = NamedTemporaryFile(
+            prefix="ananse.", suffix=".tf.parquet", delete=False
+        ).name
+        self._tmp_files.append(tf_fname)
+        tmp.reset_index().to_parquet(tf_fname, index=False)
 
-        expression["key"] = 0
-        tfs["key"] = 0
-
-        # Merge TF and target gene expression information
-        network = expression.merge(tfs, how="outer")
-        network = network[["tf", "target", "tf_expression", "target_expression"]]
-
-        # Rank and scale
-        for col in ["tf_expression", "target_expression"]:
-            if rank:
-                network[col] = rankdata(network[col])
-            network[col] = minmax_scale(network[col])
+        a = dd.read_parquet(tf_fname)
+        b = dd.read_parquet(target_fname)
+        network = a.merge(b, how="outer")
 
         # Use one-column index that contains TF and target genes.
         # This is necessary for dask, as dask cannot merge on a MultiIndex.
         # Otherwise this would be an inefficient and unnecessary step.
         network["tf_target"] = network["tf"] + "_" + network["target"]
-        network = network.set_index("tf_target").drop(columns=["target"])
-
-        # Convert to a dask DataFrame.
-        logger.info("creating expression dataframe")
-        network = dd.from_pandas(network, npartitions=16)
+        network = network[
+            ["tf", "target", "tf_target", "tf_expression", "target_expression"]
+        ]
 
         return network
 
@@ -585,7 +586,7 @@ class Network(object):
             df_expression = df_expression.drop(columns=["tf"])
 
             # This is where the heavy lifting of all delayed computations gets done
-            #logger.info("Computing network")
+            # logger.info("Computing network")
             if fin_expression is not None:
                 result = df_expression.join(df_binding)
                 result = result.persist()
@@ -618,3 +619,11 @@ class Network(object):
         dirname = os.path.dirname(outfile)
         os.makedirs(dirname, exist_ok=True)
         result[["prob"]].to_csv(outfile, sep="\t")
+
+    def __del__(self):
+        if not hasattr(self, "_tmp_files"):
+            return
+
+        for fname in self._tmp_files:
+            if os.path.exists(fname):
+                os.unlink(fname)
