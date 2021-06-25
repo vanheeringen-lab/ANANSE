@@ -618,8 +618,9 @@ class Network(object):
 
         logger.info("Writing network")
         dirname = os.path.dirname(outfile)
-        os.makedirs(dirname, exist_ok=True)
-        result[["prob"]].to_csv(outfile, sep="\t")
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
+        result[["tf_target", "prob"]].to_csv(outfile, sep="\t", index=False)
 
     def __del__(self):
         if not hasattr(self, "_tmp_files"):
