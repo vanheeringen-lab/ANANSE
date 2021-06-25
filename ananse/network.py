@@ -419,6 +419,18 @@ class Network(object):
         logger.info("Done grouping...")
         return tmp
 
+    def _save_temp_expression(self, df, name):
+        tmp = df.rename(columns={"tpm": f"{name}_expression"})
+        tmp[f"{name}_expression"] = minmax_scale(tmp[f"{name}_expression"].rank())
+        tmp.index.rename(name, inplace=True)
+        tmp["key"] = 0
+        fname = NamedTemporaryFile(
+            prefix="ananse.", suffix=f".{name}.parquet", delete=False
+        ).name
+        self._tmp_files.append(fname)
+        tmp.reset_index().to_parquet(fname, index=False)
+        return fname
+
     def create_expression_network(
         self, fin_expression, column="tpm", tfs=None, rank=True, bindingfile=None
     ):
@@ -465,16 +477,6 @@ class Network(object):
         )
         expression[column] = np.log2(expression[column] + 1e-5)
 
-        tmp = expression.rename(columns={"tpm": "target_expression"})
-        tmp["target_expression"] = minmax_scale(tmp["target_expression"].rank())
-        tmp.index.rename("target", inplace=True)
-        tmp["key"] = 0
-        target_fname = NamedTemporaryFile(
-            prefix="ananse.", suffix=".target.parquet", delete=False
-        ).name
-        self._tmp_files.append(target_fname)
-        tmp.reset_index().to_parquet(target_fname, index=False)
-
         # Create the TF list, based on valid transcription factors
         if bindingfile is None:
             bindingfile = "/na/"
@@ -489,17 +491,14 @@ class Network(object):
                 tffile = os.path.join(package_dir, "db", "tfs.txt")
                 tfs = pd.read_csv(tffile, header=None)[0].tolist()
 
+        # Save TFs and targets as temporary files
         idx = expression.index[expression.index.isin(tfs)]
-        tmp = expression.rename(columns={"tpm": "tf_expression"}).loc[idx]
-        tmp["tf_expression"] = minmax_scale(tmp["tf_expression"].rank())
-        tmp["key"] = 0
-        tmp.index.rename("tf", inplace=True)
-        tf_fname = NamedTemporaryFile(
-            prefix="ananse.", suffix=".tf.parquet", delete=False
-        ).name
-        self._tmp_files.append(tf_fname)
-        tmp.reset_index().to_parquet(tf_fname, index=False)
+        tmp = expression.loc[idx]
+        tf_fname = self._save_temp_expression(tmp, "tf")
+        target_fname = self._save_temp_expression(expression, "target")
 
+        # Read files (delayed) and merge on 'key' to create a Cartesian product
+        # combining all TFs with all target genes.
         a = dd.read_parquet(tf_fname)
         b = dd.read_parquet(target_fname)
         network = a.merge(b, how="outer")
