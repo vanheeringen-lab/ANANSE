@@ -468,7 +468,10 @@ class Network(object):
         re_column = re.compile(fr"^{column}$", re.IGNORECASE)
         expression = pd.DataFrame(
             pd.concat(
-                [pd.read_table(f, index_col=0).filter(regex=re_column) for f in fin_expression],
+                [
+                    pd.read_table(f, index_col=0).filter(regex=re_column)
+                    for f in fin_expression
+                ],
                 axis=1,
             ).mean(1),
             columns=[column],

@@ -15,7 +15,7 @@ from dask.distributed import Client, LocalCluster
 def network(args):
     ncore = args.ncore
     if ncore is None:
-        ncore = 2
+        ncore = min(os.cpu_count(), 4)
     ncore = int(ncore)
 
     memory_limit = "12GB"
@@ -34,7 +34,7 @@ def network(args):
         scheduler_port=0,
         dashboard_address=None,
         n_workers=ncore,
-        threads_per_worker=1,
+        threads_per_worker=2,
         memory_limit=memory_limit,
     )
     client = Client(cluster)

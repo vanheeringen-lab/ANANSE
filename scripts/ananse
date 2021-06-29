@@ -4,7 +4,7 @@
 # This module is free software. You can redistribute it and/or modify it under
 # the terms of the MIT License, see the file COPYING included with this
 # distribution.
-
+import os
 import sys
 import argparse
 
@@ -135,7 +135,7 @@ if __name__ == "__main__":
         dest="ncpus",
         help="Number of processes to use for motif scanning",
         type=int,
-        default=4,
+        default=min(os.cpu_count(), 4),
     )
     group.add_argument(
         "--pfmscorefile",
