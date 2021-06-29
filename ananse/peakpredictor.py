@@ -179,7 +179,7 @@ class PeakPredictor:
         return valid_factors
 
     def is_human_genome(self):
-        base_genome = os.path.basename(self.genome)
+        base_genome = os.path.basename(self.genome.strip("/"))
         for name in ["hg38", "GRCh38", "hg19", "GRCh37"]:
             if name in base_genome:
                 return True

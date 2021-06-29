@@ -445,7 +445,7 @@ class Network(object):
             list of filenames. First column should contain the gene name.
 
         column : str, optional
-            Column name that contains gene expression, 'tpm' by default.
+            Column name that contains gene expression, 'tpm' by default (case insensitive).
 
         tfs : list, optional
             List of TF gene names. All TFs will be used by default.
@@ -465,9 +465,10 @@ class Network(object):
             fin_expression = [fin_expression]
 
         # Read all expression input files and take the mean expression per gene
+        re_column = re.compile(fr"^{column}$", re.IGNORECASE)
         expression = pd.DataFrame(
             pd.concat(
-                [pd.read_table(f, index_col=0)[[column]] for f in fin_expression],
+                [pd.read_table(f, index_col=0).filter(regex=re_column) for f in fin_expression],
                 axis=1,
             ).mean(1),
             columns=[column],
