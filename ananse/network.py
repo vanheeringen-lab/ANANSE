@@ -12,6 +12,7 @@
 import os
 import math
 import re
+import sys
 import warnings
 
 import numpy as np
@@ -495,6 +496,25 @@ class Network(object):
         # Save TFs and targets as temporary files
         idx = expression.index[expression.index.isin(tfs)]
         tmp = expression.loc[idx]
+        if tmp.shape[0] == 0:
+            logger.error(
+                "None of the transcription factors are found in your expression file."
+            )
+            logger.error(
+                "If you have human data, please make sure you use HGNC symbols (gene names)."
+            )
+            logger.error(
+                "If you have non-human data, you have to create a custom motif to gene mapping."
+            )
+            logger.error("See this link for one possibility to create this file: ")
+            logger.error(
+                "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors"
+            )
+            logger.error(
+                "If you use a custom motif mapping, you will also have (re)run `gimme binding` with this file."
+            )
+            sys.exit(1)
+
         tf_fname = self._save_temp_expression(tmp, "tf")
         target_fname = self._save_temp_expression(expression, "target")
 
