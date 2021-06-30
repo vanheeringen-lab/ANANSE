@@ -6,8 +6,6 @@
 # distribution.
 
 from __future__ import print_function
-import sys
-import os
 
 import ananse.influence
 
@@ -25,6 +23,4 @@ def influence(args):
         degenes=args.expression,  # --degenes (HGNC gene names, padj and log2foldchanges)
         edges=args.edges,  # --edges (optional)
     )
-    a.run_influence(
-        args.plot
-    )  # -p 
+    a.run_influence(args.plot)  # -p

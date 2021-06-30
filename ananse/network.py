@@ -19,7 +19,8 @@ import pandas as pd
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
 import dask.dataframe as dd
-from dask.diagnostics import ProgressBar
+from tempfile import NamedTemporaryFile
+from dask.distributed import progress
 from loguru import logger
 
 from genomepy import Genome
@@ -59,6 +60,7 @@ class Network(object):
         self.genome = genome
         g = Genome(self.genome)
         self.gsize = g.sizes_file
+        self._tmp_files = []
 
         # # Motif information file
         # if pfmfile is None:
@@ -112,9 +114,28 @@ class Network(object):
         logger.info("reading enhancers")
 
         # Read enhancers from binding file
-        # This is relatively slow for a large file. May need some optimization.
-        enhancers = pd.read_table(fname, usecols=["enhancer"])["enhancer"]
-        enhancers = enhancers.unique()
+        header = pd.read_table(fname, nrows=0)
+        idx = header.columns.get_loc("enhancer")
+        skiprows = 1
+        chunksize = 2_000_000
+        enhancers = np.array([])
+        while True:
+            try:
+                tmp = pd.read_table(
+                    fname,
+                    usecols=[idx],
+                    header=None,
+                    nrows=chunksize,
+                    skiprows=skiprows,
+                )
+            except pd.errors.EmptyDataError:
+                break
+            if tmp.shape[0] == 0 or tmp.iloc[0, 0] in enhancers:
+                break
+
+            skiprows += chunksize
+            enhancers = np.hstack((enhancers, tmp.iloc[:, 0].unique()))
+        enhancers = np.unique(enhancers)
 
         # Split into columns and create PyRanges object
         p = re.compile("[:-]")
@@ -395,6 +416,18 @@ class Network(object):
         logger.info("Done grouping...")
         return tmp
 
+    def _save_temp_expression(self, df, name):
+        tmp = df.rename(columns={"tpm": f"{name}_expression"})
+        tmp[f"{name}_expression"] = minmax_scale(tmp[f"{name}_expression"].rank())
+        tmp.index.rename(name, inplace=True)
+        tmp["key"] = 0
+        fname = NamedTemporaryFile(
+            prefix="ananse.", suffix=f".{name}.parquet", delete=False
+        ).name
+        self._tmp_files.append(fname)
+        tmp.reset_index().to_parquet(fname, index=False)
+        return fname
+
     def create_expression_network(
         self, fin_expression, column="tpm", tfs=None, rank=True, bindingfile=None
     ):
@@ -435,19 +468,19 @@ class Network(object):
         re_column = re.compile(fr"^{column}$", re.IGNORECASE)
         expression = pd.DataFrame(
             pd.concat(
-                [pd.read_table(f, index_col=0).filter(regex=re_column) for f in fin_expression],
+                [
+                    pd.read_table(f, index_col=0).filter(regex=re_column)
+                    for f in fin_expression
+                ],
                 axis=1,
             ).mean(1),
             columns=[column],
         )
         expression[column] = np.log2(expression[column] + 1e-5)
 
-        # Create the target gene list, based on all genes
-        expression.index.rename("target", inplace=True)
-        expression = expression.reset_index()
-        expression = expression.rename(columns={column: "target_expression"})
-
         # Create the TF list, based on valid transcription factors
+        if bindingfile is None:
+            bindingfile = "/na/"
         if tfs is None:
             activity_fname = bindingfile.replace("binding.tsv", "factor_activity.tsv")
             if os.path.exists(activity_fname):
@@ -459,35 +492,25 @@ class Network(object):
                 tffile = os.path.join(package_dir, "db", "tfs.txt")
                 tfs = pd.read_csv(tffile, header=None)[0].tolist()
 
-        tfs = expression[expression.target.isin(tfs)]
-        tfs = tfs.reset_index()
-        tfs = tfs.drop(columns=["index"])
-        tfs.rename(
-            columns={"target": "tf", "target_expression": "tf_expression"}, inplace=True
-        )
+        # Save TFs and targets as temporary files
+        idx = expression.index[expression.index.isin(tfs)]
+        tmp = expression.loc[idx]
+        tf_fname = self._save_temp_expression(tmp, "tf")
+        target_fname = self._save_temp_expression(expression, "target")
 
-        expression["key"] = 0
-        tfs["key"] = 0
-
-        # Merge TF and target gene expression information
-        network = expression.merge(tfs, how="outer")
-        network = network[["tf", "target", "tf_expression", "target_expression"]]
-
-        # Rank and scale
-        for col in ["tf_expression", "target_expression"]:
-            if rank:
-                network[col] = rankdata(network[col])
-            network[col] = minmax_scale(network[col])
+        # Read files (delayed) and merge on 'key' to create a Cartesian product
+        # combining all TFs with all target genes.
+        a = dd.read_parquet(tf_fname)
+        b = dd.read_parquet(target_fname)
+        network = a.merge(b, how="outer")
 
         # Use one-column index that contains TF and target genes.
         # This is necessary for dask, as dask cannot merge on a MultiIndex.
         # Otherwise this would be an inefficient and unnecessary step.
         network["tf_target"] = network["tf"] + "_" + network["target"]
-        network = network.set_index("tf_target").drop(columns=["target"])
-
-        # Convert to a dask DataFrame.
-        logger.info("creating expression dataframe")
-        network = dd.from_pandas(network, npartitions=30)
+        network = network[
+            ["tf", "target", "tf_target", "tf_expression", "target_expression"]
+        ]
 
         return network
 
@@ -563,12 +586,14 @@ class Network(object):
             df_expression = df_expression.drop(columns=["tf"])
 
             # This is where the heavy lifting of all delayed computations gets done
-            logger.info("Computing network")
+            # logger.info("Computing network")
             if fin_expression is not None:
-                with ProgressBar():
-                    result = df_expression.join(df_binding)
-                    result = result.compute()
+                result = df_expression.join(df_binding)
+                result = result.persist()
                 result = result.fillna(0)
+                logger.info("Computing network")
+                progress(result)
+                result = result.compute()
             else:
                 result = df_binding
 
@@ -591,5 +616,16 @@ class Network(object):
             result["prob"] = result[["tf_expression", "target_expression"]].mean(1)
             result = result.compute()
 
-        logger.info("Saving file")
-        result[["prob"]].to_csv(outfile, sep="\t")
+        logger.info("Writing network")
+        dirname = os.path.dirname(outfile)
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
+        result[["tf_target", "prob"]].to_csv(outfile, sep="\t", index=False)
+
+    def __del__(self):
+        if not hasattr(self, "_tmp_files"):
+            return
+
+        for fname in self._tmp_files:
+            if os.path.exists(fname):
+                os.unlink(fname)

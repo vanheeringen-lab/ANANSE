@@ -4,7 +4,7 @@
 # This module is free software. You can redistribute it and/or modify it under
 # the terms of the MIT License, see the file COPYING included with this
 # distribution.
-
+import os
 import sys
 import argparse
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-v", "--version", action="version", version=f"%(prog)s v{__version__}"
     )
-    
+
     subparser_dict = {}
 
     subparsers = parser.add_subparsers()
@@ -135,7 +135,7 @@ if __name__ == "__main__":
         dest="ncpus",
         help="Number of processes to use for motif scanning",
         type=int,
-        default=4,
+        default=min(os.cpu_count(), 4),
     )
     group.add_argument(
         "--pfmscorefile",
@@ -203,7 +203,16 @@ if __name__ == "__main__":
         dest="ncore",
         help="Number of core used.",
         type=int,
+        default=4,
     )
+    #    group.add_argument(
+    #        "-m",
+    #        "--memory-limit",
+    #        dest="memory_limit",
+    #        help="Memory limit (default 24G). Regardless of this limit, ANANSE will use at least ~12GB for a typical analysis of human networks. Setting the memory limit higher will result in faster computation.",
+    #        type=str,
+    #        default='24GB',
+    #    )
     group.add_argument(
         "--include-promoter",
         "--exclude-promoter",
@@ -226,7 +235,6 @@ if __name__ == "__main__":
         "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.network)
-    
 
     # ananse influnecei
     p = subparsers.add_parser("influence", add_help=False)
