@@ -42,20 +42,21 @@ class Network(object):
         include_promoter=False,
         include_enhancer=True,
     ):
-        """[infer cell type-specific gene regulatory network]
+        """
+        infer cell type-specific gene regulatory network
 
-        Arguments:
-            object {[type]} -- [description]
-
-        Keyword Arguments:
-            ncore {int} -- [Specifies the number of threads to use during analysis.] (default: {1})
-            genome {str} -- [The genome that is used for the gene annotation and the enhancer location.] (default: {"hg38"})
-            gene_bed {[type]} -- [Gene annotation for the genome specified with -g as a 12 column BED file.] (default: {None})
-            include_promoter {bool} -- [Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference.] (default: {False})
-            include_enhancer {bool} -- [Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference.] (default: {True})
-
-        Raises:
-            TypeError: [description]
+        Parameters
+        ----------
+            ncore : int
+                Specifies the number of threads to use during analysis. (default: 1)
+            genome : str
+                The genome that is used for the gene annotation and the enhancer location. (default: "hg38")
+            gene_bed : str, optional
+                Gene annotation for the genome specified with -g as a 12 column BED file. (default: None)
+            include_promoter : bool
+                Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. (default: False)
+            include_enhancer : bool
+                Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. (default: True)
         """
         self.ncore = ncore
         self.genome = genome
@@ -96,7 +97,8 @@ class Network(object):
 
         self.include_enhancer = include_enhancer
 
-    def unique_enhancers(self, fname, chrom=None):
+    @staticmethod
+    def unique_enhancers(fname):
         """Extract a list of unique enhancers.
 
         Parameters
@@ -104,14 +106,10 @@ class Network(object):
         fname : str
             File name of a tab-separated file that contains an 'enhancer' column.
 
-        chrom : str, optional
-            Only return enhancers on this chromosome.
-
         Returns
         -------
             PyRanges object with enhancers
         """
-        p = re.compile("[:-]")
         logger.info("reading enhancers")
 
         # Read enhancers from binding file
@@ -148,8 +146,8 @@ class Network(object):
         )
         return enhancers
 
+    @staticmethod
     def distance_weight(
-        self,
         include_promoter=False,
         include_enhancer=True,
         alpha=1e4,
@@ -174,7 +172,7 @@ class Network(object):
 
         Parameters
         ----------
-        include_promoer : bool, optional
+        include_promoter : bool, optional
             Include promoter regions. Default is False.
         include_enhancer : bool, optional
             Include enhancer regions, ie. regions that are distal to the
@@ -207,7 +205,7 @@ class Network(object):
 
         weight1 = pd.DataFrame(
             {
-                "weight": [promoter_weight for z in range(0, promoter_region + 1)],
+                "weight": [promoter_weight for _ in range(0, promoter_region + 1)],
                 "dist": range(0, promoter_region + 1),
             }
         )
@@ -216,7 +214,7 @@ class Network(object):
             {
                 "weight": [
                     enhancer_weight
-                    for z in range(promoter_region + 1, full_weight_region + 1)
+                    for _ in range(promoter_region + 1, full_weight_region + 1)
                 ],
                 "dist": range(promoter_region + 1, full_weight_region + 1),
             }
@@ -430,7 +428,7 @@ class Network(object):
         return fname
 
     def create_expression_network(
-        self, fin_expression, column="tpm", tfs=None, rank=True, bindingfile=None
+        self, fin_expression, column="tpm", tfs=None, bindingfile=None
     ):
         """Create a gene expression based network.
 
@@ -450,9 +448,6 @@ class Network(object):
 
         tfs : list, optional
             List of TF gene names. All TFs will be used by default.
-
-        rank : bool, optional
-            Rank expression levels before scaling.
 
         bindingfile : str, optional
             Filename with binding information.
@@ -539,7 +534,6 @@ class Network(object):
         binding,
         fin_expression=None,
         tfs=None,
-        corrfiles=None,
         outfile=None,
         up=1e5,
         down=1e5,
@@ -559,8 +553,6 @@ class Network(object):
         tfs : list, optional
             List of transcription factors to use, by default None, which means
             all TFs will be used.
-        corrfiles : [type], optional
-            Correlation files by default None. CURRENTLY UNUSED.
         outfile : str, optional
             Output file.
         up : int, optional
@@ -576,7 +568,7 @@ class Network(object):
         # Expression base network
         logger.info("Loading expression")
         df_expression = self.create_expression_network(
-            fin_expression, tfs=tfs, rank=True, bindingfile=binding
+            fin_expression, tfs=tfs, bindingfile=binding
         )
 
         # Use a version of the binding network, either promoter-based, enhancer-based
