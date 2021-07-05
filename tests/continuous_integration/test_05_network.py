@@ -1,14 +1,10 @@
-import os
 from collections import namedtuple
-from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pytest
-import pandas as pd
 
 from ananse.network import Network
 from ananse.commands import network
-from .test_02_utils import write_file
 
 
 @pytest.fixture
@@ -18,11 +14,7 @@ def binding_fname():
 
 @pytest.fixture
 def network_obj():
-    genome = "tests/data/genome.fa"
-    if not os.path.exists(genome):
-        write_file(genome, [">chr1", "N"])
-
-    return Network(genome=genome, gene_bed="ananse/db/hg38.genes.bed")
+    return Network(genome="", gene_bed="ananse/db/hg38.genes.bed")
 
 
 def test_unique_enhancer(network_obj, binding_fname):
@@ -69,21 +61,20 @@ def test_distance_weight(network_obj):
 
 
 def test_command():
-    with NamedTemporaryFile() as tmp:
-        Args = namedtuple(
-            "args",
-            "genome annotation include_promoter include_enhancer binding fin_expression outfile ncore",
-        )
-        args = Args(
-            genome="hg38",
-            annotation=None,
-            include_promoter=True,
-            include_enhancer=True,
-            binding="tests/data/network/binding.tsv.gz",
-            fin_expression="tests/data/network/heart_expression.txt",
-            outfile=None,
-            ncore=2,
-        )
-        df = network(args)
-        assert df.shape[0] == 68820  # 30690
-        assert df.columns == ["tf_target", "prob"]
+    Args = namedtuple(
+        "args",
+        "genome annotation include_promoter include_enhancer binding fin_expression outfile ncore",
+    )
+    args = Args(
+        genome="hg38",
+        annotation=None,
+        include_promoter=True,
+        include_enhancer=True,
+        binding="tests/data/network/binding.tsv.gz",
+        fin_expression="tests/data/network/heart_expression.txt",
+        outfile=None,
+        ncore=2,
+    )
+    df = network(args)
+    assert df.shape[0] == 68820  # 30690
+    assert df.columns == ["tf_target", "prob"]
