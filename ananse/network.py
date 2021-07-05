@@ -538,7 +538,7 @@ class Network(object):
             List of transcription factors to use, by default None, which means
             all TFs will be used.
         outfile : str, optional
-            Output file.
+            Output file. If None, returns a dataframe.
         up : int, optional
             Upstream maximum distance, by default 100kb.
         down : int, optional
@@ -612,11 +612,12 @@ class Network(object):
             result["prob"] = result[["tf_expression", "target_expression"]].mean(1)
             result = result.compute()
 
-        logger.info("Writing network")
-        dirname = os.path.dirname(outfile)
-        if dirname:
-            os.makedirs(dirname, exist_ok=True)
-        result[["tf_target", "prob"]].to_csv(outfile, sep="\t", index=False)
+        if outfile:
+            logger.info("Writing network")
+            os.makedirs(os.path.dirname(outfile), exist_ok=True)
+            result[["tf_target", "prob"]].to_csv(outfile, sep="\t", index=False)
+        else:
+            return result[["tf_target", "prob"]]
 
     def __del__(self):
         if not hasattr(self, "_tmp_files"):

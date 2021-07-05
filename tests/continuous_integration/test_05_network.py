@@ -70,7 +70,6 @@ def test_distance_weight(network_obj):
 
 def test_command():
     with NamedTemporaryFile() as tmp:
-        fname = tmp.name
         Args = namedtuple(
             "args",
             "genome annotation include_promoter include_enhancer binding fin_expression outfile ncore",
@@ -82,13 +81,9 @@ def test_command():
             include_enhancer=True,
             binding="tests/data/network/binding.tsv.gz",
             fin_expression="tests/data/network/heart_expression.txt",
-            outfile=fname,
+            outfile=None,
             ncore=2,
         )
-        network(args)
-
-        df = pd.read_table(fname)
-        assert df.shape[0] == 30690
-        assert df.shape[1] == 2
-        assert df.columns[0] == "tf_target"
-        assert df.columns[1] == "prob"
+        df = network(args)
+        assert df.shape[0] == 68820  # 30690
+        assert df.columns == ["tf_target", "prob"]
