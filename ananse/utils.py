@@ -10,7 +10,6 @@ import warnings
 import genomepy.utils
 from pybedtools import BedTool
 import pysam
-import pyranges as pr
 
 
 def shhh_bedtool(func):
@@ -71,7 +70,7 @@ def samc(ncore):
 def bam_index(bam, force=True, ncore=1):
     if force or not os.path.exists(f"{bam}.bai"):
         index_parameters = [f"-@ {samc(ncore)}", bam]
-        pysam.index(*index_parameters)
+        pysam.index(*index_parameters)  # noqa
 
 
 def bam_sort(bam, ncore=1):
@@ -246,50 +245,3 @@ def check_input_factors(factors):
 
     factors = [line.strip() for line in open(fname)]
     return factors
-
-
-def region_gene_overlap(
-    region_pr,
-    gene_bed,
-    up=100_000,
-    down=100_000,
-):
-    """Couple enhancers to genes.
-
-    Parameters
-    ----------
-    pr : PyRanges object
-        PyRanges object with enhancer regions.
-    up : int, optional
-        Upstream maximum distance, by default 100kb.
-    down : int, optional
-        Upstream maximum distabce, by default 100kb.
-
-    Returns
-    -------
-    pandas.DataFrame
-        DataFrame with enhancer regions, gene names, distance and weight.
-    """
-    genes = pr.read_bed(gene_bed)
-    # Convert to DataFrame & we don't need intron/exon information
-    genes = genes.as_df().iloc[:, :6]
-
-    # Get the TSS only
-    genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
-        genes["Strand"] == "+", "Start"
-    ]
-    genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
-        genes["Strand"] == "-", "End"
-    ]
-
-    # Extend up and down
-    genes.loc[genes["Strand"] == "+", "Start"] -= up
-    genes.loc[genes["Strand"] == "+", "End"] += down
-    genes.loc[genes["Strand"] == "-", "Start"] -= down
-    genes.loc[genes["Strand"] == "-", "End"] += up
-
-    # Perform the overlap
-    genes = pr.PyRanges(genes)
-    genes = genes.join(region_pr).as_df()
-
-    return genes
