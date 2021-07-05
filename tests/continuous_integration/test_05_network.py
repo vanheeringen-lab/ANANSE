@@ -76,14 +76,14 @@ def test_command():
             "genome annotation include_promoter include_enhancer binding fin_expression outfile ncore",
         )
         args = Args(
-            "hg38",
-            None,
-            True,
-            True,
-            "tests/data/network/binding.tsv.gz",
-            "tests/data/network/heart_expression.txt",
-            fname,
-            2,
+            genome="hg38",
+            annotation=None,
+            include_promoter=True,
+            include_enhancer=True,
+            binding="tests/data/network/binding.tsv.gz",
+            fin_expression="tests/data/network/heart_expression.txt",
+            outfile=fname,
+            ncore=2,
         )
         network(args)
 

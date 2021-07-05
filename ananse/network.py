@@ -24,13 +24,10 @@ from tempfile import NamedTemporaryFile
 from dask.distributed import progress
 from loguru import logger
 
-from genomepy import Genome
 import pyranges as pr
 
-import ananse
-from ananse.utils import region_gene_overlap
-
 warnings.filterwarnings("ignore")
+PACKAGE_DIR = os.path.dirname(__file__)
 
 
 class Network(object):
@@ -60,8 +57,6 @@ class Network(object):
         """
         self.ncore = ncore
         self.genome = genome
-        g = Genome(self.genome)
-        self.gsize = g.sizes_file
         self._tmp_files = []
 
         # # Motif information file
@@ -73,24 +68,19 @@ class Network(object):
         # self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
         # self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
 
-        package_dir = os.path.dirname(ananse.__file__)
-
         # Gene information file
-        if self.genome == "hg38":
-            if gene_bed is None:
-                self.gene_bed = os.path.join(package_dir, "db", "hg38.genes.bed")
+        self.gene_bed = gene_bed
+        if gene_bed is None:
+            if self.genome in ["hg38", "hg19"]:
+                self.gene_bed = os.path.join(
+                    PACKAGE_DIR, "db", f"{self.genome}.genes.bed"
+                )
             else:
-                self.gene_bed = gene_bed
-        elif self.genome == "hg19":
-            if gene_bed is None:
-                self.gene_bed = os.path.join(package_dir, "db", "hg19.genes.bed")
-            else:
-                self.gene_bed = gene_bed
-        else:
-            if gene_bed is None:
                 raise TypeError("Please provide a gene bed file with -a argument.")
-            else:
-                self.gene_bed = gene_bed
+        if not os.path.exists(self.gene_bed):
+            raise FileNotFoundError(
+                f"Could not find the gene bed file {self.gene_bed}."
+            )
 
         # self.promoter = promoter
         self.include_promoter = include_promoter
@@ -428,7 +418,7 @@ class Network(object):
         return fname
 
     def create_expression_network(
-        self, fin_expression, column="tpm", tfs=None, bindingfile=None
+        self, fin_expression, column="tpm", tfs=None, factor_activity_file=None
     ):
         """Create a gene expression based network.
 
@@ -440,8 +430,8 @@ class Network(object):
         Parameters
         ----------
         fin_expression : str or list
-            Filename of file that contains gene expression data (TPM), or a
-            list of filenames. First column should contain the gene name.
+            One of more files that contains gene expression data.
+            First column should contain the gene names in HGNC symbols.
 
         column : str, optional
             Column name that contains gene expression, 'tpm' by default (case insensitive).
@@ -449,14 +439,14 @@ class Network(object):
         tfs : list, optional
             List of TF gene names. All TFs will be used by default.
 
-        bindingfile : str, optional
-            Filename with binding information.
+        factor_activity_file : str, optional
+            factor_activity.tsv created by ANANSE binding. Contains TF names.
 
         Returns
         -------
             Dask DataFrame with gene expression based values.
         """
-        # Convert it to a list if it's not a list of files, but a single file name
+        # Convert to a list of filename(s)
         if isinstance(fin_expression, str):
             fin_expression = [fin_expression]
 
@@ -475,17 +465,11 @@ class Network(object):
         expression[column] = np.log2(expression[column] + 1e-5)
 
         # Create the TF list, based on valid transcription factors
-        if bindingfile is None:
-            bindingfile = "/na/"
         if tfs is None:
-            activity_fname = bindingfile.replace("binding.tsv", "factor_activity.tsv")
-            if os.path.exists(activity_fname):
-                tfs = list(
-                    set(pd.read_table(activity_fname, index_col=0).index.tolist())
-                )
+            if factor_activity_file and os.path.exists(factor_activity_file):
+                tfs = list(set(pd.read_table(factor_activity_file, index_col=0).index))
             else:
-                package_dir = os.path.dirname(ananse.__file__)
-                tffile = os.path.join(package_dir, "db", "tfs.txt")
+                tffile = os.path.join(PACKAGE_DIR, "db", "tfs.txt")
                 tfs = pd.read_csv(tffile, header=None)[0].tolist()
 
         # Save TFs and targets as temporary files
@@ -567,8 +551,9 @@ class Network(object):
             Region that will receive full weight, by default 5000."""
         # Expression base network
         logger.info("Loading expression")
+        activity_fname = os.path.join(os.path.dirname(binding), "factor_activity.tsv")
         df_expression = self.create_expression_network(
-            fin_expression, tfs=tfs, bindingfile=binding
+            fin_expression, tfs=tfs, factor_activity_file=activity_fname
         )
 
         # Use a version of the binding network, either promoter-based, enhancer-based
@@ -586,7 +571,6 @@ class Network(object):
                 combine_function="sum",
             )
 
-            activity_fname = binding.replace("binding.tsv", "factor_activity.tsv")
             if os.path.exists(activity_fname):
                 logger.info("Reading factor activity")
                 act = pd.read_table(activity_fname, index_col=0)
@@ -641,3 +625,53 @@ class Network(object):
         for fname in self._tmp_files:
             if os.path.exists(fname):
                 os.unlink(fname)
+
+
+def region_gene_overlap(
+    region_pr,
+    gene_bed,
+    up=100_000,
+    down=100_000,
+):
+    """
+    Couple enhancers to genes.
+
+    Parameters
+    ----------
+    region_pr : PyRanges object
+        PyRanges object with enhancer regions.
+    gene_bed : str
+        gene_bed
+    up : int, optional
+        Upstream maximum distance, by default 100kb.
+    down : int, optional
+        Upstream maximum distance, by default 100kb.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with enhancer regions, gene names, distance and weight.
+    """
+    genes = pr.read_bed(gene_bed)
+    # Convert to DataFrame & we don't need intron/exon information
+    genes = genes.as_df().iloc[:, :6]
+
+    # Get the TSS only
+    genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
+        genes["Strand"] == "+", "Start"
+    ]
+    genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
+        genes["Strand"] == "-", "End"
+    ]
+
+    # Extend up and down
+    genes.loc[genes["Strand"] == "+", "Start"] -= up
+    genes.loc[genes["Strand"] == "+", "End"] += down
+    genes.loc[genes["Strand"] == "-", "Start"] -= down
+    genes.loc[genes["Strand"] == "-", "End"] += up
+
+    # Perform the overlap
+    genes = pr.PyRanges(genes)
+    genes = genes.join(region_pr).as_df()
+
+    return genes
