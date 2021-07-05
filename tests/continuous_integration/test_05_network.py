@@ -1,7 +1,9 @@
 from collections import namedtuple
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pytest
+import pandas as pd
 
 from ananse.network import Network
 from ananse.commands import network
@@ -61,20 +63,24 @@ def test_distance_weight(network_obj):
 
 
 def test_command():
-    Args = namedtuple(
-        "args",
-        "genome annotation include_promoter include_enhancer binding fin_expression outfile ncore",
-    )
-    args = Args(
-        genome="hg38",
-        annotation=None,
-        include_promoter=True,
-        include_enhancer=True,
-        binding="tests/data/network/binding.tsv.gz",
-        fin_expression="tests/data/network/heart_expression.txt",
-        outfile=None,
-        ncore=2,
-    )
-    df = network(args)
-    assert df.shape[0] == 68820  # 30690
-    assert df.columns == ["tf_target", "prob"]
+    with NamedTemporaryFile() as tmp:
+        fname = tmp.name
+        Args = namedtuple(
+            "args",
+            "genome annotation include_promoter include_enhancer binding fin_expression outfile ncore",
+        )
+        args = Args(
+            genome="hg38",
+            annotation=None,
+            include_promoter=True,
+            include_enhancer=True,
+            binding="tests/data/network/binding.tsv.gz",
+            fin_expression="tests/data/network/heart_expression.txt",
+            outfile=fname,
+            ncore=2,
+        )
+        network(args)
+
+        df = pd.read_table(fname, sep="\t")
+        assert df.shape[0] == 68820  # 30690
+        assert list(df.columns).__eq__(["tf_target", "prob"])

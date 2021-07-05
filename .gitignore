@@ -9,6 +9,7 @@ dist/
 site/
 __pycache__
 **/.ipynb_checkpoints/
+dask-worker-space/
 *egg-info
 bld.bat
 build.sh
