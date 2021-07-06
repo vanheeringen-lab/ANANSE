@@ -82,5 +82,5 @@ def test_command():
         network(args)
 
         df = pd.read_table(fname, sep="\t")
-        assert df.shape[0] == 68820  # 30690
+        assert df.shape[0] == 30690
         assert list(df.columns).__eq__(["tf_target", "prob"])
