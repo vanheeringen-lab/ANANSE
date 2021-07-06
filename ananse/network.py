@@ -549,9 +549,10 @@ class Network(object):
             Promoter region, by default 2000.
         full_weight_region : int, optional
             Region that will receive full weight, by default 5000."""
+        activity_fname = get_factor_activity_file(os.path.dirname(binding))
+
         # Expression base network
         logger.info("Loading expression")
-        activity_fname = os.path.join(os.path.dirname(binding), "factor_activity.tsv")
         df_expression = self.create_expression_network(
             fin_expression, tfs=tfs, factor_activity_file=activity_fname
         )
@@ -571,7 +572,7 @@ class Network(object):
                 combine_function="sum",
             )
 
-            if os.path.exists(activity_fname):
+            if activity_fname:
                 logger.info("Reading factor activity")
                 act = pd.read_table(activity_fname, index_col=0)
                 act.index.name = "tf"
@@ -676,3 +677,11 @@ def region_gene_overlap(
     genes = genes.join(region_pr).as_df()
 
     return genes
+
+
+def get_factor_activity_file(binding_directory):
+    """return path to factory_activity.tsv(.gz) if it exists."""
+    files = os.listdir(binding_directory)
+    for fname in files:
+        if "factor_activity" == fname.split(".tsv")[0]:
+            return os.path.join(binding_directory, fname)
