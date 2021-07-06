@@ -549,7 +549,8 @@ class Network(object):
             Promoter region, by default 2000.
         full_weight_region : int, optional
             Region that will receive full weight, by default 5000."""
-        activity_fname = get_factor_activity_file(os.path.dirname(binding))
+        in_dir = os.path.abspath(os.path.dirname(binding))
+        activity_fname = get_factor_activity_file(in_dir)
 
         # Expression base network
         logger.info("Loading expression")
