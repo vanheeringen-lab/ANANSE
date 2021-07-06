@@ -614,7 +614,8 @@ class Network(object):
 
         if outfile:
             logger.info("Writing network")
-            os.makedirs(os.path.dirname(outfile), exist_ok=True)
+            out_dir = os.path.abspath(os.path.dirname(outfile))
+            os.makedirs(out_dir, exist_ok=True)
             result[["tf_target", "prob"]].to_csv(outfile, sep="\t", index=False)
         else:
             return result[["tf_target", "prob"]]
