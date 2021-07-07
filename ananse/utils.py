@@ -12,6 +12,31 @@ from pybedtools import BedTool
 import pysam
 
 
+def check_path(arg, error_missing=True):
+    """Expand all paths. Can check for existence."""
+    if arg is None:
+        return arg
+
+    args = [arg] if isinstance(arg, str) else arg
+    paths = [cleanpath(arg) for arg in args]
+    if error_missing:
+        for path in paths:
+            if not os.path.exists(path):
+                raise FileNotFoundError(
+                    f"'{os.path.basename(path)}' not found in '{os.path.dirname(path)}'."
+                )
+    return paths[0] if isinstance(arg, str) else paths
+
+
+def cleanpath(path):
+    """Expand any path input to a literal path output"""
+    return os.path.abspath(  # expand relative paths (inc './' and '../')
+        os.path.expanduser(  # expand '~'
+            os.path.expandvars(path)  # expand '$VARIABLES'
+        )
+    )
+
+
 def shhh_bedtool(func):
     """
     Decorator that silences pybedtools RuntimeWarnings such as
@@ -136,15 +161,6 @@ def mosdepth(bed, bam, bed_output, ncore=1):
 #     bed.to_csv(sum_bam_coverage, sep="\t", header=False, index=False)
 
 
-def cleanpath(path):
-    """Expand any path input to a literal path output"""
-    return os.path.abspath(  # expand relative paths (inc './' and '../')
-        os.path.expanduser(  # expand '~'
-            os.path.expandvars(path)  # expand '$VARIABLES'
-        )
-    )
-
-
 # def non_empty_files(files, error_msg, size_threshold=10, verbose=True):
 #     """Check list of files for content
 #
@@ -217,9 +233,8 @@ def get_motif_factors(motif, indirect=True):
 def check_input_factors(factors):
     """Check factors.
 
-    Factors can eiher be a list of transcription factors, or a filename of a
-    file that containts TFs. Returns a list of factors.
-    If factors is None, it will return the default transcription factors.
+    Factors can either be a list of transcription factors, or a filename of a
+    file that contains TFs. Returns a list of factors.
 
     Returns
     -------
@@ -230,18 +245,20 @@ def check_input_factors(factors):
     if factors is None:
         return
 
-    # factors is string, assuming it's a filename
+    # if factors is a string, assume it's a filename
     if isinstance(factors, str):
-        if os.path.exists(factors):
-            fname = factors
-        else:
-            raise ValueError("Factors filename {factors} does not exist")
+        fname = factors
 
-    if len(factors) == 1 and os.path.exists(factors[0]):
+    # if factors is a list of 1, and it exists, assume it's a filename
+    elif isinstance(factors, list) and len(factors) == 1:
         fname = factors[0]
+
+    # It's a list with more than one value, assuming it's a list of TF names.
     else:
-        # It's a list with more than one value, assuming it's a list of TF names.
         return factors
+
+    if not os.path.exists(fname):
+        raise ValueError(f"Factors file '{factors}' does not exist")
 
     factors = [line.strip() for line in open(fname)]
     return factors
