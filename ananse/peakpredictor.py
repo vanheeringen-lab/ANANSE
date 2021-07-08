@@ -460,15 +460,13 @@ class PeakPredictor:
 
         return model, factor
 
-    def predict_factor_activity(self, outfile, nregions=20000):
+    def predict_factor_activity(self, nregions=20000):
         """Predict TF activity.
 
         Predicted based on motif activity using ridge regression.
 
         Parameters
         ----------
-        outfile : str
-            Name of outputfile.
         """
         # Run ridge regression using motif score to predict (relative) ATAC/H3K27ac signal
         activity = pd.DataFrame()
@@ -513,7 +511,7 @@ class PeakPredictor:
 
         factor_activity = pd.DataFrame(factor_activity, columns=["factor", "activity"])
 
-        factor_activity.to_csv(outfile, sep="\t", index=False)
+        return factor_activity
 
 
 def _check_input_regions(regionfiles, genome, outdir=".", verbose=True, force=False):
@@ -686,24 +684,22 @@ def predict_peaks(
         ncpus=ncpus,
     )
 
-    logger.info("Predicting TF activity")
-    outfile = os.path.join(outdir, "atac.tsv.gz")
-    if p._atac_data is not None:
-        p._atac_data.to_csv(outfile, sep="\t", compression="gzip")
-    outfile = os.path.join(outdir, "h3k27ac.tsv.gz")
-    if p._histone_data is not None:
-        p._histone_data.to_csv(outfile, sep="\t", compression="gzip")
-
-    outfile = os.path.join(outdir, "factor_activity.tsv")
-    p.predict_factor_activity(outfile)
-
     outfile = os.path.join(outdir, "binding.h5")
-
     # Make sure we create a new file
-    with open(outfile, "w") as f:
+    with open(outfile, "w"):
         pass
 
     hdf = HDFStore(outfile, complib="lzo", complevel=9)
+
+    if p._atac_data is not None:
+        hdf.put(key="_atac", value=p._atac_data, format="table")
+
+    if p._histone_data is not None:
+        hdf.put(key="_h3k27ac", value=p._histone_data, format="table")
+
+    logger.info("Predicting TF activity")
+    factor_activity = p.predict_factor_activity(outfile)
+    hdf.put(key="_factor_activity", value=factor_activity, format="table")
 
     for factor in p.factors():
         try:
@@ -716,6 +712,6 @@ def predict_peaks(
 
         except ValueError as e:
             logger.debug(str(e))
-    
-    hdf.put(key="index", value=proba.index.to_series(), format="table")
+
+    hdf.put(key="_index", value=proba.index.to_series(), format="table")
     hdf.close()
