@@ -15,6 +15,7 @@ from loguru import logger
 import networkx as nx
 import numpy as np
 import pandas as pd
+from pandas import HDFStore
 from sklearn.preprocessing import scale, minmax_scale
 from scipy.stats import rankdata
 import qnorm
@@ -696,22 +697,25 @@ def predict_peaks(
     outfile = os.path.join(outdir, "factor_activity.tsv")
     p.predict_factor_activity(outfile)
 
-    outfile = os.path.join(outdir, "binding.tsv")
+    outfile = os.path.join(outdir, "binding.h5")
+
     # Make sure we create a new file
     with open(outfile, "w") as f:
         pass
 
-    with open(outfile, "a") as f:
-        print("factor\tenhancer\tbinding", file=f)
+    hdf = HDFStore(outfile, complib="lzo", complevel=9)
 
-        for factor in p.factors():
-            try:
-                proba = p.predict_proba(factor)
-                proba = proba.reset_index()
-                proba.columns = ["enhancer", "binding"]
-                proba["factor"] = factor
-                proba[["factor", "enhancer", "binding"]].to_csv(
-                    f, index=False, header=False, sep="\t", float_format="%.5f"
-                )
-            except ValueError as e:
-                logger.debug(str(e))
+    for factor in p.factors():
+        try:
+            proba = p.predict_proba(factor)
+            hdf.put(
+                key=f"{factor}",
+                value=proba.iloc[:, -1].reset_index(drop=True).astype(np.float16),
+                format="table",
+            )
+
+        except ValueError as e:
+            logger.debug(str(e))
+    
+    hdf.put(key="index", value=proba.index.to_series(), format="table")
+    hdf.close()
