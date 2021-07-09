@@ -74,7 +74,7 @@ def test_command():
             annotation=None,
             include_promoter=True,
             include_enhancer=True,
-            binding="tests/data/network/binding.tsv.gz",
+            binding="tests/data/network/binding.h5",
             fin_expression="tests/data/network/heart_expression.txt",
             outfile=fname,
             ncore=2,
