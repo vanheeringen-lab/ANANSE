@@ -614,7 +614,7 @@ class Network(object):
         # Expression base network
         logger.info("Loading expression")
         df_expression = self.create_expression_network(
-            fin_expression, tfs=tfs, factor_activity_file=binding
+            fin_expression, tfs=tfs, bindingfile=binding
         )
 
         # Use a version of the binding network, either promoter-based, enhancer-based
