@@ -1,4 +1,3 @@
-import os
 from collections import namedtuple
 from tempfile import NamedTemporaryFile
 
@@ -8,7 +7,6 @@ import pandas as pd
 
 from ananse.network import Network
 from ananse.commands import network
-from .test_02_utils import write_file
 
 
 @pytest.fixture
@@ -18,11 +16,7 @@ def binding_fname():
 
 @pytest.fixture
 def network_obj():
-    genome = "tests/data/genome.fa"
-    if not os.path.exists(genome):
-        write_file(genome, [">chr1", "N"])
-
-    return Network(genome=genome, gene_bed="ananse/db/hg38.genes.bed")
+    return Network(genome="", gene_bed="ananse/db/hg38.genes.bed")
 
 
 def test_unique_enhancer(network_obj, binding_fname):
@@ -76,19 +70,17 @@ def test_command():
             "genome annotation include_promoter include_enhancer binding fin_expression outfile ncore",
         )
         args = Args(
-            "hg38",
-            None,
-            True,
-            True,
-            "tests/data/network/binding.tsv.gz",
-            "tests/data/network/heart_expression.txt",
-            fname,
-            2,
+            genome="hg38",
+            annotation=None,
+            include_promoter=True,
+            include_enhancer=True,
+            binding="tests/data/network/binding.tsv.gz",
+            fin_expression="tests/data/network/heart_expression.txt",
+            outfile=fname,
+            ncore=2,
         )
         network(args)
 
-        df = pd.read_table(fname)
+        df = pd.read_table(fname, sep="\t")
         assert df.shape[0] == 30690
-        assert df.shape[1] == 2
-        assert df.columns[0] == "tf_target"
-        assert df.columns[1] == "prob"
+        assert list(df.columns).__eq__(["tf_target", "prob"])

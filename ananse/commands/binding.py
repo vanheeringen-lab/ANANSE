@@ -5,18 +5,19 @@
 # the terms of the MIT License, see the file COPYING included with this
 # distribution.
 from ananse.peakpredictor import predict_peaks
+from ananse.utils import check_path, check_input_factors
 
 
 def binding(args):
     predict_peaks(
-        args.outdir,
-        atac_bams=args.atac_bams,
-        histone_bams=args.histone_bams,
-        regionfiles=args.regionfiles,
-        reference=args.reference,
-        factors=args.factors,
-        genome=args.genome,
-        pfmfile=args.pfmfile,
-        pfmscorefile=args.pfmscorefile,
+        check_path(args.outdir, error_missing=False),
+        atac_bams=check_path(args.atac_bams),
+        histone_bams=check_path(args.histone_bams),
+        regionfiles=check_path(args.regionfiles),
+        reference=check_path(args.reference),
+        factors=check_input_factors(args.factors),
+        genome=args.genome,  # checked in CLI
+        pfmfile=check_path(args.pfmfile),
+        pfmscorefile=check_path(args.pfmscorefile),
         ncpus=args.ncpus,
     )

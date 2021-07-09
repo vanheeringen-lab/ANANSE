@@ -49,10 +49,31 @@ class PeakPredictor:
         if genome is None:
             logger.warning("Assuming genome is hg38")
             genome = "hg38"
+        self.genome = genome
+        self.set_species(genome)
+
+        if pfmfile is None and self.species not in ["human", "mouse"]:
+            logger.warning(
+                f"The genome '{genome}' is not recognized as human or mouse."
+            )
+            logger.warning(
+                "If you do have another species, the motif file likely needs to be adapted."
+            )
+            logger.warning(
+                "Currently mouse and human gene names are used to link motif to TFs."
+            )
+            logger.warning(
+                "If your gene symbols are different, then you will need to create a new mapping"
+            )
+            logger.warning(
+                "and use the `-p` argument. For a possible method to do this, see here:"
+            )
+            logger.warning(
+                "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors"
+            )
 
         # Set basic information
         self.ncpus = ncpus
-        self.genome = genome
         self._atac_data = None
         self._histone_data = None
         self.factor_models = {}
@@ -179,23 +200,58 @@ class PeakPredictor:
         valid_factors = list(set(valid_factors) - set(["EP300"]))
         return valid_factors
 
-    def is_human_genome(self):
+    def set_species(self, genome):
+        try:
+            # Try to get taxonomy id for genomepy managed genome.
+            # If there is a taxonomy id, we can be really sure about the species.
+            # If genome doesn't have a tax_id, then it will be 'na' and
+            # fail to convert to int.
+            genome = Genome(genome)
+            tax_id = int(genome.tax_id)
+            if tax_id == 9606:
+                self.species = "human"
+            elif tax_id == 10090:
+                self.species = "mouse"
+            else:
+                # tax_id converts to int so it is valid, must be not human or mouse
+                self.species = None
+            return
+        except Exception:
+            pass
+
+        mapping = {
+            "hg38": "human",
+            "hg19": "human",
+            "GRCh3": "human",
+            "mm10": "mouse",
+            "mm9": "mouse",
+            "GRCm3": "mouse",
+        }
+
         base_genome = os.path.basename(self.genome.strip("/"))
-        for name in ["hg38", "GRCh38", "hg19", "GRCh37"]:
+        for name, species in mapping.items():
             if name in base_genome:
-                return True
+                self.species = species
+                return
+
+        self.species = None
 
     def factors(self):
-        if self.is_human_genome():
+        if self.species == "human":
             valid_factors = self._load_human_factors()
             return [f for f in self.f2m if f in valid_factors]
+        if self.species == "mouse":
+            # Mouse mappings are included in the default motif db.
+            # Using the fact here that mouse names are not all upper-case.
+            # TODO: replace with a curated set of factors.
+            return [f for f in self.f2m if f[1:].islower()]
         return list(self.f2m.keys())
 
     def _load_factor2motifs(self, pfmfile=None, indirect=True, factors=None):
         motifs = read_motifs(pfmfile, as_dict=True)
         f2m = {}
 
-        if self.is_human_genome():
+        if self.species == "human":
             valid_factors = self._load_human_factors()
 
         for name, motif in motifs.items():
@@ -205,10 +261,10 @@ class PeakPredictor:
 
                 # TODO: this is temporary, while the motif database we use
                 # not very clean...
-                if self.is_human_genome():
+                if self.species == "human":
                     factor = factor.upper()
 
-                if self.is_human_genome() and factor not in valid_factors:
+                if self.species == "human" and factor not in valid_factors:
                     continue
 
                 f2m.setdefault(factor, []).append(name)

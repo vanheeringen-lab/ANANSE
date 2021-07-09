@@ -27,13 +27,10 @@ from loguru import logger
 from pandas import HDFStore
 from tqdm.auto import tqdm
 
-from genomepy import Genome
 import pyranges as pr
 
-import ananse
-from ananse.utils import region_gene_overlap
-
 warnings.filterwarnings("ignore")
+PACKAGE_DIR = os.path.dirname(__file__)
 
 
 class Network(object):
@@ -45,25 +42,24 @@ class Network(object):
         include_promoter=False,
         include_enhancer=True,
     ):
-        """[infer cell type-specific gene regulatory network]
+        """
+        infer cell type-specific gene regulatory network
 
-        Arguments:
-            object {[type]} -- [description]
-
-        Keyword Arguments:
-            ncore {int} -- [Specifies the number of threads to use during analysis.] (default: {1})
-            genome {str} -- [The genome that is used for the gene annotation and the enhancer location.] (default: {"hg38"})
-            gene_bed {[type]} -- [Gene annotation for the genome specified with -g as a 12 column BED file.] (default: {None})
-            include_promoter {bool} -- [Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference.] (default: {False})
-            include_enhancer {bool} -- [Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference.] (default: {True})
-
-        Raises:
-            TypeError: [description]
+        Parameters
+        ----------
+            ncore : int
+                Specifies the number of threads to use during analysis. (default: 1)
+            genome : str
+                The genome that is used for the gene annotation and the enhancer location. (default: "hg38")
+            gene_bed : str, optional
+                Gene annotation for the genome specified with -g as a 12 column BED file. (default: None)
+            include_promoter : bool
+                Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. (default: False)
+            include_enhancer : bool
+                Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. (default: True)
         """
         self.ncore = ncore
         self.genome = genome
-        g = Genome(self.genome)
-        self.gsize = g.sizes_file
         self._tmp_files = []
 
         # # Motif information file
@@ -75,31 +71,27 @@ class Network(object):
         # self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
         # self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
 
-        package_dir = os.path.dirname(ananse.__file__)
-
         # Gene information file
-        if self.genome == "hg38":
-            if gene_bed is None:
-                self.gene_bed = os.path.join(package_dir, "db", "hg38.genes.bed")
+        self.gene_bed = gene_bed
+        if gene_bed is None:
+            if self.genome in ["hg38", "hg19"]:
+                self.gene_bed = os.path.join(
+                    PACKAGE_DIR, "db", f"{self.genome}.genes.bed"
+                )
             else:
-                self.gene_bed = gene_bed
-        elif self.genome == "hg19":
-            if gene_bed is None:
-                self.gene_bed = os.path.join(package_dir, "db", "hg19.genes.bed")
-            else:
-                self.gene_bed = gene_bed
-        else:
-            if gene_bed is None:
                 raise TypeError("Please provide a gene bed file with -a argument.")
-            else:
-                self.gene_bed = gene_bed
+        if not os.path.exists(self.gene_bed):
+            raise FileNotFoundError(
+                f"Could not find the gene bed file {self.gene_bed}."
+            )
 
         # self.promoter = promoter
         self.include_promoter = include_promoter
 
         self.include_enhancer = include_enhancer
 
-    def unique_enhancers(self, fname, chrom=None):
+    @staticmethod
+    def unique_enhancers(fname):
         """Extract a list of unique enhancers.
 
         Parameters
@@ -107,14 +99,10 @@ class Network(object):
         fname : str
             File name of a tab-separated file that contains an 'enhancer' column.
 
-        chrom : str, optional
-            Only return enhancers on this chromosome.
-
         Returns
         -------
             PyRanges object with enhancers
         """
-        p = re.compile("[:-]")
         logger.info("reading enhancers")
 
         # Read enhancers from binding file
@@ -151,8 +139,8 @@ class Network(object):
         )
         return enhancers
 
+    @staticmethod
     def distance_weight(
-        self,
         include_promoter=False,
         include_enhancer=True,
         alpha=1e4,
@@ -177,7 +165,7 @@ class Network(object):
 
         Parameters
         ----------
-        include_promoer : bool, optional
+        include_promoter : bool, optional
             Include promoter regions. Default is False.
         include_enhancer : bool, optional
             Include enhancer regions, ie. regions that are distal to the
@@ -210,7 +198,7 @@ class Network(object):
 
         weight1 = pd.DataFrame(
             {
-                "weight": [promoter_weight for z in range(0, promoter_region + 1)],
+                "weight": [promoter_weight for _ in range(0, promoter_region + 1)],
                 "dist": range(0, promoter_region + 1),
             }
         )
@@ -219,7 +207,7 @@ class Network(object):
             {
                 "weight": [
                     enhancer_weight
-                    for z in range(promoter_region + 1, full_weight_region + 1)
+                    for _ in range(promoter_region + 1, full_weight_region + 1)
                 ],
                 "dist": range(promoter_region + 1, full_weight_region + 1),
             }
@@ -489,7 +477,7 @@ class Network(object):
         return fname
 
     def create_expression_network(
-        self, fin_expression, column="tpm", tfs=None, rank=True, bindingfile=None
+        self, fin_expression, column="tpm", tfs=None, bindingfile=None
     ):
         """Create a gene expression based network.
 
@@ -501,8 +489,8 @@ class Network(object):
         Parameters
         ----------
         fin_expression : str or list
-            Filename of file that contains gene expression data (TPM), or a
-            list of filenames. First column should contain the gene name.
+            One of more files that contains gene expression data.
+            First column should contain the gene names in HGNC symbols.
 
         column : str, optional
             Column name that contains gene expression, 'tpm' by default (case insensitive).
@@ -510,17 +498,14 @@ class Network(object):
         tfs : list, optional
             List of TF gene names. All TFs will be used by default.
 
-        rank : bool, optional
-            Rank expression levels before scaling.
-
         bindingfile : str, optional
-            Filename with binding information.
+            Output file from ANANSE binding.
 
         Returns
         -------
             Dask DataFrame with gene expression based values.
         """
-        # Convert it to a list if it's not a list of files, but a single file name
+        # Convert to a list of filename(s)
         if isinstance(fin_expression, str):
             fin_expression = [fin_expression]
 
@@ -546,8 +531,7 @@ class Network(object):
                     act = act.set_index("factor")
                 tfs = list(set(act.index.tolist()))
             except KeyError:
-                package_dir = os.path.dirname(ananse.__file__)
-                tffile = os.path.join(package_dir, "db", "tfs.txt")
+                tffile = os.path.join(PACKAGE_DIR, "db", "tfs.txt")
                 tfs = pd.read_csv(tffile, header=None)[0].tolist()
 
         # Save TFs and targets as temporary files
@@ -596,7 +580,6 @@ class Network(object):
         binding,
         fin_expression=None,
         tfs=None,
-        corrfiles=None,
         outfile=None,
         up=1e5,
         down=1e5,
@@ -616,10 +599,8 @@ class Network(object):
         tfs : list, optional
             List of transcription factors to use, by default None, which means
             all TFs will be used.
-        corrfiles : [type], optional
-            Correlation files by default None. CURRENTLY UNUSED.
         outfile : str, optional
-            Output file.
+            Output file. If None, returns a dataframe.
         up : int, optional
             Upstream maximum distance, by default 100kb.
         down : int, optional
@@ -633,7 +614,7 @@ class Network(object):
         # Expression base network
         logger.info("Loading expression")
         df_expression = self.create_expression_network(
-            fin_expression, tfs=tfs, rank=True, bindingfile=binding
+            fin_expression, tfs=tfs, factor_activity_file=binding
         )
 
         # Use a version of the binding network, either promoter-based, enhancer-based
@@ -698,11 +679,13 @@ class Network(object):
             result["prob"] = result[["tf_expression", "target_expression"]].mean(1)
             result = result.compute()
 
-        logger.info("Writing network")
-        dirname = os.path.dirname(outfile)
-        if dirname:
-            os.makedirs(dirname, exist_ok=True)
-        result[["tf_target", "prob"]].to_csv(outfile, sep="\t", index=False)
+        if outfile:
+            logger.info("Writing network")
+            out_dir = os.path.abspath(os.path.dirname(outfile))
+            os.makedirs(out_dir, exist_ok=True)
+            result[["tf_target", "prob"]].to_csv(outfile, sep="\t", index=False)
+        else:
+            return result[["tf_target", "prob"]]
 
     def __del__(self):
         if not hasattr(self, "_tmp_files"):
@@ -711,3 +694,53 @@ class Network(object):
         for fname in self._tmp_files:
             if os.path.exists(fname):
                 shutil.rmtree(fname, ignore_errors=True)
+
+
+def region_gene_overlap(
+    region_pr,
+    gene_bed,
+    up=100_000,
+    down=100_000,
+):
+    """
+    Couple enhancers to genes.
+
+    Parameters
+    ----------
+    region_pr : PyRanges object
+        PyRanges object with enhancer regions.
+    gene_bed : str
+        gene_bed
+    up : int, optional
+        Upstream maximum distance, by default 100kb.
+    down : int, optional
+        Upstream maximum distance, by default 100kb.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with enhancer regions, gene names, distance and weight.
+    """
+    genes = pr.read_bed(gene_bed)
+    # Convert to DataFrame & we don't need intron/exon information
+    genes = genes.as_df().iloc[:, :6]
+
+    # Get the TSS only
+    genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
+        genes["Strand"] == "+", "Start"
+    ]
+    genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
+        genes["Strand"] == "-", "End"
+    ]
+
+    # Extend up and down
+    genes.loc[genes["Strand"] == "+", "Start"] -= up
+    genes.loc[genes["Strand"] == "+", "End"] += down
+    genes.loc[genes["Strand"] == "-", "Start"] -= down
+    genes.loc[genes["Strand"] == "-", "End"] += up
+
+    # Perform the overlap
+    genes = pr.PyRanges(genes)
+    genes = genes.join(region_pr).as_df()
+
+    return genes
