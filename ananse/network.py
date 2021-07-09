@@ -360,7 +360,7 @@ class Network(object):
             raise ValueError(f"File {binding_fname} does not exist!")
 
         if combine_function not in ["mean", "max", "sum"]:
-            raise ValueError(
+            raise NotImplementedError(
                 "Unknown combine function, valid options are: mean, max, sum"
             )
 
@@ -376,13 +376,19 @@ class Network(object):
         hdf = HDFStore(binding_fname, "r")
 
         # TODO: This is hacky (depending on "_"), however the hdf.keys() method is
-        # much slower.
+        # much slower. Currently all TF names do *not* start with "_"
         all_tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
         logger.info(f"Binding file contains {len(all_tfs)} TFs.")
         if tfs is None:
             tfs = all_tfs
         else:
-            tfs = [tf for tf in tfs if tf in all_tfs]
+            not_valid = set(all_tfs) - set(tfs)
+            if len(not_valid) > 1:
+                logger.warning(
+                    f"The following TFs are found in {binding_fname}, but do not seem to be TFs:"
+                )
+                logger.warning(", ".join(not_valid))
+            tfs = set(tfs) & set(all_tfs)
             logger.info(f"Using {len(tfs)} TFs.")
 
         # Read enhancer index from hdf5 file
@@ -392,8 +398,14 @@ class Network(object):
         tmpdir = mkdtemp()
         self._tmp_files.append(tmpdir)  # mark for deletion later
 
+        # Summarize enhancers per gene, per chromosome. In principle this could
+        # also be done at once, however, the memory usage of dask is very finicky.
+        # This is a pragmatic solution, that seems to work well, does not use a
+        # lot of memory and is not too slow (~50 seconds per chromosome).
         for chrom in chroms:
-            logger.info(f"Reading and aggregating binding from {chrom}")
+            logger.info(f"Aggregating binding for genes on {chrom}")
+
+            # Get the index of all enhancers for this specific chromosome
             idx = enhancers.index.str.contains(f"^{chrom}:")
             idx_i = np.arange(enhancers.shape[0])[idx]
 
@@ -414,22 +426,30 @@ class Network(object):
                 promoter=promoter,
                 full_weight_region=full_weight_region,
             )
-
             gene_df = gene_df.dropna()
 
             bp = pd.DataFrame(index=enhancers[idx].index)
 
-            for tf in tqdm(tfs):
+            for tf in tqdm(
+                tfs, total=len(tfs), desc="Aggregating", unit_scale=1, unit=" TFs"
+            ):
                 # Load TF binding data for this chromosome.
                 # hdf.get() is *much* faster here than pd.read_hdf()
                 bp[tf] = hdf.get(key=tf)[idx_i].values
 
+            # Skipping everything with weight 0, as it won't be counted anyway.
             gene_df = gene_df[gene_df["weight"] > 0]
 
+            # Make sure binding score and enhancers match up (i.e. same enhancer
+            # is used for multiple genes)
             gene_df = gene_df.join(bp).dropna()
             bp = gene_df[tfs]
             gene_df = gene_df[["gene", "weight"]]
+
+            # Multiply binding score by weight
             bp = bp.mul(gene_df["weight"], axis=0)
+
+            # Summarize weighted score per gene
             bp["gene"] = gene_df["gene"]
             tmp = bp.groupby("gene")
             if combine_function == "mean":
@@ -438,11 +458,15 @@ class Network(object):
                 tmp = tmp.max()
             elif combine_function == "sum":
                 tmp = tmp.sum()
+
+            # Go from wide to long format, to be able to merge with other
+            # information later
             tmp = tmp.reset_index().melt(
                 id_vars=tmp.index.name, var_name="tf", value_name="weighted_binding"
             )
-            tmp["tf_target"] = tmp["tf"] + "_" + tmp["gene"]
 
+            # Create dataframe with two columns: tf_gene and weighted_binding score
+            tmp["tf_target"] = tmp["tf"] + "_" + tmp["gene"]
             tmp[["tf_target", "weighted_binding"]].to_csv(
                 os.path.join(tmpdir, f"{chrom}.csv"), index=False
             )
@@ -518,6 +542,8 @@ class Network(object):
         if tfs is None:
             try:
                 act = pd.read_hdf(bindingfile, key="_factor_activity")
+                if "factor" in act.columns:
+                    act = act.set_index("factor")
                 tfs = list(set(act.index.tolist()))
             except KeyError:
                 package_dir = os.path.dirname(ananse.__file__)
@@ -626,6 +652,8 @@ class Network(object):
 
             try:
                 act = pd.read_hdf(binding, key="_factor_activity")
+                if "factor" in act.columns:
+                    act = act.set_index("factor")
                 logger.info("Reading factor activity")
                 act.index.name = "tf"
                 act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
@@ -682,7 +710,4 @@ class Network(object):
 
         for fname in self._tmp_files:
             if os.path.exists(fname):
-                if os.path.isdir(fname):
-                    shutil.rmtree(fname)
-                else:
-                    os.unlink(fname)
+                shutil.rmtree(fname, ignore_errors=True)

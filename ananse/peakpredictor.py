@@ -460,7 +460,7 @@ class PeakPredictor:
 
         return model, factor
 
-    def predict_factor_activity(self, nregions=20000):
+    def predict_factor_activity(self, nregions=20_000):
         """Predict TF activity.
 
         Predicted based on motif activity using ridge regression.
@@ -469,6 +469,12 @@ class PeakPredictor:
         ----------
         """
         # Run ridge regression using motif score to predict (relative) ATAC/H3K27ac signal
+        try:
+            nregions = int(nregions)
+        except ValueError:
+            logger.warning("nregions is not an integer, using default number of 20_000")
+            nregions = 20_000
+
         activity = pd.DataFrame()
         for df in (self._atac_data, self._histone_data):
             if df is None:
@@ -698,7 +704,7 @@ def predict_peaks(
         hdf.put(key="_h3k27ac", value=p._histone_data, format="table")
 
     logger.info("Predicting TF activity")
-    factor_activity = p.predict_factor_activity(outfile)
+    factor_activity = p.predict_factor_activity()
     hdf.put(key="_factor_activity", value=factor_activity, format="table")
 
     for factor in p.factors():
