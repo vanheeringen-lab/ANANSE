@@ -557,7 +557,6 @@ class PeakPredictor:
                         )
                     except Exception as e:
                         print(e)
-                    print(activity)
 
         # Rank aggregation
         for col in activity:
