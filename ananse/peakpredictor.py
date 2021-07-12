@@ -583,26 +583,41 @@ def _check_input_regions(regionfiles, genome, outdir=".", verbose=True, force=Fa
 
     infile = regionfiles[0]
     if len(regionfiles) > 1:
-        # merge files
+        # merge files, assumed to be all BED
         peak_width = 200
         cbed = CombineBedFiles(genome=genome, peakfiles=regionfiles, verbose=verbose)
         combined_bed = os.path.join(outdir, "regions_combined.bed")
         cbed.run(outfile=combined_bed, width=peak_width, force=force)
         infile = combined_bed
 
-    df = pd.read_table(infile, header=None)
-    if df.shape[1] >= 3:
+    df = pd.read_table(infile, header=None, sep="\t", comment="#", dtype=str)
+    assert df.shape[0] > 2, "regions file must have more that 2 regions."
+
+    test = str(df.at[1, 0])
+    if bool(re.match(r"^.*:\d+-\d+$", test)):
+        # it's a regions list
+        # or it's a Seq2science counts table
+        regions = df.iloc[:, 0].tolist()
+
+    elif df.shape[1] >= 3:
+        # it's a BED file
         regions = (
-            df.iloc[:, 0].astype(
-                str
-            )  # For Ensembl genome names, make sure it's a string
+            # For Ensembl genome names, make sure it's a string
+            df.iloc[:, 0].astype(str)
             + ":"
             + df.iloc[:, 1].astype(str)
             + "-"
             + df.iloc[:, 2].astype(str)
         ).tolist()
+
     else:
-        regions = df.iloc[:, 0].tolist()
+        raise TypeError("Cannot identify regions file(s) type.")
+
+    # remove the header, if any.
+    header = str(regions[0])
+    if not bool(re.match(r"^.*:\d+-\d+$", header)):
+        regions = regions[1:]
+
     return regions
 
 
