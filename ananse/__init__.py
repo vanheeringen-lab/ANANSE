@@ -1,5 +1,12 @@
 from ._version import get_versions
 import os
+import sys
+from loguru import logger
+
+# Remove default logger
+logger.remove()
+# Add logger
+logger.add(sys.stderr, format="{time} | {level} | {message}", level="INFO")
 
 # This is here to prevent very high memory usage on numpy import.
 # On a machine with many cores, just importing numpy can result in up to
