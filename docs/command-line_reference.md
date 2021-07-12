@@ -65,12 +65,15 @@ Please note that human and mouse are supported out-of-the-box, but for other spe
 
 #### Output files
 
-The output directory of `ananse binding` will contain three or four files, depending on the input data used. The file called `binding.tsv` contains three columns called `factor`, `enhancer` and `binding`. The `factor` column contains the TF name, the `enhancer` column the location of the enhancer (in `chrom:start-end` format) and the `binding` column the probability of the logistic classifier.
+The output directory of `ananse binding` will contain one or two files, depending on the input data used. The file called `binding.h5` contains:
 
-The `factor_activity.tsv` contains the predicted factor activity (based on the TF motif activity) for all transcription factors. The motif activity is based on the contribution of motif score to the enhancer activity (the coefficient from a linear regression;  see [The FANTOM Consortium & Riken Omics Science Center 2009](https://doi.org/10.1038/ng.375) and [Balwierz et al. 2014](https://doi.org/10.1101/gr.169508.113)). In the implementation of ANANSE the motif activity is calculated based on a regression using the ATAC-seq signal and/or a regression using the H3K27ac signal. 
+* The predicted binding probability for every TF in every enhancer. For every transcription factor there is a key with the transcription factor name and a value that contains the predicted binding probability.
+* The predicted factor activity (based on the TF motif activity) for all transcriptionfactors. The motif activity is based on the contribution of motif score to the enhancer activity (the coefficient from a linear regression;  see [The FANTOM Consortium & Riken Omics Science Center 2009](https://doi.org/10.1038/ng.375) and [Balwierz et al. 2014](https://doi.org/10.1101/gr.169508.113)). In the implementation of ANANSE the motif activity is calculated based on a regression using the ATAC-seq signal and/or a regression using the H3K27ac signal.
+* Depending on the input data, the file will also contain `atac` and/or `h3k27ac`, which provide the quantified and normalized signal of ATAC-seq and/or H3K27ac ChIP-seq data in the enhancer regions. If the `ANANSE.REMAP.model.v1.0` model is used, these files will also contain the relative signal. 
 
-Depending on the input data, the output directory will also contain `atac.tsv` and/or `h3k27ac.tsv`, which provide the quantified and normalized signal of ATAC-seq and/or H3K27ac ChIP-seq data in the enhancer regions. If the `ANANSE.REMAP.model.v1.0` model is used, these files will also contain the relative signal. 
+Mostly, you would want to use the `binding.h5` as input for `ananse network`. If you want to access the information in the file for other purposes: [TODO: describe]
 
+If you provided multiple peaks or BED files as input, the output directory will also contain a BED files with the merged regions, which are used as potential enhancer.
 
 #### Full options
 
@@ -133,7 +136,7 @@ Required arguments:
 
 ```
   -b FILE, --binding FILE
-                        TF binding prediction file (from ananse binding).
+                        TF binding prediction file (binding.h5 from ananse binding).
   -e FILE, --expression FILE
                         Expression scores. Should have gene names in the first column and should contain a column named
                         tpm. Both the quant.sf from salmon or the abundances.tsv from kallisto will work fine.

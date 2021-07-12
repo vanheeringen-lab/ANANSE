@@ -12,6 +12,7 @@
 import os
 import math
 import re
+import shutil
 import sys
 import warnings
 
@@ -20,9 +21,11 @@ import pandas as pd
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
 import dask.dataframe as dd
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, mkdtemp
 from dask.distributed import progress
 from loguru import logger
+from pandas import HDFStore
+from tqdm.auto import tqdm
 
 import pyranges as pr
 
@@ -341,9 +344,11 @@ class Network(object):
         dask.DataFrame
             DataFrame with delayed computations.
         """
+        if not os.path.exists(binding_fname):
+            raise ValueError(f"File {binding_fname} does not exist!")
 
         if combine_function not in ["mean", "max", "sum"]:
-            raise ValueError(
+            raise NotImplementedError(
                 "Unknown combine function, valid options are: mean, max, sum"
             )
 
@@ -356,54 +361,108 @@ class Network(object):
                 "promoter region is larger than the maximum distance to use"
             )
 
-        # Get list of unique enhancers from the binding file
-        enhancer_pr = self.unique_enhancers(binding_fname)
+        hdf = HDFStore(binding_fname, "r")
 
-        # Link enhancers to genes on basis of distance to annotated TSS
-        gene_df = self.enhancer2gene(
-            enhancer_pr,
-            up=up,
-            down=down,
-            alpha=alpha,
-            promoter=promoter,
-            full_weight_region=full_weight_region,
-        )
+        # TODO: This is hacky (depending on "_"), however the hdf.keys() method is
+        # much slower. Currently all TF names do *not* start with "_"
+        all_tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
+        logger.info(f"Binding file contains {len(all_tfs)} TFs.")
+        if tfs is None:
+            tfs = all_tfs
+        else:
+            not_valid = set(all_tfs) - set(tfs)
+            if len(not_valid) > 1:
+                logger.warning(
+                    f"The following TFs are found in {binding_fname}, but do not seem to be TFs:"
+                )
+                logger.warning(", ".join(not_valid))
+            tfs = set(tfs) & set(all_tfs)
+            logger.info(f"Using {len(tfs)} TFs.")
 
-        # print(gene_df)
-        logger.info("Reading binding file...")
-        ddf = dd.read_csv(
-            binding_fname,
-            sep="\t",
-            usecols=["factor", "enhancer", "binding"],
-        )
-        if tfs is not None:
-            ddf = ddf[ddf["factor"].isin(tfs)]
+        # Read enhancer index from hdf5 file
+        enhancers = hdf.get(key="_index")
+        chroms = enhancers.index.to_series().str.replace(":.*", "").unique()
 
-        # Merge binding information with gene information.
-        # This may be faster than creating index on enhancer first, but need to check!
-        tmp = ddf.merge(gene_df, left_on="enhancer", right_index=True)
+        tmpdir = mkdtemp()
+        self._tmp_files.append(tmpdir)  # mark for deletion later
 
-        # Remove everything with weight 0
-        tmp = tmp[tmp["weight"] > 0]
+        # Summarize enhancers per gene, per chromosome. In principle this could
+        # also be done at once, however, the memory usage of dask is very finicky.
+        # This is a pragmatic solution, that seems to work well, does not use a
+        # lot of memory and is not too slow (~50 seconds per chromosome).
+        for chrom in chroms:
+            logger.info(f"Aggregating binding for genes on {chrom}")
 
-        # Modify the binding by the weight, which is based on distance to TSS
-        tmp["weighted_binding"] = tmp["weight"] * tmp["binding"]
+            # Get the index of all enhancers for this specific chromosome
+            idx = enhancers.index.str.contains(f"^{chrom}:")
+            idx_i = np.arange(enhancers.shape[0])[idx]
 
-        logger.info("Grouping by tf and target gene...")
-        # Using one column that combines TF and target as dask cannot handle MultiIndex
-        tmp["tf_target"] = tmp["factor"] + "_" + tmp["gene"]
+            # Create a pyranges object
+            enhancer_pr = pr.PyRanges(
+                enhancers[idx]
+                .index.to_series()
+                .str.split(r"[:-]", expand=True)
+                .rename(columns={0: "Chromosome", 1: "Start", 2: "End"})
+            )
 
-        tmp = tmp.groupby("tf_target")[["weighted_binding"]]
+            # Link enhancers to genes on basis of distance to annotated TSS
+            gene_df = self.enhancer2gene(
+                enhancer_pr,
+                up=up,
+                down=down,
+                alpha=alpha,
+                promoter=promoter,
+                full_weight_region=full_weight_region,
+            )
+            gene_df = gene_df.dropna()
 
-        if combine_function == "mean":
-            tmp = tmp.mean()
-        elif combine_function == "max":
-            tmp = tmp.max()
-        elif combine_function == "sum":
-            tmp = tmp.sum()
+            bp = pd.DataFrame(index=enhancers[idx].index)
 
-        logger.info("Done grouping...")
-        return tmp
+            for tf in tqdm(
+                tfs, total=len(tfs), desc="Aggregating", unit_scale=1, unit=" TFs"
+            ):
+                # Load TF binding data for this chromosome.
+                # hdf.get() is *much* faster here than pd.read_hdf()
+                bp[tf] = hdf.get(key=tf)[idx_i].values
+
+            # Skipping everything with weight 0, as it won't be counted anyway.
+            gene_df = gene_df[gene_df["weight"] > 0]
+
+            # Make sure binding score and enhancers match up (i.e. same enhancer
+            # is used for multiple genes)
+            gene_df = gene_df.join(bp).dropna()
+            bp = gene_df[tfs]
+            gene_df = gene_df[["gene", "weight"]]
+
+            # Multiply binding score by weight
+            bp = bp.mul(gene_df["weight"], axis=0)
+
+            # Summarize weighted score per gene
+            bp["gene"] = gene_df["gene"]
+            tmp = bp.groupby("gene")
+            if combine_function == "mean":
+                tmp = tmp.mean()
+            elif combine_function == "max":
+                tmp = tmp.max()
+            elif combine_function == "sum":
+                tmp = tmp.sum()
+
+            # Go from wide to long format, to be able to merge with other
+            # information later
+            tmp = tmp.reset_index().melt(
+                id_vars=tmp.index.name, var_name="tf", value_name="weighted_binding"
+            )
+
+            # Create dataframe with two columns: tf_gene and weighted_binding score
+            tmp["tf_target"] = tmp["tf"] + "_" + tmp["gene"]
+            tmp[["tf_target", "weighted_binding"]].to_csv(
+                os.path.join(tmpdir, f"{chrom}.csv"), index=False
+            )
+
+        hdf.close()
+
+        ddf = dd.read_csv(os.path.join(tmpdir, "*.csv")).set_index("tf_target")
+        return ddf
 
     def _save_temp_expression(self, df, name):
         tmp = df.rename(columns={"tpm": f"{name}_expression"})
@@ -418,7 +477,7 @@ class Network(object):
         return fname
 
     def create_expression_network(
-        self, fin_expression, column="tpm", tfs=None, factor_activity_file=None
+        self, fin_expression, column="tpm", tfs=None, bindingfile=None
     ):
         """Create a gene expression based network.
 
@@ -439,8 +498,8 @@ class Network(object):
         tfs : list, optional
             List of TF gene names. All TFs will be used by default.
 
-        factor_activity_file : str, optional
-            factor_activity.tsv created by ANANSE binding. Contains TF names.
+        bindingfile : str, optional
+            Output file from ANANSE binding.
 
         Returns
         -------
@@ -466,9 +525,12 @@ class Network(object):
 
         # Create the TF list, based on valid transcription factors
         if tfs is None:
-            if factor_activity_file and os.path.exists(factor_activity_file):
-                tfs = list(set(pd.read_table(factor_activity_file, index_col=0).index))
-            else:
+            try:
+                act = pd.read_hdf(bindingfile, key="_factor_activity")
+                if "factor" in act.columns:
+                    act = act.set_index("factor")
+                tfs = list(set(act.index.tolist()))
+            except KeyError:
                 tffile = os.path.join(PACKAGE_DIR, "db", "tfs.txt")
                 tfs = pd.read_csv(tffile, header=None)[0].tolist()
 
@@ -549,19 +611,15 @@ class Network(object):
             Promoter region, by default 2000.
         full_weight_region : int, optional
             Region that will receive full weight, by default 5000."""
-        in_dir = os.path.abspath(os.path.dirname(binding))
-        activity_fname = get_factor_activity_file(in_dir)
-
         # Expression base network
         logger.info("Loading expression")
         df_expression = self.create_expression_network(
-            fin_expression, tfs=tfs, factor_activity_file=activity_fname
+            fin_expression, tfs=tfs, bindingfile=binding
         )
 
         # Use a version of the binding network, either promoter-based, enhancer-based
         # or both.
         if self.include_promoter or self.include_enhancer:
-            logger.info("Aggregate binding")
             df_binding = self.aggregate_binding(
                 binding,
                 tfs=tfs,
@@ -573,20 +631,27 @@ class Network(object):
                 combine_function="sum",
             )
 
-            if activity_fname:
+            try:
+                act = pd.read_hdf(binding, key="_factor_activity")
+                if "factor" in act.columns:
+                    act = act.set_index("factor")
                 logger.info("Reading factor activity")
-                act = pd.read_table(activity_fname, index_col=0)
                 act.index.name = "tf"
                 act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
                 df_expression = df_expression.merge(
                     act, right_index=True, left_on="tf", how="left"
                 ).fillna(0.5)
+            except KeyError:
+                pass
+
             df_expression = df_expression.drop(columns=["tf"])
 
             # This is where the heavy lifting of all delayed computations gets done
             # logger.info("Computing network")
             if fin_expression is not None:
-                result = df_expression.join(df_binding)
+                result = df_expression.merge(
+                    df_binding, right_index=True, left_on="tf_target", how="left"
+                )
                 result = result.persist()
                 result = result.fillna(0)
                 logger.info("Computing network")
@@ -628,7 +693,7 @@ class Network(object):
 
         for fname in self._tmp_files:
             if os.path.exists(fname):
-                os.unlink(fname)
+                shutil.rmtree(fname, ignore_errors=True)
 
 
 def region_gene_overlap(
@@ -679,11 +744,3 @@ def region_gene_overlap(
     genes = genes.join(region_pr).as_df()
 
     return genes
-
-
-def get_factor_activity_file(binding_directory):
-    """return path to factory_activity.tsv(.gz) if it exists."""
-    files = os.listdir(binding_directory)
-    for fname in files:
-        if "factor_activity" == fname.split(".tsv")[0]:
-            return os.path.join(binding_directory, fname)
