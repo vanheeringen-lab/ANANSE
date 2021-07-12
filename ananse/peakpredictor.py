@@ -286,7 +286,7 @@ class PeakPredictor:
             greatly increase TF coverage. By default True.
         """
         if self.pfmfile is None:
-            logger.debug("Using default motif file")
+            logger.info("using default motif file")
         else:
             logger.debug(f"Motifs: {self.pfmfile}")
         self.motifs = read_motifs(self.pfmfile, as_dict=True)
@@ -295,15 +295,15 @@ class PeakPredictor:
         )
 
         if len(self.f2m) == 1:
-            logger.debug("using motifs for 1 factor")
+            logger.info("using motifs for 1 factor")
         else:
-            logger.debug(f"using motifs for {len(self.f2m)} factors")
+            logger.info(f"using motifs for {len(self.f2m)} factors")
         # Create a graph of TFs where edges are determined by the Jaccard index
         # of the motifs that they bind to. For instance, when TF 1 binds motif
         # A and B and TF 2 binds motif B and C, the edge weight will be 0.33.
         tmp_f2m = {}
         if self.pfmfile is not None:
-            logger.debug("Reading default file")
+            logger.debug("reading default file")
             tmp_f2m = self._load_factor2motifs(indirect=True)
 
         for k, v in self.f2m.items():
