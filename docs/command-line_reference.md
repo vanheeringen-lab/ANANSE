@@ -58,6 +58,11 @@ ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -r ATAC.cell_type1.narrowPeak ATAC.cell_type2.narrowPeak
 ```
 
+#### Other species
+
+Please note that human and mouse are supported out-of-the-box, but for other species you will need a custom motif to transcription factor mapping. Take care to use the same gene symbols for your transcription factors as are present in your gene expression file. One way to create the TF to motif mapping is to use the `motif2factors` command from [GimmeMotifs](https://github.com/vanheeringen-lab/gimmemotifs). See the documentation [here](https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors). This command uses a relatively simple approach based on orthogroups. 
+
+
 #### Output files
 
 The output directory of `ananse binding` will contain three or four files, depending on the input data used. The file called `binding.tsv` contains three columns called `factor`, `enhancer` and `binding`. The `factor` column contains the TF name, the `enhancer` column the location of the enhancer (in `chrom:start-end` format) and the `binding` column the probability of the logistic classifier.
