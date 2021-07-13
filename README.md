@@ -87,9 +87,11 @@ ananse influence -s source.network.txt -t target.network.txt -d source2target.de
   
 ## Citation
 
-  > Xu Q, Georgiou G, Veenstra G J C, et al. ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination[J]. [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.06.05.135798v2), 2020.
+> ANANSE: an enhancer network-based computational approach for predicting key transcription factors in cell fate determination 
+> Quan Xu, Georgios Georgiou, Siebren Frölich, Maarten van der Sande, Gert Jan C Veenstra, Huiqing Zhou, Simon J van Heeringen
+> Nucleic Acids Research, gkab598, https://doi.org/10.1093/nar/gkab598
 
-<!-- --- -->
+
 ## Help and Support
 
 * The preferred way to get support is through the [Github issues page](https://github.com/vanheeringen-lab/ANANSE/issues).
