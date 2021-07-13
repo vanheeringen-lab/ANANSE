@@ -21,6 +21,10 @@ def network(args):
 
     memory_limit = "12GB"
 
+    # With one core more memory is needed
+    if ncore == 1:
+        memory_limit = "20GB"
+
     b = ananse.network.Network(
         genome=args.genome,  # checked in CLI
         gene_bed=check_path(args.annotation),
