@@ -523,12 +523,16 @@ class Network(object):
         )
         expression[column] = np.log2(expression[column] + 1e-5)
 
-        genes = pd.read_table(self.gene_bed, usecols=[3], comment="#", names=["name"], index_col=0)
+        genes = pd.read_table(
+            self.gene_bed, usecols=[3], comment="#", names=["name"], index_col=0
+        )
         overlap = len(genes.index.intersection(expression.index))
         if overlap / expression.shape[0] < 0.1:
-            logger.error("gene annotation identifiers do not seem to match between annotation and expression files!")
-            sample_exp = ', '.join(expression.sample(5).index.values)
-            sample_gene = ', '.join(genes.sample(5).index.values)
+            logger.error(
+                "gene annotation identifiers do not seem to match between annotation and expression files!"
+            )
+            sample_exp = ", ".join(expression.sample(5).index.values)
+            sample_gene = ", ".join(genes.sample(5).index.values)
             logger.error(f"expression sample: {sample_exp}")
             logger.error(f"annotation sample: {sample_gene}")
             sys.exit(1)
