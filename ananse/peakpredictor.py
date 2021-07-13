@@ -765,29 +765,28 @@ def predict_peaks(
     with open(outfile, "w"):
         pass
 
-    hdf = HDFStore(outfile, complib="lzo", complevel=9)
+    with HDFStore(outfile, complib="lzo", complevel=9) as hdf:
 
-    if p._atac_data is not None:
-        hdf.put(key="_atac", value=p._atac_data, format="table")
+        if p._atac_data is not None:
+            hdf.put(key="_atac", value=p._atac_data, format="table")
 
-    if p._histone_data is not None:
-        hdf.put(key="_h3k27ac", value=p._histone_data, format="table")
+        if p._histone_data is not None:
+            hdf.put(key="_h3k27ac", value=p._histone_data, format="table")
 
-    logger.info("Predicting TF activity")
-    factor_activity = p.predict_factor_activity()
-    hdf.put(key="_factor_activity", value=factor_activity, format="table")
+        logger.info("Predicting TF activity")
+        factor_activity = p.predict_factor_activity()
+        hdf.put(key="_factor_activity", value=factor_activity, format="table")
 
-    for factor in p.factors():
-        try:
-            proba = p.predict_proba(factor)
-            hdf.put(
-                key=f"{factor}",
-                value=proba.iloc[:, -1].reset_index(drop=True).astype(np.float16),
-                format="table",
-            )
+        for factor in p.factors():
+            try:
+                proba = p.predict_proba(factor)
+                hdf.put(
+                    key=f"{factor}",
+                    value=proba.iloc[:, -1].reset_index(drop=True).astype(np.float16),
+                    format="table",
+                )
 
-        except ValueError as e:
-            logger.debug(str(e))
+            except ValueError as e:
+                logger.debug(str(e))
 
-    hdf.put(key="_index", value=proba.index.to_series(), format="table")
-    hdf.close()
+        hdf.put(key="_index", value=proba.index.to_series(), format="table")
