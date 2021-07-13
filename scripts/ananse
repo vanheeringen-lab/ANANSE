@@ -32,6 +32,7 @@ if __name__ == "__main__":
         binding     predict TF binding sites in cis-regulatory region
         network     infer gene regulatory network
         influence   prioritize transcription factors
+        view        view binding file
     """
     parser = argparse.ArgumentParser(
         usage=usage,
@@ -311,6 +312,39 @@ if __name__ == "__main__":
         "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.influence)
+
+
+    p = subparsers.add_parser("view", add_help=False)
+    subparser_dict["view"] = p
+    p.add_argument(
+        "infile",
+        help="input binding.h5 file",
+        metavar="FILE",
+    )
+    p.add_argument(
+        "-o",
+        "--outfile",
+        dest="outfile",
+        help="outputfile (tab-separated text, default: stdout)",
+        metavar="FILE",
+        default=None,
+    )
+    p.add_argument(
+        "-f", "--factors",
+        dest="factors",
+        help="name(s) of transcription factors (default: all)",
+        metavar="TF",
+        nargs='*',
+    )
+    p.add_argument(
+        "-F", "--format",
+        dest="format",
+        default="wide",
+        help="format: wide or long (default: wide)",
+        metavar="FORMAT",
+    )
+    p.set_defaults(func=commands.view)
+
 
     if len(sys.argv) == 1:
         parser.print_help()

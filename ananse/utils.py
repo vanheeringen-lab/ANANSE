@@ -10,6 +10,7 @@ import warnings
 import genomepy.utils
 from pybedtools import BedTool
 import pysam
+import pandas as pd
 
 
 def check_path(arg, error_missing=True):
@@ -262,3 +263,44 @@ def check_input_factors(factors):
 
     factors = [line.strip() for line in open(fname)]
     return factors
+
+
+def view_h5(fname, tfs=None, fmt="wide"):
+    """Extract information from an ANANSE binding.h5 file.
+    
+    Parameters
+    ----------
+    fname : str
+        File name (binding.h5).
+    
+    tfs : list, optional
+        List of transcription factor names to extract. All TFs are used
+        by default.
+    
+    fmt : str, optional
+        Return output in 'wide' or in 'long' format. Default is 'wide'.
+        
+    Returns
+    -------
+    pandas.Dataframe
+    """
+    if fmt not in ["wide", "long"]:
+        raise ValueError("fmt should be either 'wide' or 'long'")
+
+    with pd.HDFStore(fname) as hdf:
+        if tfs is None:
+            tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
+
+        idx = hdf.get("_index")
+
+        df = pd.DataFrame(index=idx.index)
+        for tf in tfs:
+            df[tf] = hdf.get(tf).values
+
+    if fmt == "long":
+        df.index.rename("loc", inplace=True)
+        df = df.reset_index().melt(
+            id_vars=["loc"], value_name="prob", var_name="factor"
+        )
+
+    return df

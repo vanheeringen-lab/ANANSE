@@ -71,7 +71,8 @@ The output directory of `ananse binding` will contain one or two files, dependin
 * The predicted factor activity (based on the TF motif activity) for all transcriptionfactors. The motif activity is based on the contribution of motif score to the enhancer activity (the coefficient from a linear regression;  see [The FANTOM Consortium & Riken Omics Science Center 2009](https://doi.org/10.1038/ng.375) and [Balwierz et al. 2014](https://doi.org/10.1101/gr.169508.113)). In the implementation of ANANSE the motif activity is calculated based on a regression using the ATAC-seq signal and/or a regression using the H3K27ac signal.
 * Depending on the input data, the file will also contain `atac` and/or `h3k27ac`, which provide the quantified and normalized signal of ATAC-seq and/or H3K27ac ChIP-seq data in the enhancer regions. If the `ANANSE.REMAP.model.v1.0` model is used, these files will also contain the relative signal. 
 
-Mostly, you would want to use the `binding.h5` as input for `ananse network`. If you want to access the information in the file for other purposes: [TODO: describe]
+Mostly, you would want to use the `binding.h5` as input for `ananse network`. If you want to access the information in the file for other purposes you can
+use the `ananse view` command.
 
 If you provided multiple peaks or BED files as input, the output directory will also contain a BED files with the merged regions, which are used as potential enhancer.
 
@@ -209,4 +210,55 @@ Optional arguments:
   -n NCORE, --ncore NCORE
                         Number of cores to use.
   -h, --help            show this help message and exit
+```
+
+
+### ananse view
+
+Convert the binding probabilities from  the `binding.h5` output of `ananse binding` to tab-separated text format.
+This is only necessary if you want to use the output for other purposes, as `ananse network` can only use the `.h5` file.
+Converting all factors may take some time and memory!
+
+Example command to extract the binding probabilities for all factors in *wide* format (one column per TF):
+
+``` bash
+$ ananse view binding.h5 -o binding.tsv
+```
+
+Example command to extract the binding probabilities for TP53 and TP63 in *long* format, print to stdout:
+
+
+``` bash
+$ ananse view binding.h5 -f TP53 TP63 -F long
+```
+
+```
+loc     factor  prob
+chr1:181357-181557      TP53    0.2432
+chr1:267938-268138      TP53    0.2568
+chr1:586086-586286      TP53    0.2452
+chr1:605299-605499      TP53    0.2445
+chr1:629832-630032      TP53    0.994
+chr1:631289-631489      TP53    0.965
+chr1:631431-631631      TP53    0.689
+chr1:633919-634119      TP53    0.9966
+chr1:778533-778733      TP53    0.777
+[...many more rows...]
+```
+
+#### Full options
+
+```
+usage: ananse [-h] <command> [options] view [-o FILE] [-f [TF [TF ...]]] [-F FORMAT] FILE
+
+positional arguments:
+  FILE                  input binding.h5 file
+
+optional arguments:
+  -o FILE, --outfile FILE
+                        outputfile (tab-separated text, default: stdout)
+  -f [TF [TF ...]], --factors [TF [TF ...]]
+                        name(s) of transcription factors (default: all)
+  -F FORMAT, --format FORMAT
+                        format: wide or long (default: wide)
 ```
