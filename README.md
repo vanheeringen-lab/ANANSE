@@ -42,7 +42,21 @@ $ conda activate ananse
 
 Don't forget to activate the environment with `conda activate ananse` whenever you want to use ANANSE.
 
+#### 3. Using the development version
+
+**NOTE:** if you get ANANSE errors that mention memory problems, try the development version of ANANSE ([docs here](https://anansepy.readthedocs.io/en/develop/)).
+
+```
+# Activate the environment
+$ conda activate ananse
+
+# Install development version
+$ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@develop
+```
+
 ### Usage
+
+
 
 The three command-line tools (`binding`, `network` and `influence`) can be used separately, but are designed to work together. In general, for a full ANANSE analysis, you would infer binding and calculate the GRN for two (or more) different cell types and then use `ananse influence` to determine influential TFs for the transition from one cell type to the other.
 
