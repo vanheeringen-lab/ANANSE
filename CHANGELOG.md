@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+### Changed
+
+### Removed
+
+### Fixed
+
+
+## [0.3.0] - 2021-07-14
+
+### Added
+
 - `ananse view` command to view the `binding.h5` file that is now produced by `ananse binding`.
 - Support for region /table file as input to `ananse binding`.
 - In-built support for mouse.
@@ -16,14 +27,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - Improved logging messages.
 - Better checking of input files.
 
-
 ### Changed
 
 - `ananse binding` produces a HDF5 file (`binding.h5`) which is much smaller on disk.
 - Better memory performance of `ananse network`.
 - Removed threshold for differential network in `ananse influence`.
-
-### Removed
 
 ### Fixed
 
