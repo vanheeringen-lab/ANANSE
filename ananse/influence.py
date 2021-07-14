@@ -95,9 +95,6 @@ def read_expression(fname):
         dtype={"resid": str, "log2FoldChange": float, "padj": float},
     )
 
-    # convert to upper case (todo: this is not strictly necessary)
-    df.index = [index.upper() for index in df.index]
-
     # absolute fold change
     df["fc"] = df["log2FoldChange"].abs()
 
