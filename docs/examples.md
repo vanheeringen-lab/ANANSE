@@ -93,8 +93,8 @@ ananse binding -H ANANSE_example_data/H3K27ac/heart*bam -A ANANSE_example_data/A
 Note: `ananse network` needs ~12-15GB of memory for a typical analysis of a human network.
 
 ```
-ananse network -b  fibroblast.binding/binding.h5 -e ANANSE_example_data/RNAseq/fibroblast*TPM.txt -n 4 > fibroblast.network.txt
-ananse network -b  heart.binding/binding.h5 -e ANANSE_example_data/RNAseq/heart*TPM.txt -n 4 > heart.network.txt
+ananse network -b  fibroblast.binding/binding.h5 -e ANANSE_example_data/RNAseq/fibroblast*TPM.txt -n 4 -o fibroblast.network.txt
+ananse network -b  heart.binding/binding.h5 -e ANANSE_example_data/RNAseq/heart*TPM.txt -n 4 -o heart.network.txt
 ```
 
 ### Influence score calculation
