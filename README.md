@@ -44,7 +44,7 @@ Don't forget to activate the environment with `conda activate ananse` whenever y
 
 #### 3. Using the development version
 
-**NOTE:** if you get ANANSE errors that mention memory problems, try the development version of ANANSE ([docs here](https://anansepy.readthedocs.io/en/develop/)).
+The latest version, but may not always be stable. 
 
 ```
 # Activate the environment
