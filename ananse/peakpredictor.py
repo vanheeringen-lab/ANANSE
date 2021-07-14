@@ -15,6 +15,7 @@ from loguru import logger
 import networkx as nx
 import numpy as np
 import pandas as pd
+from pandas import HDFStore
 from sklearn.preprocessing import scale, minmax_scale
 from scipy.stats import rankdata
 import qnorm
@@ -48,10 +49,31 @@ class PeakPredictor:
         if genome is None:
             logger.warning("Assuming genome is hg38")
             genome = "hg38"
+        self.genome = genome
+        self.set_species(genome)
+
+        if pfmfile is None and self.species not in ["human", "mouse"]:
+            logger.warning(
+                f"The genome '{genome}' is not recognized as human or mouse."
+            )
+            logger.warning(
+                "If you do have another species, the motif file likely needs to be adapted."
+            )
+            logger.warning(
+                "Currently mouse and human gene names are used to link motif to TFs."
+            )
+            logger.warning(
+                "If your gene symbols are different, then you will need to create a new mapping"
+            )
+            logger.warning(
+                "and use the `-p` argument. For a possible method to do this, see here:"
+            )
+            logger.warning(
+                "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors"
+            )
 
         # Set basic information
         self.ncpus = ncpus
-        self.genome = genome
         self._atac_data = None
         self._histone_data = None
         self.factor_models = {}
@@ -178,23 +200,58 @@ class PeakPredictor:
         valid_factors = list(set(valid_factors) - set(["EP300"]))
         return valid_factors
 
-    def is_human_genome(self):
-        base_genome = os.path.basename(self.genome)
-        for name in ["hg38", "GRCh38", "hg19", "GRCh37"]:
+    def set_species(self, genome):
+        try:
+            # Try to get taxonomy id for genomepy managed genome.
+            # If there is a taxonomy id, we can be really sure about the species.
+            # If genome doesn't have a tax_id, then it will be 'na' and
+            # fail to convert to int.
+            genome = Genome(genome)
+            tax_id = int(genome.tax_id)
+            if tax_id == 9606:
+                self.species = "human"
+            elif tax_id == 10090:
+                self.species = "mouse"
+            else:
+                # tax_id converts to int so it is valid, must be not human or mouse
+                self.species = None
+            return
+        except Exception:
+            pass
+
+        mapping = {
+            "hg38": "human",
+            "hg19": "human",
+            "GRCh3": "human",
+            "mm10": "mouse",
+            "mm9": "mouse",
+            "GRCm3": "mouse",
+        }
+
+        base_genome = os.path.basename(self.genome.strip("/"))
+        for name, species in mapping.items():
             if name in base_genome:
-                return True
+                self.species = species
+                return
+
+        self.species = None
 
     def factors(self):
-        if self.is_human_genome():
+        if self.species == "human":
             valid_factors = self._load_human_factors()
             return [f for f in self.f2m if f in valid_factors]
+        if self.species == "mouse":
+            # Mouse mappings are included in the default motif db.
+            # Using the fact here that mouse names are not all upper-case.
+            # TODO: replace with a curated set of factors.
+            return [f for f in self.f2m if f[1:].islower()]
         return list(self.f2m.keys())
 
     def _load_factor2motifs(self, pfmfile=None, indirect=True, factors=None):
         motifs = read_motifs(pfmfile, as_dict=True)
         f2m = {}
 
-        if self.is_human_genome():
+        if self.species == "human":
             valid_factors = self._load_human_factors()
 
         for name, motif in motifs.items():
@@ -204,10 +261,10 @@ class PeakPredictor:
 
                 # TODO: this is temporary, while the motif database we use
                 # not very clean...
-                if self.is_human_genome():
+                if self.species == "human":
                     factor = factor.upper()
 
-                if self.is_human_genome() and factor not in valid_factors:
+                if self.species == "human" and factor not in valid_factors:
                     continue
 
                 f2m.setdefault(factor, []).append(name)
@@ -229,7 +286,7 @@ class PeakPredictor:
             greatly increase TF coverage. By default True.
         """
         if self.pfmfile is None:
-            logger.debug("Using default motif file")
+            logger.info("using default motif file")
         else:
             logger.debug(f"Motifs: {self.pfmfile}")
         self.motifs = read_motifs(self.pfmfile, as_dict=True)
@@ -238,15 +295,15 @@ class PeakPredictor:
         )
 
         if len(self.f2m) == 1:
-            logger.debug("using motifs for 1 factor")
+            logger.info("using motifs for 1 factor")
         else:
-            logger.debug(f"using motifs for {len(self.f2m)} factors")
+            logger.info(f"using motifs for {len(self.f2m)} factors")
         # Create a graph of TFs where edges are determined by the Jaccard index
         # of the motifs that they bind to. For instance, when TF 1 binds motif
         # A and B and TF 2 binds motif B and C, the edge weight will be 0.33.
         tmp_f2m = {}
         if self.pfmfile is not None:
-            logger.debug("Reading default file")
+            logger.debug("reading default file")
             tmp_f2m = self._load_factor2motifs(indirect=True)
 
         for k, v in self.f2m.items():
@@ -459,17 +516,21 @@ class PeakPredictor:
 
         return model, factor
 
-    def predict_factor_activity(self, outfile, nregions=20000):
+    def predict_factor_activity(self, nregions=20_000):
         """Predict TF activity.
 
         Predicted based on motif activity using ridge regression.
 
         Parameters
         ----------
-        outfile : str
-            Name of outputfile.
         """
         # Run ridge regression using motif score to predict (relative) ATAC/H3K27ac signal
+        try:
+            nregions = int(nregions)
+        except ValueError:
+            logger.warning("nregions is not an integer, using default number of 20_000")
+            nregions = 20_000
+
         activity = pd.DataFrame()
         for df in (self._atac_data, self._histone_data):
             if df is None:
@@ -496,7 +557,6 @@ class PeakPredictor:
                         )
                     except Exception as e:
                         print(e)
-                    print(activity)
 
         # Rank aggregation
         for col in activity:
@@ -512,7 +572,7 @@ class PeakPredictor:
 
         factor_activity = pd.DataFrame(factor_activity, columns=["factor", "activity"])
 
-        factor_activity.to_csv(outfile, sep="\t", index=False)
+        return factor_activity
 
 
 def _check_input_regions(regionfiles, genome, outdir=".", verbose=True, force=False):
@@ -523,26 +583,41 @@ def _check_input_regions(regionfiles, genome, outdir=".", verbose=True, force=Fa
 
     infile = regionfiles[0]
     if len(regionfiles) > 1:
-        # merge files
+        # merge files, assumed to be all BED
         peak_width = 200
         cbed = CombineBedFiles(genome=genome, peakfiles=regionfiles, verbose=verbose)
         combined_bed = os.path.join(outdir, "regions_combined.bed")
         cbed.run(outfile=combined_bed, width=peak_width, force=force)
         infile = combined_bed
 
-    df = pd.read_table(infile, header=None)
-    if df.shape[1] >= 3:
+    df = pd.read_table(infile, header=None, sep="\t", comment="#", dtype=str)
+    assert df.shape[0] > 2, "regions file must have more that 2 regions."
+
+    test = str(df.at[1, 0])
+    if bool(re.match(r"^.*:\d+-\d+$", test)):
+        # it's a regions list
+        # or it's a Seq2science counts table
+        regions = df.iloc[:, 0].tolist()
+
+    elif df.shape[1] >= 3:
+        # it's a BED file
         regions = (
-            df.iloc[:, 0].astype(
-                str
-            )  # For Ensembl genome names, make sure it's a string
+            # For Ensembl genome names, make sure it's a string
+            df.iloc[:, 0].astype(str)
             + ":"
             + df.iloc[:, 1].astype(str)
             + "-"
             + df.iloc[:, 2].astype(str)
         ).tolist()
+
     else:
-        regions = df.iloc[:, 0].tolist()
+        raise TypeError("Cannot identify regions file(s) type.")
+
+    # remove the header, if any.
+    header = str(regions[0])
+    if not bool(re.match(r"^.*:\d+-\d+$", header)):
+        regions = regions[1:]
+
     return regions
 
 
@@ -685,33 +760,33 @@ def predict_peaks(
         ncpus=ncpus,
     )
 
-    logger.info("Predicting TF activity")
-    outfile = os.path.join(outdir, "atac.tsv.gz")
-    if p._atac_data is not None:
-        p._atac_data.to_csv(outfile, sep="\t", compression="gzip")
-    outfile = os.path.join(outdir, "h3k27ac.tsv.gz")
-    if p._histone_data is not None:
-        p._histone_data.to_csv(outfile, sep="\t", compression="gzip")
-
-    outfile = os.path.join(outdir, "factor_activity.tsv")
-    p.predict_factor_activity(outfile)
-
-    outfile = os.path.join(outdir, "binding.tsv")
+    outfile = os.path.join(outdir, "binding.h5")
     # Make sure we create a new file
-    with open(outfile, "w") as f:
+    with open(outfile, "w"):
         pass
 
-    with open(outfile, "a") as f:
-        print("factor\tenhancer\tbinding", file=f)
+    with HDFStore(outfile, complib="lzo", complevel=9) as hdf:
+
+        if p._atac_data is not None:
+            hdf.put(key="_atac", value=p._atac_data, format="table")
+
+        if p._histone_data is not None:
+            hdf.put(key="_h3k27ac", value=p._histone_data, format="table")
+
+        logger.info("Predicting TF activity")
+        factor_activity = p.predict_factor_activity()
+        hdf.put(key="_factor_activity", value=factor_activity, format="table")
 
         for factor in p.factors():
             try:
                 proba = p.predict_proba(factor)
-                proba = proba.reset_index()
-                proba.columns = ["enhancer", "binding"]
-                proba["factor"] = factor
-                proba[["factor", "enhancer", "binding"]].to_csv(
-                    f, index=False, header=False, sep="\t", float_format="%.5f"
+                hdf.put(
+                    key=f"{factor}",
+                    value=proba.iloc[:, -1].reset_index(drop=True).astype(np.float16),
+                    format="table",
                 )
+
             except ValueError as e:
                 logger.debug(str(e))
+
+        hdf.put(key="_index", value=proba.index.to_series(), format="table")

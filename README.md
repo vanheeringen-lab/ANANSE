@@ -81,7 +81,7 @@ ananse binding -A <ATAC.bam> -H <H3k27ac.bam> -o out
 To create a gene regulatory network you will need a binding prediction from `ananse binding` and one or more files with gene expression quantification. The file should have the **gene** identifier in the first column and a column with `TPM` as a head. You can use, for instance, the `quant.sf` from salmon or the `abundances.tsv` from kallisto, converted to gene-level TPMs with [tximport](https://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html). Here we will run `ananse network` with 4 threads:
 
 ```
-ananse network -b out/binding.tsv -e <gene_tpm.txt> -o network.txt -n 4
+ananse network -b out/binding.h5 -e <gene_tpm.txt> -o network.txt -n 4
 ```
 
 #### Transcription factor influence score: ananse influence
@@ -102,9 +102,11 @@ ananse influence -s source.network.txt -t target.network.txt -d source2target.de
   
 ## Citation
 
-  > Xu Q, Georgiou G, Veenstra G J C, et al. ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination[J]. [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.06.05.135798v2), 2020.
+> ANANSE: an enhancer network-based computational approach for predicting key transcription factors in cell fate determination 
+> Quan Xu, Georgios Georgiou, Siebren Frölich, Maarten van der Sande, Gert Jan C Veenstra, Huiqing Zhou, Simon J van Heeringen
+> Nucleic Acids Research, gkab598, https://doi.org/10.1093/nar/gkab598
 
-<!-- --- -->
+
 ## Help and Support
 
 * The preferred way to get support is through the [Github issues page](https://github.com/vanheeringen-lab/ANANSE/issues).

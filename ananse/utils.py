@@ -10,7 +10,32 @@ import warnings
 import genomepy.utils
 from pybedtools import BedTool
 import pysam
-import pyranges as pr
+import pandas as pd
+
+
+def check_path(arg, error_missing=True):
+    """Expand all paths. Can check for existence."""
+    if arg is None:
+        return arg
+
+    args = [arg] if isinstance(arg, str) else arg
+    paths = [cleanpath(arg) for arg in args]
+    if error_missing:
+        for path in paths:
+            if not os.path.exists(path):
+                raise FileNotFoundError(
+                    f"'{os.path.basename(path)}' not found in '{os.path.dirname(path)}'."
+                )
+    return paths[0] if isinstance(arg, str) else paths
+
+
+def cleanpath(path):
+    """Expand any path input to a literal path output"""
+    return os.path.abspath(  # expand relative paths (inc './' and '../')
+        os.path.expanduser(  # expand '~'
+            os.path.expandvars(path)  # expand '$VARIABLES'
+        )
+    )
 
 
 def shhh_bedtool(func):
@@ -71,7 +96,7 @@ def samc(ncore):
 def bam_index(bam, force=True, ncore=1):
     if force or not os.path.exists(f"{bam}.bai"):
         index_parameters = [f"-@ {samc(ncore)}", bam]
-        pysam.index(*index_parameters)
+        pysam.index(*index_parameters)  # noqa
 
 
 def bam_sort(bam, ncore=1):
@@ -135,15 +160,6 @@ def mosdepth(bed, bam, bed_output, ncore=1):
 #         scores = bed.iloc[:, 3:].sum(axis=1)
 #         bed = pd.concat([bed3, scores], axis=1)
 #     bed.to_csv(sum_bam_coverage, sep="\t", header=False, index=False)
-
-
-def cleanpath(path):
-    """Expand any path input to a literal path output"""
-    return os.path.abspath(  # expand relative paths (inc './' and '../')
-        os.path.expanduser(  # expand '~'
-            os.path.expandvars(path)  # expand '$VARIABLES'
-        )
-    )
 
 
 # def non_empty_files(files, error_msg, size_threshold=10, verbose=True):
@@ -218,9 +234,8 @@ def get_motif_factors(motif, indirect=True):
 def check_input_factors(factors):
     """Check factors.
 
-    Factors can eiher be a list of transcription factors, or a filename of a
-    file that containts TFs. Returns a list of factors.
-    If factors is None, it will return the default transcription factors.
+    Factors can either be a list of transcription factors, or a filename of a
+    file that contains TFs. Returns a list of factors.
 
     Returns
     -------
@@ -231,65 +246,61 @@ def check_input_factors(factors):
     if factors is None:
         return
 
-    # factors is string, assuming it's a filename
+    # if factors is a string, assume it's a filename
     if isinstance(factors, str):
-        if os.path.exists(factors):
-            fname = factors
-        else:
-            raise ValueError("Factors filename {factors} does not exist")
+        fname = factors
 
-    if len(factors) == 1 and os.path.exists(factors[0]):
+    # if factors is a list of 1, and it exists, assume it's a filename
+    elif isinstance(factors, list) and len(factors) == 1:
         fname = factors[0]
+
+    # It's a list with more than one value, assuming it's a list of TF names.
     else:
-        # It's a list with more than one value, assuming it's a list of TF names.
         return factors
+
+    if not os.path.exists(fname):
+        raise ValueError(f"Factors file '{factors}' does not exist")
 
     factors = [line.strip() for line in open(fname)]
     return factors
 
 
-def region_gene_overlap(
-    region_pr,
-    gene_bed,
-    up=100_000,
-    down=100_000,
-):
-    """Couple enhancers to genes.
+def view_h5(fname, tfs=None, fmt="wide"):
+    """Extract information from an ANANSE binding.h5 file.
 
     Parameters
     ----------
-    pr : PyRanges object
-        PyRanges object with enhancer regions.
-    up : int, optional
-        Upstream maximum distance, by default 100kb.
-    down : int, optional
-        Upstream maximum distabce, by default 100kb.
+    fname : str
+        File name (binding.h5).
+
+    tfs : list, optional
+        List of transcription factor names to extract. All TFs are used
+        by default.
+
+    fmt : str, optional
+        Return output in 'wide' or in 'long' format. Default is 'wide'.
 
     Returns
     -------
-    pandas.DataFrame
-        DataFrame with enhancer regions, gene names, distance and weight.
+    pandas.Dataframe
     """
-    genes = pr.read_bed(gene_bed)
-    # Convert to DataFrame & we don't need intron/exon information
-    genes = genes.as_df().iloc[:, :6]
+    if fmt not in ["wide", "long"]:
+        raise ValueError("fmt should be either 'wide' or 'long'")
 
-    # Get the TSS only
-    genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
-        genes["Strand"] == "+", "Start"
-    ]
-    genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
-        genes["Strand"] == "-", "End"
-    ]
+    with pd.HDFStore(fname) as hdf:
+        if tfs is None:
+            tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
 
-    # Extend up and down
-    genes.loc[genes["Strand"] == "+", "Start"] -= up
-    genes.loc[genes["Strand"] == "+", "End"] += down
-    genes.loc[genes["Strand"] == "-", "Start"] -= down
-    genes.loc[genes["Strand"] == "-", "End"] += up
+        idx = hdf.get("_index")
 
-    # Perform the overlap
-    genes = pr.PyRanges(genes)
-    genes = genes.join(region_pr).as_df()
+        df = pd.DataFrame(index=idx.index)
+        for tf in tfs:
+            df[tf] = hdf.get(tf).values
 
-    return genes
+    if fmt == "long":
+        df.index.rename("loc", inplace=True)
+        df = df.reset_index().melt(
+            id_vars=["loc"], value_name="prob", var_name="factor"
+        )
+
+    return df

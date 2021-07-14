@@ -58,14 +58,23 @@ ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -r ATAC.cell_type1.narrowPeak ATAC.cell_type2.narrowPeak
 ```
 
+#### Other species
+
+Please note that human and mouse are supported out-of-the-box, but for other species you will need a custom motif to transcription factor mapping. Take care to use the same gene symbols for your transcription factors as are present in your gene expression file. One way to create the TF to motif mapping is to use the `motif2factors` command from [GimmeMotifs](https://github.com/vanheeringen-lab/gimmemotifs). See the documentation [here](https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors). This command uses a relatively simple approach based on orthogroups. 
+
+
 #### Output files
 
-The output directory of `ananse binding` will contain three or four files, depending on the input data used. The file called `binding.tsv` contains three columns called `factor`, `enhancer` and `binding`. The `factor` column contains the TF name, the `enhancer` column the location of the enhancer (in `chrom:start-end` format) and the `binding` column the probability of the logistic classifier.
+The output directory of `ananse binding` will contain one or two files, depending on the input data used. The file called `binding.h5` contains:
 
-The `factor_activity.tsv` contains the predicted factor activity (based on the TF motif activity) for all transcription factors. The motif activity is based on the contribution of motif score to the enhancer activity (the coefficient from a linear regression;  see [The FANTOM Consortium & Riken Omics Science Center 2009](https://doi.org/10.1038/ng.375) and [Balwierz et al. 2014](https://doi.org/10.1101/gr.169508.113)). In the implementation of ANANSE the motif activity is calculated based on a regression using the ATAC-seq signal and/or a regression using the H3K27ac signal. 
+* The predicted binding probability for every TF in every enhancer. For every transcription factor there is a key with the transcription factor name and a value that contains the predicted binding probability.
+* The predicted factor activity (based on the TF motif activity) for all transcriptionfactors. The motif activity is based on the contribution of motif score to the enhancer activity (the coefficient from a linear regression;  see [The FANTOM Consortium & Riken Omics Science Center 2009](https://doi.org/10.1038/ng.375) and [Balwierz et al. 2014](https://doi.org/10.1101/gr.169508.113)). In the implementation of ANANSE the motif activity is calculated based on a regression using the ATAC-seq signal and/or a regression using the H3K27ac signal.
+* Depending on the input data, the file will also contain `atac` and/or `h3k27ac`, which provide the quantified and normalized signal of ATAC-seq and/or H3K27ac ChIP-seq data in the enhancer regions. If the `ANANSE.REMAP.model.v1.0` model is used, these files will also contain the relative signal. 
 
-Depending on the input data, the output directory will also contain `atac.tsv` and/or `h3k27ac.tsv`, which provide the quantified and normalized signal of ATAC-seq and/or H3K27ac ChIP-seq data in the enhancer regions. If the `ANANSE.REMAP.model.v1.0` model is used, these files will also contain the relative signal. 
+Mostly, you would want to use the `binding.h5` as input for `ananse network`. If you want to access the information in the file for other purposes you can
+use the `ananse view` command.
 
+If you provided multiple peaks or BED files as input, the output directory will also contain a BED files with the merged regions, which are used as potential enhancer.
 
 #### Full options
 
@@ -112,6 +121,7 @@ Optional arguments:
 
 The `ananse network` command infers a cell type-specific GRN based on the predicted TF binding sites using `ananse binding` and the expression levels of both TFs as well as their target genes. TF-gene interaction scores, the edge weights in the network, are calculated based on the predicted TF binding probability in enhancers and the distance between the enhancers and the target gene, the predicted TF activity and the expression level of both TF and the target gene.
 
+Note: `ananse network` needs ~12-15GB of memory for a typical analysis of a human network.
 
 #### Full options
 
@@ -127,7 +137,7 @@ Required arguments:
 
 ```
   -b FILE, --binding FILE
-                        TF binding prediction file (from ananse binding).
+                        TF binding prediction file (binding.h5 from ananse binding).
   -e FILE, --expression FILE
                         Expression scores. Should have gene names in the first column and should contain a column named
                         tpm. Both the quant.sf from salmon or the abundances.tsv from kallisto will work fine.
@@ -200,4 +210,55 @@ Optional arguments:
   -n NCORE, --ncore NCORE
                         Number of cores to use.
   -h, --help            show this help message and exit
+```
+
+
+### ananse view
+
+Convert the binding probabilities from  the `binding.h5` output of `ananse binding` to tab-separated text format.
+This is only necessary if you want to use the output for other purposes, as `ananse network` can only use the `.h5` file.
+Converting all factors may take some time and memory!
+
+Example command to extract the binding probabilities for all factors in *wide* format (one column per TF):
+
+``` bash
+$ ananse view binding.h5 -o binding.tsv
+```
+
+Example command to extract the binding probabilities for TP53 and TP63 in *long* format, print to stdout:
+
+
+``` bash
+$ ananse view binding.h5 -f TP53 TP63 -F long
+```
+
+```
+loc     factor  prob
+chr1:181357-181557      TP53    0.2432
+chr1:267938-268138      TP53    0.2568
+chr1:586086-586286      TP53    0.2452
+chr1:605299-605499      TP53    0.2445
+chr1:629832-630032      TP53    0.994
+chr1:631289-631489      TP53    0.965
+chr1:631431-631631      TP53    0.689
+chr1:633919-634119      TP53    0.9966
+chr1:778533-778733      TP53    0.777
+[...many more rows...]
+```
+
+#### Full options
+
+```
+usage: ananse [-h] <command> [options] view [-o FILE] [-f [TF [TF ...]]] [-F FORMAT] FILE
+
+positional arguments:
+  FILE                  input binding.h5 file
+
+optional arguments:
+  -o FILE, --outfile FILE
+                        outputfile (tab-separated text, default: stdout)
+  -f [TF [TF ...]], --factors [TF [TF ...]]
+                        name(s) of transcription factors (default: all)
+  -F FORMAT, --format FORMAT
+                        format: wide or long (default: wide)
 ```

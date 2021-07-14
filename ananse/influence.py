@@ -68,11 +68,10 @@ def difference(S, R):
     DIF = nx.create_empty_copy(R)
     for (u, v, d) in S.edges(data=True):
         if (u, v) not in R.edges:
-            if S.edges[u, v]["weight"] > 0.5:
-                DIF.add_edge(u, v, weight=d["weight"], n=1)
+            DIF.add_edge(u, v, weight=d["weight"], n=1)
         else:
             diff_weight = S.edges[u, v]["weight"] - R.edges[u, v]["weight"]
-            if diff_weight >= 0.3:
+            if diff_weight > 0:
                 DIF.add_edge(
                     u, v, weight=diff_weight, n=1, neglogweight=-np.log(diff_weight)
                 )
@@ -95,9 +94,6 @@ def read_expression(fname):
         header=0,
         dtype={"resid": str, "log2FoldChange": float, "padj": float},
     )
-
-    # convert to upper case (todo: this is not strictly necessary)
-    df.index = [index.upper() for index in df.index]
 
     # absolute fold change
     df["fc"] = df["log2FoldChange"].abs()
@@ -253,7 +249,7 @@ class Influence(object):
     ):
 
         self.ncore = ncore
-        logger.info("Reading network(s)")
+        logger.info(f"Reading network(s), using top {edges} edges.")
         # Load GRNs
         if Gbf is None and Gaf is not None:
             self.G = read_network(Gaf, edges=edges)
@@ -267,6 +263,7 @@ class Influence(object):
             G1 = read_network(Gbf, edges=edges)
             G2 = read_network(Gaf, edges=edges)
             self.G = difference(G2, G1)
+            logger.info(f"Differential network has {len(self.G.edges)} edges.")
 
         # Load expression file
         self.expression_change = read_expression(degenes)
@@ -290,9 +287,11 @@ class Influence(object):
         jobs = []
 
         tfs = [node for node in self.G.nodes() if self.G.out_degree(node) > 0]
+        logger.info(f"Differential network contains {len(tfs)} transcription factors.")
 
         # differentially expressed TFs
         detfs = [tf for tf in tfs if tf in self.expression_change]
+
         if len(detfs) == 0:
             sys.stderr.write(
                 "no overlapping transcription factors found between the network file(s) "
@@ -395,17 +394,16 @@ class Influence(object):
             )
 
     def run_influence(self, plot=True, fin_expression=None):
+        logger.info("Save differential network")
+        self.save_reg_network(
+            ".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt"
+        )
 
         logger.info("Run target score")
         influence_file = self.run_target_score()
 
         logger.info("Run influence score")
         self.run_influence_score(influence_file, fin_expression=fin_expression)
-
-        logger.info("Save results")
-        self.save_reg_network(
-            ".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt"
-        )
 
         if plot is True:
             logger.info("Plot results")
