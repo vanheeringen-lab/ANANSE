@@ -267,19 +267,19 @@ def check_input_factors(factors):
 
 def view_h5(fname, tfs=None, fmt="wide"):
     """Extract information from an ANANSE binding.h5 file.
-    
+
     Parameters
     ----------
     fname : str
         File name (binding.h5).
-    
+
     tfs : list, optional
         List of transcription factor names to extract. All TFs are used
         by default.
-    
+
     fmt : str, optional
         Return output in 'wide' or in 'long' format. Default is 'wide'.
-        
+
     Returns
     -------
     pandas.Dataframe

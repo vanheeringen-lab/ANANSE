@@ -408,7 +408,6 @@ class Influence(object):
         logger.info("Run influence score")
         self.run_influence_score(influence_file, fin_expression=fin_expression)
 
-
         if plot is True:
             logger.info("Plot results")
             plot_influscore(
