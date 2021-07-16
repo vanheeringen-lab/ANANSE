@@ -4,10 +4,13 @@
 # This module is free software. You can redistribute it and/or modify it under
 # the terms of the MIT License, see the file COPYING included with this
 # distribution.
+from loguru import logger
+
 from ananse.peakpredictor import predict_peaks
 from ananse.utils import check_path, check_input_factors
 
 
+@logger.catch
 def binding(args):
     predict_peaks(
         check_path(args.outdir, error_missing=False),
