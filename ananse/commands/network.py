@@ -19,7 +19,7 @@ def network(args):
         ncore = min(os.cpu_count(), 4)
     ncore = int(ncore)
 
-    memory_limit = "12GB"
+    memory_limit = "16GB"
 
     # With one core more memory is needed
     if ncore == 1:
