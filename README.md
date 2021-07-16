@@ -5,6 +5,7 @@
 
 [![Documentation Status](https://readthedocs.org/projects/anansepy/badge/?version=master)](https://anansepy.readthedocs.io/en/master/?badge=master)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/license.svg)](https://anaconda.org/bioconda/ananse)
+[![DOI:10.1101/2020.06.05.135798](http://img.shields.io/badge/DOI-10.1101/2020.06.05.135798-B31B1B.svg)](https://doi.org/10.1101/2020.06.05.135798)
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/maintainability)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/test_coverage)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/test_coverage)
@@ -41,7 +42,21 @@ $ conda activate ananse
 
 Don't forget to activate the environment with `conda activate ananse` whenever you want to use ANANSE.
 
+#### 3. Using the development version
+
+The latest version, but may not always be stable. 
+
+```
+# Activate the environment
+$ conda activate ananse
+
+# Install development version
+$ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@develop
+```
+
 ### Usage
+
+
 
 The three command-line tools (`binding`, `network` and `influence`) can be used separately, but are designed to work together. In general, for a full ANANSE analysis, you would infer binding and calculate the GRN for two (or more) different cell types and then use `ananse influence` to determine influential TFs for the transition from one cell type to the other.
 
