@@ -167,7 +167,11 @@ def targetScore(node, G, expression_change, max_degree=3):
     target_fc = [expression_change[t].absfc for t in direct_targets]
     non_target_fc = [expression_change[t].absfc for t in non_direct_targets]
 
-    pval = mannwhitneyu(target_fc, non_target_fc)[1]
+    try:
+        pval = mannwhitneyu(target_fc, non_target_fc)[1]
+    except RecursionError:
+        pval = np.NAN
+        logger.warning(f"Could not calculate p-val (target vs non-target fold-change) for {node}.")
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
 
     # factor, targetScore, directTargets, totalTargets, Gscore, pval, target_fc
@@ -283,9 +287,6 @@ class Influence(object):
     def run_target_score(self, max_degree=3):
         """Run target score for all TFs."""
 
-        pool = mp.Pool(self.ncore)
-        jobs = []
-
         tfs = [node for node in self.G.nodes() if self.G.out_degree(node) > 0]
         logger.info(f"Differential network contains {len(tfs)} transcription factors.")
 
@@ -293,25 +294,54 @@ class Influence(object):
         detfs = [tf for tf in tfs if tf in self.expression_change]
 
         if len(detfs) == 0:
-            sys.stderr.write(
-                "no overlapping transcription factors found between the network file(s) "
-                "(-s/--source, -t/--target) and the differential expression data (-d/--degenes)\n"
+            logger.error(
+                "No overlapping transcription factors found between the network file(s) "
+                "(-s/--source, -t/--target) and the differential expression data (-d/--degenes)!"
             )
             sys.exit(1)
 
         detfs = [tf for tf in detfs if self.expression_change[tf].realfc > 0]
         if len(detfs) == 0:
-            sys.stderr.write(
-                "no differentially expressed TFs found with a log2 fold change above 0\n"
+            logger.error(
+                "No differentially expressed TFs found with a log2 fold change above 0!"
             )
             sys.exit(1)
+        else:
+            logger.info(f"Out of these, {len(detfs)} are differentially expressed.")
 
-        for tf in detfs:
-            jobs.append(
-                pool.apply_async(
-                    targetScore, (tf, self.G, self.expression_change, max_degree)
+        result = []
+        if self.ncore > 1:
+            try:
+                pool = mp.Pool(self.ncore)
+                jobs = []
+                for tf in detfs:
+                    jobs.append(
+                        pool.apply_async(
+                            targetScore,
+                            (tf, self.G, self.expression_change, max_degree),
+                        )
+                    )
+                with tqdm(total=len(jobs)) as pbar:
+                    for j in jobs:
+                        result.append(j.get())
+                        pbar.update(1)
+                pool.close()
+            except Exception as e:
+                if "multiprocessing" in e.__repr__():
+                    logger.error(str(e))
+                    logger.error("Error seems to be related to multiprocessing.")
+                    logger.error(
+                        "In some cases running `ananse influence` with `-n 1` will solve this issue."
+                    )
+                    logger.error("If it doesn't, then please file a bug report (with the output of the command run with `-n 1`) at:")
+                    logger.error("https://github.com/vanheeringen-lab/ANANSE/issues")
+                    sys.exit(1)
+                raise
+        else:
+            for tf in tqdm(detfs):
+                result.append(
+                    targetScore(tf, self.G, self.expression_change, max_degree)
                 )
-            )
 
         # Get results and write to file
         influence_file = open(self.outfile, "w")
@@ -319,33 +349,30 @@ class Influence(object):
             "factor\tdirectTargets\ttotalTargets\ttargetsore\tGscore\tfactor_fc\tpval\ttarget_fc\n"
         )
 
-        with tqdm(total=len(jobs)) as pbar:
-            for j in jobs:
-                (
-                    factor,
-                    score,
-                    direct_targets,
-                    total_targets,
-                    factor_fc,
-                    pval,
-                    target_fc,
-                ) = j.get()
-                print(
-                    factor,
-                    direct_targets,
-                    total_targets,
-                    score,
-                    self.expression_change[factor].score,
-                    factor_fc,
-                    pval,
-                    target_fc,
-                    file=influence_file,
-                    sep="\t",
-                )
-                pbar.update(1)
+        for (
+            factor,
+            score,
+            direct_targets,
+            total_targets,
+            factor_fc,
+            pval,
+            target_fc,
+        ) in result:
+            print(
+                factor,
+                direct_targets,
+                total_targets,
+                score,
+                self.expression_change[factor].score,
+                factor_fc,
+                pval,
+                target_fc,
+                file=influence_file,
+                sep="\t",
+            )
+
         print("\n", file=influence_file)
 
-        pool.close()
         influence_file.close()
 
         scores_df = pd.read_table(self.outfile, index_col=0)
@@ -394,19 +421,19 @@ class Influence(object):
             )
 
     def run_influence(self, plot=True, fin_expression=None):
-        logger.info("Save differential network")
+        logger.info("Saving differential network.")
         self.save_reg_network(
             ".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt"
         )
 
-        logger.info("Run target score")
+        logger.info("Calculating target scores.")
         influence_file = self.run_target_score()
 
-        logger.info("Run influence score")
+        logger.info("Calculating influence scores.")
         self.run_influence_score(influence_file, fin_expression=fin_expression)
 
         if plot is True:
-            logger.info("Plot results")
+            logger.info("Plotting results.")
             plot_influscore(
                 self.outfile, ".".join(self.outfile.split(".")[:-1]) + ".pdf"
             )
