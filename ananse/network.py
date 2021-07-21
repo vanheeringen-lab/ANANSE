@@ -376,7 +376,7 @@ class Network(object):
             not_valid = set(all_tfs) - set(tfs)
             if len(not_valid) > 1:
                 logger.warning(
-                    f"The following TFs are found in {binding_fname}, but do not seem to be TFs:"XZ
+                    f"The following TFs are found in {binding_fname}, but do not seem to be TFs:"
                 )
                 logger.warning(", ".join(not_valid))
             tfs = set(tfs) & set(all_tfs)
