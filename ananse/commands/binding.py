@@ -13,7 +13,7 @@ from ananse.utils import check_path, check_input_factors
 @logger.catch
 def binding(args):
     predict_peaks(
-        check_path(args.outdir, error_missing=False),
+        check_path(args.outfile, error_missing=False),
         atac_bams=check_path(args.atac_bams),
         histone_bams=check_path(args.histone_bams),
         regionfiles=check_path(args.regionfiles),

@@ -76,11 +76,11 @@ if __name__ == "__main__":
     group = p.add_argument_group("Optional arguments")
     group.add_argument(
         "-o",
-        "--outdir",
-        dest="outdir",
-        help="Directory where you wish to store the output (default: ./ANANSE_binding)",
-        metavar="",
-        default="./ANANSE_binding",
+        "--outfile",
+        dest="outfile",
+        help="Name of output h5 file",
+        metavar="FILE",
+        default="./ANANSE_binding.h5",
     )
     group.add_argument(
         "-R",

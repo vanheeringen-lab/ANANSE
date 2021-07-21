@@ -642,7 +642,7 @@ def _check_input_files(*args):
 
 
 def predict_peaks(
-    outdir,
+    outfile,
     atac_bams=None,
     histone_bams=None,
     regionfiles=None,
@@ -679,8 +679,8 @@ def predict_peaks(
 
     Parameters
     ----------
-    outdir : str
-        Name of output directory.
+    outfile : str
+        Name of output hdf5 file.
     atac_bams : list, optional
         List of BAM files, by default None
     histone_bams : list, optional
@@ -730,6 +730,7 @@ def predict_peaks(
     # Check genome, will fail if it is not a correct genome name or file
     Genome(genome)
 
+    outdir = os.path.dirname(outfile)
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
 
@@ -760,7 +761,8 @@ def predict_peaks(
         ncpus=ncpus,
     )
 
-    outfile = os.path.join(outdir, "binding.h5")
+    if outfile[-3:] != ".h5":
+        outfile = outfile + ".h5"
     # Make sure we create a new file
     with open(outfile, "w"):
         pass
