@@ -261,6 +261,9 @@ class Network(object):
             DataFrame with enhancer regions, gene names, distance and weight.
         """
         genes = region_gene_overlap(peak_pr, self.gene_bed)
+        if genes.empty:
+            logger.error("No genes found!")
+            raise ValueError
 
         # Get the distance from center of enhancer to TSS
         # Correct for extension
@@ -382,6 +385,7 @@ class Network(object):
         # Read enhancer index from hdf5 file
         enhancers = hdf.get(key="_index")
         chroms = enhancers.index.to_series().str.replace(":.*", "").unique()
+        logger.info(f"Binding file contains {len(chroms)} contigs.")
 
         tmpdir = mkdtemp()
         self._tmp_files.append(tmpdir)  # mark for deletion later
@@ -390,8 +394,8 @@ class Network(object):
         # also be done at once, however, the memory usage of dask is very finicky.
         # This is a pragmatic solution, that seems to work well, does not use a
         # lot of memory and is not too slow (~50 seconds per chromosome).
-        for chrom in chroms:
-            logger.info(f"Aggregating binding for genes on {chrom}")
+        for n, chrom in enumerate(chroms):
+            logger.info(f"Aggregating binding for genes on {chrom} - {int(100 * n/len(chroms))}%")
 
             # Get the index of all enhancers for this specific chromosome
             idx = enhancers.index.str.contains(f"^{chrom}:")
