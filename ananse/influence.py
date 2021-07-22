@@ -87,9 +87,11 @@ def read_expression(fname):
     Parameters
     ----------
     fname: str
-        a tab-separated file containing (at least) 3 columns
-        (HGNC gene symbols, (adjusted) p-values and log2foldchange)
-        header is omitted if starting with "resid"
+        DESeq2 output file. 
+        Tab-separated, containing (at least) 3 columns:
+        1. a column with names/IDs (column name is ignored), 
+        2. named column "padj" (adjusted p-values)
+        3. named column "log2FoldChange"
 
     Returns
     -------
