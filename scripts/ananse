@@ -307,7 +307,7 @@ if __name__ == "__main__":
         dest="ncore",
         help="Number of cores to use.",
         type=int,
-        default=1,
+        default=4,
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
