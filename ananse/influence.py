@@ -39,24 +39,15 @@ def read_network(fname, edges=100000):
     G = nx.DiGraph()
 
     rnet = pd.read_csv(fname, sep="\t")
-    nrnet = rnet.sort_values("prob", ascending=False)
-    if len(nrnet) < edges:
-        usenet = nrnet
-    else:
-        usenet = nrnet[:edges]
-
-    for _, row in usenet.iterrows():
+    rnet.sort_values("prob", ascending=False, inplace=True)
+    rnet = rnet.head(edges)
+    for _, row in rnet.iterrows():
         source, target = row[0].split("_", 1)
+        weight = 0 if len(row) < 2 else float(row[1])
         try:
-            if len(row) > 1:
-                weight = float(row[1])
-                # if weight < 0 or weight > 1:
-                #     logger.error(f"Expect weight between 0 and 1, got {weight}")
-            else:
-                weight = 0
             G.add_edge(source, target, weight=weight, n=1)
         except Exception:
-            sys.stderr.write("could not parse edge weight\n")
+            logger.error("Could not parse edge weight.")
             raise
     return G
 
