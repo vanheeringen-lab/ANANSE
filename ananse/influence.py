@@ -110,8 +110,8 @@ def read_expression(fname):
         },
     )[["log2FoldChange", "padj"]]
     # removes NaNs
-    # average values for duplicate gene names (none hopefully)
     df.dropna(inplace=True)
+    # average values for duplicate gene names (none hopefully)
     df = df.groupby(by=df.index, dropna=True).mean(0)
 
     # absolute fold change

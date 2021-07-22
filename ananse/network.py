@@ -518,6 +518,7 @@ class Network(object):
             # combine expression values for duplicate gene names
             # also removes NaNs from the index
             subdf = subdf.groupby(by=subdf.index, dropna=True).sum()
+            subdf.dropna(inplace=True)
             expression = pd.concat([expression, subdf], axis=1)
         expression = pd.DataFrame(expression.mean(1), columns=[column])
         # log transform expression values
