@@ -50,8 +50,8 @@ def read_network(fname, edges=100000):
         try:
             if len(row) > 1:
                 weight = float(row[1])
-                if weight < 0 or weight > 1:
-                    logger.error(f"Expect weight between 0 and 1, got {weight}")
+                # if weight < 0 or weight > 1:
+                #     logger.error(f"Expect weight between 0 and 1, got {weight}")
             else:
                 weight = 0
             G.add_edge(source, target, weight=weight, n=1)
