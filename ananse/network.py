@@ -261,6 +261,8 @@ class Network(object):
             DataFrame with enhancer regions, gene names, distance and weight.
         """
         genes = region_gene_overlap(peak_pr, self.gene_bed)
+        if genes.empty:
+            return pd.Dataframe()
 
         # Get the distance from center of enhancer to TSS
         # Correct for extension
@@ -414,7 +416,10 @@ class Network(object):
                 promoter=promoter,
                 full_weight_region=full_weight_region,
             )
-            gene_df = gene_df.dropna()
+            gene_df.dropna(inplace=True)
+            if gene_df.empty:
+                logger.debug(f"No genes found on {chrom}")
+                continue
 
             bp = pd.DataFrame(index=enhancers[idx].index)
 
