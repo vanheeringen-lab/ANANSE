@@ -39,7 +39,7 @@ class PeakPredictor:
         pfmfile=None,
         factors=None,
         pfmscorefile=None,
-        ncpus=4,
+        ncore=4,
     ):
         self.data_dir = reference
 
@@ -73,7 +73,7 @@ class PeakPredictor:
             )
 
         # Set basic information
-        self.ncpus = ncpus
+        self.ncore = ncore
         self._atac_data = None
         self._histone_data = None
         self.factor_models = {}
@@ -121,7 +121,7 @@ class PeakPredictor:
             # TODO: we're still scanning for *all* motifs, even if we only have
             # a few factors
             motif_df = scan_regionfile_to_table(
-                f.name, self.genome, "score", ncpus=self.ncpus
+                f.name, self.genome, "score", ncpus=self.ncore
             )
 
             self._motifs = pd.DataFrame(index=motif_df.index)
@@ -651,7 +651,7 @@ def predict_peaks(
     genome=None,
     pfmfile=None,
     pfmscorefile=None,
-    ncpus=4,
+    ncore=4,
 ):
     """Predict binding in a set of genomic regions.
 
@@ -699,7 +699,7 @@ def predict_peaks(
         Motifs in PFM format, with associated motif2factors.txt file.
     pfmscorefile : str, optional
         Path to file with pre-scanned motif scores.
-    ncpus : int, optional
+    ncore : int, optional
         Number of threads to use. Default is 4.
     """
     if reference is None and regionfiles is None:
@@ -757,7 +757,7 @@ def predict_peaks(
         pfmfile=pfmfile,
         factors=factors,
         pfmscorefile=pfmscorefile,
-        ncpus=ncpus,
+        ncore=ncore,
     )
 
     outfile = os.path.join(outdir, "binding.h5")

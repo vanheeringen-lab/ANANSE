@@ -22,5 +22,5 @@ def binding(args):
         genome=args.genome,  # checked in CLI
         pfmfile=check_path(args.pfmfile),
         pfmscorefile=check_path(args.pfmscorefile),
-        ncpus=args.ncpus,
+        ncore=args.ncore,
     )
