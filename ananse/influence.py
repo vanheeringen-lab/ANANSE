@@ -79,12 +79,22 @@ def difference(S, R):
 
 
 def read_expression(fname):
-    """Read differential gene expression analysis output, return dictionary with namedtuples of scores, absolute fold
+    """
+    Read differential gene expression analysis output,
+    return dictionary with namedtuples of scores, absolute fold
     change and "real" (directional) fold change.
 
-    input:
-    a tab-separated file containing 3 columns (HGNC gene symbols, (adjusted) p-values and log2foldchange)
-    header is omitted if starting with "resid"
+    Parameters
+    ----------
+    fname: str
+        a tab-separated file containing (at least) 3 columns
+        (HGNC gene symbols, (adjusted) p-values and log2foldchange)
+        header is omitted if starting with "resid"
+
+    Returns
+    -------
+    dict
+        namedtuples of scores, absolute fold change and "real" (directional) fold change.
     """
     expression_change = dict()
 
@@ -92,17 +102,26 @@ def read_expression(fname):
         fname,
         index_col=0,
         header=0,
-        dtype={"resid": str, "log2FoldChange": float, "padj": float},
-    )
+        dtype={
+            "resid": str,
+            "Unnamed: 0": str,
+            "log2FoldChange": float,
+            "padj": float,
+        },
+    )[["log2FoldChange", "padj"]]
+    # removes NaNs
+    # average values for duplicate gene names (none hopefully)
+    df.dropna(inplace=True)
+    df = df.groupby(by=df.index, dropna=True).mean(0)
 
     # absolute fold change
     df["fc"] = df["log2FoldChange"].abs()
 
-    # get the gscore (absolute fold change if significanlty differential)
+    # get the gscore (absolute fold change if significantly differential)
     df["score"] = df["fc"] * (df["padj"] < 0.05)
 
     for k, row in df.iterrows():
-        expression_change[row.name] = Expression(
+        expression_change[k] = Expression(
             score=row.score, absfc=row.fc, realfc=row.log2FoldChange
         )
 

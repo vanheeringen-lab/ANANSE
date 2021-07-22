@@ -481,9 +481,9 @@ class Network(object):
     ):
         """Create a gene expression based network.
 
-        Based on a file with gene expression levels (a TPM column), a
+        Based on file(s) with gene expression levels (a TPM column), a
         dask DataFrame is generated with the combined expression levels
-        of the tf and the target gene. By default, the expresison levels
+        of the tf and the target gene. By default, the expression levels
         are ranked and subsequently scaled between 0 and 1.
 
         Parameters
@@ -511,16 +511,16 @@ class Network(object):
 
         # Read all expression input files and take the mean expression per gene
         re_column = re.compile(fr"^{column}$", re.IGNORECASE)
-        expression = pd.DataFrame(
-            pd.concat(
-                [
-                    pd.read_table(f, index_col=0).filter(regex=re_column)
-                    for f in fin_expression
-                ],
-                axis=1,
-            ).mean(1),
-            columns=[column],
-        )
+        expression = pd.DataFrame()
+        for f in fin_expression:
+            # keep only the name and expression columns
+            subdf = pd.read_table(f, index_col=0).filter(regex=re_column)
+            # combine expression values for duplicate gene names
+            # also removes NaNs from the index
+            subdf = subdf.groupby(by=subdf.index, dropna=True).sum()
+            expression = pd.concat([expression, subdf], axis=1)
+        expression = pd.DataFrame(expression.mean(1), columns=[column])
+        # log transform expression values
         expression[column] = np.log2(expression[column] + 1e-5)
 
         genes = pd.read_table(
