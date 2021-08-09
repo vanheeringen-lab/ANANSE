@@ -132,8 +132,15 @@ The motif file should contain positional frequency matrices and should end with 
 The motif mapping file should have the same base name as  the `motif` file and end with `.motif2factors.txt` instead of `.pfm`.
 Examples are shown below.
 
-**Please note:** if you want to use ANANSE for a species other than human or mouse, you will have to use the default motif database.
-This enables mapping of the transcription factors to motifs.
+**Please note:** if you want to use ANANSE for a species other than human or mouse, you will have to generate this database yourself, because the gene names with the database won't overlap.
+Don't worry, it is easy when doing it with gimmemotifs' in-built command `gimme motif2factors`.
+You can already generate a motif database for e.g. zebrafish (danRer11 assembly) with just this command:
+
+```
+gimme motif2factors --new-reference danRer11 --outdir mynewdatabase
+```
+
+Take a look at the [gimme motif2factors](https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors) docs for more options
 
 #### Motif file
 
