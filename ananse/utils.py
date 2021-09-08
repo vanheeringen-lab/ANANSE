@@ -282,7 +282,7 @@ def view_h5(fname, tfs=None, fmt="wide"):
 
     Returns
     -------
-    pandas.Dataframe
+    pandas.DataFrame
     """
     if fmt not in ["wide", "long"]:
         raise ValueError("fmt should be either 'wide' or 'long'")
