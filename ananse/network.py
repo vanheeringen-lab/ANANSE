@@ -262,7 +262,7 @@ class Network(object):
         """
         genes = region_gene_overlap(peak_pr, self.gene_bed)
         if genes.empty:
-            return pd.Dataframe()
+            return pd.DataFrame()
 
         # Get the distance from center of enhancer to TSS
         # Correct for extension
