@@ -41,6 +41,7 @@ class Network(object):
         gene_bed=None,
         include_promoter=False,
         include_enhancer=True,
+        necessary_output = True,
     ):
         """
         infer cell type-specific gene regulatory network
@@ -57,6 +58,8 @@ class Network(object):
                 Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. (default: False)
             include_enhancer : bool
                 Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. (default: True)
+            necessary_output : bool
+                export only TF_target + prob score or all variables to the GRN file
         """
         self.ncore = ncore
         self.genome = genome
@@ -85,10 +88,9 @@ class Network(object):
                 f"Could not find the gene bed file {self.gene_bed}."
             )
 
-        # self.promoter = promoter
         self.include_promoter = include_promoter
-
         self.include_enhancer = include_enhancer
+        self.necessary_output = necessary_output
 
     @staticmethod
     def unique_enhancers(fname):
@@ -578,7 +580,11 @@ class Network(object):
 
         tf_fname = self._save_temp_expression(tmp, "tf")
         target_fname = self._save_temp_expression(expression, "target")
-
+        ##WIP JOS
+        #tf_target_distance = self.save_temp_expression(L,"L") ish ?
+        
+        
+        
         # Read files (delayed) and merge on 'key' to create a Cartesian product
         # combining all TFs with all target genes.
         a = dd.read_parquet(tf_fname)
@@ -606,9 +612,17 @@ class Network(object):
         alpha=None,
         promoter=2000,
         full_weight_region=5000,
+        necessary_output = True
     ):
-        """Create network.
 
+        """Create network.
+        
+        Generates a gene-regulatory network with a TF-target gene interaction "prob" score based on the mean rank of:
+        1. Binding score based on ATAC/H3K27ac data of neirby enhancers.
+        2. TF Activity (single score per TF based on general TF motif behaviour in the trained dataset) 
+        3. TF expression score
+        4. Target expression score
+        
         Parameters
         ----------
         binding : str
@@ -630,7 +644,8 @@ class Network(object):
         promoter : int, optional
             Promoter region, by default 2000.
         full_weight_region : int, optional
-            Region that will receive full weight, by default 5000."""
+            Region that will receive full weight, by default 5000.
+            """
         # Expression base network
         logger.info("Loading expression")
         df_expression = self.create_expression_network(
@@ -703,7 +718,12 @@ class Network(object):
             logger.info("Writing network")
             out_dir = os.path.abspath(os.path.dirname(outfile))
             os.makedirs(out_dir, exist_ok=True)
-            result[["tf_target", "prob"]].to_csv(outfile, sep="\t", index=False)
+            if self.necessary_output:
+                logger.info("Writing only necesary prob score ")
+                result[["tf_target",  "prob"]].to_csv(outfile, sep="\t", index=False)
+            else:
+                logger.info("Writing all GRN variables prob network")
+                result[["tf_target","prob","tf_expression", "target_expression", "weighted_binding","activity"]].to_csv(outfile, sep="\t", index=False)
         else:
             return result[["tf_target", "prob"]]
 

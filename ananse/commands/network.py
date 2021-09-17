@@ -31,7 +31,8 @@ def network(args):
         genome=args.genome,  # checked in CLI
         gene_bed=check_path(args.annotation),
         include_promoter=args.include_promoter,
-        include_enhancer=args.include_enhancer
+        include_enhancer=args.include_enhancer,
+        necessary_output=args.necessary_output
         # pfmfile=args.pfmfile,
         # promoter=args.promoter
     )

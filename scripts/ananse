@@ -146,6 +146,14 @@ if __name__ == "__main__":
         default=None,
     )
     group.add_argument(
+        "--jacard-cutoff",
+        dest="jacard_cutoff",
+        help="TFs with a motif jacard similarity of larger than the jacard-cutoff are linked together for model selection",
+        type=float,
+        default=0.0,
+    )
+
+    group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.binding)
@@ -231,6 +239,18 @@ if __name__ == "__main__":
         action=NegateAction,
         nargs=0,
     )
+    
+    group.add_argument(
+        "--necessary-output",
+        "--detailed-output",
+        default=True,
+        help="generate simple or detaild output in the GRN file "
+             "By default only necessary data is stored",
+        dest="necessary_output",
+        action=NegateAction,
+        nargs=0,
+    )
+    
     group.add_argument(
         "--include-enhancer",
         "--exclude-enhancer",
