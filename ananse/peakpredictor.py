@@ -322,10 +322,7 @@ class PeakPredictor:
                 d.append([f1, f2, jaccard])
                 if jaccard > 0:
                     self.motif_graph.add_edge(f1, f2, weight=1 - jaccard)
-                    logger.info(f"f1:{f1} f2:{f2} jaccard:{jaccard} weight:{1 - jaccard}")
-
-
-
+                    
     def _load_bams(self, bams, title, window=200):
         tmp = pd.DataFrame(index=self.regions)
         with NamedTemporaryFile(mode="w") as f_out:

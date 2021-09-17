@@ -580,11 +580,6 @@ class Network(object):
 
         tf_fname = self._save_temp_expression(tmp, "tf")
         target_fname = self._save_temp_expression(expression, "target")
-        ##WIP JOS
-        #tf_target_distance = self.save_temp_expression(L,"L") ish ?
-        
-        
-        
         # Read files (delayed) and merge on 'key' to create a Cartesian product
         # combining all TFs with all target genes.
         a = dd.read_parquet(tf_fname)
