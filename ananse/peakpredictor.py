@@ -434,7 +434,7 @@ class PeakPredictor:
             self.factor_models[factor] = joblib.load(fname)
         logger.info(f"{len(self.factor_models)} models found")
 
-    def predict_proba(self, factor=None, motifs=None,jacard_cutoff=0.0):
+    def predict_proba(self, factor=None, motifs=None,jaccard_cutoff=0.0):
         """Predict binding probability.
 
         Predict binding probability for either a TF (factor) or a set of
@@ -447,8 +447,8 @@ class PeakPredictor:
             Transcription factor name.
         motifs : [type], optional
             Motifs. Currently not implemented.
-        jacard_cutoff : float, optional
-            cutoff of the minimum jacard overlap between motifs of two TFs for them to be considered related. Related motifs can share models. 
+        jaccard_cutoff : float, optional
+            cutoff of the minimum jaccard overlap between motifs of two TFs for them to be considered related. Related motifs can share models. 
             #WIP Jos Default = 0.0, but 0.1 seems to work well based on subjectiv testing
         Returns
         -------
@@ -464,7 +464,7 @@ class PeakPredictor:
         if factor not in self.f2m:
             raise ValueError(f"Motif not known for {factor}")
 
-        model, factor = self._load_model(factor, jacard_cutoff)
+        model, factor = self._load_model(factor, jaccard_cutoff)
 
         X = self._load_data(factor)
         proba = model.predict_proba(X)[:, 1]
@@ -492,9 +492,9 @@ class PeakPredictor:
         # logger.debug(str(self._X_columns))
         return tmp[self._X_columns]
 
-    def _load_model(self, factor, jacard_cutoff = 0.0):
+    def _load_model(self, factor, jaccard_cutoff = 0.0):
         model = None
-        motif_edge_min = 1 - jacard_cutoff
+        motif_edge_min = 1 - jaccard_cutoff
         if factor in self.factor_models:
             logger.info(f"Using {factor} model")
             model = self.factor_models[factor]
@@ -509,8 +509,7 @@ class PeakPredictor:
             }
             try:
                 sub_factor = list(paths.keys())[0]
-                second_sub_factor = list(paths.keys())[1]
-                logger.info(f"Using {factor} motif with {sub_factor} model weights v:{v} second:{list(paths.keys())[1]}")
+                logger.info(f"Using {factor} motif with {sub_factor} model weights")
                 model = self.factor_models[sub_factor]
                 # factor = sub_factor
             except Exception:

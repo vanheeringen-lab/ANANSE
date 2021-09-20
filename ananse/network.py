@@ -41,7 +41,7 @@ class Network(object):
         gene_bed=None,
         include_promoter=False,
         include_enhancer=True,
-        necessary_output = True,
+        full_output = False,
     ):
         """
         infer cell type-specific gene regulatory network
@@ -58,8 +58,8 @@ class Network(object):
                 Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. (default: False)
             include_enhancer : bool
                 Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. (default: True)
-            necessary_output : bool
-                export only TF_target + prob score or all variables to the GRN file
+            full_output : bool
+                export all variables to the GRN file or by default only the TF_target + prob score
         """
         self.ncore = ncore
         self.genome = genome
@@ -90,7 +90,7 @@ class Network(object):
 
         self.include_promoter = include_promoter
         self.include_enhancer = include_enhancer
-        self.necessary_output = necessary_output
+        self.full_output = full_output
 
     @staticmethod
     def unique_enhancers(fname):
@@ -607,7 +607,7 @@ class Network(object):
         alpha=None,
         promoter=2000,
         full_weight_region=5000,
-        necessary_output = True
+        full_output = False
     ):
 
         """Create network.
@@ -713,12 +713,13 @@ class Network(object):
             logger.info("Writing network")
             out_dir = os.path.abspath(os.path.dirname(outfile))
             os.makedirs(out_dir, exist_ok=True)
-            if self.necessary_output:
-                logger.info("Writing only necesary prob score ")
-                result[["tf_target",  "prob"]].to_csv(outfile, sep="\t", index=False)
-            else:
+            if self.full_output:
                 logger.info("Writing all GRN variables prob network")
                 result[["tf_target","prob","tf_expression", "target_expression", "weighted_binding","activity"]].to_csv(outfile, sep="\t", index=False)
+            else:
+                logger.info("Writing only necesary prob score ")
+                result[["tf_target",  "prob"]].to_csv(outfile, sep="\t", index=False)
+
         else:
             return result[["tf_target", "prob"]]
 

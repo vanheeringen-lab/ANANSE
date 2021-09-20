@@ -146,9 +146,9 @@ if __name__ == "__main__":
         default=None,
     )
     group.add_argument(
-        "--jacard-cutoff",
-        dest="jacard_cutoff",
-        help="TFs with a motif jacard similarity of larger than the jacard-cutoff are linked together for model selection",
+        "--jaccard-cutoff",
+        dest="jaccard_cutoff",
+        help="TFs with a motif jaccard similarity of larger than the jaccard-cutoff are linked together for model selection",
         type=float,
         default=0.0,
     )
@@ -239,18 +239,24 @@ if __name__ == "__main__":
         action=NegateAction,
         nargs=0,
     )
-    
+#    group.add_argument(
+#        "--simple-output",
+#        "--full-output",
+#        default=False,
+#        help="export only the simple or the full output in the GRN output file. "
+#             "By default only the simple output is exported to the GRN output file",
+#        dest="full_output",
+#        action=NegateAction,
+#        nargs=0,
+#    )
     group.add_argument(
-        "--necessary-output",
-        "--detailed-output",
-        default=True,
-        help="generate simple or detaild output in the GRN file "
-             "By default only necessary data is stored",
-        dest="necessary_output",
-        action=NegateAction,
-        nargs=0,
+        "-f",
+        "--full-output",
+        dest="full_output",
+        help="Export the full GRN output to the output file",
+        action="store_true",
+        default=False,
     )
-    
     group.add_argument(
         "--include-enhancer",
         "--exclude-enhancer",

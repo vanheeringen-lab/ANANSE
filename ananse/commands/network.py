@@ -13,7 +13,6 @@ from ananse.utils import check_path
 from dask.distributed import Client, LocalCluster
 from loguru import logger
 
-
 @logger.catch
 def network(args):
     ncore = args.ncore
@@ -32,7 +31,7 @@ def network(args):
         gene_bed=check_path(args.annotation),
         include_promoter=args.include_promoter,
         include_enhancer=args.include_enhancer,
-        necessary_output=args.necessary_output
+        full_output=args.full_output
         # pfmfile=args.pfmfile,
         # promoter=args.promoter
     )
