@@ -448,7 +448,7 @@ class PeakPredictor:
         motifs : [type], optional
             Motifs. Currently not implemented.
         jaccard_cutoff : float, optional
-            cutoff of the minimum jaccard overlap between motifs of two TFs for them to be considered related. Related motifs can share models. 
+            cutoff of the minimum jaccard overlap between motifs of two TFs for them to be considered related. Related TFs can share models. 
             #WIP Jos Default = 0.0, but 0.1 seems to work well based on subjectiv testing
         Returns
         -------
@@ -493,8 +493,17 @@ class PeakPredictor:
         return tmp[self._X_columns]
 
     def _load_model(self, factor, jaccard_cutoff = 0.0):
+    """Load TF-binding model that is:
+    1. trained for that specific TF
+    2. trained on a different TF with a motif overlap of a jacards similarity larger than the cutoff
+    3. a general TF binding model if the other options are not available 
+        Parameters
+        ----------
+        jaccard_cutoff : 
+            minimum jacard similarity score that is needed to use the model of TFA for TFB. 
+        """
         model = None
-        motif_edge_min = 1 - jaccard_cutoff
+        max_edge_weight = 1 - jaccard_cutoff
         if factor in self.factor_models:
             logger.info(f"Using {factor} model")
             model = self.factor_models[factor]
@@ -503,7 +512,7 @@ class PeakPredictor:
             paths = {
                 p: v
                 for p, v in nx.single_source_dijkstra_path_length(
-                    self.motif_graph, factor, cutoff = motif_edge_min
+                    self.motif_graph, factor, cutoff = max_edge_weight
                 ).items()
                 if p in self.factor_models
             }
