@@ -434,7 +434,7 @@ class PeakPredictor:
             self.factor_models[factor] = joblib.load(fname)
         logger.info(f"{len(self.factor_models)} models found")
 
-    def predict_proba(self, factor=None, motifs=None,jaccard_cutoff=0.0):
+    def predict_proba(self, factor=None, motifs=None, jaccard_cutoff=0.0):
         """Predict binding probability.
 
         Predict binding probability for either a TF (factor) or a set of
@@ -448,8 +448,8 @@ class PeakPredictor:
         motifs : [type], optional
             Motifs. Currently not implemented.
         jaccard_cutoff : float, optional
-            cutoff of the minimum jaccard overlap between motifs of two TFs for them to be considered related. Related TFs can share models. 
-            #WIP Jos Default = 0.0, but 0.1 seems to work well based on subjectiv testing
+            Cutoff for the minimum jaccard overlap between motifs of two TFs for them to be considered related. 
+            Related TFs can share models. Default = 0.0 (0.1 seems to work well based on subjective testing).
         Returns
         -------
         pandas.DataFrame

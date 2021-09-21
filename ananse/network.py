@@ -714,13 +714,13 @@ class Network(object):
             out_dir = os.path.abspath(os.path.dirname(outfile))
             os.makedirs(out_dir, exist_ok=True)
             if self.full_output:
-                logger.info("Writing all GRN variables prob network")
-                result[["tf_target","prob","tf_expression", "target_expression", "weighted_binding","activity"]].to_csv(outfile, sep="\t", index=False)
+                result[["tf_target", "prob", "tf_expression", "target_expression", "weighted_binding", "activity"]].to_csv(outfile, sep="\t", index=False)
             else:
-                logger.info("Writing only necesary prob score ")
                 result[["tf_target",  "prob"]].to_csv(outfile, sep="\t", index=False)
 
         else:
+            if self.full_output:
+                return result[["tf_target", "prob", "tf_expression", "target_expression", "weighted_binding", "activity"]]
             return result[["tf_target", "prob"]]
 
     def __del__(self):
