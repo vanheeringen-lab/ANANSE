@@ -493,15 +493,15 @@ class PeakPredictor:
         return tmp[self._X_columns]
 
     def _load_model(self, factor, jaccard_cutoff = 0.0):
-    """Load TF-binding model that is:
-    1. trained for that specific TF
-    2. trained on a different TF with a motif overlap of a jacards similarity larger than the cutoff
-    3. a general TF binding model if the other options are not available 
-        Parameters
-        ----------
-        jaccard_cutoff : 
-            minimum jacard similarity score that is needed to use the model of TFA for TFB. 
-        """
+        """Load TF-binding model that is:
+        1. trained for that specific TF
+        2. trained on a different TF with a motif overlap of a jacards similarity larger than the cutoff
+        3. a general TF binding model if the other options are not available 
+            Parameters
+            ----------
+            jaccard_cutoff : 
+                minimum jacard similarity score that is needed to use the model of TFA for TFB. 
+            """
         model = None
         max_edge_weight = 1 - jaccard_cutoff
         if factor in self.factor_models:
