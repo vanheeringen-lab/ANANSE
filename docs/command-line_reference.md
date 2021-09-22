@@ -209,6 +209,8 @@ Optional arguments:
                         Network of source cell type.
   -i EDGES, --edges EDGES
                         Number of top edges used (default is 100,000).
+  -u , --union-grn      Take the union of two GRN heads instead of each head seperate
+  -j , --padj           cutoff value of which genes ananse considers differentially expressed
   -p, --plot            Create influence score plot.
   -n NCORE, --ncore NCORE
                         Number of cores to use.
