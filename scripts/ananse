@@ -146,6 +146,14 @@ if __name__ == "__main__":
         default=None,
     )
     group.add_argument(
+        "--jaccard-cutoff",
+        dest="jaccard_cutoff",
+        help="TFs with a motif jaccard similarity of larger than the jaccard-cutoff are linked together for model selection",
+        type=float,
+        default=0.0,
+    )
+
+    group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.binding)
@@ -230,6 +238,24 @@ if __name__ == "__main__":
         dest="include_promoter",
         action=NegateAction,
         nargs=0,
+    )
+#    group.add_argument(
+#        "--simple-output",
+#        "--full-output",
+#        default=False,
+#        help="export only the simple or the full output in the GRN output file. "
+#             "By default only the simple output is exported to the GRN output file",
+#        dest="full_output",
+#        action=NegateAction,
+#        nargs=0,
+#    )
+    group.add_argument(
+        "-f",
+        "--full-output",
+        dest="full_output",
+        help="Export the full GRN output to the output file",
+        action="store_true",
+        default=False,
     )
     group.add_argument(
         "--include-enhancer",

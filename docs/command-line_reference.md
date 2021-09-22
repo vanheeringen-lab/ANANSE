@@ -113,6 +113,8 @@ Optional arguments:
                         Number of processes to use for motif scanning
   --pfmscorefile        use precomputed gimmemotifs scores (gimme scan -T -g
                         GENOME INPUTFILE)
+  --jaccard-cutoff      TFs with a motif jaccard similarity of larger than the jaccard-cutoff are linked together for model
+                        selection, default value is 0. Use a higher value e.g. 0.1 to improve robustness of the selected model.
   -h, --help            Show this help message and exit
 ```
 
@@ -154,6 +156,7 @@ Optional arguments:
                         genomepy with the --annotation flag.
   -n NCORE, --ncore NCORE
                         Number of core used.
+  -f , --full-output    Export not only the GRN edge weight, but all values used to calculate the weight to the GRN file
   --include-promoter, --exclude-promoter
                         Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks
                         are included.
