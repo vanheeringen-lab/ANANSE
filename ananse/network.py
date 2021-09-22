@@ -41,7 +41,7 @@ class Network(object):
         gene_bed=None,
         include_promoter=False,
         include_enhancer=True,
-        full_output = False,
+        full_output=False,
     ):
         """
         infer cell type-specific gene regulatory network
@@ -607,17 +607,17 @@ class Network(object):
         alpha=None,
         promoter=2000,
         full_weight_region=5000,
-        full_output = False
+        full_output=False,
     ):
 
         """Create network.
-        
+
         Generates a gene-regulatory network with a TF-target gene interaction "prob" score based on the mean rank of:
         1. Binding score based on ATAC/H3K27ac data of neirby enhancers.
-        2. TF Activity (single score per TF based on general TF motif behaviour in the trained dataset) 
+        2. TF Activity (single score per TF based on general TF motif behaviour in the trained dataset)
         3. TF expression score
         4. Target expression score
-        
+
         Parameters
         ----------
         binding : str
@@ -640,7 +640,7 @@ class Network(object):
             Promoter region, by default 2000.
         full_weight_region : int, optional
             Region that will receive full weight, by default 5000.
-            """
+        """
         # Expression base network
         logger.info("Loading expression")
         df_expression = self.create_expression_network(
@@ -714,13 +714,31 @@ class Network(object):
             out_dir = os.path.abspath(os.path.dirname(outfile))
             os.makedirs(out_dir, exist_ok=True)
             if self.full_output:
-                result[["tf_target", "prob", "tf_expression", "target_expression", "weighted_binding", "activity"]].to_csv(outfile, sep="\t", index=False)
+                result[
+                    [
+                        "tf_target",
+                        "prob",
+                        "tf_expression",
+                        "target_expression",
+                        "weighted_binding",
+                        "activity",
+                    ]
+                ].to_csv(outfile, sep="\t", index=False)
             else:
-                result[["tf_target",  "prob"]].to_csv(outfile, sep="\t", index=False)
+                result[["tf_target", "prob"]].to_csv(outfile, sep="\t", index=False)
 
         else:
             if self.full_output:
-                return result[["tf_target", "prob", "tf_expression", "target_expression", "weighted_binding", "activity"]]
+                return result[
+                    [
+                        "tf_target",
+                        "prob",
+                        "tf_expression",
+                        "target_expression",
+                        "weighted_binding",
+                        "activity",
+                    ]
+                ]
             return result[["tf_target", "prob"]]
 
     def __del__(self):

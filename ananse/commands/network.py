@@ -13,6 +13,7 @@ from ananse.utils import check_path
 from dask.distributed import Client, LocalCluster
 from loguru import logger
 
+
 @logger.catch
 def network(args):
     ncore = args.ncore
