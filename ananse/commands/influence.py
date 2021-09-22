@@ -17,9 +17,11 @@ from ananse.utils import check_path
 def influence(args):
     a = ananse.influence.Influence(
         ncore=args.ncore,  # --ncore (optional)
-        Gbf=check_path(args.Gbf),  # --source (Gbf = GRN before)
-        Gaf=check_path(args.Gaf),  # --target (Gaf = GRN after)
+        GRN_source_file=check_path(args.GRN_source_file),  # --source (Gbf = GRN before)
+        GRN_target_file=check_path(args.GRN_target_file),  # --target (Gaf = GRN after)
         outfile=check_path(args.outfile, error_missing=False),  # --output
+        union_grns=args.union_grns,
+        padj_cutoff=args.padj_cutoff,
         degenes=check_path(
             args.expression
         ),  # --degenes (HGNC gene names, padj and log2foldchanges)
