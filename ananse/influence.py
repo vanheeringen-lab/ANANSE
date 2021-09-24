@@ -55,28 +55,23 @@ def read_network(
 
     # read GRN files
     if full_output == False:
-        rnet = pd.read_csv(
-            fname,
-            sep="\t",
-            usecols=["tf_target", "prob"],
-            dtype="float64",
-            converters={"tf_target": str},
-        )  # read the GRN file)
+        data_columns = ["tf_target", "prob"]
     if full_output:
-        rnet = pd.read_csv(
-            fname,
-            sep="\t",
-            usecols=[
-                "tf_target",
-                "prob",
-                "tf_expression",
-                "target_expression",
-                "weighted_binding",
-                "activity",
-            ],
-            dtype="float64",
-            converters={"tf_target": str},
-        )  # read the GRN file
+        data_columns = [
+            "tf_target",
+            "prob",
+            "tf_expression",
+            "target_expression",
+            "weighted_binding",
+            "activity",
+        ]
+    rnet = pd.read_csv(
+        fname,
+        sep="\t",
+        usecols=data_columns,
+        dtype="float64",
+        converters={"tf_target": str},
+    )  # read the GRN file
     # sort on selection variable
     rnet.sort_values(GRNsort_column, ascending=False, inplace=True)
     if interactions == None:
@@ -436,13 +431,13 @@ class Influence(object):
         """Save the network difference between two cell types to a file."""
         with open(filename, "w") as nw:
             if full_output == False:
-                nw.write(f"TF\ttarget\tweight\n")
+                nw.write("TF\ttarget\tweight\n")
                 for (u, v, d) in self.G.edges(data=True):
                     nw.write(u + "\t" + v + "\t" + str(d["weight"]) + "\n")
             if full_output:
                 logger.info("output full diff network")
                 nw.write(
-                    f"tf\ttarget\tweight\tweight_source\tweight_target\ttf_expr_source\ttf_expr_target\ttg_expr_source\ttg_expr_target\twb_source\twb_target\tsource_tf_act\ttarget_tf_act\n"
+                    "tf\ttarget\tweight\tweight_source\tweight_target\ttf_expr_source\ttf_expr_target\ttg_expr_source\ttg_expr_target\twb_source\twb_target\tsource_tf_act\ttarget_tf_act\n"
                 )
                 for (u, v, d) in self.G.edges(data=True):
                     cols = [
