@@ -318,12 +318,19 @@ if __name__ == "__main__":
         default=False,
     )
     group.add_argument(
-        "-u",
-        "--union-grns",
-        dest="union_grns",
-        help="take a set union of the GRN top edges instead of only the top edges",
+        "-f",
+        "--full-output",
+        dest="full_output",
+        help="export the full GRN output to the diffnetwork, full output GRN files needed",
         action="store_true",
         default=False,
+    )
+    group.add_argument(
+        "-c",
+        "--GRNsort-column",
+        dest="GRNsort_column",
+        help="column of GRN file sorted to select top interactions, 'prob' by default",
+        default='prob',
     )
     group.add_argument(
         "-j",

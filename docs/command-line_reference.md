@@ -209,11 +209,15 @@ Optional arguments:
                         Network of source cell type.
   -i EDGES, --edges EDGES
                         Number of top edges used (default is 100,000).
-  -u , --union-grn      Take the union of two GRN heads instead of each head seperate
   -j , --padj           cutoff value of which genes ananse considers differentially expressed
   -p, --plot            Create influence score plot.
   -n NCORE, --ncore NCORE
                         Number of cores to use.
+  -f, --full-output     Run influence with all output in the diffnetwork fille, GRNs generated with the --full-output flagg
+                        are needed to run this option. default = False
+  -c, --GRNSort-column  The column the top interactions are selected upon. 'prob' by default but 'weighted_binding' is 
+                        an option to only use the binding model predictions and not the RNAseq data to select the top 
+                        interactions.
   -h, --help            show this help message and exit
 ```
 
