@@ -15,7 +15,7 @@ dependencies:
   - networkx
   - numpy
   - openpyxl
-  - pandas=1.1.5  # tmp dependency due to gimmemotifs issue #168
+  - pandas <1.3  # tmp version limit. will be fixed in gimmemotifs >0.16.1
   - pybedtools
   - pyranges
   - pytables  # required for pandas.read_hfd()

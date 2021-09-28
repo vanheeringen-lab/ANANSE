@@ -37,7 +37,7 @@ setup(
         "Topic :: Scientific/Engineering :: Bio-Informatics",
     ],
     install_requires=[
-        "setuptools >= 0.7",
+        "setuptools >=0.7",
         "adjusttext",
         "dask",
         "gimmemotifs >=0.15.3",
@@ -45,11 +45,11 @@ setup(
         "networkx",
         "numpy",
         "openpyxl",
-        "pandas",
+        "pandas <1.3",  # tmp version limit. will be fixed in gimmemotifs >0.16.1
         "scipy",
         "scikit-learn",
         "tables",
-        "genomepy >= 0.9.3",
+        "genomepy >=0.9.3",
         "pyranges",
     ],
 )
