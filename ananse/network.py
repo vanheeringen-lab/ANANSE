@@ -607,7 +607,6 @@ class Network(object):
         alpha=None,
         promoter=2000,
         full_weight_region=5000,
-        full_output=False,
     ):
 
         """Create network.
