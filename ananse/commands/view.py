@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# Copyright (c) 2021 Simon van Heeringen
-#
-# This module is free software. You can redistribute it and/or modify it under
-# the terms of the MIT License, see the file COPYING included with this
-# distribution.
 from ananse.utils import view_h5
 import sys
 

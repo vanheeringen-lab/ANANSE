@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# Copyright (c) 2009-2019 Quan Xu <qxuchn@gmail.com>
-#
-# This module is free software. You can redistribute it and/or modify it under
-# the terms of the MIT License, see the file COPYING included with this
-# distribution.
 from loguru import logger
 
 from ananse.peakpredictor import predict_peaks
