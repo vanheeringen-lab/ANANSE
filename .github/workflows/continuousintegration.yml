@@ -1,6 +1,6 @@
 name: continuous-integration
 
-# run on any PR push to develop/master
+# run on any PR + push to develop/master
 on:
   push:
     branches:
