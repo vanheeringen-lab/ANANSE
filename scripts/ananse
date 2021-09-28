@@ -333,6 +333,14 @@ if __name__ == "__main__":
         default='prob',
     )
     group.add_argument(
+        "-e",
+        "--GRNwb-edges",
+        dest="GRN_wb",
+        help="set to true to plot weighted binding as the GRN edges in the GRN plot instead of the default interaction score",
+        action="store_true",
+        default=False,
+    )
+    group.add_argument(
         "-j",
         "--padj",
         dest="padj_cutoff",

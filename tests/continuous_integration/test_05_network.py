@@ -76,6 +76,7 @@ def test_command():
             include_enhancer=True,
             binding="tests/data/network/binding.h5",
             fin_expression="tests/data/network/heart_expression.txt",
+            full_output=False,
             outfile=fname,
             ncore=2,
         )
