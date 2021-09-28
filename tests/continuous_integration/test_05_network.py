@@ -67,7 +67,7 @@ def test_command():
         fname = tmp.name
         Args = namedtuple(
             "args",
-            "genome annotation include_promoter include_enhancer binding fin_expression outfile ncore",
+            "genome annotation include_promoter include_enhancer binding fin_expression outfile full_output ncore",
         )
         args = Args(
             genome="hg38",
@@ -77,6 +77,7 @@ def test_command():
             binding="tests/data/network/binding.h5",
             fin_expression="tests/data/network/heart_expression.txt",
             outfile=fname,
+            full_output=False,
             ncore=2,
         )
         network(args)
