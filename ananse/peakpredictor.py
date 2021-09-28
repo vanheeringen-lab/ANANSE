@@ -186,7 +186,8 @@ class PeakPredictor:
         # Set regions
         self.regions = self._avg.index
 
-    def _load_human_factors(self):
+    @staticmethod
+    def _load_human_factors():
         package_dir = os.path.dirname(ananse.__file__)
         tf_xlsx = os.path.join(package_dir, "db", "lovering.tfs.xlsx")
         valid_factors = pd.read_excel(
@@ -197,7 +198,7 @@ class PeakPredictor:
         valid_factors = valid_factors.loc[
             valid_factors["Pseudogene"].isnull(), "HGNC approved gene symbol"
         ].values
-        valid_factors = list(set(valid_factors) - set(["EP300"]))
+        valid_factors = list(set(valid_factors) - {"EP300"})
         return valid_factors
 
     def set_species(self, genome):
