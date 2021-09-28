@@ -382,6 +382,7 @@ class Influence(object):
         GRNsort_column="prob",
         padj_cutoff=0.05,
         full_output=False,
+        GRN_wb = False,
     ):
         self.ncore = ncore
         self.full_output = full_output
@@ -456,36 +457,29 @@ class Influence(object):
                         d["TF_act_target"],
                     ]
                     nw.write("\t".join(str(v) for v in cols) + "\n")
-    def plot_TF_GRN(self, infile, outfile, GRN_wb = False, network_algorithm = 'neato', n_TFs = 20, cmap = 'viridis', full_output = False):
+#def plot_TF_GRN(self, infile, outfile, GRN_wb = False, network_algorithm = 'neato', n_TFs = 20, cmap = 'viridis', full_output = False):
+    def plot_TF_GRN(self, infile, outfile, GRN_wb = False, network_algorithm = 'neato', n_TFs = 20, cmap = 'viridis', full_output = False, cutoff_val = 0.1):
         """Plot the top 20 of TFs their interactions 
-        GRNsort_column = column to use to select the top interactions. Use either 'weight' for
-        all variables in one number, or 'wb' (from weighted binding) to only take model binding
-        prediction into account for the interaction. full output files are required for 'wb' selection.
         """
-        logger.info(
-                f"GRN_wb = {GRN_wb} "
-            )
         cmap=plt.get_cmap(cmap)
-        #get the top TFs to include in the GRN
         mogrify = pd.read_table(infile, index_col="factor")
         mogrify = mogrify.dropna()
-        factors = list(mogrify.sort_values("sumScaled").tail(n_TFs).index)
-        #filter on edges
+        mogrify = mogrify[mogrify.GscoreScaled > 0] #plot only TFs that are differential 
+        factors = list(mogrify.sort_values("sumScaled").tail(n_TFs).index)#get the top TFs to include in the GRN    
+        #get the mean interaction score of the selected top TFs
         def filter_node(n1):
             return n1 in  factors
-            
-        TF_G = nx.subgraph_view(self.G, filter_node=filter_node)#filter the diffnetwork to only contain topTF-topTF interactions
-        
+        TF_G = nx.subgraph_view(self.G, filter_node=filter_node)#filter the diffnetwork to only contain topTF-topTF
+        #filter the network to only contain interactions above the cutoff value
+        TF_G_large_int = nx.DiGraph(((u, v, e) for u,v,e in TF_G.edges(data=True) if e[sort_criteria] > cutoff_val))
+
         if not full_output: 
             if GRN_wb:
                 logger.error(f"weighted binding edgescores require a --full-output GRN generated in both the network and influence step, using interaction score instead ")
             edge_info = 'weight'
             edge_info_title = 'interaction score'
-            TF_G2 = nx.Graph(((u, v, e) for u,v,e in TF_G.edges(data=True) if e['weight'] > 0.05))
-            diff_wb = nx.get_edge_attributes(TF_G2,'weight')
-            diff_wb = list(diff_wb.values())
-            diff_wb_scaled = minmax_scale(diff_wb, feature_range=(0, 1), axis=0, copy=True) #scale all values
-
+            TF_G2 = TF_G_large_int
+            edge_atribute = list(nx.get_edge_attributes(TF_G2,'weight').values())
         if full_output:
             if GRN_wb:
                 edge_info = 'wb'
@@ -496,34 +490,48 @@ class Influence(object):
                 edge_info_title = 'interaction score'
                 logger.info(f"using interaction score edge scores for GRN edges")
             #check to sort on interaction or weighted binding score:
-            TF_G2 = nx.Graph(((u, v, e) for u,v,e in TF_G.edges(data=True) if e[f'target_{edge_info}'] > e[f'source_{edge_info}']))
+            TF_G2 = nx.DiGraph(((u, v, e) for u,v,e in TF_G_large_int.edges(data=True) if e[f'target_{edge_info}'] > e[f'source_{edge_info}']))
             target_wb=nx.get_edge_attributes(TF_G2,f'target_{edge_info}')
             source_wb=nx.get_edge_attributes(TF_G2,f'source_{edge_info}')
-            diff_wb = {key: target_wb[key] - source_wb.get(key, 0) for key in target_wb}
-            diff_wb = list(diff_wb.values())
-            diff_wb_scaled = minmax_scale(diff_wb, feature_range=(0, 1), axis=0, copy=True) 
+            edge_atribute = {key: target_wb[key] - source_wb.get(key, 0) for key in target_wb}
+            edge_atribute = list(edge_atribute.values())
 
         TF_G2 = TF_G2.to_directed()#make the network directed agian
+        TF_G2.remove_nodes_from(list(nx.isolates(TF_G2)))#remove TFs with no interactions
+        
+        edge_atribute_scaled = minmax_scale(edge_atribute, feature_range=(0, 1), axis=0, copy=True) #scale all values
+
+        #calculate quantile regions for the edge legend
+        edges_norm_weight = [0,
+                         round((np.quantile(sorted(edge_atribute_scaled), 1)/4),3),
+                         round((np.quantile(sorted(edge_atribute_scaled), 1)/2),3),
+                         round(np.quantile(sorted(edge_atribute_scaled), 1),3)]
+            
+        #normzalize the edge atributes to be between 0 and 1
+        #Also get the numbers of the unnormalized edge atributes for the legend.
+        edges_weight = [0,
+                         round((np.quantile(sorted(edge_atribute), 1)/4),3),
+                         round((np.quantile(sorted(edge_atribute), 1)/2),3),
+                         round(np.quantile(sorted(edge_atribute), 1),3)]
+        
 
         #lets calculate the nodes their outdegree (regulation other TFs):
         if edge_info == 'weight':
-            outdegree = pd.DataFrame(TF_G2.out_degree(weight = GRNsort_column))
+            outdegree = pd.DataFrame(TF_G2.out_degree(weight = edge_info))
             outdegree = outdegree[1]
-            node_outdegree_size = 600 + outdegree*2000
         else: #calculate the source target difference, add this as node atribute and then calculate the outdegree
-            source_edgeweight=nx.get_edge_attributes(TF_G2,f'source_{GRNsort_column}')
-            target_edgeweight=nx.get_edge_attributes(TF_G2,f'target_{GRNsort_column}')
+            source_edgeweight=nx.get_edge_attributes(TF_G2,f'source_{edge_info}')
+            target_edgeweight=nx.get_edge_attributes(TF_G2,f'target_{edge_info}')
             diff_edgeweight = {key: target_edgeweight[key] - source_edgeweight.get(key, 0) for key in target_edgeweight}
-            nx.set_edge_attributes(TF_G2, diff_edgeweight, name = GRNsort_column)    
-            outdegree = pd.DataFrame(TF_G2.out_degree(weight = GRNsort_column))
+            nx.set_edge_attributes(TF_G2, diff_edgeweight, name = edge_info)    
+            outdegree = pd.DataFrame(TF_G2.out_degree(weight = edge_info))
             outdegree = outdegree[1]
-            node_outdegree_size = 600 + outdegree*2000
-
+            
+        node_outdegree_size = 600 + outdegree*100
         colors=outdegree
         vmin = min(colors)
         vmax = max(colors)
         plt.figure(figsize=(10, 10))
-        
         
         #calculate node position        
         pos = nx.drawing.nx_agraph.graphviz_layout(TF_G2, prog=network_algorithm)
@@ -550,24 +558,13 @@ class Influence(object):
                                connectionstyle='arc3, rad = 0.1')
 
         #add edge width legend:
-        edges_norm_weight = [0,
-                             round((np.quantile(sorted(diff_wb_scaled), 1)/4),3),
-                             round((np.quantile(sorted(diff_wb_scaled), 1)/2),3),
-                             round(np.quantile(sorted(diff_wb_scaled), 1),3)]
         lines = []
         for i, width in enumerate(edges_norm_weight):
             lines.append(Line2D([],[], linewidth=width, color='black'))
-
-        edges_weight = [0,
-                             round((np.quantile(sorted(diff_wb), 1)/4),3),
-                             round((np.quantile(sorted(diff_wb), 1)/2),3),
-                             round(np.quantile(sorted(diff_wb), 1),3)]
-                             
         legend2 = plt.legend(lines, edges_weight, bbox_to_anchor=(0, 0.5), frameon=False, title = f'{edge_info_title}') 
         #save the plot
         plt.savefig(outfile,dpi=300)
         plt.clf()
-
 
     def run_target_score(self, max_degree=3):
         """Run target score for all TFs."""
