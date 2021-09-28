@@ -1,6 +1,6 @@
 name: continuous-integration
 
-# run on any PR + push to develop/master
+# run on any PR push to develop/master
 on:
   push:
     branches:
@@ -16,7 +16,7 @@ jobs:
         shell: bash -l {0}
     strategy:
       matrix:
-        python-version: [3.8]  # [3.7, 3.8]
+        python-version: [3.8]
         os: [ubuntu-latest]  # [ubuntu-latest, macos-latest]
       fail-fast: false
 
