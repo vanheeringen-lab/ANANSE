@@ -5,8 +5,6 @@
 # the terms of the MIT License, see the file COPYING included with this
 # distribution.
 
-from __future__ import print_function
-
 import os
 import ananse.network
 from ananse.utils import check_path

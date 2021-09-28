@@ -9,7 +9,6 @@
 """Predict TF influence score"""
 
 # Python imports
-from __future__ import print_function
 import sys
 import warnings
 from collections import namedtuple

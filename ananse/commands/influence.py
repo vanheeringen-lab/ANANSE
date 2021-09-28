@@ -5,8 +5,6 @@
 # the terms of the MIT License, see the file COPYING included with this
 # distribution.
 
-from __future__ import print_function
-
 from loguru import logger
 
 import ananse.influence
