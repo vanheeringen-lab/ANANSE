@@ -1,6 +1,12 @@
 name: continuous-integration
 
-on: [ push, pull_request ]
+# run on any PR + push to develop/master
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
 
 jobs:
   test:
