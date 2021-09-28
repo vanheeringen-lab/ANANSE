@@ -40,7 +40,7 @@ setup(
         "setuptools >= 0.7",
         "adjusttext",
         "dask",
-        "gimmemotifs >=0.15.1",
+        "gimmemotifs >=0.15.3",
         "loguru",
         "networkx",
         "numpy",
