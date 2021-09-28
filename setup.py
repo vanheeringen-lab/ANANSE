@@ -16,8 +16,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     description=DESCRIPTION,
-    author="Quan Xu",
-    author_email="qxuchn@gmail.com",
+    author="Quan Xu, Siebren Frölich, Maarten van der Sande, Jos Smits, Simon van Heeringen",
+    author_email="simon.vanheeringen@gmail.com",
     url="https://github.com/vanheeringen-lab/ananse/",
     download_url="https://github.com/vanheeringen-lab/ananse/"
     + versioneer.get_version(),
