@@ -4,39 +4,28 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python >= 3.7
+  - python >=3.7
   - setuptools >=0.7
   - adjusttext
-  - chest
-  - configparser
   - dask
-  - diskcache
-  - future
   - genomepy >=0.9.3
-  - gimmemotifs >=0.14.4
-  - jinja2
+  - gimmemotifs >=0.15.1
   - loguru
   - matplotlib >=2
-  - mosdepth
+  - mosdepth  # TODO: still needed?
   - networkx
   - numpy
   - openpyxl
   - pandas=1.1.5  # tmp dependency due to gimmemotifs bug
-  - pillow
-  - pybedtools
+  - pybedtools  # TODO: still needed?
   - pyranges
-  - pysam
-  - pytables
-  - pyyaml >=3.10
+  - pysam  # TODO: still needed?
+  - pytables  # required for pandas.read_hfd()
   - scikit-learn
   - scipy >=0.9.0
   - seaborn
   - sklearn-contrib-lightning
-  - statsmodels
   - tqdm
-  - xdg
-  - xgboost >=0.71
-  - xxhash
 
   # Testing
   - black
