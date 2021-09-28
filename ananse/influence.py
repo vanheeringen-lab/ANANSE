@@ -33,33 +33,134 @@ warnings.filterwarnings("ignore")
 Expression = namedtuple("Expression", ["score", "absfc", "realfc"])
 
 
-def read_network(fname, edges=100000):
-    """Read network file and return networkx DiGraph."""
-
-    G = nx.DiGraph()
-
-    rnet = pd.read_csv(fname, sep="\t")
-    rnet.sort_values("prob", ascending=False, inplace=True)
+def read_top_interactions(fname, edges=100000, GRNsort_column="prob"):
+    """Read network file and return the top interactions
+    by default it incorporates all the data (prob score) to select the most
+    certain interactions, however other sorting options such as the weighted binding score"""
+    rnet = pd.read_csv(
+        fname, usecols=["tf_target", GRNsort_column], sep="\t"
+    )  # read the GRN file
+    rnet.sort_values(
+        GRNsort_column, ascending=False, inplace=True
+    )  # sort based on the selected value (default probability) score
     rnet = rnet.head(edges)
+    top_int = set(rnet["tf_target"])
+    return top_int
+
+
+def read_network(
+    fname, edges=100000, interactions=None, GRNsort_column="prob", full_output=False
+):
+    """Read network file and return networkx DiGraph"""
+
+    # read GRN files
+    if full_output == False:
+        data_columns = ["tf_target", "prob"]
+    if full_output:
+        data_columns = [
+            "tf_target",
+            "prob",
+            "tf_expression",
+            "target_expression",
+            "weighted_binding",
+            "activity",
+        ]
+    rnet = pd.read_csv(
+        fname,
+        sep="\t",
+        usecols=data_columns,
+        dtype="float64",
+        converters={"tf_target": str},
+    )  # read the GRN file
+    # sort on selection variable
+    rnet.sort_values(GRNsort_column, ascending=False, inplace=True)
+    if interactions == None:
+        rnet = rnet.head(edges)  # no interactions so take the top head of interactions
+    else:
+        rnet = rnet[rnet.tf_target.isin(interactions)]
+
+    G = nx.DiGraph()  # initiate empty network
     for _, row in rnet.iterrows():
         source, target = row[0].split("_", 1)
-        weight = 0 if len(row) < 2 else float(row[1])
-        try:
-            G.add_edge(source, target, weight=weight, n=1)
-        except Exception:
-            logger.error("Could not parse edge weight.")
-            raise
+        if full_output == False:
+            try:
+                G.add_edge(source, target, weight=row["prob"], n=1)
+            except Exception:
+                logger.error(f"Could not parse edge weight of edge {source}:{target}")
+                raise
+        if full_output:
+            try:
+                G.add_edge(
+                    source,
+                    target,
+                    weight=row["prob"],
+                    weighted_binding=row["weighted_binding"],
+                    tf_expression=row["tf_expression"],
+                    tg_expression=row["target_expression"],
+                    tf_activity=row["activity"],
+                )
+            except Exception:
+                logger.error(f"Could not parse edge weight {source}:{target}")
+                raise
     return G
 
 
-def difference(S, R):
-    """Calculate the network different between two cell types."""
-    DIF = nx.create_empty_copy(R)
-    for (u, v, d) in S.edges(data=True):
-        if (u, v) not in R.edges:
-            DIF.add_edge(u, v, weight=d["weight"], n=1)
-        else:
-            diff_weight = S.edges[u, v]["weight"] - R.edges[u, v]["weight"]
+def difference(GRN_source, GRN_target, full_output=False):
+    """Calculate the network different between two GRNs.
+    It first takes the nodes from both networks, and subsequently
+    first adds the edges from the target network that are missing in
+    the source network.
+    Secondly it add the edges present in both but with a higher interaction
+    score in the target network
+    """
+    DIF = nx.create_empty_copy(GRN_source)  # copying source GRN nodes
+    nodes_target = nx.create_empty_copy(GRN_target)  # copying target GRN nodes
+    DIF.add_nodes_from(
+        list(nodes_target.nodes)
+    )  # merge the nodes if there are differences
+    # (which can happen) when taking the header instead of the --unnion-interactions flagg
+
+    # lets check if the full GRN output is loaded and if so output all atributes to the diffnetwork:
+    if full_output:
+        logger.info("calculating diff GRN with full output")
+        # lets load all the  edges into the diffnetwork
+        for (u, v, a) in GRN_target.edges(
+            data=True
+        ):  # u = source node, v = target node, a = dictionary ofedge atributes
+            # calculate the weight difference and output all atributes
+            source_weight = GRN_source.edges[u, v]["weight"]
+            target_weight = GRN_target.edges[u, v]["weight"]
+            wb_source = GRN_source.edges[u, v]["weighted_binding"]
+            wb_target = GRN_target.edges[u, v]["weighted_binding"]
+            diff_weight = target_weight - source_weight
+            if (
+                diff_weight > 0
+            ):  # if the interaction probability is higher in the target than in the
+                # source, add the interaction to the diffnetwork:
+                DIF.add_edge(
+                    u,
+                    v,
+                    weight=diff_weight,
+                    source_weight=source_weight,
+                    target_weight=target_weight,
+                    neglogweight=-np.log(diff_weight),
+                    n=1,
+                    tf_expr_target=a["tf_expression"],
+                    tf_expr_source=GRN_source[u][v]["tf_expression"],
+                    tg_expr_target=a["tg_expression"],
+                    tg_expr_source=GRN_source[u][v]["tg_expression"],
+                    target_wb=a["weighted_binding"],
+                    source_wb=GRN_source[u][v]["weighted_binding"],
+                    TF_act_target=a["tf_activity"],
+                    TF_act_source=GRN_source[u][v]["tf_activity"],
+                )
+    else:
+        logger.info("calculating diff GRN")
+        # if only the weight is loaded, lets load only that in the diffnetwork:
+        for (u, v, d) in GRN_target.edges(data=True):
+            diff_weight = (
+                GRN_target.edges[u, v]["weight"] - GRN_source.edges[u, v]["weight"]
+            )
             if diff_weight > 0:
                 DIF.add_edge(
                     u, v, weight=diff_weight, n=1, neglogweight=-np.log(diff_weight)
@@ -67,7 +168,7 @@ def difference(S, R):
     return DIF
 
 
-def read_expression(fname):
+def read_expression(fname, padj_cutoff=0.05):
     """
     Read differential gene expression analysis output,
     return dictionary with namedtuples of scores, absolute fold
@@ -76,11 +177,12 @@ def read_expression(fname):
     Parameters
     ----------
     fname: str
-        DESeq2 output file. 
+        DESeq2 output file.
         Tab-separated, containing (at least) 3 columns:
-        1. a column with names/IDs (column name is ignored), 
+        1. a column with names/IDs (column name is ignored),
         2. named column "padj" (adjusted p-values)
         3. named column "log2FoldChange"
+    pval = float of the cutoff of which genes will be flagged as differential
 
     Returns
     -------
@@ -102,6 +204,14 @@ def read_expression(fname):
     )[["log2FoldChange", "padj"]]
     # removes NaNs
     df.dropna(inplace=True)
+    # check for duplicated index rows and return an error (but continue running)
+    dup_df = df[df.index.duplicated()]
+    if len(dup_df) > 0:
+        dupped_gene = str(dup_df.index[0])
+        logger.warning(
+            f"duplicated gene names detected in differential expression file e.g.{dupped_gene}"
+        )
+        logger.warning(f"taking mean of values of duplicated genes")
     # average values for duplicate gene names (none hopefully)
     df = df.groupby(by=df.index, dropna=True).mean(0)
 
@@ -109,7 +219,7 @@ def read_expression(fname):
     df["fc"] = df["log2FoldChange"].abs()
 
     # get the gscore (absolute fold change if significantly differential)
-    df["score"] = df["fc"] * (df["padj"] < 0.05)
+    df["score"] = df["fc"] * (df["padj"] < padj_cutoff)
 
     for k, row in df.iterrows():
         expression_change[k] = Expression(
@@ -181,7 +291,9 @@ def targetScore(node, G, expression_change, max_degree=3):
         pval = mannwhitneyu(target_fc, non_target_fc)[1]
     except RecursionError:
         pval = np.NAN
-        logger.warning(f"Could not calculate p-val (target vs non-target fold-change) for {node}.")
+        logger.warning(
+            f"Could not calculate p-val (target vs non-target fold-change) for {node}."
+        )
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
 
     # factor, targetScore, directTargets, totalTargets, Gscore, pval, target_fc
@@ -230,7 +342,7 @@ def filter_TF(scores_df, network=None, tpmfile=None, tpm=20, overlap=0.98):
     return scores_df
 
 
-def plot_influscore(infile, outfile):
+def plot_influence(infile, outfile):
     """Plot TF influence score to expression."""
 
     mogrify = pd.read_table(infile, index_col="factor")
@@ -259,40 +371,91 @@ def plot_influscore(infile, outfile):
 
 class Influence(object):
     def __init__(
-        self, outfile, degenes, Gbf=None, Gaf=None, filter=False, edges=100000, ncore=1
+        self,
+        outfile,
+        degenes,
+        GRN_source_file=None,
+        GRN_target_file=None,
+        filter=False,
+        edges=100000,
+        ncore=1,
+        GRNsort_column="prob",
+        padj_cutoff=0.05,
+        full_output=False,
     ):
-
         self.ncore = ncore
-        logger.info(f"Reading network(s), using top {edges} edges.")
+        self.full_output = full_output
+        self.GRNsort_column = GRNsort_column
         # Load GRNs
-        if Gbf is None and Gaf is not None:
-            self.G = read_network(Gaf, edges=edges)
+
+        if GRN_source_file is None and GRN_target_file is not None:
+            self.G = read_network(GRN_target_file, edges=edges)
             logger.warning("You only provide the target network!")
-        elif Gaf is None and Gbf is not None:
-            self.G = read_network(Gbf, edges=edges)
+        elif GRN_target_file is None and GRN_source_file is not None:
+            self.G = read_network(GRN_source_file, edges=edges)
             logger.warning("You only provided the source network!")
-        elif Gaf is None and Gbf is None:
+        elif GRN_target_file is None and GRN_source_file is None:
             logger.warning("You should provide at least one ANANSE network file!")
         else:
-            G1 = read_network(Gbf, edges=edges)
-            G2 = read_network(Gaf, edges=edges)
-            self.G = difference(G2, G1)
+            logger.info(
+                f"Reading network(s), using the union of the top {edges} edges of each GRN."
+            )
+            top_int_source = read_top_interactions(
+                GRN_source_file, edges=edges, GRNsort_column=GRNsort_column
+            )
+            top_int_target = read_top_interactions(
+                GRN_target_file, edges=edges, GRNsort_column=GRNsort_column
+            )
+            top_int = set.union(top_int_source, top_int_target)
+            G1_source = read_network(
+                GRN_source_file,
+                interactions=top_int,
+                GRNsort_column=GRNsort_column,
+                full_output=full_output,
+            )
+            G2_target = read_network(
+                GRN_target_file,
+                interactions=top_int,
+                GRNsort_column=GRNsort_column,
+                full_output=full_output,
+            )
+            self.G = difference(G1_source, G2_target, full_output=full_output)
             logger.info(f"Differential network has {len(self.G.edges)} edges.")
-
         # Load expression file
         self.expression_change = read_expression(degenes)
-
         self.outfile = outfile
-
         # Filter TFs
         self.filter = filter
 
-    def save_reg_network(self, filename):
+    def save_reg_network(self, filename, full_output=False):
         """Save the network difference between two cell types to a file."""
-
         with open(filename, "w") as nw:
-            for (u, v, d) in self.G.edges(data=True):
-                nw.write(u + "\t" + v + "\t" + str(d["weight"]) + "\n")
+            if full_output == False:
+                nw.write("TF\ttarget\tweight\n")
+                for (u, v, d) in self.G.edges(data=True):
+                    nw.write(u + "\t" + v + "\t" + str(d["weight"]) + "\n")
+            if full_output:
+                logger.info("output full diff network")
+                nw.write(
+                    "tf\ttarget\tweight\tweight_source\tweight_target\ttf_expr_source\ttf_expr_target\ttg_expr_source\ttg_expr_target\twb_source\twb_target\tsource_tf_act\ttarget_tf_act\n"
+                )
+                for (u, v, d) in self.G.edges(data=True):
+                    cols = [
+                        u,
+                        v,
+                        d["weight"],
+                        d["source_weight"],
+                        d["target_weight"],
+                        d["tf_expr_source"],
+                        d["tf_expr_target"],
+                        d["tg_expr_source"],
+                        d["tg_expr_target"],
+                        d["source_wb"],
+                        d["target_wb"],
+                        d["TF_act_source"],
+                        d["TF_act_target"],
+                    ]
+                    nw.write("\t".join(str(v) for v in cols) + "\n")
 
     def run_target_score(self, max_degree=3):
         """Run target score for all TFs."""
@@ -343,7 +506,9 @@ class Influence(object):
                     logger.error(
                         "In some cases running `ananse influence` with `-n 1` will solve this issue."
                     )
-                    logger.error("If it doesn't, then please file a bug report (with the output of the command run with `-n 1`) at:")
+                    logger.error(
+                        "If it doesn't, then please file a bug report (with the output of the command run with `-n 1`) at:"
+                    )
                     logger.error("https://github.com/vanheeringen-lab/ANANSE/issues")
                     sys.exit(1)
                 raise
@@ -433,7 +598,8 @@ class Influence(object):
     def run_influence(self, plot=True, fin_expression=None):
         logger.info("Saving differential network.")
         self.save_reg_network(
-            ".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt"
+            (".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt"),
+            full_output=self.full_output,
         )
 
         logger.info("Calculating target scores.")
@@ -444,6 +610,6 @@ class Influence(object):
 
         if plot is True:
             logger.info("Plotting results.")
-            plot_influscore(
+            plot_influence(
                 self.outfile, ".".join(self.outfile.split(".")[:-1]) + ".pdf"
             )

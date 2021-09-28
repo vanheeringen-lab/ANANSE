@@ -239,16 +239,6 @@ if __name__ == "__main__":
         action=NegateAction,
         nargs=0,
     )
-#    group.add_argument(
-#        "--simple-output",
-#        "--full-output",
-#        default=False,
-#        help="export only the simple or the full output in the GRN output file. "
-#             "By default only the simple output is exported to the GRN output file",
-#        dest="full_output",
-#        action=NegateAction,
-#        nargs=0,
-#    )
     group.add_argument(
         "-f",
         "--full-output",
@@ -279,7 +269,7 @@ if __name__ == "__main__":
     group.add_argument(
         "-t",
         "--target",
-        dest="Gaf",
+        dest="GRN_target_file",
         help="Network of target cell type.",
         metavar="FILE",
         default=None,
@@ -306,7 +296,7 @@ if __name__ == "__main__":
     group.add_argument(
         "-s",
         "--source",
-        dest="Gbf",
+        dest="GRN_source_file",
         help="Network of source cell type.",
         metavar="FILE",
         default=None,
@@ -326,6 +316,29 @@ if __name__ == "__main__":
         help="Create influence score plot.",
         action="store_true",
         default=False,
+    )
+    group.add_argument(
+        "-f",
+        "--full-output",
+        dest="full_output",
+        help="export the full GRN output to the diffnetwork, full output GRN files needed",
+        action="store_true",
+        default=False,
+    )
+    group.add_argument(
+        "-c",
+        "--GRNsort-column",
+        dest="GRNsort_column",
+        help="column of GRN file sorted to select top interactions, 'prob' by default",
+        default='prob',
+    )
+    group.add_argument(
+        "-j",
+        "--padj",
+        dest="padj_cutoff",
+        help="the pvallue wich clasifies genes (and TFs) as differential in the influence calculations",
+        type=float,
+        default=0.05,
     )
     group.add_argument(
         "-n",
