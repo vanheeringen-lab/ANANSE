@@ -67,7 +67,7 @@ def test_command():
         fname = tmp.name
         Args = namedtuple(
             "args",
-            "genome annotation include_promoter include_enhancer binding fin_expression full_output outfile ncore",
+            "genome annotation include_promoter include_enhancer binding fin_expression outfile full_output ncore",
         )
         args = Args(
             genome="hg38",
