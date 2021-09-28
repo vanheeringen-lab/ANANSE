@@ -9,17 +9,15 @@ dependencies:
   - adjusttext
   - dask
   - genomepy >=0.9.3
-  - gimmemotifs >=0.15.1
+  - gimmemotifs >=0.15.3
   - loguru
   - matplotlib >=2
-  - mosdepth  # TODO: still needed?
   - networkx
   - numpy
   - openpyxl
-  - pandas=1.1.5  # tmp dependency due to gimmemotifs bug
-  - pybedtools  # TODO: still needed?
+  - pandas=1.1.5  # tmp dependency due to gimmemotifs issue #168
+  - pybedtools
   - pyranges
-  - pysam  # TODO: still needed?
   - pytables  # required for pandas.read_hfd()
   - scikit-learn
   - scipy >=0.9.0

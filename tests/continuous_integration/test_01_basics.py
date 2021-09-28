@@ -5,18 +5,7 @@ import subprocess as sp
 # pytest -vv --disable-pytest-warnings tests/continuous_integration/test_01*
 # pytest -vv --disable-pytest-warnings -k [substring]
 
-# TODO: apply to all code --> targets = ["ananse/", "tests/"]
-targets = [
-    "ananse/commands/__init__.py",
-    "ananse/commands/enhancer_binding.py",
-    "ananse/commands/network.py",
-    "ananse/__init__.py",
-    "ananse/enhancer_binding.py",
-    "ananse/distributions.py",
-    "ananse/network.py",
-    "ananse/utils.py",
-    "tests/",
-]
+targets = ["ananse/", "tests/"]
 
 
 def test_import_ananse():
@@ -25,10 +14,10 @@ def test_import_ananse():
     assert str(ananse.__file__).endswith("ANANSE/ananse/__init__.py")
 
 
-def test_black_formatting():
-    sp.check_call(" ".join(["black setup.py"] + targets), shell=True)
+def test_black_linting():
+    sp.check_call(" ".join(["black --check setup.py"] + targets), shell=True)
 
 
-def test_flake8_formatting():
+def test_flake8_linting():
     ret = sp.check_call(" ".join(["flake8 setup.py"] + targets), shell=True)
     assert ret == 0
