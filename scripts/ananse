@@ -334,11 +334,10 @@ if __name__ == "__main__":
     )
     group.add_argument(
         "-e",
-        "--GRNwb-edges",
-        dest="GRN_wb",
-        help="set to true to plot weighted binding as the GRN edges in the GRN plot instead of the default interaction score",
-        action="store_true",
-        default=False,
+        "--edge-info",
+        dest="edge_info",
+        help="set either 'weight' or 'wb' from weighted binding for the edges in the GRN, for wb full influence output is needed",
+        default='weight',
     )
     group.add_argument(
         "-j",

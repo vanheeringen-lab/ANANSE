@@ -45,3 +45,9 @@ dependencies:
   - flake8-bugbear
   - pytest
   - pytest-cov
+
+  #QC/testing stuff:
+  - bioconductor-deseq2 
+  - anaconda jupyter
+
+

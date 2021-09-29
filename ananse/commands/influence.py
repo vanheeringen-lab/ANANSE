@@ -22,7 +22,7 @@ def influence(args):
         outfile=check_path(args.outfile, error_missing=False),
         full_output=args.full_output,
         GRNsort_column=args.GRNsort_column,
-        GRN_wb=args.GRN_wb,
+        edge_info=args.edge_info,
         padj_cutoff=args.padj_cutoff,
         degenes=check_path(
             args.expression
