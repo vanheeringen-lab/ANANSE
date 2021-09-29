@@ -471,13 +471,13 @@ class Influence(object):
             return n1 in  factors
         TF_G = nx.subgraph_view(self.G, filter_node=filter_node)#filter the diffnetwork to only contain topTF-topTF
         #filter the network to only contain interactions above the cutoff value
-        TF_G_large_int = nx.DiGraph(((u, v, e) for u,v,e in TF_G.edges(data=True) if e[sort_criteria] > cutoff_val))
 
         if not full_output: 
             if GRN_wb:
                 logger.error(f"weighted binding edgescores require a --full-output GRN generated in both the network and influence step, using interaction score instead ")
             edge_info = 'weight'
             edge_info_title = 'interaction score'
+            TF_G_large_int = nx.DiGraph(((u, v, e) for u,v,e in TF_G.edges(data=True) if e[edge_info] > cutoff_val))
             TF_G2 = TF_G_large_int
             edge_atribute = list(nx.get_edge_attributes(TF_G2,'weight').values())
         if full_output:
@@ -490,6 +490,7 @@ class Influence(object):
                 edge_info_title = 'interaction score'
                 logger.info(f"using interaction score edge scores for GRN edges")
             #check to sort on interaction or weighted binding score:
+            TF_G_large_int = nx.DiGraph(((u, v, e) for u,v,e in TF_G.edges(data=True) if e[edge_info] > cutoff_val))
             TF_G2 = nx.DiGraph(((u, v, e) for u,v,e in TF_G_large_int.edges(data=True) if e[f'target_{edge_info}'] > e[f'source_{edge_info}']))
             target_wb=nx.get_edge_attributes(TF_G2,f'target_{edge_info}')
             source_wb=nx.get_edge_attributes(TF_G2,f'source_{edge_info}')
@@ -553,7 +554,7 @@ class Influence(object):
                                arrows=True, 
                                arrowstyle = '->',
                                arrowsize = 20,
-                               width = diff_wb_scaled,
+                               width = edge_atribute_scaled,
                                node_size = node_outdegree_size,
                                connectionstyle='arc3, rad = 0.1')
 
