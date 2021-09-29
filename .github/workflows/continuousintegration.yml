@@ -1,6 +1,12 @@
 name: continuous-integration
 
-on: [push]
+# run on any PR + push to develop/master
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
 
 jobs:
   test:
@@ -10,7 +16,7 @@ jobs:
         shell: bash -l {0}
     strategy:
       matrix:
-        python-version: [3.8]  # [3.7, 3.8]
+        python-version: [3.8]
         os: [ubuntu-latest]  # [ubuntu-latest, macos-latest]
       fail-fast: false
 
@@ -46,5 +52,6 @@ jobs:
 
     - name: Upload code coverage ☂️
       uses: paambaati/codeclimate-action@v2.7.5
+      if: github.repository_owner == 'vanheeringen-lab' || github.event.pull_request.opened || github.event.pull_request.edited || github.event.pull_request.reopened
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
