@@ -78,7 +78,6 @@ def test_command():
             fin_expression="tests/data/network/heart_expression.txt",
             full_output=False,
             outfile=fname,
-            full_output=False,
             ncore=2,
         )
         network(args)

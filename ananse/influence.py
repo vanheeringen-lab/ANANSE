@@ -459,11 +459,25 @@ class Influence(object):
                     nw.write("\t".join(str(v) for v in cols) + "\n")
 #def plot_TF_GRN(self, infile, outfile, GRN_wb = False, network_algorithm = 'neato', n_TFs = 20, cmap = 'viridis', full_output = False):
     def plot_TF_GRN(self, infile, outfile, GRN_wb = False, network_algorithm = 'neato', n_TFs = 20, cmap = 'viridis', full_output = False, cutoff_val = 0.1):
-        """Plot the top 20 of TFs their interactions 
         """
+        Plot the top20 of differential TFs and their interactions with the highest interaction score into a GRN network image
+
+        Parameters
+        ----------
+        self: influence_object to extract the diff network self.G, #future optimization = read diffnetwork instead
+        infile: influence output file
+        outfile: output file location
+        GRN_wb: when true and a -full--output influence GRN is suplied, use weighted binding interaction score to vizualize
+                edges instead of the probability score
+        network_algorithm: pyviz cluster algorithm used for node placement, options include: neato, dot, fdp, twopi, sfdp, circo 
+        n_TFs: number of (significantly differential expressed) Tfs to vizualize
+        cmap: matplotlib colour pallet used
+        full_output: if the GRN is a full output GRN (usefull for ploting weighted binding instead of prob score)
+        cutoff_val: minimum value the prob/wb score needs to have to be included in the GRN, 0.1 seems like a good number.
+    """
+        
         cmap=plt.get_cmap(cmap)
         mogrify = pd.read_table(infile, index_col="factor")
-        mogrify = mogrify.dropna()
         mogrify = mogrify[mogrify.GscoreScaled > 0] #plot only TFs that are differential 
         factors = list(mogrify.sort_values("sumScaled").tail(n_TFs).index)#get the top TFs to include in the GRN    
         #get the mean interaction score of the selected top TFs
@@ -489,34 +503,28 @@ class Influence(object):
                 edge_info = 'weight'
                 edge_info_title = 'interaction score'
                 logger.info(f"using interaction score edge scores for GRN edges")
-            #check to sort on interaction or weighted binding score:
-            TF_G_large_int = nx.DiGraph(((u, v, e) for u,v,e in TF_G.edges(data=True) if e[edge_info] > cutoff_val))
-            TF_G2 = nx.DiGraph(((u, v, e) for u,v,e in TF_G_large_int.edges(data=True) if e[f'target_{edge_info}'] > e[f'source_{edge_info}']))
+            #sort all interactions on interaction or weighted binding score and filter away interactions below the cutoff:
+            TF_G_large_int = nx.DiGraph(((u, v, e) for u,v,e in TF_G.edges(data=True) if e[edge_info] > cutoff_val))#does the interaction exceed the cutoff value
+            TF_G2 = nx.DiGraph(((u, v, e) for u,v,e in TF_G_large_int.edges(data=True) if e[f'target_{edge_info}'] > e[f'source_{edge_info}'])) #is the interaction higher in target then source
             target_wb=nx.get_edge_attributes(TF_G2,f'target_{edge_info}')
             source_wb=nx.get_edge_attributes(TF_G2,f'source_{edge_info}')
-            edge_atribute = {key: target_wb[key] - source_wb.get(key, 0) for key in target_wb}
+            edge_atribute = {key: target_wb[key] - source_wb.get(key, 0) for key in target_wb}#calculate the source-target difference
             edge_atribute = list(edge_atribute.values())
-
         TF_G2 = TF_G2.to_directed()#make the network directed agian
         TF_G2.remove_nodes_from(list(nx.isolates(TF_G2)))#remove TFs with no interactions
-        
         edge_atribute_scaled = minmax_scale(edge_atribute, feature_range=(0, 1), axis=0, copy=True) #scale all values
-
-        #calculate quantile regions for the edge legend
+        #calculate quantile regions to dipslay 4 relevant numbers within the edge legend
+        #normzalize the edge atributes (interaction scores) to be between 0 and 1 (where 0-1 corresponds to edge width)
         edges_norm_weight = [0,
                          round((np.quantile(sorted(edge_atribute_scaled), 1)/4),3),
                          round((np.quantile(sorted(edge_atribute_scaled), 1)/2),3),
                          round(np.quantile(sorted(edge_atribute_scaled), 1),3)]
-            
-        #normzalize the edge atributes to be between 0 and 1
-        #Also get the numbers of the unnormalized edge atributes for the legend.
+        #Also get the numbers of the unnormalized edge numbers to display within the legend next to the lines
         edges_weight = [0,
                          round((np.quantile(sorted(edge_atribute), 1)/4),3),
                          round((np.quantile(sorted(edge_atribute), 1)/2),3),
                          round(np.quantile(sorted(edge_atribute), 1),3)]
-        
-
-        #lets calculate the nodes their outdegree (regulation other TFs):
+        #lets calculate the nodes their outdegree (edges regulating other TFs):
         if edge_info == 'weight':
             outdegree = pd.DataFrame(TF_G2.out_degree(weight = edge_info))
             outdegree = outdegree[1]
@@ -527,14 +535,12 @@ class Influence(object):
             nx.set_edge_attributes(TF_G2, diff_edgeweight, name = edge_info)    
             outdegree = pd.DataFrame(TF_G2.out_degree(weight = edge_info))
             outdegree = outdegree[1]
-            
         node_outdegree_size = 600 + outdegree*100
         colors=outdegree
         vmin = min(colors)
         vmax = max(colors)
         plt.figure(figsize=(10, 10))
-        
-        #calculate node position        
+        #calculate node position of the graph
         pos = nx.drawing.nx_agraph.graphviz_layout(TF_G2, prog=network_algorithm)
         #plot the TF nodes
         nx.draw_networkx_nodes(TF_G2,
@@ -557,7 +563,6 @@ class Influence(object):
                                width = edge_atribute_scaled,
                                node_size = node_outdegree_size,
                                connectionstyle='arc3, rad = 0.1')
-
         #add edge width legend:
         lines = []
         for i, width in enumerate(edges_norm_weight):
