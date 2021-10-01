@@ -210,7 +210,6 @@ Optional arguments:
   -i EDGES, --edges EDGES
                         Number of top edges used (default is 100,000).
   -j , --padj           cutoff value of which genes ananse considers differentially expressed
-  -p, --plot            Create influence score plot.
   -n NCORE, --ncore NCORE
                         Number of cores to use.
   -f, --full-output     Run influence with all output in the diffnetwork fille, GRNs generated with the --full-output flagg
@@ -222,6 +221,61 @@ Optional arguments:
 ```
 
 
+
+### ananse plot
+
+Plot the output from the `influence.txt` output of `ananse influence` to a dotplot and when providing an `influence_diffnetwork.txt`
+also plot a GRN image of the top TFs their interactions.
+
+Example command: 
+
+``` bash
+$ ananse plot   -i results/influence.txt \
+                --diff-network results/influence_diffnetwork.txt \
+                -o results \
+```
+
+#### Full options
+
+Usage: 
+
+```
+ananse [-h] <command> [options] plot -i FILE -o OUTPUT_DIR --diff-network GRN_FILE --edge-info EDGE_INFO 
+                                               --edge-min EDGE_MIN --node-placement NETWORK_ALGORITHM 
+                                               --n-tfs N_TFS -c CMAP --full-output
+
+```
+
+Required arguments:
+
+```
+  -i FILE, --influence-file FILE
+                        Influence.txt file output from the influence function
+
+```                        
+
+Optional arguments:
+
+```
+  -o , --outdir FILE
+                        output dir where the output files are exported to
+  --diff-network GRN_file
+                        diff network file outputted from ananse influence
+  -n NCORE, --ncore NCORE
+                        Number of cores to use.
+  --edge-info           column from diff network file to use for edge vizualisation. Default = 'weight'  when full_output is 
+                        specified other options are 'wb_diff':weighted binding ,'tf_act_diff':TF motif activation score
+                        'tf_expr_diff':difference in TF expression between sourse and target and 'tg_expr_diff':target gene
+                        expression difference between source and target.
+  --edge-min            minimum score neded for edges to be included in the GRN image, default = 0 (inc. all edges)
+  --node-placement NETWORK_ALGORITHM
+                        pyviz cluster algorithm used for node placement, options include: neato, dot, fdp, twopi, sfdp, circo
+  --n-tfs N_TFS         number of top influence TFs included in the GRN network
+  -c CMAP, --cmap CMAP  colour pallete to use for outdegree
+  -f, --full-output     flagg to state if a full output diffnetwork is suplied, this command  and an diffnetwork generated with
+                        the full options flag are needed when plotting other edge weight types
+  -h, --help            show this help message and exit
+```
 ### ananse view
 
 Convert the binding probabilities from  the `binding.h5` output of `ananse binding` to tab-separated text format.
