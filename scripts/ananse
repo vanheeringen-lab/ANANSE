@@ -7,7 +7,6 @@
 import os
 import sys
 import argparse
-
 from genomepy import Genome
 from loguru import logger
 
@@ -32,7 +31,9 @@ if __name__ == "__main__":
         binding     predict TF binding sites in cis-regulatory region
         network     infer gene regulatory network
         influence   prioritize transcription factors
+        plot        plot influence result in dotplot and GRN network
         view        view binding file
+        
     """
     parser = argparse.ArgumentParser(
         usage=usage,
@@ -175,10 +176,10 @@ if __name__ == "__main__":
         "--expression",
         dest="fin_expression",
         help="Gene-level expression expression levels. The gene name (HGNC symbol in case of human) "
-             "should be present in the first column and there should be a column named tpm. "
-             "This file can be created by summarizing transcript-level TPMs "
-             "(the quant.sf from salmon or the abundances.tsv from kallisto) "
-             "to gene-level TPMs with tximeta.",
+        "should be present in the first column and there should be a column named tpm. "
+        "This file can be created by summarizing transcript-level TPMs "
+        "(the quant.sf from salmon or the abundances.tsv from kallisto) "
+        "to gene-level TPMs with tximeta.",
         metavar="FILE",
         default=None,
         required=True,
@@ -208,7 +209,7 @@ if __name__ == "__main__":
         "--annotation",
         dest="annotation",
         help="Gene annotation in BED12 format. Not necessary if you use a genome "
-             "that was installed using genomepy with the --annotation flag.",
+        "that was installed using genomepy with the --annotation flag.",
         metavar="BED",
     )
     group.add_argument(
@@ -234,7 +235,7 @@ if __name__ == "__main__":
         "--exclude-promoter",
         default=True,
         help="Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. "
-             "By default promoter peaks are included.",
+        "By default promoter peaks are included.",
         dest="include_promoter",
         action=NegateAction,
         nargs=0,
@@ -252,7 +253,7 @@ if __name__ == "__main__":
         "--exclude-enhancer",
         default=True,
         help="Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. "
-             "By default enhancer peaks are included.",
+        "By default enhancer peaks are included.",
         dest="include_enhancer",
         action=NegateAction,
         nargs=0,
@@ -310,34 +311,11 @@ if __name__ == "__main__":
         default=100000,
     )
     group.add_argument(
-        "-p",
-        "--plot",
-        dest="plot",
-        help="Create influence score plot.",
-        action="store_true",
-        default=False,
-    )
-    group.add_argument(
-        "-f",
-        "--full-output",
-        dest="full_output",
-        help="export the full GRN output to the diffnetwork, full output GRN files needed",
-        action="store_true",
-        default=False,
-    )
-    group.add_argument(
         "-c",
         "--GRNsort-column",
         dest="GRNsort_column",
         help="column of GRN file sorted to select top interactions, 'prob' by default",
-        default='prob',
-    )
-    group.add_argument(
-        "-e",
-        "--edge-info",
-        dest="edge_info",
-        help="set either 'weight' or 'wb' from weighted binding for the edges in the GRN, for wb full influence output is needed",
-        default='weight',
+        default="prob",
     )
     group.add_argument(
         "-j",
@@ -360,7 +338,7 @@ if __name__ == "__main__":
     )
     p.set_defaults(func=commands.influence)
 
-
+    # ananse View
     p = subparsers.add_parser("view", add_help=False)
     subparser_dict["view"] = p
     p.add_argument(
@@ -377,14 +355,16 @@ if __name__ == "__main__":
         default=None,
     )
     p.add_argument(
-        "-f", "--factors",
+        "-f",
+        "--factors",
         dest="factors",
         help="name(s) of transcription factors (default: all)",
         metavar="TF",
-        nargs='*',
+        nargs="*",
     )
     p.add_argument(
-        "-F", "--format",
+        "-F",
+        "--format",
         dest="format",
         default="wide",
         help="format: wide or long (default: wide)",
@@ -392,6 +372,82 @@ if __name__ == "__main__":
     )
     p.set_defaults(func=commands.view)
 
+    # ananse plot
+    p = subparsers.add_parser("plot", add_help=False)
+    group = p.add_argument_group("required arguments")
+    group.add_argument(
+        "-i",
+        "--influence-file",
+        dest="infile",
+        help="ananse influence.txt file ",
+        metavar="FILE",
+        default=None,
+        required=True,
+    )
+
+    group = p.add_argument_group("optional arguments")
+    group.add_argument(
+        "-o",
+        "--outdir",
+        dest="outdir",
+        help="Directory where you wish to store the output (default: ./ANANSE_binding)",
+        metavar="",
+        default="./ANANSE_binding",
+    )
+    group.add_argument(
+        "--diff-network",
+        help="differential network file generated by ananse influence ",
+        dest="GRN_file",
+        default="",
+    )
+    group.add_argument(
+        "--edge-info",
+        help="column to use for edges of GRN, default = weight, when full_output is specified other options are  'wb_diff' ,'tf_act_diff''tf_expr_diff','tg_expr_diff'",
+        dest="edge_info",
+        type=str,
+        default="weight",
+    )
+    group.add_argument(
+        "--edge-min",
+        help="minimum value for an edge to be included in the GRN image",
+        dest="edge_min",
+        type=float,
+        default=0.0,
+    )
+    group.add_argument(
+        "--node-placement",
+        help="pyviz cluster algorithm used for node placement, options include: neato, dot, fdp, twopi, sfdp, circo",
+        dest="network_algorithm",
+        type=str,
+        default="neato",
+    )
+    group.add_argument(
+        "--n-tfs",
+        help="ammount of TFs to plot in the GRN, default is top 20 differential TFs",
+        dest="n_TFs",
+        type=int,
+        default=20,
+    )
+    group.add_argument(
+        "-c",
+        "--cmap",
+        dest="cmap",
+        help="matlotlib colour library",
+        type=str,
+        default="viridis",
+    )
+    group.add_argument(
+        "-f",
+        "--full-output",
+        dest="full_output",
+        help="select if the difnetwork is a full output file",
+        action="store_true",
+        default=False,
+    )
+    group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
+    )
+    p.set_defaults(func=commands.plot)
 
     if len(sys.argv) == 1:
         parser.print_help()

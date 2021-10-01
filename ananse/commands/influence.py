@@ -22,11 +22,10 @@ def influence(args):
         outfile=check_path(args.outfile, error_missing=False),
         full_output=args.full_output,
         GRNsort_column=args.GRNsort_column,
-        edge_info=args.edge_info,
         padj_cutoff=args.padj_cutoff,
         degenes=check_path(
             args.expression
         ),  # --degenes (HGNC gene names, padj and log2foldchanges)
         edges=args.edges,  # --edges (optional)
     )
-    a.run_influence(args.plot)  # -p
+    a.run_influence()
