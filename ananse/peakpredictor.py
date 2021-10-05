@@ -43,7 +43,6 @@ class PeakPredictor:
     ):
         self.data_dir = reference
 
-
         if atac_bams is None and histone_bams is None:
             raise ValueError("Need either ATAC-seq or H3K27ac BAM file(s).")
 
@@ -717,10 +716,6 @@ def predict_peaks(
     ncore : int, optional
         Number of threads to use. Default is 4.
     """
-    logger.warning(
-        f"jacard cutoff of {jaccard_cutoff}"
-    )
-    
     if reference is None and regionfiles is None:
         logger.error("Need either input regions or location of a reference set!")
         logger.error(
