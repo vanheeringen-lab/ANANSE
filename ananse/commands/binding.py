@@ -22,5 +22,6 @@ def binding(args):
         genome=args.genome,  # checked in CLI
         pfmfile=check_path(args.pfmfile),
         pfmscorefile=check_path(args.pfmscorefile),
+        jaccard_cutoff=args.jaccard_cutoff,
         ncore=args.ncore,
     )
