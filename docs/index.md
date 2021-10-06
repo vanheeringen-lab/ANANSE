@@ -9,6 +9,7 @@ ANANSE is a computational approach to infer enhancer-based gene regulatory netwo
 |  ananse binding   | predict cell type-specific transcription factor binding profiles   |
 |  ananse network   | infer a cell type-specific gene regulatory network           |
 |  ananse influence | infer key transcription factors during cell fate determination |   
+|  ananse plot      | plot influence results in a dotplot and optionally a GRN of the Top TFs |   
 
 
 All functionality is also available through a Python API.
