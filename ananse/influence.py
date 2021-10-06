@@ -26,6 +26,8 @@ from adjustText import adjust_text
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from .ananse import SEPARATOR
+
 
 warnings.filterwarnings("ignore")
 
@@ -81,7 +83,7 @@ def read_network(
 
     G = nx.DiGraph()  # initiate empty network
     for _, row in rnet.iterrows():
-        source, target = row[0].split("_", 1)
+        source, target = row[0].split(SEPARATOR, 1)
         if full_output == False:
             try:
                 G.add_edge(source, target, weight=row["prob"], n=1)

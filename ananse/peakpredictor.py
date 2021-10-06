@@ -1,4 +1,4 @@
-from glob import glob
+"from glob import glob
 import inspect
 import os
 import re
@@ -23,6 +23,7 @@ import qnorm
 import ananse
 from ananse.enhancer_binding import CombineBedFiles
 from ananse.utils import get_motif_factors, check_input_factors
+from .ananse import SEPARATOR
 
 # This motif file is not created by default
 #   * f"{self.data_dir}/reference.factor.feather"
@@ -424,7 +425,7 @@ class PeakPredictor:
             cols += ["average", "dist"]
         cols = sorted(cols)
         self._X_columns = cols
-        self._model_type = "_".join(cols)
+        self._model_type = SEPARATOR.join(cols)
 
         # Load models
         logger.info("Loading models")

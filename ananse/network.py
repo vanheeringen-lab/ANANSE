@@ -26,8 +26,10 @@ from dask.distributed import progress
 from loguru import logger
 from pandas import HDFStore
 from tqdm.auto import tqdm
-
 import pyranges as pr
+
+from .ananse import SEPARATOR
+
 
 warnings.filterwarnings("ignore")
 PACKAGE_DIR = os.path.dirname(__file__)
@@ -461,7 +463,7 @@ class Network(object):
             )
 
             # Create dataframe with two columns: tf_gene and weighted_binding score
-            tmp["tf_target"] = tmp["tf"] + "_" + tmp["gene"]
+            tmp["tf_target"] = tmp["tf"] + SEPARATOR + tmp["gene"]
             tmp[["tf_target", "weighted_binding"]].to_csv(
                 os.path.join(tmpdir, f"{chrom}.csv"), index=False
             )
@@ -589,7 +591,7 @@ class Network(object):
         # Use one-column index that contains TF and target genes.
         # This is necessary for dask, as dask cannot merge on a MultiIndex.
         # Otherwise this would be an inefficient and unnecessary step.
-        network["tf_target"] = network["tf"] + "_" + network["target"]
+        network["tf_target"] = network["tf"] + SEPARATOR + network["target"]
         network = network[
             ["tf", "target", "tf_target", "tf_expression", "target_expression"]
         ]
