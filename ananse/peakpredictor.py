@@ -1,4 +1,4 @@
-"from glob import glob
+from glob import glob
 import inspect
 import os
 import re
