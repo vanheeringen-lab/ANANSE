@@ -28,7 +28,7 @@ from pandas import HDFStore
 from tqdm.auto import tqdm
 import pyranges as pr
 
-from .ananse import SEPARATOR
+from . import SEPARATOR
 
 
 warnings.filterwarnings("ignore")

@@ -7,7 +7,7 @@ import os
 from loguru import logger
 
 import ananse
-from .ananse import SEPARATOR
+from . import SEPARATOR
 
 
 logger.remove()

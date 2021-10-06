@@ -23,7 +23,7 @@ import qnorm
 import ananse
 from ananse.enhancer_binding import CombineBedFiles
 from ananse.utils import get_motif_factors, check_input_factors
-from .ananse import SEPARATOR
+from . import SEPARATOR
 
 # This motif file is not created by default
 #   * f"{self.data_dir}/reference.factor.feather"

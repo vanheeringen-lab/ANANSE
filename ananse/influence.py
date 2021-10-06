@@ -26,7 +26,7 @@ from adjustText import adjust_text
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from .ananse import SEPARATOR
+from . import SEPARATOR
 
 
 warnings.filterwarnings("ignore")
