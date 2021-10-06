@@ -37,6 +37,7 @@ dependencies:
   - xdg
   - xgboost >=0.71
   - xxhash
+  - pygraphviz 
 
   # Testing
   - black
@@ -44,3 +45,5 @@ dependencies:
   - flake8-bugbear
   - pytest
   - pytest-cov
+
+

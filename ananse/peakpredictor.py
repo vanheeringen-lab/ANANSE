@@ -664,6 +664,7 @@ def predict_peaks(
     genome=None,
     pfmfile=None,
     pfmscorefile=None,
+    jaccard_cutoff=0.0,
     ncore=4,
 ):
     """Predict binding in a set of genomic regions.
@@ -792,7 +793,7 @@ def predict_peaks(
 
         for factor in p.factors():
             try:
-                proba = p.predict_proba(factor)
+                proba = p.predict_proba(factor, jaccard_cutoff = jaccard_cutoff)
                 hdf.put(
                     key=f"{factor}",
                     value=proba.iloc[:, -1].reset_index(drop=True).astype(np.float16),
