@@ -318,6 +318,14 @@ if __name__ == "__main__":
         default="prob",
     )
     group.add_argument(
+        "-f",
+        "--full-output",
+        dest="full_output",
+        help="Export the full GRN output to the output file",
+        action="store_true",
+        default=False,
+    )
+    group.add_argument(
         "-j",
         "--padj",
         dest="padj_cutoff",
