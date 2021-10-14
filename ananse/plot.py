@@ -1,4 +1,3 @@
-from __future__ import print_function
 from loguru import logger
 import numpy as np
 import pandas as pd

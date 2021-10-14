@@ -20,8 +20,8 @@ jobs:
         os: [ubuntu-latest]  # [ubuntu-latest, macos-latest]
       fail-fast: false
 
-    env:  # TODO: switch to "ananse/ tests/"
-      TARGETS: "ananse/commands/__init__.py ananse/commands/enhancer_binding.py ananse/commands/network.py ananse/__init__.py ananse/enhancer_binding.py ananse/distributions.py ananse/network.py ananse/utils.py tests/"
+    env:
+      TARGETS: "ananse/ tests/"
 
     steps:
     - name: checkout 👀

@@ -1,14 +1,4 @@
-#!/usr/bin/env python
-
-# Copyright (c) 2009-2019 Quan Xu <qxuchn@gmail.com>
-#
-# This module is free software. You can redistribute it and/or modify it under
-# the terms of the MIT License, see the file COPYING included with this
-# distribution.
-
 """Build gene regulatory network"""
-
-# Python imports
 import os
 import math
 import re
@@ -607,7 +597,6 @@ class Network(object):
         alpha=None,
         promoter=2000,
         full_weight_region=5000,
-        full_output=False,
     ):
 
         """Create network.

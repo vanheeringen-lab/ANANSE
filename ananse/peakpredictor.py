@@ -186,7 +186,8 @@ class PeakPredictor:
         # Set regions
         self.regions = self._avg.index
 
-    def _load_human_factors(self):
+    @staticmethod
+    def _load_human_factors():
         package_dir = os.path.dirname(ananse.__file__)
         tf_xlsx = os.path.join(package_dir, "db", "lovering.tfs.xlsx")
         valid_factors = pd.read_excel(
@@ -197,7 +198,7 @@ class PeakPredictor:
         valid_factors = valid_factors.loc[
             valid_factors["Pseudogene"].isnull(), "HGNC approved gene symbol"
         ].values
-        valid_factors = list(set(valid_factors) - set(["EP300"]))
+        valid_factors = list(set(valid_factors) - {"EP300"})
         return valid_factors
 
     def set_species(self, genome):
@@ -322,7 +323,7 @@ class PeakPredictor:
                 d.append([f1, f2, jaccard])
                 if jaccard > 0:
                     self.motif_graph.add_edge(f1, f2, weight=1 - jaccard)
-                    
+
     def _load_bams(self, bams, title, window=200):
         tmp = pd.DataFrame(index=self.regions)
         with NamedTemporaryFile(mode="w") as f_out:
@@ -448,7 +449,7 @@ class PeakPredictor:
         motifs : [type], optional
             Motifs. Currently not implemented.
         jaccard_cutoff : float, optional
-            Cutoff for the minimum jaccard overlap between motifs of two TFs for them to be considered related. 
+            Cutoff for the minimum jaccard overlap between motifs of two TFs for them to be considered related.
             Related TFs can share models. Default = 0.0 (0.1 seems to work well based on subjective testing).
         Returns
         -------
@@ -492,27 +493,27 @@ class PeakPredictor:
         # logger.debug(str(self._X_columns))
         return tmp[self._X_columns]
 
-    def _load_model(self, factor, jaccard_cutoff = 0.0):
+    def _load_model(self, factor, jaccard_cutoff=0.0):
         """Load TF-binding model that is:
         1. trained for that specific TF
         2. trained on a different TF with a motif overlap of a jacards similarity larger than the cutoff
-        3. a general TF binding model if the other options are not available 
+        3. a general TF binding model if the other options are not available
             Parameters
             ----------
-            jaccard_cutoff : 
-                minimum jacard similarity score that is needed to use the model of TFA for TFB. 
-            """
+            jaccard_cutoff :
+                minimum jacard similarity score that is needed to use the model of TFA for TFB.
+        """
         model = None
         max_edge_weight = 1 - jaccard_cutoff
         if factor in self.factor_models:
             logger.info(f"Using {factor} model")
             model = self.factor_models[factor]
         elif factor in self.motif_graph:
-            logger.info(f"checking for alternatif model based on motif overlap")
+            logger.info("Checking for alternative models based on motif overlap...")
             paths = {
                 p: v
                 for p, v in nx.single_source_dijkstra_path_length(
-                    self.motif_graph, factor, cutoff = max_edge_weight
+                    self.motif_graph, factor, cutoff=max_edge_weight
                 ).items()
                 if p in self.factor_models
             }
@@ -793,7 +794,7 @@ def predict_peaks(
 
         for factor in p.factors():
             try:
-                proba = p.predict_proba(factor, jaccard_cutoff = jaccard_cutoff)
+                proba = p.predict_proba(factor, jaccard_cutoff=jaccard_cutoff)
                 hdf.put(
                     key=f"{factor}",
                     value=proba.iloc[:, -1].reset_index(drop=True).astype(np.float16),
