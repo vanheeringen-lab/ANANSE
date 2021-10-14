@@ -1,6 +1,4 @@
 """Build gene regulatory network"""
-
-# Python imports
 import os
 import math
 import re

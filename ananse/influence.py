@@ -1,6 +1,4 @@
 """Predict TF influence score"""
-
-# Python imports
 import sys
 import warnings
 from collections import namedtuple
@@ -98,11 +96,11 @@ def difference(GRN_source, GRN_target, full_output=False):
     """
     DIF = nx.create_empty_copy(GRN_source)  # copying source GRN nodes
     nodes_target = nx.create_empty_copy(GRN_target)  # copying target GRN nodes
-    DIF.add_nodes_from(list(nodes_target.nodes))
     # merge the nodes if there are differences
-    # (which can happen) when taking the header instead of the --unnion-interactions flagg
+    # (which can happen) when taking the header instead of the --union-interactions flag
+    DIF.add_nodes_from(list(nodes_target.nodes))
 
-    # lets check if the full GRN output is loaded and if so output all atributes to the diffnetwork:
+    # lets check if the full GRN output is loaded and if so output all attributes to the diffnetwork:
     if full_output:
         logger.info("calculating diff GRN with full output")
         # lets load all the  edges into the diffnetwork
@@ -134,7 +132,8 @@ def difference(GRN_source, GRN_target, full_output=False):
                     tg_expr_target=ddict["tg_expression"],
                     tg_expr_source=GRN_source[u][v]["tg_expression"],
                     wb_diff=(
-                        (ddict["weighted_binding"]) - (GRN_source[u][v]["weighted_binding"])
+                        (ddict["weighted_binding"])
+                        - (GRN_source[u][v]["weighted_binding"])
                     ),
                     target_wb=ddict["weighted_binding"],
                     source_wb=GRN_source[u][v]["weighted_binding"],
@@ -415,7 +414,7 @@ class Influence(object):
                     "source_tf_act",
                     "target_tf_act",
                 ]
-                nw.write("\t".join(header))
+                nw.write("\t".join(header) + "\n")
                 for (u, v, ddict) in self.G.edges(data=True):
                     cols = [
                         u,
@@ -432,7 +431,7 @@ class Influence(object):
                         ddict["wb_diff"],
                         ddict["source_wb"],
                         ddict["target_wb"],
-                        ddict["tf_act_diff"],
+                        ddict["TF_act_diff"],
                         ddict["TF_act_source"],
                         ddict["TF_act_target"],
                     ]

@@ -794,7 +794,7 @@ def predict_peaks(
 
         for factor in p.factors():
             try:
-                proba = p.predict_proba(factor, jaccard_cutoff = jaccard_cutoff)
+                proba = p.predict_proba(factor, jaccard_cutoff=jaccard_cutoff)
                 hdf.put(
                     key=f"{factor}",
                     value=proba.iloc[:, -1].reset_index(drop=True).astype(np.float16),
