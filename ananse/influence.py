@@ -13,9 +13,6 @@ import networkx as nx
 import multiprocessing as mp
 from sklearn.preprocessing import minmax_scale
 from scipy.stats import rankdata, mannwhitneyu
-from adjustText import adjust_text
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 warnings.filterwarnings("ignore")
@@ -64,10 +61,10 @@ def read_network(
     )  # read the GRN file
     # sort on selection variable
     rnet.sort_values(GRNsort_column, ascending=False, inplace=True)
-    if interactions:
-        rnet = rnet[rnet.tf_target.isin(interactions)]
-    else:
+    if interactions is None:
         rnet = rnet.head(edges)  # no interactions so take the top head of interactions
+    else:
+        rnet = rnet[rnet.tf_target.isin(interactions)]
 
     G = nx.DiGraph()  # initiate empty network
     for _, row in rnet.iterrows():
@@ -126,12 +123,24 @@ def difference(GRN_source, GRN_target, full_output=False):
                     target_weight=target_weight,
                     neglogweight=-np.log(diff_weight),
                     n=1,
+                    tf_expr_diff=(
+                        (ddict["tf_expression"]) - (GRN_source[u][v]["tf_expression"])
+                    ),
                     tf_expr_target=ddict["tf_expression"],
                     tf_expr_source=GRN_source[u][v]["tf_expression"],
+                    tg_expr_diff=(
+                        (ddict["tg_expression"]) - (GRN_source[u][v]["tg_expression"])
+                    ),
                     tg_expr_target=ddict["tg_expression"],
                     tg_expr_source=GRN_source[u][v]["tg_expression"],
+                    wb_diff=(
+                        (ddict["weighted_binding"]) - (GRN_source[u][v]["weighted_binding"])
+                    ),
                     target_wb=ddict["weighted_binding"],
                     source_wb=GRN_source[u][v]["weighted_binding"],
+                    TF_act_diff=(
+                        (ddict["tf_activity"]) - (GRN_source[u][v]["tf_activity"])
+                    ),
                     TF_act_target=ddict["tf_activity"],
                     TF_act_source=GRN_source[u][v]["tf_activity"],
                 )
@@ -193,6 +202,7 @@ def read_expression(fname, padj_cutoff=0.05):
             f"Duplicated gene names detected in differential expression file e.g. '{dupped_gene}'. "
             "Averaging values for duplicated genes..."
         )
+
     # average values for duplicate gene names (none hopefully)
     df = df.groupby(by=df.index, dropna=True).mean(0)
 
@@ -206,7 +216,6 @@ def read_expression(fname, padj_cutoff=0.05):
         expression_change[k] = Expression(
             score=row.score, absfc=row.fc, realfc=row.log2FoldChange
         )
-
     return expression_change
 
 
@@ -273,7 +282,7 @@ def targetScore(node, G, expression_change, max_degree=3):
     except RecursionError:
         pval = np.NAN
         logger.warning(
-            f"Could not calculate p-val (target vs non-target fold-change) for {node}."
+            f"Could not calculate p-val (target vs non-target fold-change) for {node}, targets = {len(target_fc)}, non-target = {len(non_target_fc)}."
         )
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
 
@@ -323,33 +332,6 @@ def filter_TF(scores_df, network=None, tpmfile=None, tpm=20, overlap=0.98):
     return scores_df
 
 
-def plot_influence(infile, outfile):
-    """Plot TF influence score to expression."""
-
-    mogrify = pd.read_table(infile, index_col="factor")
-    mogrify = mogrify.dropna()
-    factors = list(mogrify.sort_values("sumScaled").tail(20).index)
-    # factors = list(mogrify.sort_values("sumScaled").tail(20).index)
-    xcol = "factor_fc"
-    plt.figure(figsize=(8, 6))
-    sns.regplot(
-        data=mogrify,
-        x=xcol,
-        y="sumScaled",
-        fit_reg=False,
-        scatter_kws={"s": mogrify["directTargets"] / 10, "alpha": 0.5},
-    )
-    x = mogrify.loc[factors, xcol]
-    y = mogrify.loc[factors, "sumScaled"]
-    texts = []
-    for s, xt, yt in zip(factors, x, y):
-        texts.append(plt.text(xt, yt, s))
-    adjust_text(texts, arrowprops=dict(arrowstyle="-", color="black"))
-    plt.xlabel("Log2 fold change of TF")
-    plt.ylabel("Influence score")
-    plt.savefig(outfile, dpi=300)
-
-
 class Influence(object):
     def __init__(
         self,
@@ -363,6 +345,7 @@ class Influence(object):
         GRNsort_column="prob",
         padj_cutoff=0.05,
         full_output=False,
+        edge_info=False,
     ):
         self.ncore = ncore
         self.full_output = full_output
@@ -419,12 +402,16 @@ class Influence(object):
                     "weight",
                     "weight_source",
                     "weight_target",
+                    "tf_expr_diff",
                     "tf_expr_source",
                     "tf_expr_target",
+                    "tg_expr_diff",
                     "tg_expr_source",
                     "tg_expr_target",
+                    "wb_diff",
                     "wb_source",
                     "wb_target",
+                    "tf_act_diff",
                     "source_tf_act",
                     "target_tf_act",
                 ]
@@ -436,12 +423,16 @@ class Influence(object):
                         ddict["weight"],
                         ddict["source_weight"],
                         ddict["target_weight"],
+                        ddict["tf_expr_diff"],
                         ddict["tf_expr_source"],
                         ddict["tf_expr_target"],
+                        ddict["tg_expr_diff"],
                         ddict["tg_expr_source"],
                         ddict["tg_expr_target"],
+                        ddict["wb_diff"],
                         ddict["source_wb"],
                         ddict["target_wb"],
+                        ddict["tf_act_diff"],
                         ddict["TF_act_source"],
                         ddict["TF_act_target"],
                     ]
@@ -589,7 +580,7 @@ class Influence(object):
                 ".".join(self.outfile.split(".")[:-1]) + "_filtered.txt", sep="\t"
             )
 
-    def run_influence(self, plot=True, fin_expression=None):
+    def run_influence(self, fin_expression=None):
         logger.info("Saving differential network.")
         self.save_reg_network(
             (".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt"),
@@ -601,9 +592,3 @@ class Influence(object):
 
         logger.info("Calculating influence scores.")
         self.run_influence_score(influence_file, fin_expression=fin_expression)
-
-        if plot is True:
-            logger.info("Plotting results.")
-            plot_influence(
-                self.outfile, ".".join(self.outfile.split(".")[:-1]) + ".pdf"
-            )

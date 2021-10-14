@@ -26,12 +26,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - Warning if annotation files don't match for `ananse influence`.
 - Improved logging messages.
 - Better checking of input files.
+- The -full--output option for both ananse network and ananse influence for additional info in the output files and more vizualization options
+- An optional jacard similarity cutoff for ananse binding to set a limit on motif overlap for TF binding model selection
+- `ananse plot` command to plot the dotplot and a new top TF interaction GRN file.
+
 
 ### Changed
 
 - `ananse binding` produces a HDF5 file (`binding.h5`) which is much smaller on disk.
 - Better memory performance of `ananse network`.
 - Removed threshold for differential network in `ananse influence`.
+- ananse influence now takes the set of  interactions of the top 500.000 of each network instead of the head of each.
+- ananse influence now doesnt have plot functionality, moved this to ananse plot instead.
+
 
 ### Fixed
 
