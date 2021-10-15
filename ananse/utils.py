@@ -3,13 +3,15 @@ import getpass
 import os
 import pwd
 import shutil
-import subprocess as sp
+
+# import subprocess as sp
 import tempfile
 import warnings
 
 import genomepy.utils
 from pybedtools import BedTool
-import pysam
+
+# import pysam
 import pandas as pd
 
 
@@ -77,75 +79,75 @@ def bed_merge(list_of_beds, merged_bed):
     bed.saveas(merged_bed)
 
 
-@shhh_bedtool
-def count_reads(bams, peakfile, bed_output):
-    """
-    Count bam reads in putative enhancer regions
-    """
-    # replace with gimmemotifs.preprocessing.coverage_table()
-    bed = BedTool(peakfile)
-    bam_list = bams if isinstance(bams, list) else [bams]
-    bed.multi_bam_coverage(bams=bam_list, output=bed_output)
+# @shhh_bedtool
+# def count_reads(bams, peakfile, bed_output):
+#     """
+#     Count bam reads in putative enhancer regions
+#     """
+#     # replace with gimmemotifs.preprocessing.coverage_table()
+#     bed = BedTool(peakfile)
+#     bam_list = bams if isinstance(bams, list) else [bams]
+#     bed.multi_bam_coverage(bams=bam_list, output=bed_output)
 
 
-def samc(ncore):
-    """set decent samtools range for samtools functions (1-5 total threads)"""
-    return max(0, min(ncore - 1, 4))
+# def samc(ncore):
+#     """set decent samtools range for samtools functions (1-5 total threads)"""
+#     return max(0, min(ncore - 1, 4))
+#
+#
+# def bam_index(bam, force=True, ncore=1):
+#     if force or not os.path.exists(f"{bam}.bai"):
+#         index_parameters = [f"-@ {samc(ncore)}", bam]
+#         pysam.index(*index_parameters)  # noqa
+#
+#
+# def bam_sort(bam, ncore=1):
+#     tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
+#     try:
+#         sorted_bam = os.path.join(tmpdir, os.path.basename(bam))
+#         sort_parameters = [f"-@ {samc(ncore)}", "-o", sorted_bam, bam]
+#         pysam.sort(*sort_parameters)  # noqa: pysam bug
+#
+#         shutil.copy2(sorted_bam, bam)
+#         bam_index(bam, force=True, ncore=ncore)
+#     finally:
+#         shutil.rmtree(tmpdir, ignore_errors=True)
+#
+#
+# def bam_merge(list_of_bams, merged_bam, ncore=1):
+#     """
+#     merge any number of (sorted) bam files
+#     """
+#     [bam_index(bam, force=False, ncore=ncore) for bam in list_of_bams]
+#     if len(list_of_bams) > 1:
+#         merge_parameters = ["-f", f"-@ {samc(ncore)}", merged_bam] + list_of_bams
+#         pysam.merge(*merge_parameters)  # noqa: pysam bug
+#         bam_index(merged_bam)
+#     else:
+#         # os.symlink() doesn't work with multi_bam_coverage()
+#         bam = list_of_bams[0]
+#         shutil.copy2(bam, merged_bam)
+#         shutil.copy2(f"{bam}.bai", f"{merged_bam}.bai")
 
 
-def bam_index(bam, force=True, ncore=1):
-    if force or not os.path.exists(f"{bam}.bai"):
-        index_parameters = [f"-@ {samc(ncore)}", bam]
-        pysam.index(*index_parameters)  # noqa
-
-
-def bam_sort(bam, ncore=1):
-    tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
-    try:
-        sorted_bam = os.path.join(tmpdir, os.path.basename(bam))
-        sort_parameters = [f"-@ {samc(ncore)}", "-o", sorted_bam, bam]
-        pysam.sort(*sort_parameters)  # noqa: pysam bug
-
-        shutil.copy2(sorted_bam, bam)
-        bam_index(bam, force=True, ncore=ncore)
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
-
-
-def bam_merge(list_of_bams, merged_bam, ncore=1):
-    """
-    merge any number of (sorted) bam files
-    """
-    [bam_index(bam, force=False, ncore=ncore) for bam in list_of_bams]
-    if len(list_of_bams) > 1:
-        merge_parameters = ["-f", f"-@ {samc(ncore)}", merged_bam] + list_of_bams
-        pysam.merge(*merge_parameters)  # noqa: pysam bug
-        bam_index(merged_bam)
-    else:
-        # os.symlink() doesn't work with multi_bam_coverage()
-        bam = list_of_bams[0]
-        shutil.copy2(bam, merged_bam)
-        shutil.copy2(f"{bam}.bai", f"{merged_bam}.bai")
-
-
-def mosdepth(bed, bam, bed_output, ncore=1):
-    """
-    Count (median per base overlap of) bam reads in putative enhancer regions
-    """
-    ncore = min(4, ncore)
-    tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
-    try:
-        prefix = os.path.join(tmpdir, "bam_coverage")
-        cmd = f"mosdepth -nxm -t {ncore} -b {bed} {prefix} {bam}"
-        sp.check_call(cmd, shell=True)
-
-        tmp_bed_output = f"{prefix}.regions.bed"
-        cmd = f"gunzip -f {tmp_bed_output}.gz"
-        sp.check_call(cmd, shell=True)
-
-        shutil.copy2(tmp_bed_output, bed_output)
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
+# def mosdepth(bed, bam, bed_output, ncore=1):
+#     """
+#     Count (median per base overlap of) bam reads in putative enhancer regions
+#     """
+#     ncore = min(4, ncore)
+#     tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
+#     try:
+#         prefix = os.path.join(tmpdir, "bam_coverage")
+#         cmd = f"mosdepth -nxm -t {ncore} -b {bed} {prefix} {bam}"
+#         sp.check_call(cmd, shell=True)
+#
+#         tmp_bed_output = f"{prefix}.regions.bed"
+#         cmd = f"gunzip -f {tmp_bed_output}.gz"
+#         sp.check_call(cmd, shell=True)
+#
+#         shutil.copy2(tmp_bed_output, bed_output)
+#     finally:
+#         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 # def bed_sum_coverages(multi_bam_coverage, sum_bam_coverage):
