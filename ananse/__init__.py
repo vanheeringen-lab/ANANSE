@@ -21,4 +21,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 __version__ = get_versions()["version"]
 del get_versions
 
+# we are using the em-dash (—) as a separator, since so far no one seems
+# to be using that in their gene names (yet!). The em dash is different 
+# from the en-dash (–) and hyphen (-).
 SEPARATOR = "—"
