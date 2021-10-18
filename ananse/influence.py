@@ -12,6 +12,8 @@ import multiprocessing as mp
 from sklearn.preprocessing import minmax_scale
 from scipy.stats import rankdata, mannwhitneyu
 
+from . import SEPARATOR
+
 
 warnings.filterwarnings("ignore")
 
@@ -66,7 +68,7 @@ def read_network(
 
     G = nx.DiGraph()  # initiate empty network
     for _, row in rnet.iterrows():
-        source, target = row[0].split("_", 1)
+        source, target = row[0].split(SEPARATOR, 1)
         try:
             if full_output:
                 G.add_edge(

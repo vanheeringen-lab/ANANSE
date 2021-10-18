@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Now uses em-dash as gene separator (—), instead of underscore (_). _Should_ solve issues with gene names having underscores, as em-dash is a pretty obscure char.
+
 ### Removed
 
 ### Fixed

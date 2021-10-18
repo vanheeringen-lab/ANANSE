@@ -7,6 +7,8 @@ import os
 from loguru import logger
 
 import ananse
+from . import SEPARATOR
+
 
 logger.remove()
 logger.add(
@@ -55,7 +57,9 @@ def fix_columns(df):
     )
 
     if "tf_target" in df.columns:
-        df[["tf", "target"]] = df["tf_target"].str.split("_", expand=True).iloc[:, :2]
+        df[["tf", "target"]] = (
+            df["tf_target"].str.split(SEPARATOR, expand=True).iloc[:, :2]
+        )
         df = df.drop(columns=["tf_target"])
 
     if "tf" not in df.columns:
@@ -293,7 +297,9 @@ def _read_correlation_reference(network, corCutoff=0.6):
 
     edb["iscorrelation"] = [1 if i > corCutoff else 0 for i in edb["correlationRank"]]
 
-    edb[["tf", "target"]] = edb["source_target"].str.split("_", expand=True).iloc[:, :2]
+    edb[["tf", "target"]] = (
+        edb["source_target"].str.split(SEPARATOR, expand=True).iloc[:, :2]
+    )
     edb = edb.drop(
         columns=["source_target", "ocorrelation", "correlation", "correlationRank"]
     )
