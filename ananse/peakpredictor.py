@@ -426,7 +426,7 @@ class PeakPredictor:
         cols = sorted(cols)
         self._X_columns = cols
         self._model_type = "_".join(cols)
-        
+
         # Load models
         logger.info("Loading models")
         # print(os.path.join(self.data_dir, self._model_type))
