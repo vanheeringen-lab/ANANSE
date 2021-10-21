@@ -427,7 +427,6 @@ class Influence(object):
 
         # differentially expressed TFs
         detfs = [tf for tf in tfs if tf in self.expression_change]
-        # detfs = tfs
 
         if len(detfs) == 0:
             logger.error(
