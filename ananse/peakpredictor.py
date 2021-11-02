@@ -118,12 +118,10 @@ class PeakPredictor:
             for region in regions:
                 print(region, file=f)
             f.flush()
-            # TODO: we're still scanning for *all* motifs, even if we only have
-            # a few factors
+            # TODO: we're still scanning for *all* motifs, even if we only have a few factors
             motif_df = scan_regionfile_to_table(
                 f.name, self.genome, "score", ncpus=self.ncore
             )
-
             self._motifs = pd.DataFrame(index=motif_df.index)
             for factor in self.f2m:
                 # if factor not in valid_factors:
@@ -139,14 +137,20 @@ class PeakPredictor:
         pfmscorefile : str/file
             pre-scanned gimmemotifs scores file
         """
-        logger.info("loading pre-scanned motif scores.")
+        logger.info("loading pre-scanned motif scores")
 
         motif_df = pd.read_table(pfmscorefile, comment="#", index_col=0)
         self._motifs = pd.DataFrame(index=motif_df.index)
+        cols = motif_df.columns.to_list()
         for factor in self.f2m:
-            # if factor not in valid_factors:
-            #    continue
-            self._motifs[factor] = motif_df[self.f2m[factor]].mean(1)
+            motifs = self.f2m[factor]
+            if not bool(set(motifs) & set(cols)):
+                logger.warning(
+                    f"no motifs for factor '{factor}' "
+                    f"were found in pfmscorefile '{os.path.basename(pfmscorefile)}'"
+                )
+                continue
+            self._motifs[factor] = motif_df[motifs].mean(1)
 
     def _load_reference_data(self):
         """Load data for reference regions.
@@ -289,7 +293,7 @@ class PeakPredictor:
         if self.pfmfile is None:
             logger.info("using default motif file")
         else:
-            logger.debug(f"Motifs: {self.pfmfile}")
+            logger.info(f"using specified motif file: {self.pfmfile}")
         self.motifs = read_motifs(self.pfmfile, as_dict=True)
         self.f2m = self._load_factor2motifs(
             pfmfile=self.pfmfile, indirect=indirect, factors=factors
@@ -302,10 +306,16 @@ class PeakPredictor:
         # Create a graph of TFs where edges are determined by the Jaccard index
         # of the motifs that they bind to. For instance, when TF 1 binds motif
         # A and B and TF 2 binds motif B and C, the edge weight will be 0.33.
-        tmp_f2m = {}
-        if self.pfmfile is not None:
-            logger.debug("reading default file")
-            tmp_f2m = self._load_factor2motifs(indirect=True)
+        if indirect is False or factors is not None:
+            tmp_f2m = self._load_factor2motifs(
+                pfmfile=self.pfmfile, indirect=True, factors=None
+            )
+        else:
+            tmp_f2m = self.f2m.copy()
+        # tmp_f2m = {}
+        # if self.pfmfile is not None:
+            # logger.debug("reading default file")
+            # tmp_f2m = self._load_factor2motifs(indirect=True)
 
         for k, v in self.f2m.items():
             if k in tmp_f2m:
@@ -322,7 +332,7 @@ class PeakPredictor:
                 )
                 d.append([f1, f2, jaccard])
                 if jaccard > 0:
-                    self.motif_graph.add_edge(f1, f2, weight=1 - jaccard)
+                    self.motif_graph.add_edge(f1, f2, weight=1-jaccard)
 
     def _load_bams(self, bams, title, window=200):
         tmp = pd.DataFrame(index=self.regions)
