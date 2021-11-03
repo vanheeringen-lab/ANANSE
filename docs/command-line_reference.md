@@ -9,8 +9,10 @@ In general, a full analysis with ANANSE will consist of the following steps:
 ### ananse binding
 
 The `ananse binding` command predicts binding for all transcription factors with an associated motif.
+It quantifies the ATAC and/or H3K27ac signal in [putative enhancers](https://doi.org/10.5281/zenodo.4066424). 
+This signal will be used together with motif scores to predict transcription factor binding. 
 
-Example command:
+###### Example command (using `hg38`):
 
 ``` bash
 ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
@@ -18,9 +20,18 @@ ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -o IPS.binding
 ```
 
-This command will use `hg38` by default and quantify the ATAC and H3K27ac signal in [putative enhancers](https://doi.org/10.5281/zenodo.4066424). This signal will be used together with the motif scores to predict transcription factor binding. If you use `hg38` and the default enhancer regions you can get significantly better predictions by using a more detailed model that also includes the average ChIP-seq signal. You will first have to download this model (you only need to do this once):
+Notes:
+* The BAM file(s) should be indexed, for instance with `samtools index`.
+* This command will use `hg38` by default. For other genomes, **additional steps are required!** See "other species" below.
 
-```
+<details>
+  <summary>hg38</summary>
+
+If you use `hg38` and the default enhancer regions, you can get significantly better predictions by using a more detailed model
+(that also includes the average ChIP-seq signal). 
+
+You will first have to download this model (you only need to do this once):
+``` bash
 DATA_DIR=/path/to/data  # set to your preference
 mkdir -p $DATA_DIR/ANANSE.REMAP.model.v1.0
 cd $DATA_DIR/ANANSE.REMAP.model.v1.0
@@ -29,8 +40,7 @@ tar xvzf ANANSE.REMAP.model.v1.0.tgz
 rm ANANSE.REMAP.model.v1.0.tgz
 ```
 
-You can now specify this model when running `ananse binding`:
-
+You can then specify this model when running `ananse binding`:
 ``` bash
 ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -H IPS.H3K27ac.rep1.bam IPS.H3K27ac.rep2.bam \
@@ -38,10 +48,20 @@ ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -R $DATA_DIR/ANANSE.REMAP.model.v1.0
 ```
 
-Note that the BAM file(s) should be indexed, for instance with `samtools index`.
+</details>
 
-Alternatively, you can use your own set of enhancer regions or putative cis-regulatory elements. For instance, to use the candidate cis-Regulatory Elements by ENCODE (from [SCREEN](https://screen.encodeproject.org/)):
+<details>
+  <summary>other species</summary>
 
+Human and mouse are supported out-of-the-box. For these two species (excluding `hg38`), you only need to specify a genome.
+For other species you will need a set of regions, a genome and gene annotation, and a custom motif to transcription factor mapping. 
+Take care to use a gene annotation with the same gene symbols for your transcription factors as are present in your gene expression file.
+
+###### --regionfiles
+Similar to the human example, you can use your own set of enhancer regions or putative cis-regulatory elements. 
+This will limit the analysis to ATAC/ChIP peaks in these regions.
+
+For instance, to use the candidate cis-Regulatory Elements by ENCODE (from [SCREEN](https://screen.encodeproject.org/)):
 ``` bash
 ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -H IPS.H3K27ac.rep1.bam IPS.H3K27ac.rep2.bam \
@@ -50,7 +70,6 @@ ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
 ```
 
 Or to use the union of peaks from several ATAC-seq experiments:
-
 ``` bash
 ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -H IPS.H3K27ac.rep1.bam IPS.H3K27ac.rep2.bam \
@@ -58,35 +77,84 @@ ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -r ATAC.cell_type1.narrowPeak ATAC.cell_type2.narrowPeak
 ```
 
-#### Other species
+If you are using `seq2science` for your ATAC-/ChIP-seq analysis, you can use a counts table directly.
 
-Please note that human and mouse are supported out-of-the-box, but for other species you will need a custom motif to transcription factor mapping. Take care to use the same gene symbols for your transcription factors as are present in your gene expression file. One way to create the TF to motif mapping is to use the `motif2factors` command from [GimmeMotifs](https://github.com/vanheeringen-lab/gimmemotifs). See the documentation [here](https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors). This command uses a relatively simple approach based on orthogroups. 
+###### --genome
+the filepath to the genome FASTA used to align your BAMs to (e.g. `~/genomes/GRCz11/GRCz11.fa`).
+If you installed the genome with genomepy in a specific directory, the directory will work too (e.g. `~/genomes/GRCz11`).
+Or, if you installed the genome with genomepy in the default directory, the genome name will do (e.g. `GRCz11`).
 
+###### --pfmfile
+One way to create the TF to motif mapping is to use the `gimme motif2factors` command from [GimmeMotifs](https://github.com/vanheeringen-lab/gimmemotifs). 
+See the documentation [here](https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors). 
+This command uses a relatively simple approach based on orthogroups.
 
-#### Output files
+If you specify a file, e.g. `mymotifs.pfm`, the command expects `mymotifs.motif2factors.txt` in the same folder.
 
-The output directory of `ananse binding` will contain one or two files, depending on the input data used. The file called `binding.h5` contains:
+###### Example command:
 
-* The predicted binding probability for every TF in every enhancer. For every transcription factor there is a key with the transcription factor name and a value that contains the predicted binding probability.
-* The predicted factor activity (based on the TF motif activity) for all transcriptionfactors. The motif activity is based on the contribution of motif score to the enhancer activity (the coefficient from a linear regression;  see [The FANTOM Consortium & Riken Omics Science Center 2009](https://doi.org/10.1038/ng.375) and [Balwierz et al. 2014](https://doi.org/10.1101/gr.169508.113)). In the implementation of ANANSE the motif activity is calculated based on a regression using the ATAC-seq signal and/or a regression using the H3K27ac signal.
-* Depending on the input data, the file will also contain `atac` and/or `h3k27ac`, which provide the quantified and normalized signal of ATAC-seq and/or H3K27ac ChIP-seq data in the enhancer regions. If the `ANANSE.REMAP.model.v1.0` model is used, these files will also contain the relative signal. 
+``` bash
+ananse binding -A ATAC.rep1.bam ATAC.rep2.bam \
+               -H H3K27ac.rep1.bam H3K27ac.rep2.bam \
+               -g GRCz11.fa \
+               -r ATAC_macs2.narrowPeak \
+               -p GRCz11.pfm \
+               -o GRCz11_binding
+```
 
-Mostly, you would want to use the `binding.h5` as input for `ananse network`. If you want to access the information in the file for other purposes you can
-use the `ananse view` command.
+</details>
+
+<details>
+  <summary>additional options</summary>
+
+###### --pfmscorefile
+If you expect to be running `ananse binding` multiple times on the same regions, you can precompute the motif scores once.
+This can be done with command `gimme scan -T -g GENOME REGIONS > SCAN.tsv`.
+* GENOME is the genome fasta file you used to align the BAM files to.
+* REGIONS can be one FASTA, BED (including narrowPeak) or TSV with `chr:start-end` in the first columns
+(similar to `--regionsfiles` above).
+* SCAN is your desired output filepath.
+
+###### --jaccard-cutoff
+Not every transcription factor is present in the ANANSE database.
+For factors lacking a model, you can use another factor that shares one or more binding motifs.
+The jaccard-cutoff sets the minimum similarity score (between 0 for no similarity, 1 for perfect similarity).
+Use a higher value e.g. 0.1 to improve robustness of the selected model.
+
+</details>
+
+<details>
+  <summary>output files</summary>
+
+The output directory of `ananse binding` will contain one or two files, depending on the input data used. 
+The file called `binding.h5` contains:
+* The predicted binding probability for every TF in every enhancer. 
+For every transcription factor there is a key with the transcription factor name and a value that contains the predicted binding probability.
+* The predicted factor activity (based on the TF motif activity) for all transcription factors. 
+The motif activity is based on the contribution of motif score to the enhancer activity (the coefficient from a linear regression;  
+see [The FANTOM Consortium & Riken Omics Science Center 2009](https://doi.org/10.1038/ng.375) and [Balwierz et al. 2014](https://doi.org/10.1101/gr.169508.113)). 
+In the implementation of ANANSE the motif activity is calculated based on a regression using the ATAC-seq signal and/or a regression using the H3K27ac signal.
+* Depending on the input data, the file will also contain `atac` and/or `h3k27ac`, which provide the quantified and normalized signal of ATAC-seq and/or H3K27ac ChIP-seq data in the enhancer regions. 
+If the `ANANSE.REMAP.model.v1.0` model is used, these files will also contain the relative signal. 
+
+Mostly, you would want to use the `binding.h5` as input for `ananse network`. 
+If you want to access the information in the file for other purposes you can use the `ananse view` command.
 
 If you provided multiple peaks or BED files as input, the output directory will also contain a BED files with the merged regions, which are used as potential enhancer.
+
+</details>
 
 #### Full options
 
 Usage:
-
 ```
-ananse [-h] <command> [options] binding [-A BAM [BAM ...]] [-H BAM [BAM ...]] [-o] [-R PATH] [-r  [...]] [-g GENOME]
-                                               [-d] [-p] [-f [TF [TF ...]]] [-n NCPUS] [-h]
+ananse binding [-A BAM [BAM ...]] [-H BAM [BAM ...]] [-o] 
+               [-R] [-r  [...]] [-g GENOME] [-d] [-p] 
+               [-f [TF ...]] [-n] [--pfmscorefile] 
+               [--jaccard-cutoff]
 ```
 
 Required arguments:
-
 ```
   -A BAM [BAM ...], --atac-bams BAM [BAM ...]
                         ATAC-seq input BAM file(s), can be used alone or in combination with the -H option
@@ -94,27 +162,27 @@ Required arguments:
                         H3K27ac ChIP-seq input BAM file(s), can be used alone or in combibation with the -A option
 ```
 
-Optional arguments:
-
+Additional required arguments for other species (optional for `hg38`):
 ```
-  -o , --outdir         Directory where you wish to store the output (default: ./ANANSE_binding)
-  -R PATH, --reference PATH
-                        Path to reference data directory
   -r  [ ...], --regionfiles  [ ...]
                         One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)
   -g GENOME, --genome GENOME
-                        Genome name, as managed by genomepy, or path to the genome FASTA used to align the bams and peaks
-                        to
-  -d , --dist-func      bam reads are normalized to the selected distribution (default: an empirical distribution)
+                        Genome name, as managed by genomepy, or path to the genome FASTA used to align the bams and peaks to
   -p , --pfmfile        PFM file of the transcription factors to search for (default gimme.vertebrate.v5.0)
+```
+
+Optional arguments:
+```
+  -o , --outdir         Directory where you wish to store the output (default: ./ANANSE_binding)
+  -R, --reference
+                        Path to reference data directory
+  -d , --dist-func      bam reads are normalized to the selected distribution (default: an empirical distribution)
   -f [TF [TF ...]], --factors [TF [TF ...]]
                         Transcription factors to use. Either a space-separated list or a file with one TF per line.
-  -n NCPUS, --ncpus NCPUS
+  -n , --ncpus
                         Number of processes to use for motif scanning
-  --pfmscorefile        use precomputed gimmemotifs scores (gimme scan -T -g
-                        GENOME INPUTFILE)
-  --jaccard-cutoff      TFs with a motif jaccard similarity of larger than the jaccard-cutoff are linked together for model
-                        selection, default value is 0. Use a higher value e.g. 0.1 to improve robustness of the selected model.
+  --pfmscorefile        use precomputed gimmemotifs scores (gimme scan -T -g GENOME INPUTFILE)
+  --jaccard-cutoff      TFs with a jaccard motif similarity >= the cutoff can be used as backup model
   -h, --help            Show this help message and exit
 ```
 
@@ -130,14 +198,14 @@ Note: `ananse network` needs ~12-15GB of memory for a typical analysis of a huma
 
 Usage: 
 
-```
+``` bash
 ananse [-h] <command> [options] network -b FILE -e FILE -o FILE [-g NAME] [-a BED] [-n NCORE] [--include-promoter]
                                         [--include-enhancer] [-h]
 ```
 
 Required arguments:
 
-```
+``` bash
   -b FILE, --binding FILE
                         TF binding prediction file (binding.h5 from ananse binding).
   -e FILE, --expression FILE
@@ -148,7 +216,7 @@ Required arguments:
 
 Optional arguments:
 
-```
+``` bash
   -g NAME, --genome NAME
                         Genome (genomepy name or FASTA file).
   -a BED, --annotation BED
@@ -187,13 +255,13 @@ $ ananse influence  -s results/FB_network.txt \
 
 Usage: 
 
-```
+``` bash
 ananse [-h] <command> [options] influence -t FILE -d FILE -o FILE [-s FILE] [-i EDGES] [-p] [-n NCORE] [-h]
 ```
 
 Required arguments:
 
-```
+``` bash
   -t FILE, --target FILE
                         Network of target cell type.
   -d FILE, --degenes FILE
@@ -204,7 +272,7 @@ Required arguments:
 
 Optional arguments:
 
-```
+``` bash
   -s FILE, --source FILE
                         Network of source cell type.
   -i EDGES, --edges EDGES
@@ -239,7 +307,7 @@ $ ananse plot   -i results/influence.txt \
 
 Usage: 
 
-```
+``` bash
 ananse [-h] <command> [options] plot -i FILE -o OUTPUT_DIR --diff-network GRN_FILE --edge-info EDGE_INFO 
                                                --edge-min EDGE_MIN --node-placement NETWORK_ALGORITHM 
                                                --n-tfs N_TFS -c CMAP --full-output
@@ -248,7 +316,7 @@ ananse [-h] <command> [options] plot -i FILE -o OUTPUT_DIR --diff-network GRN_FI
 
 Required arguments:
 
-```
+``` bash
   -i FILE, --influence-file FILE
                         Influence.txt file output from the influence function
 
@@ -256,7 +324,7 @@ Required arguments:
 
 Optional arguments:
 
-```
+``` bash
   -o , --outdir FILE
                         output dir where the output files are exported to
   --diff-network GRN_file
@@ -295,7 +363,7 @@ Example command to extract the binding probabilities for TP53 and TP63 in *long*
 $ ananse view binding.h5 -f TP53 TP63 -F long
 ```
 
-```
+``` bash
 loc     factor  prob
 chr1:181357-181557      TP53    0.2432
 chr1:267938-268138      TP53    0.2568
@@ -311,7 +379,7 @@ chr1:778533-778733      TP53    0.777
 
 #### Full options
 
-```
+``` bash
 usage: ananse [-h] <command> [options] view [-o FILE] [-f [TF [TF ...]]] [-F FORMAT] FILE
 
 positional arguments:

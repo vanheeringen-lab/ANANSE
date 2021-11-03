@@ -84,7 +84,7 @@ if __name__ == "__main__":
         "--reference",
         dest="reference",
         help="Path to reference data directory",
-        metavar="PATH",
+        metavar="",
     )
     group.add_argument(
         "-r",
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         "-f",
         "--factors",
         dest="factors",
-        help="Transcription factors to use. Either a space-separated list or a file with one TF per line.",
+        help="Transcription factors to use. Either a space-separated list or a file with one TF per line",
         metavar="TF",
         default=None,
         nargs="*",
@@ -132,6 +132,7 @@ if __name__ == "__main__":
         "--ncore",
         dest="ncore",
         help="Number of processes to use for motif scanning",
+        metavar="",
         type=int,
         default=min(os.cpu_count(), 4),
     )
@@ -145,9 +146,11 @@ if __name__ == "__main__":
     group.add_argument(
         "--jaccard-cutoff",
         dest="jaccard_cutoff",
-        help="TFs with a motif jaccard similarity of larger than the jaccard-cutoff are linked together for model selection",
+        help="TFs with a jaccard motif similarity >= the cutoff can be used as backup model. "
+             "0: no similarity, 1: perfect similarity, default: 0.1",
+        metavar="",
         type=float,
-        default=0.0,
+        default=0.1,
     )
 
     group.add_argument(

@@ -49,12 +49,10 @@ For `ananse network`, you need to add the annotation BED file with `-a /path/to/
 
 ### Enhancer regions
 
-The `ananse binding` command requires a database of putative enhancer regions.
-For human data (`hg38` only), ANANSE provides a [database of cis-regulatory regions](https://doi.org/10.5281/zenodo.4066424) (putative enhancers).
-Which is used by default.
+The `ananse binding` command requires a set of putative enhancer regions.
 
-Optionally, you can specify your own set of putative enhancers.
-This is **required** for genomes other than `hg38`.
+For human data (`hg38` only), ANANSE provides a [database of cis-regulatory regions](https://doi.org/10.5281/zenodo.4066424) (putative enhancers).
+Which is used by default. You can still specify your own set of putative enhancers.
 
 To define enhancer regions, you can use any type of genome-wide data that is associated with enhancers and *gives narrow peaks*.
 H3K27ac signal, for instance, would not work well, as peaks from a H3K27ac ChIP-seq experiment are too broad to provide a precise region for the motif analysis.

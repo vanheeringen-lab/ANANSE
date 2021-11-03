@@ -1,5 +1,6 @@
 from glob import glob
 import inspect
+import itertools
 import os
 import re
 import sys
@@ -256,11 +257,13 @@ class PeakPredictor:
         motifs = read_motifs(pfmfile, as_dict=True)
         f2m = {}
 
+        valid_factors = []
         if self.species == "human":
             valid_factors = self._load_human_factors()
 
         for name, motif in motifs.items():
             for factor in get_motif_factors(motif, indirect=indirect):
+                # filter for presence in factors
                 if factors is not None and factor not in factors:
                     continue
 
@@ -290,49 +293,55 @@ class PeakPredictor:
             based on ChIP-seq motif prediction, or binding inference. This will
             greatly increase TF coverage. By default True.
         """
+        # load motifs
         if self.pfmfile is None:
             logger.info("using default motif file")
         else:
             logger.info(f"using specified motif file: {self.pfmfile}")
         self.motifs = read_motifs(self.pfmfile, as_dict=True)
+
+        # load factor2motifs
         self.f2m = self._load_factor2motifs(
             pfmfile=self.pfmfile, indirect=indirect, factors=factors
         )
+        n = len(self.f2m)
+        logger.info(f"using motifs for {n} factor{'' if n == 1 else 's'}")
 
-        if len(self.f2m) == 1:
-            logger.info("using motifs for 1 factor")
-        else:
-            logger.info(f"using motifs for {len(self.f2m)} factors")
-        # Create a graph of TFs where edges are determined by the Jaccard index
-        # of the motifs that they bind to. For instance, when TF 1 binds motif
-        # A and B and TF 2 binds motif B and C, the edge weight will be 0.33.
+        # load jaccard motif graph
+        self._jaccard_motif_graph(indirect, factors)
+
+    def _jaccard_motif_graph(self, indirect, factors):
+        """
+        Create a graph of TF nodes where edges are the Jaccard index of the motifs that they bind to.
+        For instance, if TF1 binds motif A and B and TF2 binds motif B and C,
+        then the edge weight of TF1 to TF2 will be 1/3.
+
+        Sets
+        ----
+        self.motif_graph : nx.Graph
+        """
+        # load the complete factor2motifs (unfiltered)
         if indirect is False or factors is not None:
-            tmp_f2m = self._load_factor2motifs(
+            complete_f2m = self._load_factor2motifs(
                 pfmfile=self.pfmfile, indirect=True, factors=None
             )
         else:
-            tmp_f2m = self.f2m.copy()
-        # tmp_f2m = {}
-        # if self.pfmfile is not None:
-            # logger.debug("reading default file")
-            # tmp_f2m = self._load_factor2motifs(indirect=True)
+            complete_f2m = self.f2m.copy()
 
-        for k, v in self.f2m.items():
-            if k in tmp_f2m:
-                tmp_f2m[k] += v
-            else:
-                tmp_f2m[k] = v
+        # convert motif lists to sets
+        for k, v in complete_f2m.items():
+            complete_f2m[k] = set(v)
 
+        # compute the jaccard index
         self.motif_graph = nx.Graph()
-        d = []
-        for f1 in tmp_f2m:
-            for f2 in tmp_f2m:
-                jaccard = len(set(tmp_f2m[f1]).intersection(set(tmp_f2m[f2]))) / len(
-                    set(tmp_f2m[f1]).union(set(tmp_f2m[f2]))
-                )
-                d.append([f1, f2, jaccard])
-                if jaccard > 0:
-                    self.motif_graph.add_edge(f1, f2, weight=1-jaccard)
+        # all tf combinations (no self edges, no duplicates)
+        combinations = set(itertools.combinations(complete_f2m.keys(), 2))
+        for tf1, tf2 in combinations:
+            i = len(complete_f2m[tf1].intersection(complete_f2m[tf2]))
+            u = len(complete_f2m[tf1].union(complete_f2m[tf2]))
+            if i and u:  # both > 0
+                jaccard = i / u
+                self.motif_graph.add_edge(tf1, tf2, weight=1 - jaccard)
 
     def _load_bams(self, bams, title, window=200):
         tmp = pd.DataFrame(index=self.regions)
@@ -503,37 +512,41 @@ class PeakPredictor:
         # logger.debug(str(self._X_columns))
         return tmp[self._X_columns]
 
-    def _load_model(self, factor, jaccard_cutoff=0.0):
-        """Load TF-binding model that is:
+    def _load_model(self, factor, jaccard_cutoff=0.1):
+        """
+        Load TF-binding model that is:
         1. trained for that specific TF
-        2. trained on a different TF with a motif overlap of a jacards similarity larger than the cutoff
+        2. trained on a different TF, but with a motif overlap (jaccard similarity) larger than the cutoff
         3. a general TF binding model if the other options are not available
-            Parameters
-            ----------
-            jaccard_cutoff :
-                minimum jacard similarity score that is needed to use the model of TFA for TFB.
+
+        Parameters
+        ----------
+        factor : str
+            Transcription factor name.
+        jaccard_cutoff : float, optional
+            minimum jaccard similarity score that is needed to use the model of TF1 for TF2.
+            0: no shared motifs, 1: all motifs shared. Default is 0.1 (some similarity).
         """
         model = None
-        max_edge_weight = 1 - jaccard_cutoff
+        # 1. trained for that specific TF
         if factor in self.factor_models:
             logger.info(f"Using {factor} model")
             model = self.factor_models[factor]
+
+        # 2. trained on a different TF, but with a motif jaccard index larger than the cutoff
         elif factor in self.motif_graph:
-            logger.info("Checking for alternative models based on motif overlap...")
-            paths = {
-                p: v
-                for p, v in nx.single_source_dijkstra_path_length(
-                    self.motif_graph, factor, cutoff=max_edge_weight
-                ).items()
-                if p in self.factor_models
-            }
-            try:
-                sub_factor = list(paths.keys())[0]
-                logger.info(f"Using {factor} motif with {sub_factor} model weights")
-                model = self.factor_models[sub_factor]
-                # factor = sub_factor
-            except Exception:
-                logger.info(f"No match for {factor} based on motifs")
+            # scores are inverted due to nx's cutoff method
+            tfs = nx.single_source_dijkstra_path_length(
+                self.motif_graph, factor, 1 - jaccard_cutoff
+            )
+            # tfs are sorted best>worst. Use the first one with a trained model
+            for tf in tfs:
+                if tf in self.factor_models:
+                    logger.info(f"Using {tf} model for {factor}")
+                    model = self.factor_models[tf]
+                    break
+
+        # 3. a general TF binding model if the other options are not available
         if model is None:
             logger.info(f"No related TF found for {factor}, using general model")
             model = self.factor_models["general"]
@@ -675,7 +688,7 @@ def predict_peaks(
     genome=None,
     pfmfile=None,
     pfmscorefile=None,
-    jaccard_cutoff=0.0,
+    jaccard_cutoff=0.01,
     ncore=4,
 ):
     """Predict binding in a set of genomic regions.
@@ -724,6 +737,9 @@ def predict_peaks(
         Motifs in PFM format, with associated motif2factors.txt file.
     pfmscorefile : str, optional
         Path to file with pre-scanned motif scores.
+    jaccard_cutoff : int, optional
+        minimum jaccard similarity score that is needed to use the model of TF1 for TF2.
+        0: no shared motifs, 1: all motifs shared. Default is 0.1 (some similarity).
     ncore : int, optional
         Number of threads to use. Default is 4.
     """
