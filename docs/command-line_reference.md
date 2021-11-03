@@ -109,7 +109,7 @@ ananse binding -A ATAC.rep1.bam ATAC.rep2.bam \
 
 ###### --pfmscorefile
 If you expect to be running `ananse binding` multiple times on the same regions, you can precompute the motif scores once.
-This can be done with command `gimme scan -T -g GENOME REGIONS > SCAN.tsv`.
+This can be done with command `gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv`.
 * GENOME is the genome fasta file you used to align the BAM files to.
 * REGIONS can be one FASTA, BED (including narrowPeak) or TSV with `chr:start-end` in the first columns
 (similar to `--regionsfiles` above).
@@ -181,8 +181,9 @@ Optional arguments:
                         Transcription factors to use. Either a space-separated list or a file with one TF per line.
   -n , --ncpus
                         Number of processes to use for motif scanning
-  --pfmscorefile        use precomputed gimmemotifs scores (gimme scan -T -g GENOME INPUTFILE)
-  --jaccard-cutoff      TFs with a jaccard motif similarity >= the cutoff can be used as backup model
+  --pfmscorefile        use precomputed gimmemotifs scores (gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv)
+  --jaccard-cutoff      TFs with a jaccard motif similarity >= the cutoff can be used as backup model. 
+                        0: any similarity, 1: perfect similarity (default is 0)
   -h, --help            Show this help message and exit
 ```
 

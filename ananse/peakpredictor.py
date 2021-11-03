@@ -469,7 +469,7 @@ class PeakPredictor:
             Motifs. Currently not implemented.
         jaccard_cutoff : float, optional
             Cutoff for the minimum jaccard overlap between motifs of two TFs for them to be considered related.
-            Related TFs can share models. Default = 0.0 (0.1 seems to work well based on subjective testing).
+            Related TFs can share models. Default = 0 (0.1 seems to work well based on subjective testing).
         Returns
         -------
         pandas.DataFrame
@@ -512,7 +512,7 @@ class PeakPredictor:
         # logger.debug(str(self._X_columns))
         return tmp[self._X_columns]
 
-    def _load_model(self, factor, jaccard_cutoff=0.1):
+    def _load_model(self, factor, jaccard_cutoff=0.0):
         """
         Load TF-binding model that is:
         1. trained for that specific TF
@@ -525,7 +525,7 @@ class PeakPredictor:
             Transcription factor name.
         jaccard_cutoff : float, optional
             minimum jaccard similarity score that is needed to use the model of TF1 for TF2.
-            0: no shared motifs, 1: all motifs shared. Default is 0.1 (some similarity).
+            0: any shared motifs, 1: all motifs shared. Default is 0.
         """
         model = None
         # 1. trained for that specific TF
@@ -688,7 +688,7 @@ def predict_peaks(
     genome=None,
     pfmfile=None,
     pfmscorefile=None,
-    jaccard_cutoff=0.01,
+    jaccard_cutoff=0.0,
     ncore=4,
 ):
     """Predict binding in a set of genomic regions.
@@ -739,7 +739,7 @@ def predict_peaks(
         Path to file with pre-scanned motif scores.
     jaccard_cutoff : int, optional
         minimum jaccard similarity score that is needed to use the model of TF1 for TF2.
-        0: no shared motifs, 1: all motifs shared. Default is 0.1 (some similarity).
+        0: any shared motifs, 1: all motifs shared. Default is 0.
     ncore : int, optional
         Number of threads to use. Default is 4.
     """

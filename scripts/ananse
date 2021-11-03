@@ -139,7 +139,7 @@ if __name__ == "__main__":
     group.add_argument(
         "--pfmscorefile",
         dest="pfmscorefile",
-        help="use precomputed gimmemotifs scores (gimme scan -T -g GENOME INPUTFILE)",
+        help="use precomputed gimmemotifs scores (gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv)",
         metavar="",
         default=None,
     )
@@ -147,10 +147,10 @@ if __name__ == "__main__":
         "--jaccard-cutoff",
         dest="jaccard_cutoff",
         help="TFs with a jaccard motif similarity >= the cutoff can be used as backup model. "
-             "0: no similarity, 1: perfect similarity, default: 0.1",
+             "0: any similarity, 1: perfect similarity (default is 0)",
         metavar="",
         type=float,
-        default=0.1,
+        default=0.0,
     )
 
     group.add_argument(

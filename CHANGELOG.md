@@ -12,7 +12,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 - Now uses em-dash as gene separator (—), instead of underscore (_). _Should_ solve issues with gene names having underscores, as em-dash is a pretty obscure char.
 - refactored jaccard stuff
-  - minimum jaccard_cutoff increased from 0 to 0.1 (>0 shared motifs instead of 0 shared motifs)
   - reduced jaccard graph size (no more duplicates/self edged)
   - reduced logger messages (max 1 message per motif now)
 - `ananse binding` documentation changed to clearly reflect the complexity of non-`hg38`
