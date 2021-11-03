@@ -280,10 +280,11 @@ def targetScore(node, G, expression_change, max_degree=3):
 
     try:
         pval = mannwhitneyu(target_fc, non_target_fc)[1]
-    except (RecursionError, ValueError) as e:
+    except (RecursionError, ValueError):
         pval = np.NAN
         logger.warning(
-            f"Could not calculate p-val (target vs non-target fold-change) for {node}, targets = {len(target_fc)}, non-target = {len(non_target_fc)}."
+            f"Could not calculate p-val (target vs non-target fold-change) for {node}, "
+            f"targets = {len(target_fc)}, non-target = {len(non_target_fc)}."
         )
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
 
