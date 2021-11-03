@@ -32,7 +32,7 @@ from ananse.utils import get_motif_factors, check_input_factors
 class PeakPredictor:
     def __init__(
         self,
-        reference=None,
+        reference,  # positional in this setup
         atac_bams=None,
         histone_bams=None,
         regions=None,
