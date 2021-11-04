@@ -51,7 +51,7 @@ class PeakPredictor:
             logger.warning("Assuming genome is hg38")
             genome = "hg38"
         self.genome = genome
-        self.set_species(genome)
+        self.species = _get_species(genome)
 
         if pfmfile is None and self.species not in ["human", "mouse"]:
             logger.warning(
@@ -203,60 +203,9 @@ class PeakPredictor:
         # Set regions
         self.regions = self._avg.index
 
-    @staticmethod
-    def _load_human_factors():
-        package_dir = os.path.dirname(ananse.__file__)
-        tf_xlsx = os.path.join(package_dir, "db", "lovering.tfs.xlsx")
-        valid_factors = pd.read_excel(
-            tf_xlsx,
-            engine="openpyxl",
-            sheet_name=1,
-        )
-        valid_factors = valid_factors.loc[
-            valid_factors["Pseudogene"].isnull(), "HGNC approved gene symbol"
-        ].values
-        valid_factors = list(set(valid_factors) - {"EP300"})
-        return valid_factors
-
-    def set_species(self, genome):
-        try:
-            # Try to get taxonomy id for genomepy managed genome.
-            # If there is a taxonomy id, we can be really sure about the species.
-            # If genome doesn't have a tax_id, then it will be 'na' and
-            # fail to convert to int.
-            genome = Genome(genome)
-            tax_id = int(genome.tax_id)
-            if tax_id == 9606:
-                self.species = "human"
-            elif tax_id == 10090:
-                self.species = "mouse"
-            else:
-                # tax_id converts to int so it is valid, must be not human or mouse
-                self.species = None
-            return
-        except Exception:
-            pass
-
-        mapping = {
-            "hg38": "human",
-            "hg19": "human",
-            "GRCh3": "human",
-            "mm10": "mouse",
-            "mm9": "mouse",
-            "GRCm3": "mouse",
-        }
-
-        base_genome = os.path.basename(self.genome.strip("/"))
-        for name, species in mapping.items():
-            if name in base_genome:
-                self.species = species
-                return
-
-        self.species = None
-
     def factors(self):
         if self.species == "human":
-            valid_factors = self._load_human_factors()
+            valid_factors = _load_human_factors()
             return [f for f in self.f2m if f in valid_factors]
         if self.species == "mouse":
             # Mouse mappings are included in the default motif db.
@@ -271,7 +220,7 @@ class PeakPredictor:
 
         valid_factors = []
         if self.species == "human":
-            valid_factors = self._load_human_factors()
+            valid_factors = _load_human_factors()
 
         for name, motif in motifs.items():
             for factor in get_motif_factors(motif, indirect=indirect):
@@ -697,6 +646,55 @@ def _check_input_files(*args):
 
     if not all_files_found:
         exit(1)
+
+
+def _get_species(genome):
+    try:
+        # Try to get taxonomy id for genomepy managed genome.
+        # If there is a taxonomy id, we can be really sure about the species.
+        # If genome doesn't have a tax_id, then it will be 'na' and
+        # fail to convert to int.
+        g = Genome(genome)
+        tax_id = int(g.tax_id)
+        if tax_id == 9606:
+            species = "human"
+        elif tax_id == 10090:
+            species = "mouse"
+        else:
+            # tax_id converts to int so it is valid, must be not human or mouse
+            species = None
+        return species
+    except Exception:
+        pass
+
+    mapping = {
+        "hg38": "human",
+        "hg19": "human",
+        "GRCh3": "human",
+        "mm10": "mouse",
+        "mm9": "mouse",
+        "GRCm3": "mouse",
+    }
+
+    base_genome = os.path.basename(genome.strip("/"))
+    for name, species in mapping.items():
+        if name in base_genome:
+            return species
+
+
+def _load_human_factors():
+    package_dir = os.path.dirname(ananse.__file__)
+    tf_xlsx = os.path.join(package_dir, "db", "lovering.tfs.xlsx")
+    valid_factors = pd.read_excel(
+        tf_xlsx,
+        engine="openpyxl",
+        sheet_name=1,
+    )
+    valid_factors = valid_factors.loc[
+        valid_factors["Pseudogene"].isnull(), "HGNC approved gene symbol"
+    ].values
+    valid_factors = list(set(valid_factors) - {"EP300"})
+    return valid_factors
 
 
 def predict_peaks(

@@ -1,5 +1,9 @@
+from copy import deepcopy
 import os
 import pytest
+from string import ascii_lowercase
+
+import networkx as nx
 
 import ananse.peakpredictor
 from . import write_file
@@ -54,6 +58,22 @@ def test__check_input_files():
     _ = ananse.peakpredictor._check_input_files(present_files)
 
 
+def test__get_species():
+    s = ananse.peakpredictor._get_species("hg38")
+    assert s == "human"
+    s = ananse.peakpredictor._get_species("mm9")
+    assert s == "mouse"
+    s = ananse.peakpredictor._get_species("GRCz11")
+    assert s is None
+
+
+def test__load_human_factors():
+    valid_factors = ananse.peakpredictor._load_human_factors()
+    # assert isinstance(valid_factors, list)
+    assert "TP53" in valid_factors
+    assert all([tf not in ascii_lowercase for tf in valid_factors])
+
+
 def test_peakpredictor_init(peakpredictor):
     with pytest.raises(ValueError):
         ananse.peakpredictor.PeakPredictor(reference="ananse/db/default_reference")
@@ -89,10 +109,49 @@ def test__scan_motifs(peakpredictor):
     tf = "SOX12"
     peakpredictor._scan_motifs([region], zscore=False, gc=False)
     score = peakpredictor._motifs.at[region, tf]
-    # rounding in case the value is flaky
-    assert round(score, 3) == -0.989
+    # rounding to reduce flakiness
+    assert round(float(score), 2) == -0.99
 
 
+def test__load_prescanned_motifs(peakpredictor):
+    region = "chr1:1010-1020"
+    tf = "SOX12"
+    score = peakpredictor._motifs.at[region, tf]
+    # rounding to reduce flakiness
+    assert round(float(score), 2) == -0.99
 
 
+@pytest.mark.skip("reference.factor.feather missing")
+def test__load_reference_data(peakpredictor):
+    p = deepcopy(peakpredictor)
+    p._load_reference_data()
 
+    # TODO: nice tests based on the output of these properties
+    print(p._motifs)
+    print(p._avg)
+    print(p._dist)
+    print(p.regions)
+    exit(1)
+
+
+def test_factors(peakpredictor):
+    p = deepcopy(peakpredictor)
+    assert p.factors() == ["SOX12"]
+
+    # dynamically updated
+    p.species = None
+    p.f2m = {"whatever_I_want": []}
+    assert p.factors() == ["whatever_I_want"]
+
+    # filtered
+    p.species = "mouse"
+    p.f2m = {"mouse_gene": [], "HUMAN_GENE": []}
+    assert p.factors() == ["mouse_gene"]
+
+
+def test__jaccard_motif_graph(peakpredictor):
+    factor = "SOX12"
+    tfs = nx.single_source_dijkstra_path_length(peakpredictor.motif_graph, factor, 1)
+    assert tfs[factor] == 0
+    assert "SOX7" in tfs
+    assert tfs["SOX7"] == 0.75
