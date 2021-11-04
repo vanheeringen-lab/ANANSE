@@ -1,29 +1,29 @@
-from glob import glob
 import inspect
 import itertools
 import os
 import re
 import sys
+from glob import glob
 from tempfile import NamedTemporaryFile
 
-from fluff.fluffio import load_heatmap_data
-from genomepy import Genome
-from gimmemotifs.motif import read_motifs
-from gimmemotifs.scanner import scan_regionfile_to_table
-from gimmemotifs.moap import moap
 import joblib
-from loguru import logger
 import networkx as nx
 import numpy as np
 import pandas as pd
-from pandas import HDFStore
-from sklearn.preprocessing import scale, minmax_scale
-from scipy.stats import rankdata
 import qnorm
+from fluff.fluffio import load_heatmap_data
+from genomepy import Genome
+from gimmemotifs.moap import moap
+from gimmemotifs.motif import read_motifs
+from gimmemotifs.scanner import scan_regionfile_to_table
+from loguru import logger
+from pandas import HDFStore
+from scipy.stats import rankdata
+from sklearn.preprocessing import minmax_scale, scale
 
 import ananse
 from ananse.enhancer_binding import CombineBedFiles
-from ananse.utils import get_motif_factors, check_input_factors
+from ananse.utils import check_input_factors, get_motif_factors
 
 # This motif file is not created by default
 #   * f"{self.data_dir}/reference.factor.feather"
