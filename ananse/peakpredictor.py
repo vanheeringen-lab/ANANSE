@@ -105,6 +105,149 @@ class PeakPredictor:
 
         self._set_model_type()
 
+    def _load_motifs(self, indirect=True, factors=None):
+        """Load motif-associated data.
+
+        For now, only default motifs are supported.
+        Will read factors associated to motifs, and generates a graph of
+        related factors based on different factors binding to the same motif.
+        This information is used to select the most appropriate TF model.
+
+        Parameters
+        ----------
+        indirect : bool, optional
+            Include TF-motif associations that are not curated, for instance
+            based on ChIP-seq motif prediction, or binding inference. This will
+            greatly increase TF coverage. By default True.
+        """
+        # load motifs
+        if self.pfmfile is None:
+            logger.info("using default motif file")
+        else:
+            logger.info(f"using specified motif file: {self.pfmfile}")
+        self.motifs = read_motifs(self.pfmfile, as_dict=True)
+
+        # load factor2motifs
+        self.f2m = self._load_factor2motifs(
+            pfmfile=self.pfmfile, indirect=indirect, factors=factors
+        )
+        n = len(self.f2m)
+        logger.info(f"using motifs for {n} factor{'' if n == 1 else 's'}")
+
+        # load jaccard motif graph
+        self._jaccard_motif_graph(indirect, factors)
+
+    def _load_factor2motifs(self, pfmfile=None, indirect=True, factors=None):
+        motifs = read_motifs(pfmfile, as_dict=True)
+        f2m = {}
+
+        valid_factors = []
+        if self.species == "human":
+            valid_factors = _load_human_factors()
+
+        for name, motif in motifs.items():
+            for factor in get_motif_factors(motif, indirect=indirect):
+                # filter for presence in factors
+                if factors is not None and factor not in factors:
+                    continue
+
+                # TODO: this is temporary, while the motif database we use
+                # not very clean...
+                if self.species == "human":
+                    factor = factor.upper()
+
+                if self.species == "human" and factor not in valid_factors:
+                    continue
+
+                f2m.setdefault(factor, []).append(name)
+        return f2m
+
+    def _jaccard_motif_graph(self, indirect, factors):
+        """
+        Create a graph of TF nodes where edges are the Jaccard index of the motifs that they bind to.
+        For instance, if TF1 binds motif A and B and TF2 binds motif B and C,
+        then the edge weight of TF1 to TF2 will be 1/3.
+
+        Sets
+        ----
+        self.motif_graph : nx.Graph
+        """
+        # load the complete (unfiltered) factor2motifs
+        if indirect is False or factors is not None:
+            complete_f2m = self._load_factor2motifs(self.pfmfile)
+        else:
+            complete_f2m = self.f2m.copy()
+
+        # convert motif lists to sets
+        for k, v in complete_f2m.items():
+            complete_f2m[k] = set(v)
+
+        # if an alternative motif2factors is used, we can use the
+        # jaccard index to link the user's TFs to
+        # the orthologous TF models in the ananse reference database
+        if self.pfmfile is not None:
+            reference_orthologs = self._load_factor2motifs()
+            for k, v in reference_orthologs.items():
+                if k in complete_f2m:
+                    complete_f2m[k].update(set(v))
+                else:
+                    complete_f2m[k] = set(v)
+
+        # compute the jaccard index between each combination of TFs
+        self.motif_graph = nx.Graph()
+        combinations = set(itertools.combinations(complete_f2m.keys(), 2))
+        for tf1, tf2 in combinations:
+            i = len(complete_f2m[tf1].intersection(complete_f2m[tf2]))
+            u = len(complete_f2m[tf1].union(complete_f2m[tf2]))
+            if i and u:  # both > 0
+                jaccard = i / u
+                self.motif_graph.add_edge(tf1, tf2, weight=1 - jaccard)
+
+    def _load_reference_data(self):
+        """Load data for reference regions.
+
+        Will load three types of data:
+        * Motif scores.
+        * The average peak coverage (self._avg)
+        * The distance from the peak to nearest TSS. (self._dist)
+
+        All of these data are only used with the reference set of regions.
+        """
+        # Read motifs
+        logger.info("loading motifs for reference")
+        fpath = os.path.join(self.data_dir, "reference.factor.feather")
+        if not os.path.exists(fpath):
+            raise FileNotFoundError(
+                f"{fpath} not found. For hg38, download the REMAP "
+                "reference dataset and specify it location with -R, "
+                "or (for any species) specify regions with -r"
+            )
+        self._motifs = pd.read_feather(fpath)
+        self._motifs.set_index(self._motifs.columns[0], inplace=True)
+
+        # Read average coverage
+        logger.info("loading average peak coverage for reference")
+        self._avg = pd.read_table(
+            f"{self.data_dir}/reference.coverage.txt",
+            sep="\t",
+            comment="#",
+            index_col=0,
+        )
+        self._avg.columns = ["average"]
+        self._avg["average"] = self._avg["average"] / self._avg["average"].max()
+
+        # Read distance to TSS
+        logger.info("loading distance for reference")
+        self._dist = pd.read_table(
+            f"{self.data_dir}/reference.dist_to_tss.txt",
+            sep="\t",
+            comment="#",
+            index_col=0,
+        )
+
+        # Set regions
+        self.regions = self._avg.index
+
     def _scan_motifs(self, regions, **kwargs):
         """[summary]
 
@@ -164,153 +307,6 @@ class PeakPredictor:
                 )
                 continue
             self._motifs[factor] = motif_df[motifs].mean(1)
-
-    def _load_reference_data(self):
-        """Load data for reference regions.
-
-        Will load three types of data:
-        * Motif scores.
-        * The average peak coverage (self._avg)
-        * The distance from the peak to nearest TSS. (self._dist)
-
-        All of these data are only used with the reference set of regions.
-        """
-        # Read motifs
-        logger.info("loading motifs for reference")
-        self._motifs = pd.read_feather(f"{self.data_dir}/reference.factor.feather")
-        self._motifs.set_index(self._motifs.columns[0], inplace=True)
-
-        # Read average coverage
-        logger.info("loading average peak coverage for reference")
-        self._avg = pd.read_table(
-            f"{self.data_dir}/reference.coverage.txt",
-            sep="\t",
-            comment="#",
-            index_col=0,
-        )
-        self._avg.columns = ["average"]
-        self._avg["average"] = self._avg["average"] / self._avg["average"].max()
-
-        # Read distance to TSS
-        logger.info("loading distance for reference")
-        self._dist = pd.read_table(
-            f"{self.data_dir}/reference.dist_to_tss.txt",
-            sep="\t",
-            comment="#",
-            index_col=0,
-        )
-
-        # Set regions
-        self.regions = self._avg.index
-
-    def factors(self):
-        if self.species == "human":
-            valid_factors = _load_human_factors()
-            return [f for f in self.f2m if f in valid_factors]
-        if self.species == "mouse":
-            # Mouse mappings are included in the default motif db.
-            # Using the fact here that mouse names are not all upper-case.
-            # TODO: replace with a curated set of factors.
-            return [f for f in self.f2m if f[1:].islower()]
-        return list(self.f2m.keys())
-
-    def _load_factor2motifs(self, pfmfile=None, indirect=True, factors=None):
-        motifs = read_motifs(pfmfile, as_dict=True)
-        f2m = {}
-
-        valid_factors = []
-        if self.species == "human":
-            valid_factors = _load_human_factors()
-
-        for name, motif in motifs.items():
-            for factor in get_motif_factors(motif, indirect=indirect):
-                # filter for presence in factors
-                if factors is not None and factor not in factors:
-                    continue
-
-                # TODO: this is temporary, while the motif database we use
-                # not very clean...
-                if self.species == "human":
-                    factor = factor.upper()
-
-                if self.species == "human" and factor not in valid_factors:
-                    continue
-
-                f2m.setdefault(factor, []).append(name)
-        return f2m
-
-    def _load_motifs(self, indirect=True, factors=None):
-        """Load motif-associated data.
-
-        For now, only default motifs are supported.
-        Will read factors associated to motifs, and generates a graph of
-        related factors based on different factors binding to the same motif.
-        This information is used to select the most appropriate TF model.
-
-        Parameters
-        ----------
-        indirect : bool, optional
-            Include TF-motif associations that are not curated, for instance
-            based on ChIP-seq motif prediction, or binding inference. This will
-            greatly increase TF coverage. By default True.
-        """
-        # load motifs
-        if self.pfmfile is None:
-            logger.info("using default motif file")
-        else:
-            logger.info(f"using specified motif file: {self.pfmfile}")
-        self.motifs = read_motifs(self.pfmfile, as_dict=True)
-
-        # load factor2motifs
-        self.f2m = self._load_factor2motifs(
-            pfmfile=self.pfmfile, indirect=indirect, factors=factors
-        )
-        n = len(self.f2m)
-        logger.info(f"using motifs for {n} factor{'' if n == 1 else 's'}")
-
-        # load jaccard motif graph
-        self._jaccard_motif_graph(indirect, factors)
-
-    def _jaccard_motif_graph(self, indirect, factors):
-        """
-        Create a graph of TF nodes where edges are the Jaccard index of the motifs that they bind to.
-        For instance, if TF1 binds motif A and B and TF2 binds motif B and C,
-        then the edge weight of TF1 to TF2 will be 1/3.
-
-        Sets
-        ----
-        self.motif_graph : nx.Graph
-        """
-        # load the complete (unfiltered) factor2motifs
-        if indirect is False or factors is not None:
-            complete_f2m = self._load_factor2motifs(self.pfmfile)
-        else:
-            complete_f2m = self.f2m.copy()
-
-        # convert motif lists to sets
-        for k, v in complete_f2m.items():
-            complete_f2m[k] = set(v)
-
-        # if an alternative motif2factors is used, we can use the
-        # jaccard index to link the user's TFs to
-        # the orthologous TF models in the ananse reference database
-        if self.pfmfile is not None:
-            reference_orthologs = self._load_factor2motifs()
-            for k, v in reference_orthologs.items():
-                if k in complete_f2m:
-                    complete_f2m[k].update(set(v))
-                else:
-                    complete_f2m[k] = set(v)
-
-        # compute the jaccard index between each combination of TFs
-        self.motif_graph = nx.Graph()
-        combinations = set(itertools.combinations(complete_f2m.keys(), 2))
-        for tf1, tf2 in combinations:
-            i = len(complete_f2m[tf1].intersection(complete_f2m[tf2]))
-            u = len(complete_f2m[tf1].union(complete_f2m[tf2]))
-            if i and u:  # both > 0
-                jaccard = i / u
-                self.motif_graph.add_edge(tf1, tf2, weight=1 - jaccard)
 
     def _load_bams(self, bams, title, window=200):
         tmp = pd.DataFrame(index=self.regions)
@@ -422,6 +418,18 @@ class PeakPredictor:
             factor = fname.split("/")[-1].replace(".pkl", "")
             self.factor_models[factor] = joblib.load(fname)
         logger.info(f"{len(self.factor_models)} models found")
+
+    def factors(self):
+        """return a list of factors based on the f2m dict"""
+        if self.species == "human":
+            valid_factors = _load_human_factors()
+            return [f for f in self.f2m if f in valid_factors]
+        if self.species == "mouse":
+            # Mouse mappings are included in the default motif db.
+            # Using the fact here that mouse names are not all upper-case.
+            # TODO: replace with a curated set of factors.
+            return [f for f in self.f2m if f[1:].islower()]
+        return list(self.f2m.keys())
 
     def predict_proba(self, factor=None, motifs=None, jaccard_cutoff=0.0):
         """Predict binding probability.
@@ -582,6 +590,55 @@ class PeakPredictor:
         return factor_activity
 
 
+def _get_species(genome):
+    try:
+        # Try to get taxonomy id for genomepy managed genome.
+        # If there is a taxonomy id, we can be really sure about the species.
+        # If genome doesn't have a tax_id, then it will be 'na' and
+        # fail to convert to int.
+        g = Genome(genome)
+        tax_id = int(g.tax_id)
+        if tax_id == 9606:
+            species = "human"
+        elif tax_id == 10090:
+            species = "mouse"
+        else:
+            # tax_id converts to int so it is valid, must be not human or mouse
+            species = None
+        return species
+    except Exception:
+        pass
+
+    mapping = {
+        "hg38": "human",
+        "hg19": "human",
+        "GRCh3": "human",
+        "mm10": "mouse",
+        "mm9": "mouse",
+        "GRCm3": "mouse",
+    }
+
+    base_genome = os.path.basename(genome.strip("/"))
+    for name, species in mapping.items():
+        if name in base_genome:
+            return species
+
+
+def _load_human_factors():
+    package_dir = os.path.dirname(ananse.__file__)
+    tf_xlsx = os.path.join(package_dir, "db", "lovering.tfs.xlsx")
+    valid_factors = pd.read_excel(
+        tf_xlsx,
+        engine="openpyxl",
+        sheet_name=1,
+    )
+    valid_factors = valid_factors.loc[
+        valid_factors["Pseudogene"].isnull(), "HGNC approved gene symbol"
+    ].values
+    valid_factors = list(set(valid_factors) - {"EP300"})
+    return valid_factors
+
+
 def _check_input_regions(regionfiles, genome, outdir=".", verbose=True, force=False):
     # Load regions from BED or region text file
     if regionfiles is None:
@@ -646,55 +703,6 @@ def _check_input_files(*args):
 
     if not all_files_found:
         exit(1)
-
-
-def _get_species(genome):
-    try:
-        # Try to get taxonomy id for genomepy managed genome.
-        # If there is a taxonomy id, we can be really sure about the species.
-        # If genome doesn't have a tax_id, then it will be 'na' and
-        # fail to convert to int.
-        g = Genome(genome)
-        tax_id = int(g.tax_id)
-        if tax_id == 9606:
-            species = "human"
-        elif tax_id == 10090:
-            species = "mouse"
-        else:
-            # tax_id converts to int so it is valid, must be not human or mouse
-            species = None
-        return species
-    except Exception:
-        pass
-
-    mapping = {
-        "hg38": "human",
-        "hg19": "human",
-        "GRCh3": "human",
-        "mm10": "mouse",
-        "mm9": "mouse",
-        "GRCm3": "mouse",
-    }
-
-    base_genome = os.path.basename(genome.strip("/"))
-    for name, species in mapping.items():
-        if name in base_genome:
-            return species
-
-
-def _load_human_factors():
-    package_dir = os.path.dirname(ananse.__file__)
-    tf_xlsx = os.path.join(package_dir, "db", "lovering.tfs.xlsx")
-    valid_factors = pd.read_excel(
-        tf_xlsx,
-        engine="openpyxl",
-        sheet_name=1,
-    )
-    valid_factors = valid_factors.loc[
-        valid_factors["Pseudogene"].isnull(), "HGNC approved gene symbol"
-    ].values
-    valid_factors = list(set(valid_factors) - {"EP300"})
-    return valid_factors
 
 
 def predict_peaks(

@@ -121,17 +121,17 @@ def test__load_prescanned_motifs(peakpredictor):
     assert round(float(score), 2) == -0.99
 
 
-@pytest.mark.skip("reference.factor.feather missing")
 def test__load_reference_data(peakpredictor):
     p = deepcopy(peakpredictor)
-    p._load_reference_data()
+    with pytest.raises(FileNotFoundError):
+        p._load_reference_data()
 
-    # TODO: nice tests based on the output of these properties
-    print(p._motifs)
-    print(p._avg)
-    print(p._dist)
-    print(p.regions)
-    exit(1)
+    # # TODO: nice tests based on the output of these properties
+    # print(p._motifs)
+    # print(p._avg)
+    # print(p._dist)
+    # print(p.regions)
+    # exit(1)
 
 
 def test_factors(peakpredictor):
