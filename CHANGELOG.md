@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
   - reduced logger messages (max 1 message per motif now)
 - `ananse binding` documentation changed to clearly reflect the complexity of non-`hg38`
   - with expandable sections to reduce clutter for the `hg38` gang
+- `ananse binding` will now only scan the motifs in the analysis
 - cleaned up `ananse binding --help` messages
 
 ### Removed

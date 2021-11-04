@@ -54,7 +54,7 @@ def test__check_input_files():
     _ = ananse.peakpredictor._check_input_files(present_files)
 
 
-def test_peakpredictor(peakpredictor):
+def test_peakpredictor_init(peakpredictor):
     with pytest.raises(ValueError):
         ananse.peakpredictor.PeakPredictor(reference="ananse/db/default_reference")
 
@@ -84,4 +84,15 @@ def test_peakpredictor(peakpredictor):
     # assert len(p.motif_graph) == 707
 
 
-# predict_peaks
+def test__scan_motifs(peakpredictor):
+    region = "chr1:1010-1020"
+    tf = "SOX12"
+    peakpredictor._scan_motifs([region], zscore=False, gc=False)
+    score = peakpredictor._motifs.at[region, tf]
+    # rounding in case the value is flaky
+    assert round(score, 3) == -0.989
+
+
+
+
+

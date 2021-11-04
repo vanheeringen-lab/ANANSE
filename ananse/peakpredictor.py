@@ -105,7 +105,7 @@ class PeakPredictor:
 
         self._set_model_type()
 
-    def _scan_motifs(self, regions):
+    def _scan_motifs(self, regions, **kwargs):
         """[summary]
 
         Parameters
@@ -114,19 +114,31 @@ class PeakPredictor:
             [description]
         """
         logger.info("Scanning regions for motifs.")
-        with NamedTemporaryFile(mode="w") as f:
-            print("region", file=f)
+        with NamedTemporaryFile("w") as regionfile:
+            print("region", file=regionfile)
             for region in regions:
-                print(region, file=f)
-            f.flush()
-            # TODO: we're still scanning for *all* motifs, even if we only have a few factors
+                print(region, file=regionfile)
+            regionfile.flush()
+
+            # only scan motifs for our factors
+            motifs = list(self.motifs.values())
+            # TODO: after gimme > 0.16.1, this code block can be removed (fixed in #d088778)
+            tmp = NamedTemporaryFile(mode="w", delete=False)
+            for m in motifs:
+                tmp.write("{}\n".format(m.to_pwm()))
+            tmp.close()
+            motifs = tmp.name
+            # TODO: end of code block
             motif_df = scan_regionfile_to_table(
-                f.name, self.genome, "score", ncpus=self.ncore
+                regionfile.name,
+                self.genome,
+                scoring="score",
+                pfmfile=motifs,
+                ncpus=self.ncore,
+                **kwargs,
             )
             self._motifs = pd.DataFrame(index=motif_df.index)
             for factor in self.f2m:
-                # if factor not in valid_factors:
-                #    continue
                 self._motifs[factor] = motif_df[self.f2m[factor]].mean(1)
 
     def _load_prescanned_motifs(self, pfmscorefile):
