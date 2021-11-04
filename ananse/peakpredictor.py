@@ -320,7 +320,7 @@ class PeakPredictor:
         ----
         self.motif_graph : nx.Graph
         """
-        # load the complete factor2motifs (unfiltered)
+        # load the complete (unfiltered) factor2motifs
         if indirect is False or factors is not None:
             complete_f2m = self._load_factor2motifs(
                 pfmfile=self.pfmfile, indirect=True, factors=None
@@ -331,6 +331,18 @@ class PeakPredictor:
         # convert motif lists to sets
         for k, v in complete_f2m.items():
             complete_f2m[k] = set(v)
+
+        # if an alternative motif2factors is used, we can use the
+        # jaccard index to link TFs to ortholog models in the ananse reference database
+        if self.pfmfile is not None:
+            orthologs = self._load_factor2motifs(
+                pfmfile=None, indirect=True, factors=None
+            )
+            for k, v in orthologs.items():
+                if k in complete_f2m:
+                    complete_f2m[k].update(set(v))
+                else:
+                    complete_f2m[k] = set(v)
 
         # compute the jaccard index
         self.motif_graph = nx.Graph()
@@ -542,13 +554,14 @@ class PeakPredictor:
             # tfs are sorted best>worst. Use the first one with a trained model
             for tf in tfs:
                 if tf in self.factor_models:
-                    logger.info(f"Using {tf} model for {factor}")
+                    ji = round(1 - tfs[tf], 2)
+                    logger.info(f"Using {tf} model for {factor} (jaccard index {ji})")
                     model = self.factor_models[tf]
                     break
 
         # 3. a general TF binding model if the other options are not available
         if model is None:
-            logger.info(f"No related TF found for {factor}, using general model")
+            logger.info(f"Using general model for {factor} (no related TF found)")
             model = self.factor_models["general"]
 
         return model, factor
