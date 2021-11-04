@@ -322,9 +322,7 @@ class PeakPredictor:
         """
         # load the complete (unfiltered) factor2motifs
         if indirect is False or factors is not None:
-            complete_f2m = self._load_factor2motifs(
-                pfmfile=self.pfmfile, indirect=True, factors=None
-            )
+            complete_f2m = self._load_factor2motifs(self.pfmfile)
         else:
             complete_f2m = self.f2m.copy()
 
@@ -333,20 +331,18 @@ class PeakPredictor:
             complete_f2m[k] = set(v)
 
         # if an alternative motif2factors is used, we can use the
-        # jaccard index to link TFs to ortholog models in the ananse reference database
+        # jaccard index to link the user's TFs to
+        # the orthologous TF models in the ananse reference database
         if self.pfmfile is not None:
-            orthologs = self._load_factor2motifs(
-                pfmfile=None, indirect=True, factors=None
-            )
-            for k, v in orthologs.items():
+            reference_orthologs = self._load_factor2motifs()
+            for k, v in reference_orthologs.items():
                 if k in complete_f2m:
                     complete_f2m[k].update(set(v))
                 else:
                     complete_f2m[k] = set(v)
 
-        # compute the jaccard index
+        # compute the jaccard index between each combination of TFs
         self.motif_graph = nx.Graph()
-        # all tf combinations (no self edges, no duplicates)
         combinations = set(itertools.combinations(complete_f2m.keys(), 2))
         for tf1, tf2 in combinations:
             i = len(complete_f2m[tf1].intersection(complete_f2m[tf2]))
