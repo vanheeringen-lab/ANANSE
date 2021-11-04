@@ -18,6 +18,7 @@ from gimmemotifs.motif import read_motifs
 from gimmemotifs.scanner import scan_regionfile_to_table
 from loguru import logger
 from pandas import HDFStore
+from pyfaidx import FastaIndexingError
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale, scale
 
@@ -463,8 +464,8 @@ class PeakPredictor:
 
         model, factor = self._load_model(factor, jaccard_cutoff)
 
-        X = self._load_data(factor)
-        proba = model.predict_proba(X)[:, 1]
+        x = self._load_data(factor)
+        proba = model.predict_proba(x)[:, 1]
 
         return pd.DataFrame(proba, index=self.regions)
 
@@ -591,24 +592,24 @@ class PeakPredictor:
 
 
 def _get_species(genome):
+    """returns 'human', 'mouse' or None"""
+    # Try to get taxonomy id for genomepy managed genome.
+    # If there is a taxonomy id, we can be really sure about the species.
+    # If genome doesn't have a tax_id, then it will be 'na'.
     try:
-        # Try to get taxonomy id for genomepy managed genome.
-        # If there is a taxonomy id, we can be really sure about the species.
-        # If genome doesn't have a tax_id, then it will be 'na' and
-        # fail to convert to int.
-        g = Genome(genome)
-        tax_id = int(g.tax_id)
+        tax_id = Genome(genome).tax_id
+        species = None
         if tax_id == 9606:
             species = "human"
         elif tax_id == 10090:
             species = "mouse"
-        else:
+        if isinstance(tax_id, int):
             # tax_id converts to int so it is valid, must be not human or mouse
-            species = None
-        return species
-    except Exception:
+            return species
+    except (FileNotFoundError, FastaIndexingError):
         pass
 
+    # backup: try to get the species from the filename
     mapping = {
         "hg38": "human",
         "hg19": "human",
@@ -617,7 +618,6 @@ def _get_species(genome):
         "mm9": "mouse",
         "GRCm3": "mouse",
     }
-
     base_genome = os.path.basename(genome.strip("/"))
     for name, species in mapping.items():
         if name in base_genome:
