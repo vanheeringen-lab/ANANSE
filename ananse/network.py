@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
+from genomepy import Genome
 import dask.dataframe as dd
 from tempfile import NamedTemporaryFile, mkdtemp
 from dask.distributed import progress
@@ -68,16 +69,19 @@ class Network(object):
 
         # Gene information file
         self.gene_bed = gene_bed
-        if gene_bed is None:
+        if self.gene_bed is None:
             if self.genome in ["hg38", "hg19"]:
                 self.gene_bed = os.path.join(
                     PACKAGE_DIR, "db", f"{self.genome}.genes.bed"
                 )
             else:
-                raise TypeError("Please provide a gene bed file with -a argument.")
+                gp = Genome(genome)  # can raise descriptive FileNotFoundError
+                self.gene_bed = gp.annotation_bed_file
+        if self.gene_bed is None:
+            raise TypeError("Please provide a gene bed file with the -a argument.")
         if not os.path.exists(self.gene_bed):
             raise FileNotFoundError(
-                f"Could not find the gene bed file {self.gene_bed}."
+                f"Could not find gene bed file {self.gene_bed}."
             )
 
         self.include_promoter = include_promoter
