@@ -526,7 +526,6 @@ class Influence(object):
         scores_df["targetScaled"] = minmax_scale(
             rankdata(scores_df["targetscore"], method="dense")
         )
-        scores_df["targetscore"] = scores_df["targetscore"]
         scores_df["Gscore"] = scores_df["Gscore"]
         scores_df["GscoreScaled"] = minmax_scale(
             rankdata(scores_df["Gscore"], method="dense")
@@ -545,7 +544,6 @@ class Influence(object):
                 "sum",
                 "sumScaled",
                 "directTargets",
-                "targetscore",
                 "factor_fc",
             ]
         ]
