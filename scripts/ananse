@@ -50,7 +50,6 @@ if __name__ == "__main__":
         "binding", add_help=False
     )  # help added manually (more control)
     subparser_dict["binding"] = p
-
     group = p.add_argument_group("Required arguments")
     group.add_argument(
         "-A",
@@ -152,7 +151,6 @@ if __name__ == "__main__":
         type=float,
         default=0.0,
     )
-
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
@@ -348,12 +346,14 @@ if __name__ == "__main__":
     # ananse View
     p = subparsers.add_parser("view", add_help=False)
     subparser_dict["view"] = p
-    p.add_argument(
+    group = p.add_argument_group("required arguments")
+    group.add_argument(
         "infile",
         help="input binding.h5 file",
         metavar="FILE",
     )
-    p.add_argument(
+    group = p.add_argument_group("optional arguments")
+    group.add_argument(
         "-o",
         "--outfile",
         dest="outfile",
@@ -361,7 +361,7 @@ if __name__ == "__main__":
         metavar="FILE",
         default=None,
     )
-    p.add_argument(
+    group.add_argument(
         "-f",
         "--factors",
         dest="factors",
@@ -369,13 +369,16 @@ if __name__ == "__main__":
         metavar="TF",
         nargs="*",
     )
-    p.add_argument(
+    group.add_argument(
         "-F",
         "--format",
         dest="format",
         default="wide",
         help="format: wide or long (default: wide)",
         metavar="FORMAT",
+    )
+    group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.view)
 
@@ -458,7 +461,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 1:
         parser.print_help()
-    if len(sys.argv) == 2 and sys.argv[-1] in subparser_dict:
+    elif len(sys.argv) == 2 and sys.argv[-1] in subparser_dict:
         subparser_dict[sys.argv[-1]].print_help()
     else:
         args = parser.parse_args()

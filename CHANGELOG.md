@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - jaccard index with custom pfmfiles
+- `ananse view --help`
 
 
 ## [0.3.0] - 2021-07-14
