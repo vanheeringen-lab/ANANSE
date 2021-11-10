@@ -1,67 +1,17 @@
 import os
 import tempfile
 
-# import time
-
-import genomepy.utils
-import pysam
-
 import ananse.utils
-
-# prep
-
-test_dir = os.path.dirname(os.path.dirname(__file__))
-outdir = os.path.join(test_dir, "output")
-genomepy.utils.mkdir_p(outdir)
+from . import compare_contents, write_file
 
 
-def write_file(filename, lines):
-    with open(filename, "w") as f:
-        for line in lines:
-            if not line.endswith("\n"):
-                line = line + "\n"
-            f.write(line)
-
-
-# def write_bam(filename, lines):
-#     tmp_sam = os.path.join(outdir, "tmp.sam")
-#     write_file(tmp_sam, lines)
-#     pysam.view(tmp_sam, "-b", "-o", filename, catch_stdout=False)
-#     genomepy.utils.rm_rf(tmp_sam)
-
-
-def compare_contents(file1, file2, ftype="bed"):
-    if ftype == "bed":
-        with open(file1) as f:
-            contents1 = f.readlines()
-        with open(file2) as f:
-            contents2 = f.readlines()
-    else:
-        contents1 = pysam.view(file1)
-        contents2 = pysam.view(file2)
-    return contents1 == contents2
-
-
-# test BED functions
-
-
-unsorted_bed = os.path.join(outdir, "unsorted.bed")
-write_file(unsorted_bed, ["chr1\t817046\t817246\n", "chr1\t778558\t778758\n"])
-
-sorted_bed = os.path.join(outdir, "sorted.bed")
-write_file(sorted_bed, ["chr1\t778558\t778758\n", "chr1\t817046\t817246\n"])
-
-second_bed = os.path.join(outdir, "second.bed")
-write_file(second_bed, ["chr1\t827457\t827657\n"])
-
-
-def test_bed_sort():
+def test_bed_sort(unsorted_bed, sorted_bed):
     assert not compare_contents(unsorted_bed, sorted_bed, ftype="bed")
     ananse.utils.bed_sort(unsorted_bed)
     assert compare_contents(unsorted_bed, sorted_bed, ftype="bed")
 
 
-def test_bed_merge():
+def test_bed_merge(outdir, sorted_bed, unsorted_bed):
     merged_bed = os.path.join(outdir, "merged.bed")
 
     # 1 bed = nothing changes
@@ -75,6 +25,9 @@ def test_bed_merge():
         assert len(mb.readlines()) == 2
 
     # >1 beds, different content
+    second_bed = os.path.join(outdir, "second.bed")
+    write_file(second_bed, ["chr1\t827457\t827657\n"])
+
     ananse.utils.bed_merge([unsorted_bed, second_bed], merged_bed)
     with open(merged_bed) as mb:
         assert len(mb.readlines()) == 3

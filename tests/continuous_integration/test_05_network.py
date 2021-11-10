@@ -11,7 +11,7 @@ from ananse.commands import network
 
 @pytest.fixture
 def binding_fname():
-    return "tests/example_data/binding2.tsv"
+    return "tests/data/network/example_binding.tsv"
 
 
 @pytest.fixture

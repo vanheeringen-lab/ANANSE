@@ -50,7 +50,6 @@ if __name__ == "__main__":
         "binding", add_help=False
     )  # help added manually (more control)
     subparser_dict["binding"] = p
-
     group = p.add_argument_group("Required arguments")
     group.add_argument(
         "-A",
@@ -84,7 +83,7 @@ if __name__ == "__main__":
         "--reference",
         dest="reference",
         help="Path to reference data directory",
-        metavar="PATH",
+        metavar="",
     )
     group.add_argument(
         "-r",
@@ -122,7 +121,7 @@ if __name__ == "__main__":
         "-f",
         "--factors",
         dest="factors",
-        help="Transcription factors to use. Either a space-separated list or a file with one TF per line.",
+        help="Transcription factors to use. Either a space-separated list or a file with one TF per line",
         metavar="TF",
         default=None,
         nargs="*",
@@ -132,24 +131,26 @@ if __name__ == "__main__":
         "--ncore",
         dest="ncore",
         help="Number of processes to use for motif scanning",
+        metavar="",
         type=int,
         default=min(os.cpu_count(), 4),
     )
     group.add_argument(
         "--pfmscorefile",
         dest="pfmscorefile",
-        help="use precomputed gimmemotifs scores (gimme scan -T -g GENOME INPUTFILE)",
+        help="use precomputed gimmemotifs scores (gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv)",
         metavar="",
         default=None,
     )
     group.add_argument(
         "--jaccard-cutoff",
         dest="jaccard_cutoff",
-        help="TFs with a motif jaccard similarity of larger than the jaccard-cutoff are linked together for model selection",
+        help="TFs with a jaccard motif similarity >= the cutoff can be used as backup model. "
+             "0: any similarity, 1: perfect similarity (default is 0)",
+        metavar="",
         type=float,
         default=0.0,
     )
-
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
@@ -345,12 +346,14 @@ if __name__ == "__main__":
     # ananse View
     p = subparsers.add_parser("view", add_help=False)
     subparser_dict["view"] = p
-    p.add_argument(
+    group = p.add_argument_group("required arguments")
+    group.add_argument(
         "infile",
         help="input binding.h5 file",
         metavar="FILE",
     )
-    p.add_argument(
+    group = p.add_argument_group("optional arguments")
+    group.add_argument(
         "-o",
         "--outfile",
         dest="outfile",
@@ -358,7 +361,7 @@ if __name__ == "__main__":
         metavar="FILE",
         default=None,
     )
-    p.add_argument(
+    group.add_argument(
         "-f",
         "--factors",
         dest="factors",
@@ -366,13 +369,16 @@ if __name__ == "__main__":
         metavar="TF",
         nargs="*",
     )
-    p.add_argument(
+    group.add_argument(
         "-F",
         "--format",
         dest="format",
         default="wide",
         help="format: wide or long (default: wide)",
         metavar="FORMAT",
+    )
+    group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.view)
 
@@ -455,7 +461,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 1:
         parser.print_help()
-    if len(sys.argv) == 2 and sys.argv[-1] in subparser_dict:
+    elif len(sys.argv) == 2 and sys.argv[-1] in subparser_dict:
         subparser_dict[sys.argv[-1]].print_help()
     else:
         args = parser.parse_args()

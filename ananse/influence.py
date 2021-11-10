@@ -258,7 +258,8 @@ def targetScore(node, G, expression_change, max_degree=3):
     except (RecursionError, ValueError):
         pval = np.NAN
         logger.warning(
-            f"Could not calculate p-val (target vs non-target fold-change) for {node}, targets = {len(target_fc)}, non-target = {len(non_target_fc)}."
+            f"Could not calculate p-val (target vs non-target fold-change) for {node}, "
+            f"targets = {len(target_fc)}, non-target = {len(non_target_fc)}."
         )
         logger.warning(f"targets = {target_fc}")
         logger.warning(f"non_target = {non_target_fc}")

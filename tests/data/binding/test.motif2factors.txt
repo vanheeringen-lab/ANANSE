@@ -1,0 +1,2 @@
+Motif	Factor	Evidence	Curated
+GM.5.0.Sox.0001	SOX12	ChIP-seq	Y

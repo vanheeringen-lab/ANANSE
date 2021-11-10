@@ -1,56 +1,11 @@
 import os
 
-import genomepy.utils
-
-# import pytest
-
 import ananse.enhancer_binding
-
-# from ananse.commands.enhancer_binding import run_binding
 import ananse.utils
-from .test_02_utils import write_file  # , write_bam, h0, h1, line1, line2, line3
-
-# prep
-
-test_dir = os.path.dirname(os.path.dirname(__file__))
-outdir = os.path.join(test_dir, "output")
-genomepy.utils.mkdir_p(outdir)
-
-# beds
-
-genome = os.path.join(outdir, "genome.fa")
-write_file(genome, [">chr1", "N" * 50000])
-
-bed1 = os.path.join(outdir, "bed1.bed")
-write_file(bed1, ["chr1\t0\t1000\n", "chr1\t2000\t3000\n"])
-
-bed2 = os.path.join(outdir, "bed2.bed")
-write_file(bed2, ["chr1\t4000\t5000\n", "chr1\t2000\t3000\n"])
-
-# sp_bed_input = os.path.join(outdir, "sp_input.bed")
-# write_file(sp_bed_input, ["chr1\t10003\t10203\n", "chr1\t10203\t10403\n"])
-
-# # bams
-#
-# bam1 = os.path.join(outdir, "bam1.bam")
-# write_bam(bam1, [h0, h1, line1, line2, line2])
-# ananse.utils.bam_index(bam1)
-#
-# bam2 = os.path.join(outdir, "bam2.bam")
-# write_bam(bam2, [h0, h1, line1, line3, line3])
-# ananse.utils.bam_index(bam2)
-
-# shared in/outputs
-
-combined_bed = os.path.join(outdir, "combined.bed")
-# raw_peak_scores = os.path.join(outdir, "raw_scoredpeaks.bed")
-# scored_peaks = os.path.join(outdir, "scoredpeaks.bed")
-# raw_motif_scores = os.path.join(outdir, "raw_scoredmotifs.bed")
-# scored_motifs = os.path.join(outdir, "scoredmotifs.bed")
-# outfile = os.path.join(outdir, "binding.tsv")
+from . import write_file
 
 
-def test_is_narrowpeak():
+def test_is_narrowpeak(outdir, genome):
     np = os.path.join(outdir, "f.narrowPeak")
     write_file(np, ["chr1\t629812\t630105\tnarrowPeak1\t6047\t.\t0\t0\t0\t122"])
     bp = os.path.join(outdir, "f.broadPeak")
@@ -67,7 +22,7 @@ def test_is_narrowpeak():
     assert cbed.is_narrowpeak(bp) is False
 
 
-def test_bed_resize():
+def test_bed_resize(outdir, genome, bed1):
     cbed = ananse.enhancer_binding.CombineBedFiles(genome=genome, peakfiles=[])
     bed_out = os.path.join(outdir, "bed_out.bed")
 
@@ -89,10 +44,11 @@ def test_bed_resize():
         assert int(stop) - int(start) == width
 
 
-def test_cbedf():
+def test_cbedf(outdir, genome, bed1, bed2):
     cbed = ananse.enhancer_binding.CombineBedFiles(
         genome=genome, peakfiles=[bed1, bed2]
     )
+    combined_bed = os.path.join(outdir, "combined.bed")
     width = 200
     cbed.run(outfile=combined_bed, width=width, force=True)
 
@@ -106,6 +62,35 @@ def test_cbedf():
     for line in lines:
         chrom, start, stop = line.split()[0:3]
         assert int(stop) - int(start) == width
+
+
+# prep
+
+# test_dir = os.path.dirname(os.path.dirname(__file__))
+# outdir = os.path.join(test_dir, "output")
+# genomepy.utils.mkdir_p(outdir)
+
+# sp_bed_input = os.path.join(outdir, "sp_input.bed")
+# write_file(sp_bed_input, ["chr1\t10003\t10203\n", "chr1\t10203\t10403\n"])
+
+# # bams
+#
+# bam1 = os.path.join(outdir, "bam1.bam")
+# write_bam(bam1, [h0, h1, line1, line2, line2])
+# ananse.utils.bam_index(bam1)
+#
+# bam2 = os.path.join(outdir, "bam2.bam")
+# write_bam(bam2, [h0, h1, line1, line3, line3])
+# ananse.utils.bam_index(bam2)
+
+# shared in/outputs
+
+# combined_bed = os.path.join(outdir, "combined.bed")
+# raw_peak_scores = os.path.join(outdir, "raw_scoredpeaks.bed")
+# scored_peaks = os.path.join(outdir, "scoredpeaks.bed")
+# raw_motif_scores = os.path.join(outdir, "raw_scoredmotifs.bed")
+# scored_motifs = os.path.join(outdir, "scoredmotifs.bed")
+# outfile = os.path.join(outdir, "binding.tsv")
 
 
 # def test_compatibility_check():
