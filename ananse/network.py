@@ -593,14 +593,13 @@ class Network(object):
             df_expression = df_expression.drop(columns=["tf"])
 
             # This is where the heavy lifting of all delayed computations gets done
-            # logger.info("Computing network")
             if fin_expression is not None:
                 result = df_expression.merge(
                     df_binding, right_index=True, left_on="tf_target", how="left"
                 )
                 result = result.persist()
                 result = result.fillna(0)
-                logger.info("Computing network")
+                logger.info("Processing expression+binding network")
                 progress(result)
                 result = result.compute()
             else:
@@ -623,11 +622,12 @@ class Network(object):
         else:
             result = df_expression
             result["prob"] = result[["tf_expression", "target_expression"]].mean(1)
+            logger.info("Processing expression network")
             result = result.compute()
 
         output_cols = ["tf_target", "prob"]
         if self.full_output:
-            output_cols = [
+            columns = [
                 "tf_target",
                 "prob",
                 "tf_expression",
@@ -635,6 +635,7 @@ class Network(object):
                 "weighted_binding",
                 "activity",
             ]
+            output_cols = [col for col in columns if col in result]
         if outfile:
             logger.info("Writing network")
             out_dir = os.path.abspath(os.path.dirname(outfile))
@@ -705,11 +706,16 @@ class Network(object):
                 .rename(index=tid2gid)
                 .rename(index=gid2name)
             )
+
+            # metrics
             overlapping_tfs = set(expression.index).intersection(tfs)
             overlap_tf_exp = len(overlapping_tfs) / len(tfs)
             logger.debug(
                 f"{int(100 * overlap_tf_exp)}% of TFs found in the expression file(s)"
             )
+
+            # merge duplicate genes
+            expression = expression.groupby(by=expression.index).sum()
 
         if overlap_tf_bed <= cutoff:
             bed = (
@@ -720,6 +726,8 @@ class Network(object):
                 .rename(index=gid2name)
                 .reset_index()
             )
+
+            # metrics
             bed_genes = bed.name
             overlapping_tfs = set(bed_genes).intersection(tfs)
             overlap_tf_bed = len(overlapping_tfs) / len(tfs)
@@ -729,7 +737,6 @@ class Network(object):
             group = bed.groupby("name")
             bed["start"] = group["start"].transform("min")
             bed["end"] = group["end"].transform("max")
-            # these columns can be ignored
             cols = set(bed.columns) - {"name", "chrom", "start", "end", "strand"}
             for col in cols:
                 bed[col] = 0
@@ -851,7 +858,7 @@ def region_gene_overlap(
     pandas.DataFrame
         DataFrame with enhancer regions, gene names, distance and weight.
     """
-    # TODO: Ensembl chrom MT interpreted as number
+    # TODO: Ensembl chrom MT interpreted as number (ONLY WITH MY CONVERTED BED)
     genes = genomepy.Annotation(gene_bed).bed  # pr.read_bed(gene_bed)
     genes.columns = [col.capitalize() for col in genes.columns]
     # Convert to DataFrame & we don't need intron/exon information
@@ -864,8 +871,6 @@ def region_gene_overlap(
     genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
         genes["Strand"] == "-", "End"
     ]
-
-    # TODO: lowest start, highest end (in case we conveted gene names)
 
     # Extend up and down
     genes.loc[genes["Strand"] == "+", "Start"] -= up
