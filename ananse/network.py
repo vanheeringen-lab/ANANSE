@@ -5,12 +5,13 @@ import re
 import shutil
 import sys
 import warnings
+from typing import Union
 
 import numpy as np
 import pandas as pd
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
-from genomepy import Genome
+import genomepy
 import dask.dataframe as dd
 from tempfile import NamedTemporaryFile, mkdtemp
 from dask.distributed import progress
@@ -75,7 +76,7 @@ class Network(object):
                     PACKAGE_DIR, "db", f"{self.genome}.genes.bed"
                 )
             else:
-                gp = Genome(genome)  # can raise descriptive FileNotFoundError
+                gp = genomepy.Genome(self.genome)  # can raise descriptive FileNotFoundError
                 self.gene_bed = gp.annotation_bed_file
         if self.gene_bed is None:
             raise TypeError("Please provide a gene bed file with the -a argument.")
@@ -480,7 +481,7 @@ class Network(object):
         return fname
 
     def create_expression_network(
-        self, fin_expression, column="tpm", tfs=None, bindingfile=None
+        self, fin_expression, bindingfile, column="tpm", tfs=None
     ):
         """Create a gene expression based network.
 
@@ -495,84 +496,31 @@ class Network(object):
             One of more files that contains gene expression data.
             First column should contain the gene names in HGNC symbols.
 
+        bindingfile : str
+            Output file from ANANSE binding.
+
         column : str, optional
             Column name that contains gene expression, 'tpm' by default (case insensitive).
 
         tfs : list, optional
             List of TF gene names. All TFs will be used by default.
 
-        bindingfile : str, optional
-            Output file from ANANSE binding.
-
         Returns
         -------
             Dask DataFrame with gene expression based values.
         """
-        # Convert to a list of filename(s)
-        if isinstance(fin_expression, str):
-            fin_expression = [fin_expression]
+        # list of factors to filter the expression by
+        tfs = get_factors(bindingfile, tfs)
 
-        # Read all expression input files and take the mean expression per gene
-        re_column = re.compile(fr"^{column}$", re.IGNORECASE)
-        expression = pd.DataFrame()
-        for f in fin_expression:
-            # keep only the name and expression columns
-            subdf = pd.read_table(f, index_col=0).filter(regex=re_column)
-            # combine expression values for duplicate gene names
-            # also removes NaNs from the index
-            subdf = subdf.groupby(by=subdf.index, dropna=True).sum()
-            subdf.dropna(inplace=True)
-            expression = pd.concat([expression, subdf], axis=1)
-        expression = pd.DataFrame(expression.mean(1), columns=[column])
+        # expression dataframe with factors as index
+        expression = combine_expression_files(fin_expression, column)
+        # check for sufficient overlap in gene/transcript names/identifiers
+        # attempt to fix issues if the a genomepy assembly was used
+        expression = self.gene_overlap(expression, tfs)
         # log transform expression values
         expression[column] = np.log2(expression[column] + 1e-5)
 
-        genes = pd.read_table(
-            self.gene_bed, usecols=[3], comment="#", names=["name"], index_col=0
-        )
-        overlap = len(genes.index.intersection(expression.index))
-        if overlap / expression.shape[0] < 0.1:
-            logger.error(
-                "gene annotation identifiers do not seem to match between annotation and expression files!"
-            )
-            sample_exp = ", ".join(expression.sample(5).index.values)
-            sample_gene = ", ".join(genes.sample(5).index.values)
-            logger.error(f"expression sample: {sample_exp}")
-            logger.error(f"annotation sample: {sample_gene}")
-            sys.exit(1)
-
-        # Create the TF list, based on valid transcription factors
-        if tfs is None:
-            try:
-                act = pd.read_hdf(bindingfile, key="_factor_activity")
-                if "factor" in act.columns:
-                    act = act.set_index("factor")
-                tfs = list(set(act.index.tolist()))
-            except KeyError:
-                tffile = os.path.join(PACKAGE_DIR, "db", "tfs.txt")
-                tfs = pd.read_csv(tffile, header=None)[0].tolist()
-
-        # Save TFs and targets as temporary files
-        idx = expression.index[expression.index.isin(tfs)]
-        tmp = expression.loc[idx]
-        if tmp.shape[0] == 0:
-            logger.error(
-                "None of the transcription factors are found in your expression file."
-            )
-            logger.error(
-                "If you have human data, please make sure you use HGNC symbols (gene names)."
-            )
-            logger.error(
-                "If you have non-human data, you have to create a custom motif to gene mapping."
-            )
-            logger.error("See this link for one possibility to create this file: ")
-            logger.error(
-                "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors"
-            )
-            logger.error(
-                "If you use a custom motif mapping, you will also have (re)run `gimme binding` with this file."
-            )
-            sys.exit(1)
+        tmp = expression[expression.index.isin(tfs)]
 
         tf_fname = self._save_temp_expression(tmp, "tf")
         target_fname = self._save_temp_expression(expression, "target")
@@ -592,6 +540,91 @@ class Network(object):
 
         return network
 
+    def gene_overlap(self, expression: pd.DataFrame, tfs: list):
+        """
+        For ANANSE Network to run properly, we need overlap between 3 file(set)s with gene names:
+        - expression file(s)
+        - gene annotation
+        - motif2factors.txt
+        """
+        # 1) check overlap between expression file(s) and annotation
+        genes = pd.read_table(
+            self.gene_bed, usecols=[3], comment="#", names=["name"], index_col=0
+        )
+        overlapping_genes = set(genes.index.intersection(expression.index))
+        overlap = len(overlapping_genes) / len(expression)
+        logger.debug(
+            f"{int(100 * overlap)}% of genes in expression file(s) "
+            "found in gene annotation BED file"
+        )
+        if overlap < 0.7:
+            logger.error(
+                "gene identifiers do not seem to match "
+                "between gene annotation BED and expression file(s)!"
+            )
+            sample_exp = ", ".join(expression.sample(5).index.values)
+            sample_gene = ", ".join(genes.sample(5).index.values)
+            logger.error(f"expression sample: {sample_exp}")
+            logger.error(f"annotation sample: {sample_gene}")
+            sys.exit(1)
+
+        # 2) check overlap between expression file(s) and TFs
+        overlapping_tfs = expression[expression.index.isin(tfs)].index.unique()
+        overlap = len(overlapping_tfs) / len(tfs)
+        logger.debug(f"{int(100 * overlap)}% of TFs found in the expression file(s)")
+
+        # 2.3) if overlap is bad, but its a genomepy (compatible) assembly, attempt to fix
+        _expression = expression.copy()
+        gp = genomepy.Annotation(self.gene_bed)
+        if overlap < 0.7 and gp.annotation_gtf_file is not None:
+            conversion_dict = gp.gtf_dict("transcript_id", "gene_name")
+            _expression = expression.rename(conversion_dict)
+            # sum expression values of duplicate gene names
+            _expression = _expression.groupby(_expression.index.name).sum()
+
+            # try again
+            overlapping_tfs = _expression[_expression.index.isin(tfs)].index.unique()
+            overlap = len(overlapping_tfs) / len(tfs)
+            logger.debug(f"{int(100 * overlap)}% of TFs found in the expression file(s)")
+
+        # 2.6) if overlap is bad, but its a genomepy (compatible) assembly, attempt to fix
+        if overlap < 0.7 and gp.tax_id is not None:
+            logger.warning(
+                "Many transcription factors do not overlap. "
+                "Attempting to convert to HGNC symbols..."
+            )
+            # output is cached by genomepy
+            conversion_dict = genomepy.query_mygene(overlapping_genes, gp.tax_id, "symbol")["symbol"].to_dict()
+            _expression = expression.rename(conversion_dict)
+            # sum expression values of duplicate gene names
+            _expression = _expression.groupby(_expression.index.name).sum()
+
+            # try again
+            overlapping_tfs = _expression[_expression.index.isin(tfs)].index.unique()
+            overlap = len(overlapping_tfs) / len(tfs)
+            logger.debug(f"{int(100 * overlap)}% of TFs found in the expression file(s)")
+
+        if len(overlapping_tfs) == 0:
+            logger.error(
+                "None of the transcription factors are found in your expression file."
+            )
+            logger.error(
+                "If you have human data, please make sure you use HGNC symbols (gene names)."
+            )
+            logger.error(
+                "If you have non-human data, you have to create a custom motif to gene mapping."
+            )
+            logger.error("See this link for one possibility to create this file: ")
+            logger.error(
+                "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors"
+            )
+            logger.error(
+                "If you use a custom motif mapping, you will also have (re)run `gimme binding` with this file."
+            )
+            sys.exit(1)
+
+        return _expression
+
     def run_network(
         self,
         binding,
@@ -608,7 +641,7 @@ class Network(object):
         """Create network.
 
         Generates a gene-regulatory network with a TF-target gene interaction "prob" score based on the mean rank of:
-        1. Binding score based on ATAC/H3K27ac data of neirby enhancers.
+        1. Binding score based on ATAC/H3K27ac data of nearby enhancers.
         2. TF Activity (single score per TF based on general TF motif behaviour in the trained dataset)
         3. TF expression score
         4. Target expression score
@@ -642,8 +675,8 @@ class Network(object):
             fin_expression, tfs=tfs, bindingfile=binding
         )
 
-        # Use a version of the binding network, either promoter-based, enhancer-based
-        # or both.
+        # Use a version of the binding network:
+        # either promoter-based, enhancer-based or both.
         if self.include_promoter or self.include_enhancer:
             df_binding = self.aggregate_binding(
                 binding,
@@ -658,8 +691,8 @@ class Network(object):
 
             try:
                 act = pd.read_hdf(binding, key="_factor_activity")
-                if "factor" in act.columns:
-                    act = act.set_index("factor")
+                if "factor" in act.columns:  # noqa
+                    act = act.set_index("factor")  # noqa
                 logger.info("Reading factor activity")
                 act.index.name = "tf"
                 act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
@@ -793,3 +826,69 @@ def region_gene_overlap(
     genes = genes.join(region_pr).as_df()
 
     return genes
+
+
+def combine_expression_files(fin_expression: Union[str, list], column="tpm"):
+    """
+    Extract the index and expression column from one or more expression files.
+    We expect the index to be gene/transcript names/identifiers, and the expression to be TPMs.
+
+    Within each expression file, duplicate indexes are summed.
+    Between expression files, indexes are averaged.
+    NAs are dropped.
+
+    Parameters
+    ----------
+    fin_expression : str or list
+        One of more files that contains gene expression data.
+        First column should contain the gene/transcript names/identifiers.
+
+    column : str, optional
+        Column name that contains gene expression, 'tpm' by default (case insensitive).
+
+    Returns
+    -------
+    pd.DataFrame
+        a dataframe with one expression column and all unique indexes
+    """
+    # Convert to a list of filename(s)
+    if isinstance(fin_expression, str):
+        fin_expression = [fin_expression]
+
+    # Read all expression input files and take the mean expression per gene
+    re_column = re.compile(fr"^{column}$", re.IGNORECASE)
+    expression = pd.DataFrame()
+    for f in fin_expression:
+        # keep only the name and expression columns
+        subdf = pd.read_table(f, index_col=0).filter(regex=re_column)
+        # combine expression values for duplicate gene names
+        # also removes NaNs from the index
+        subdf = subdf.groupby(by=subdf.index, dropna=True).sum()
+        subdf.dropna(inplace=True)
+        expression = pd.concat([expression, subdf], axis=1)
+    expression = pd.DataFrame(expression.mean(1), columns=[column])
+    return expression
+
+
+def get_factors(bindingfile: str, tfs=None):
+    """
+    Will return the given list, or the list in the bindingfile,
+    or a list from the database.
+
+    Returns
+    -------
+    list
+        of unique transcription factors
+    """
+    # Create the TF list, based on valid transcription factors
+    if tfs is None:
+        try:
+            act = pd.read_hdf(bindingfile, key="_factor_activity")
+            if "factor" in act.columns:  # noqa
+                act = act.set_index("factor")  # noqa
+            tfs = act.index.tolist()
+        except KeyError:
+            tffile = os.path.join(PACKAGE_DIR, "db", "tfs.txt")
+            tfs = pd.read_csv(tffile, header=None)[0]
+            logger.info("No TFs provided, none found in binding.h5 file. Using database file")  # TODO: to debug
+    return list(set(tfs))
