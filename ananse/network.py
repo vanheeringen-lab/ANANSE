@@ -323,8 +323,7 @@ class Network(object):
         dask.DataFrame
             DataFrame with delayed computations.
         """
-        if not os.path.exists(binding):
-            raise ValueError(f"File {binding} does not exist!")
+        logger.info("Loading binding data")
 
         if combine_function not in ["mean", "max", "sum"]:
             raise NotImplementedError(
@@ -345,31 +344,32 @@ class Network(object):
         # TODO: This is hacky (depending on "_"), however the hdf.keys() method is
         #       much slower. Currently all TF names do *not* start with "_"
         all_tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
-        logger.info(f"Binding file contains {len(all_tfs)} TFs.")
         if tfs is None:
             tfs = all_tfs
+            logger.info(f"Using all {len(set(all_tfs))} TFs.")
         else:
-            not_valid = set(all_tfs) - set(tfs)
-            if len(not_valid) > 1:
-                logger.warning(
-                    f"The following TFs are found in {binding}, but do not seem to be TFs:"
-                )
-                logger.warning(", ".join(not_valid))
             tfs = set(tfs) & set(all_tfs)
-            logger.info(f"Using {len(tfs)} TFs.")
+            logger.info(f"Using {len(tfs)} of {len(set(all_tfs))} TFs.")
+        if len(tfs) == 0:
+            raise ValueError(
+                "No tfs in the binding file overlap with given tfs! "
+                "Use `ananse view` to inspect the region in the file."
+            )
 
         # Read enhancer index from hdf5 file
         enhancers = hdf.get(key="_index")
-        chroms = set(enhancers.index.to_series().str.replace(":.*", ""))
-        if regions:
-            regions = set(regions)
-            region_chroms = set([region.split(":")[0] for region in regions])
-            chroms = chroms & region_chroms
-            if len(chroms) == 0:
-                raise ValueError(
-                    "No regions in the binding file overlap with given regions! "
-                    "Use `ananse view` to inspect the region in the file."
-                )
+        chroms = set(enhancers.index.str.replace(":.*", ""))
+        if regions is None:
+            logger.info(f"Using all {len(set(enhancers.index))} regions.")
+        else:
+            regions = set(regions) & set(enhancers.index)
+            chroms = [region.split(":")[0] for region in regions]
+            logger.info(f"Using {len(regions)} of {len(set(enhancers.index))} regions.")
+        if len(chroms) == 0:
+            raise ValueError(
+                "No regions in the binding file overlap with given regions! "
+                "Use `ananse view` to inspect the region in the file."
+            )
 
         tmpdir = mkdtemp()
         self._tmp_files.append(tmpdir)  # mark for deletion later
@@ -382,11 +382,9 @@ class Network(object):
             # Get the index of all enhancers for this specific chromosome
             idx = enhancers.index.str.startswith(f"{chrom}:")
             if regions:
-                idx = set(idx) & regions
-                if len(idx) == 0:
-                    continue  # next chromosome
+                region_idx = enhancers.index.isin(regions)
+                idx = list(np.array(idx) * np.array(region_idx))
 
-            logger.info(f"Aggregating binding for genes on {chrom}")
             idx_i = np.arange(enhancers.shape[0])[idx]
 
             # Create a pyranges object
@@ -412,9 +410,12 @@ class Network(object):
                 continue
 
             bp = pd.DataFrame(index=enhancers[idx].index)
-
             for tf in tqdm(
-                tfs, total=len(tfs), desc="Aggregating", unit_scale=1, unit=" TFs"
+                tfs,
+                total=len(tfs),
+                desc=f"Aggregating on {chrom}",
+                unit_scale=1,
+                unit=" TFs",
             ):
                 # Load TF binding data for this chromosome.
                 # hdf.get() is *much* faster here than pd.read_hdf()
@@ -586,13 +587,12 @@ class Network(object):
             # COMPATIBILITY: validates/fixes tf-expression and tf-gene_bed overlap
             expression = self.gene_overlap(expression, tfs)
 
-            # Expression base network
             df_expression = self.create_expression_network(expression, tfs, column)
             if binding is not None:
+                logger.debug("Loading tf binding activity data")
                 act = pd.read_hdf(binding, key="_factor_activity")
                 if "factor" in act.columns:
                     act = act.set_index("factor")
-                logger.info("Reading factor activity")
                 act.index.name = "tf"
                 act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
                 df_expression = df_expression.merge(
@@ -616,7 +616,7 @@ class Network(object):
                 combine_function="sum",
             )
 
-        # combine networks and compute delayed operations
+        # (combine networks and) compute delayed operations
         if df_binding is None:
             if df_expression is None:
                 raise ValueError(
@@ -626,37 +626,39 @@ class Network(object):
             else:
                 logger.info("Processing expression network")
                 result = df_expression
-                result["prob"] = result[["tf_expression", "target_expression"]].mean(1)
-                result = result.compute()
         else:
-            # This is where the heavy lifting of all delayed computations gets done
-            if df_expression is not None:
+            if df_expression is None:
+                logger.info("Processing binding network")
+                result = df_binding
+            else:
                 logger.info("Processing expression-binding network")
                 result = df_expression.merge(
                     df_binding, right_index=True, left_on="tf_target", how="left"
                 )
                 result = result.persist()
                 result = result.fillna(0)
-                progress(result)
-                result = result.compute()
-            else:
-                logger.info("Processing binding network")
-                result = df_binding
+                # TODO: move client from commands.network into this module
+                if "client" in globals():
+                    progress(result)
+        # This is where the heavy lifting of all delayed computations gets done
+        result = result.compute()
 
+        if "weighted_binding" in result:
             result["weighted_binding"] = minmax_scale(
                 rankdata(result["weighted_binding"], method="min")
             )
-            columns = [
-                "tf_expression",
-                "target_expression",
-                "weighted_binding",
-                "activity",
-            ]
-            columns = [col for col in columns if col in result]
-            logger.info(f"Using {', '.join(columns)}")
-            # Combine the individual scores
-            result["prob"] = result[columns].mean(1)
+        columns = [
+            "tf_expression",
+            "target_expression",
+            "weighted_binding",
+            "activity",
+        ]
+        columns = [col for col in columns if col in result]
+        logger.debug(f"Using {', '.join(columns)}")
+        # Combine the individual scores
+        result["prob"] = result[columns].mean(1)
 
+        # filter output
         output_cols = ["tf_target", "prob"]
         if self.full_output:
             columns = [
@@ -762,7 +764,7 @@ class Network(object):
                 bed[col] = 0
             bed.drop_duplicates(inplace=True, ignore_index=True)
             tpm_bed = NamedTemporaryFile(
-                prefix="ananse.", suffix=".annotation.bed", delete=False
+                prefix=f"ananse.{gp.name}", suffix=".annotation.bed", delete=False
             ).name
             cols = genomepy.annotation.utils.BED12_FORMAT  # fixes column order
             genomepy.annotation.utils.write_annot(bed[cols], tpm_bed)
@@ -845,7 +847,8 @@ def get_factors(binding: str = None, tfs: list = None):
 
     if len(out_tfs) == 0:
         raise ValueError(
-            "No transcription factor overlap between given TFs and binding file"
+            "No transcription factor overlap between given TFs and binding file! "
+            "Use `ananse view` to inspect the region in the file."
         )
     return list(set(out_tfs))
 
@@ -924,7 +927,7 @@ def combine_expression_files(fin_expression: Union[str, list], column="tpm"):
     pd.DataFrame
         a dataframe with one expression column and all unique indexes
     """
-    logger.info("Loading expression")
+    logger.info("Loading expression data")
 
     # Convert to a list of filename(s)
     if isinstance(fin_expression, str):

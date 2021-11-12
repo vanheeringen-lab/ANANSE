@@ -317,12 +317,12 @@ def view_h5(
             tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
         if n:
             n = int(n)
-            tfs = tfs[:min(len(tfs), n)]
+            tfs = tfs[: min(len(tfs), n)]
 
         idx = hdf.get("_index").index
         if n:
             rows = [True for _ in range(n)] + [False for _ in range(n, len(idx))]
-            idx = idx[:min(len(idx), n)]
+            idx = idx[: min(len(idx), n)]
         elif regions:
             rows = idx.isin(regions)
             idx = set(regions) & set(idx)
