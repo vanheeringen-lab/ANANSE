@@ -272,6 +272,7 @@ def view_h5(
     tfs=None,
     regions=None,
     fmt="wide",
+    n=None,
     list_regions=False,
     list_tfs=False,
 ):
@@ -282,12 +283,14 @@ def view_h5(
     fname : str
         File name (binding.h5).
     tfs : list, optional
-        List of transcription factor names to extract. All TFs are used
+        List of transcription factor names to extract. All TFs are shown
         by default.
     regions : list, optional
-        List of regions to extract. All regions are used by default.
+        List of regions to extract. All regions are shown by default.
     fmt : str, optional
         Return output in 'wide' or in 'long' format. Default is 'wide'.
+    n : int, optional
+        Return the first n regions and tfs. All are shown by default.
     list_regions : bool, optional
         Return a list of regions
     list_tfs : bool, optional
@@ -312,12 +315,19 @@ def view_h5(
     with pd.HDFStore(fname) as hdf:
         if tfs is None:
             tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
+        if n:
+            n = int(n)
+            tfs = tfs[:min(len(tfs), n)]
 
         idx = hdf.get("_index").index
-        rows = [True for _ in range(len(idx))]
-        if regions:
+        if n:
+            rows = [True for _ in range(n)] + [False for _ in range(n, len(idx))]
+            idx = idx[:min(len(idx), n)]
+        elif regions:
             rows = idx.isin(regions)
             idx = set(regions) & set(idx)
+        else:
+            rows = [True for _ in range(len(idx))]
         df = pd.DataFrame(index=idx)
         df.index.name = "loc"
         for tf in tfs:

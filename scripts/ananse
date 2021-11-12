@@ -391,6 +391,13 @@ if __name__ == "__main__":
         help="display format: wide (n columns) or long (3 columns) (default: wide)",
     )
     group.add_argument(
+        "-n",
+        dest="n",
+        metavar="INT",
+        help="number of regions and tfs to display (default: all)",
+        default=None,
+    )
+    group.add_argument(
         "-lr",
         "--list-regions",
         dest="list_regions",
