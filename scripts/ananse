@@ -344,7 +344,11 @@ if __name__ == "__main__":
     p.set_defaults(func=commands.influence)
 
     # ananse View
-    p = subparsers.add_parser("view", add_help=False)
+    p = subparsers.add_parser(
+        "view",
+        add_help=False,
+        description="Explore the contents of an ananse binding file."
+    )
     subparser_dict["view"] = p
     group = p.add_argument_group("required arguments")
     group.add_argument(
@@ -365,8 +369,17 @@ if __name__ == "__main__":
         "-t",
         "--tf",
         dest="tfs",
-        help="name(s) of transcription factors (default: all)",
+        help="transcription factor(s) to display (default: all)",
         metavar="TF",
+        default=None,
+        nargs="*",
+    )
+    group.add_argument(
+        "-r",
+        "--regions",
+        dest="regions",
+        help="region(s) to display (default: all)",
+        metavar="REGION",
         default=None,
         nargs="*",
     )
@@ -375,22 +388,21 @@ if __name__ == "__main__":
         "--format",
         dest="format",
         default="wide",
-        help="format: wide or long (default: wide)",
-        metavar="FORMAT",
+        help="display format: wide (n columns) or long (3 columns) (default: wide)",
     )
     group.add_argument(
-        "-r",
-        "--regions",
-        dest="regions",
+        "-lr",
+        "--list-regions",
+        dest="list_regions",
         help="return a list of regions",
         action="store_true",
         default=False,
     )
     group.add_argument(
-        "-f",
-        "--factors",
-        dest="factors",
-        help="return a list of factors",
+        "-lt",
+        "--list-tfs",
+        dest="list_tfs",
+        help="return a list of transcription factors",
         action="store_true",
         default=False,
     )

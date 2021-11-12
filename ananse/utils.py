@@ -270,9 +270,10 @@ def check_input_factors(factors):
 def view_h5(
     fname,
     tfs=None,
+    regions=None,
     fmt="wide",
-    regions=False,
-    factors=False,
+    list_regions=False,
+    list_tfs=False,
 ):
     """Extract information from an ANANSE binding.h5 file.
 
@@ -283,23 +284,25 @@ def view_h5(
     tfs : list, optional
         List of transcription factor names to extract. All TFs are used
         by default.
+    regions : list, optional
+        List of regions to extract. All regions are used by default.
     fmt : str, optional
         Return output in 'wide' or in 'long' format. Default is 'wide'.
-    regions : bool, optional
-        Return a list of regions only
-    factors : bool, optional
-        Return a list of factors only
+    list_regions : bool, optional
+        Return a list of regions
+    list_tfs : bool, optional
+        Return a list of transcription factors
 
     Returns
     -------
     pandas.DataFrame
     """
-    if factors:
+    if list_tfs:
         act = pd.read_hdf(fname, key="_factor_activity")
         act = act.set_index("factor")
         return pd.DataFrame({"factor": list(set(act.index))})
 
-    if regions:
+    if list_regions:
         reg = pd.read_hdf(fname, key="_index")
         return pd.DataFrame({"region": list(set(reg.index))})
 
@@ -310,14 +313,17 @@ def view_h5(
         if tfs is None:
             tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
 
-        idx = hdf.get("_index")
-
-        df = pd.DataFrame(index=idx.index)
+        idx = hdf.get("_index").index
+        rows = [True for _ in range(len(idx))]
+        if regions:
+            rows = idx.isin(regions)
+            idx = set(regions) & set(idx)
+        df = pd.DataFrame(index=idx)
+        df.index.name = "loc"
         for tf in tfs:
-            df[tf] = hdf.get(tf).values
+            df[tf] = hdf.get(tf)[rows].values
 
     if fmt == "long":
-        df.index.rename("loc", inplace=True)
         df = df.reset_index().melt(
             id_vars=["loc"], value_name="prob", var_name="factor"
         )
