@@ -267,25 +267,42 @@ def check_input_factors(factors):
     return factors
 
 
-def view_h5(fname, tfs=None, fmt="wide"):
+def view_h5(
+    fname,
+    tfs=None,
+    fmt="wide",
+    regions=False,
+    factors=False,
+):
     """Extract information from an ANANSE binding.h5 file.
 
     Parameters
     ----------
     fname : str
         File name (binding.h5).
-
     tfs : list, optional
         List of transcription factor names to extract. All TFs are used
         by default.
-
     fmt : str, optional
         Return output in 'wide' or in 'long' format. Default is 'wide'.
+    regions : bool, optional
+        Return a list of regions only
+    factors : bool, optional
+        Return a list of factors only
 
     Returns
     -------
-    pandas.DataFrame
+    pandas.DataFrame or list
     """
+    if factors:
+        act = pd.read_hdf(fname, key="_factor_activity")
+        act = act.set_index("factor")
+        return list(set(act.index))
+
+    if regions:
+        reg = pd.read_hdf(fname, key="_index")
+        return list(set(reg.index))
+
     if fmt not in ["wide", "long"]:
         raise ValueError("fmt should be either 'wide' or 'long'")
 
