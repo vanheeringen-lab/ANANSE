@@ -11,10 +11,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - Now uses em-dash as gene separator (—), instead of underscore (_). _Should_ solve issues with gene names having underscores, as em-dash is a pretty obscure char.
+- refactored jaccard stuff
+  - reduced jaccard graph size (no more duplicates/self edged)
+  - reduced logger messages (max 1 message per motif now)
+- `ananse binding` documentation changed to clearly reflect the complexity of non-`hg38`
+  - with expandable sections to reduce clutter for the `hg38` gang
+- `ananse binding` will now only scan the motifs in the analysis
+- cleaned up `ananse binding --help` messages
 
 ### Removed
 
 ### Fixed
+- jaccard index with custom pfmfiles
+- `ananse view --help`
 
 
 ## [0.3.0] - 2021-07-14
@@ -28,8 +37,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - Warning if annotation files don't match for `ananse influence`.
 - Improved logging messages.
 - Better checking of input files.
-- The -full--output option for both ananse network and ananse influence for additional info in the output files and more vizualization options
-- An optional jacard similarity cutoff for ananse binding to set a limit on motif overlap for TF binding model selection
+- The -full--output option for both ananse network and ananse influence for additional info in the output files and more visualization options
+- An optional jaccard similarity cutoff for `ananse binding` to set a limit on motif overlap for TF binding model selection
 - `ananse plot` command to plot the dotplot and a new top TF interaction GRN file.
 
 

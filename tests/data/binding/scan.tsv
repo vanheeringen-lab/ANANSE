@@ -1,0 +1,6 @@
+# GimmeMotifs version 0.16.1
+# Input: tests/data/binding/regions.tsv
+# Motifs: tests/data/binding/test.pfm
+# Scoring: logodds score
+	GM.5.0.Sox.0001
+chr1:1010-1020	-0.989434

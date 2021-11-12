@@ -4,7 +4,6 @@ import warnings
 from collections import namedtuple
 from loguru import logger
 from tqdm import tqdm
-
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -222,18 +221,10 @@ def read_expression(fname, padj_cutoff=0.05):
 
 def targetScore(node, G, expression_change, max_degree=3):
     """Calculate the influence score."""
-
-    # debug only.
-    # todo
-    # if expression_change is None:
-    #     expression_change = {"score": {}, "fc": {}}
-
     total_score = 0
-
     # Get the targets that are within a certain number of steps from TF
     lengths, paths = nx.single_source_dijkstra(G, node, cutoff=max_degree - 1)
     targets = [t for t in lengths if 0 < lengths[t] <= max_degree]
-
     for target in paths:
         all_paths = {}
         # Calculate all paths from TF to target to select to path with the lowest total weight
@@ -246,26 +237,10 @@ def targetScore(node, G, expression_change, max_degree=3):
                 all_paths[tuple(path)] = weight / (len(path) - 1)
         if len(all_paths) > 0:
             path, weight = sorted(all_paths.items(), key=lambda p: p[1])[-1]
-
-            # print(target, path, weight)
-
-            # outdegree of parent node of the target
-            # d = np.log(G.out_degree(path[-2]) + 1)
-            # d = G.out_degree(path[-2])
-
             # the level (or the number of steps) that gene is away from transcription factor
             pathlen = len(path)
-
             # expression score of the target
             g = expression_change[target].score if target in expression_change else 0
-
-            # weight is cumulative product of probabilities
-            # weight = [G[s][t]["weight"] for s, t in zip(path[:-1], path[1:])]
-
-            # cumulative sum of weight
-            # weight = np.cumprod(weight)[-1]
-
-            # score = g / len(path) / d * weight
             score = g / pathlen * weight
             total_score += score
 
@@ -280,11 +255,14 @@ def targetScore(node, G, expression_change, max_degree=3):
 
     try:
         pval = mannwhitneyu(target_fc, non_target_fc)[1]
-    except (RecursionError, ValueError) as e:
+    except (RecursionError, ValueError):
         pval = np.NAN
         logger.warning(
-            f"Could not calculate p-val (target vs non-target fold-change) for {node}, targets = {len(target_fc)}, non-target = {len(non_target_fc)}."
+            f"Could not calculate p-val (target vs non-target fold-change) for {node}, "
+            f"targets = {len(target_fc)}, non-target = {len(non_target_fc)}."
         )
+        logger.warning(f"targets = {target_fc}")
+        logger.warning(f"non_target = {non_target_fc}")
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
 
     # factor, targetScore, directTargets, totalTargets, Gscore, pval, target_fc
@@ -346,7 +324,6 @@ class Influence(object):
         GRNsort_column="prob",
         padj_cutoff=0.05,
         full_output=False,
-        edge_info=False,
     ):
         self.ncore = ncore
         self.full_output = full_output
@@ -507,7 +484,7 @@ class Influence(object):
         # Get results and write to file
         influence_file = open(self.outfile, "w")
         influence_file.write(
-            "factor\tdirectTargets\ttotalTargets\ttargetsore\tGscore\tfactor_fc\tpval\ttarget_fc\n"
+            "factor\tdirectTargets\ttotalTargets\ttargetscore\tGscore\tfactor_fc\tpval\ttarget_fc\n"
         )
 
         for (
@@ -531,14 +508,13 @@ class Influence(object):
                 file=influence_file,
                 sep="\t",
             )
-
         print("\n", file=influence_file)
 
         influence_file.close()
 
         scores_df = pd.read_table(self.outfile, index_col=0)
         scores_df["targetScaled"] = minmax_scale(
-            rankdata(scores_df["targetsore"], method="dense")
+            rankdata(scores_df["targetscore"], method="dense")
         )
         scores_df.sort_values("targetScaled", inplace=True, ascending=False)
 
@@ -548,25 +524,27 @@ class Influence(object):
         """Calculate influence score from target score and gscore"""
 
         scores_df = pd.read_table(influence_file, index_col=0)
-
         scores_df["targetScaled"] = minmax_scale(
-            rankdata(scores_df["targetsore"], method="dense")
+            rankdata(scores_df["targetscore"], method="dense")
         )
+        scores_df["Gscore"] = scores_df["Gscore"]
         scores_df["GscoreScaled"] = minmax_scale(
             rankdata(scores_df["Gscore"], method="dense")
         )
+        scores_df["sum"] = scores_df.targetscore + scores_df.Gscore
         scores_df["sumScaled"] = minmax_scale(
             rankdata(scores_df.targetScaled + scores_df.GscoreScaled, method="dense")
         )
-
         scores_df.sort_values("sumScaled", inplace=True, ascending=False)
         scores_df = scores_df[
             [
+                "targetscore",
                 "targetScaled",
+                "Gscore",
                 "GscoreScaled",
+                "sum",
                 "sumScaled",
                 "directTargets",
-                "targetsore",
                 "factor_fc",
             ]
         ]
