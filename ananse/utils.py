@@ -292,16 +292,16 @@ def view_h5(
 
     Returns
     -------
-    pandas.DataFrame or list
+    pandas.DataFrame
     """
     if factors:
         act = pd.read_hdf(fname, key="_factor_activity")
         act = act.set_index("factor")
-        return list(set(act.index))
+        return pd.DataFrame({"factor": list(set(act.index))})
 
     if regions:
         reg = pd.read_hdf(fname, key="_index")
-        return list(set(reg.index))
+        return pd.DataFrame({"region": list(set(reg.index))})
 
     if fmt not in ["wide", "long"]:
         raise ValueError("fmt should be either 'wide' or 'long'")

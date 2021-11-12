@@ -362,11 +362,12 @@ if __name__ == "__main__":
         default=None,
     )
     group.add_argument(
-        "-f",
-        "--factors",
-        dest="factors",
+        "-t",
+        "--tf",
+        dest="tfs",
         help="name(s) of transcription factors (default: all)",
         metavar="TF",
+        default=None,
         nargs="*",
     )
     group.add_argument(
@@ -376,6 +377,22 @@ if __name__ == "__main__":
         default="wide",
         help="format: wide or long (default: wide)",
         metavar="FORMAT",
+    )
+    group.add_argument(
+        "-r",
+        "--regions",
+        dest="regions",
+        help="return a list of regions",
+        action="store_true",
+        default=False,
+    )
+    group.add_argument(
+        "-f",
+        "--factors",
+        dest="factors",
+        help="return a list of factors",
+        action="store_true",
+        default=False,
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
