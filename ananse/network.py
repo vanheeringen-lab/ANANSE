@@ -19,7 +19,8 @@ from loguru import logger
 from tqdm.auto import tqdm
 import pyranges as pr
 
-from ananse.utils import get_binding_tfs, cleanpath
+from ananse.utils import cleanpath
+from ananse.view import get_binding_tfs
 from . import SEPARATOR, PACKAGE_DIR
 
 
@@ -341,6 +342,7 @@ class Network(object):
                 "promoter region is larger than the maximum distance to use"
             )
 
+        # Read TFs
         all_tfs = get_binding_tfs(binding)
         if tfs is None:
             tfs = all_tfs
@@ -356,7 +358,7 @@ class Network(object):
 
         hdf = pd.HDFStore(binding, "r")
 
-        # Read enhancer index from hdf5 file
+        # Read enhancer regions
         enhancers = hdf.get(key="_index")
         chroms = set(enhancers.index.str.replace(":.*", ""))
         if regions is None:

@@ -1,3 +1,4 @@
+import os
 import subprocess as sp
 
 targets = ["setup.py", "ananse/", "tests/"]
@@ -6,7 +7,9 @@ targets = ["setup.py", "ananse/", "tests/"]
 def test_import_ananse():
     import ananse
 
-    assert str(ananse.__file__).endswith("ANANSE/ananse/__init__.py")
+    assert isinstance(ananse.__version__, str)
+    assert isinstance(ananse.SEPARATOR, str)
+    assert os.path.exists(ananse.PACKAGE_DIR)
 
 
 def test_black_linting():

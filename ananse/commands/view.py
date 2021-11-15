@@ -1,4 +1,4 @@
-from ananse.utils import view_h5
+from ananse.view import view_h5
 import sys
 
 

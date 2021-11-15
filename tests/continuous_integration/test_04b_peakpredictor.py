@@ -1,3 +1,4 @@
+from collections import namedtuple
 from copy import deepcopy
 import os
 import pytest
@@ -6,6 +7,8 @@ from string import ascii_lowercase
 import networkx as nx
 
 import ananse.peakpredictor
+from ananse.view import view_h5
+from ananse.commands import binding
 from . import write_file
 
 
@@ -155,3 +158,51 @@ def test__jaccard_motif_graph(peakpredictor):
     assert tfs[factor] == 0
     assert "SOX7" in tfs
     assert tfs["SOX7"] == 0.75
+
+
+def test_command_binding(outdir, genome):
+    Args = namedtuple(
+        "args",
+        "outdir atac_bams histone_bams regionfiles reference factors genome pfmfile pfmscorefile jaccard_cutoff ncore",
+    )
+    out_dir = os.path.join(outdir, "binding")
+    bed = os.path.join(outdir, "bed3.bed")
+    write_file(
+        bed,
+        [
+            "chr1\t50\t250\n",  # regions encompasses the bam reads
+            "chr1\t70\t300\n",
+            "chr1\t450\t500\n",
+        ],
+    )
+    scorefile = os.path.join(outdir, "scorefile.tsv")
+    write_file(
+        scorefile,
+        [
+            "\tGM.5.0.Sox.0001\n" "chr1:50-250\t0.2\n",
+            "chr1:70-300\t0.0\n",
+            "chr1:450-500\t-0.2\n",
+        ],
+    )
+    args = Args(
+        outdir=out_dir,
+        atac_bams=["tests/data/binding/bam1.bam"],  # chr 1, 3 reads
+        histone_bams=None,
+        regionfiles=[bed],
+        reference=None,
+        factors=None,
+        genome="tests/data/binding/hg38_testgenome.fa",  # chr 1 (fake)
+        pfmfile="tests/data/binding/test.pfm",  # 1 motif (GM.5.0.Sox.0001), 1 factor (SOX12)
+        pfmscorefile=scorefile,
+        jaccard_cutoff=0.1,
+        ncore=1,
+    )
+    binding(args)
+
+    bindingfile = os.path.join(out_dir, "binding.h5")
+    assert os.path.exists(bindingfile)
+    df = view_h5(bindingfile)
+    # regions overlapping between regionfiles and bam files
+    assert set(df.index) == {"chr1:50-250", "chr1:70-300", "chr1:450-500"}
+    # TFs overlapping between factors and pfmfile's motif2factors.txt
+    assert set(df.columns) == {"SOX12"}
