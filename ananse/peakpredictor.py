@@ -1,4 +1,3 @@
-import inspect
 import itertools
 import os
 import re
@@ -25,15 +24,20 @@ from sklearn.preprocessing import minmax_scale, scale
 import ananse
 from ananse.enhancer_binding import CombineBedFiles
 from ananse.utils import check_input_factors, get_motif_factors
+from . import PACKAGE_DIR
 
 # This motif file is not created by default
 #   * f"{self.data_dir}/reference.factor.feather"
+
+BLACKLIST_TFS = [
+    "NO ORTHOLOGS FOUND",  # gimme motif2factors artifact
+]
 
 
 class PeakPredictor:
     def __init__(
         self,
-        reference,  # positional in this setup
+        reference=None,
         atac_bams=None,
         histone_bams=None,
         regions=None,
@@ -43,6 +47,10 @@ class PeakPredictor:
         pfmscorefile=None,
         ncore=4,
     ):
+        if reference is None:
+            reference = os.path.join(PACKAGE_DIR, "db", "default_reference")
+        if not os.path.exists(reference):
+            raise NotADirectoryError(f"Could not find {reference}")
         self.data_dir = reference
 
         if atac_bams is None and histone_bams is None:
@@ -80,7 +88,7 @@ class PeakPredictor:
         self._histone_data = None
         self.factor_models = {}
         self.pfmfile = pfmfile
-        self._load_motifs(factors=factors)
+        self._load_motifs(factors=factors)  # loads motifs, f2m and motif_graph
 
         # if the reference regions are used, we can use existing data such
         # as motif scores.
@@ -161,6 +169,12 @@ class PeakPredictor:
                     continue
 
                 f2m.setdefault(factor, []).append(name)
+
+        # remove blacklisted TFs
+        for tf in BLACKLIST_TFS:
+            if tf in f2m:
+                del f2m[tf]
+
         return f2m
 
     def _jaccard_motif_graph(self, indirect, factors):
@@ -804,12 +818,6 @@ def predict_peaks(
     # If regions are specified, read them in, combining multiple files if
     # necessary.
     regions = _check_input_regions(regionfiles, genome, outdir=outdir)
-
-    if reference is None:
-        install_dir = os.path.dirname(
-            os.path.abspath(inspect.getfile(inspect.currentframe()))
-        )
-        reference = os.path.join(install_dir, "db", "default_reference")
 
     if reference is not None:
         if not os.path.exists(reference):
