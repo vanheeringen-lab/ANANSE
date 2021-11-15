@@ -260,11 +260,37 @@ def check_input_factors(factors):
     else:
         return factors
 
+    fname = cleanpath(fname)
     if not os.path.exists(fname):
         raise ValueError(f"Factors file '{factors}' does not exist")
 
     factors = [line.strip() for line in open(fname)]
     return factors
+
+
+def get_binding_tfs(binding, all_tfs=False):
+    """
+    Returns a list of unique TFs found in the ananse binding output file.
+
+    The binding file contains multiple lists of TFs:
+    - set(pd.read_hdf(binding, key="_factor_activity")["factor"])
+    - set(x for x in dir(hdf.root) if not x.startswith("_"))
+    The former contains all TFs from the motif2factors.txt, while the latter
+    contains only those for which a binding probability was calculated.
+
+    The outersection of these sets had an error in "predict_proba()".
+    """
+    if all_tfs:
+        # all TFs (from the motifs2factors.txt used in ananse binding)
+        tfs = set(pd.read_hdf(binding, key="_factor_activity")["factor"])
+    else:
+        # TFs with binding probabilities
+        hdf = pd.HDFStore(binding, "r")
+        # TODO: This is hacky (depending on "_"), however the hdf.keys() method is
+        #       much slower. Currently all TF names do *not* start with "_"
+        tfs = set(x for x in dir(hdf.root) if not x.startswith("_"))
+        hdf.close()
+    return list(tfs)
 
 
 def view_h5(
@@ -300,21 +326,20 @@ def view_h5(
     -------
     pandas.DataFrame
     """
-    if list_tfs:
-        act = pd.read_hdf(fname, key="_factor_activity")
-        act = act.set_index("factor")
-        return pd.DataFrame({"factor": list(set(act.index))})
-
     if list_regions:
         reg = pd.read_hdf(fname, key="_index")
         return pd.DataFrame({"region": list(set(reg.index))})
+
+    if tfs is None:
+        tfs = get_binding_tfs(fname)
+
+    if list_tfs:
+        return pd.DataFrame({"factor": list(tfs)})
 
     if fmt not in ["wide", "long"]:
         raise ValueError("fmt should be either 'wide' or 'long'")
 
     with pd.HDFStore(fname) as hdf:
-        if tfs is None:
-            tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
         if n:
             n = int(n)
             tfs = tfs[: min(len(tfs), n)]
