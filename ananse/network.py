@@ -16,15 +16,14 @@ import dask.dataframe as dd
 from tempfile import NamedTemporaryFile, mkdtemp
 from dask.distributed import progress
 from loguru import logger
-from pandas import HDFStore
 from tqdm.auto import tqdm
 import pyranges as pr
 
-from . import SEPARATOR
+from ananse.utils import get_binding_tfs, cleanpath
+from . import SEPARATOR, PACKAGE_DIR
 
 
 warnings.filterwarnings("ignore")
-PACKAGE_DIR = os.path.dirname(__file__)
 
 
 class Network(object):
@@ -234,7 +233,7 @@ class Network(object):
         pandas.DataFrame
             DataFrame with enhancer regions, gene names, distance and weight.
         """
-        genes = region_gene_overlap(peak_pr, self.gene_bed)
+        genes = region_gene_overlap(peak_pr, self.gene_bed, up, down)
         if genes.empty:
             return pd.DataFrame()
 
@@ -325,6 +324,9 @@ class Network(object):
         """
         logger.info("Loading binding data")
 
+        if not os.path.exists(cleanpath(binding)):
+            raise ValueError(f"File {binding} does not exist!")
+
         if combine_function not in ["mean", "max", "sum"]:
             raise NotImplementedError(
                 "Unknown combine function, valid options are: mean, max, sum"
@@ -339,22 +341,20 @@ class Network(object):
                 "promoter region is larger than the maximum distance to use"
             )
 
-        hdf = HDFStore(binding, "r")
-
-        # TODO: This is hacky (depending on "_"), however the hdf.keys() method is
-        #       much slower. Currently all TF names do *not* start with "_"
-        all_tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
+        all_tfs = get_binding_tfs(binding)
         if tfs is None:
             tfs = all_tfs
-            logger.info(f"Using all {len(set(all_tfs))} TFs.")
-        else:
-            tfs = set(tfs) & set(all_tfs)
-            logger.info(f"Using {len(tfs)} of {len(set(all_tfs))} TFs.")
         if len(tfs) == 0:
             raise ValueError(
-                "No tfs in the binding file overlap with given tfs! "
-                "Use `ananse view` to inspect the region in the file."
+                "No transcription factor overlap between requested TFs and binding file! "
+                f"Use `ananse view --list-tfs {binding}` to inspect the TFs in the file."
             )
+        if len(tfs) == len(all_tfs):
+            logger.info(f"Using all {len(set(tfs))} TFs.")
+        else:
+            logger.info(f"Using {len(tfs)} of {len(set(all_tfs))} TFs.")
+
+        hdf = pd.HDFStore(binding, "r")
 
         # Read enhancer index from hdf5 file
         enhancers = hdf.get(key="_index")
@@ -368,7 +368,7 @@ class Network(object):
         if len(chroms) == 0:
             raise ValueError(
                 "No regions in the binding file overlap with given regions! "
-                "Use `ananse view` to inspect the region in the file."
+                f"Use `ananse view --list-regions {binding}` to inspect the regions in the file."
             )
 
         tmpdir = mkdtemp()
@@ -591,8 +591,7 @@ class Network(object):
             if binding is not None:
                 logger.debug("Loading tf binding activity data")
                 act = pd.read_hdf(binding, key="_factor_activity")
-                if "factor" in act.columns:
-                    act = act.set_index("factor")
+                act = act.set_index("factor")
                 act.index.name = "tf"
                 act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
                 df_expression = df_expression.merge(
@@ -839,16 +838,23 @@ def get_factors(binding: str = None, tfs: list = None):
 
     out_tfs = tfs
     if binding is not None:
-        act = pd.read_hdf(binding, key="_factor_activity")
-        act = act.set_index("factor")
-        out_tfs = act.index
+        out_tfs = get_binding_tfs(binding)
         if tfs is not None:
-            out_tfs = set(out_tfs) & set(tfs)
+            not_valid = set(tfs) - set(out_tfs)
+            if len(not_valid) > 0:
+                logger.warning(
+                    f"The following TFs are requested, but not found in {binding}:"
+                )
+                logger.warning(", ".join(not_valid))
+                logger.warning(
+                    "Perhaps an error occurred for these TFs in ananse binding."
+                )
+            out_tfs = set(tfs) & set(out_tfs)
 
     if len(out_tfs) == 0:
         raise ValueError(
-            "No transcription factor overlap between given TFs and binding file! "
-            "Use `ananse view` to inspect the region in the file."
+            "No transcription factor overlap between requested TFs and binding file! "
+            f"Use `ananse view --list-tfs {binding}` to inspect the TFs in the file."
         )
     return list(set(out_tfs))
 
