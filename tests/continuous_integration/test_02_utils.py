@@ -1,8 +1,30 @@
 import os
 import tempfile
 
+import pytest
+from gimmemotifs.motif import read_motifs
+
 import ananse.utils
 from . import compare_contents, write_file
+
+
+def test_check_path():
+    cmd = ananse.utils.check_path
+    assert cmd(None) is None
+
+    # accepts a string, returns a string
+    abspath = cmd("tests", error_missing=False)
+    assert os.path.exists(abspath) and os.path.isabs(abspath)
+
+    # accepts a list, returns a list
+    relpaths = ["tests/data", "tests"]
+    abspaths = cmd(relpaths, error_missing=False)
+    assert all(os.path.exists(p) for p in abspaths)
+    assert all(os.path.isabs(p) for p in abspaths)
+
+    # error on missing file/dir
+    with pytest.raises(FileNotFoundError):
+        cmd("missing_dir")
 
 
 def test_bed_sort(unsorted_bed, sorted_bed):
@@ -161,3 +183,85 @@ def test_clean_tmp():
     assert os.path.exists(tmpdir)
     ananse.utils.clean_tmp()
     assert not os.path.exists(tmpdir)
+
+
+def test_get_motif_factors():
+    pfmfile = "tests/data/debug.pfm"
+    motifs = read_motifs(pfmfile, as_dict=True)
+    motif = motifs["GM.5.0.Homeodomain.0001"]
+    cmd = ananse.utils.get_motif_factors
+
+    indirect_tfs = cmd(motif, indirect=True)
+    assert indirect_tfs == ["TGIF1"]
+
+    direct_tfs = cmd(motif, indirect=False)
+    assert direct_tfs == []
+
+
+def test_check_input_factors(outdir):
+    cmd = ananse.utils.check_input_factors
+    assert cmd(None) is None
+
+    # accepts a list of TFs (len>1)
+    in_tfs = ["TF1", "TF2"]
+    output = cmd(in_tfs)
+    assert in_tfs == output
+
+    # accepts a file
+    in_file = os.path.join(outdir, "tfs.txt")
+    write_file(in_file, ["TF1\n", "TF2\n"])
+    output = cmd(in_file)
+    assert in_tfs == output
+
+    # accepts a list of files len==1
+    output = cmd([in_file])
+    assert in_tfs == output
+
+
+def test_get_binding_tfs():
+    cmd = ananse.utils.get_binding_tfs
+    binding = "tests/data/network/binding.h5"
+    ret = cmd(binding)
+    assert len(ret) == 30
+    assert "NFKB2" in ret
+
+
+def test_view_h5():
+    cmd = ananse.utils.view_h5
+    binding = "tests/data/network/binding.h5"
+
+    # regions and TFs
+    regions = cmd(binding, list_regions=True)
+    assert regions.shape == (61786, 1)
+    tfs = cmd(binding, list_tfs=True)
+    assert tfs.shape == (30, 1)
+
+    # all = regions x TFs
+    complete_view = cmd(binding)
+    assert complete_view.shape == (regions.shape[0], tfs.shape[0])
+
+    # various subsets in either format
+    head_wide = cmd(binding, n=10)
+    assert head_wide.shape == (10, 10)
+    head_long = cmd(binding, n=10, fmt="long")
+    assert head_long.shape == (10 * 10, 3)
+
+    subset_wide = cmd(
+        binding,
+        tfs=["NFKB2", "KLF6"],
+        regions=[
+            "chr10:100000171-100000371",
+            "chr10:100001843-100002043",
+        ],
+    )
+    assert subset_wide.shape == (2, 2)
+    subset_long = cmd(
+        binding,
+        tfs=["NFKB2", "KLF6"],
+        regions=[
+            "chr10:100000171-100000371",
+            "chr10:100001843-100002043",
+        ],
+        fmt="long",
+    )
+    assert subset_long.shape == (2 * 2, 3)
