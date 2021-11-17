@@ -1,6 +1,7 @@
 """Predict TF influence score"""
 import sys
 import warnings
+import genomepy
 from collections import namedtuple
 from loguru import logger
 from tqdm import tqdm
@@ -103,7 +104,7 @@ def difference(GRN_source, GRN_target, full_output=False):
 
     # lets check if the full GRN output is loaded and if so output all attributes to the diffnetwork:
     if full_output:
-        logger.info("calculating diff GRN with full output")
+        logger.info("Calculating differential GRN with full output")
         # lets load all the  edges into the diffnetwork
         for u, v, ddict in GRN_target.edges(data=True):
             # u = source node, v = target node, ddict = dictionary of edge attributes
@@ -145,7 +146,7 @@ def difference(GRN_source, GRN_target, full_output=False):
                     TF_act_source=GRN_source[u][v]["tf_activity"],
                 )
     else:
-        logger.info("calculating diff GRN")
+        logger.info("Calculating differential GRN")
         # if only the weight is loaded, lets load only that in the diffnetwork:
         for (u, v) in GRN_target.edges():
             source_weight = GRN_source.edges[u, v]["weight"]
@@ -156,67 +157,6 @@ def difference(GRN_source, GRN_target, full_output=False):
                     u, v, weight=diff_weight, n=1, neglogweight=-np.log(diff_weight)
                 )
     return DIF
-
-
-def read_expression(fname, padj_cutoff=0.05):
-    """
-    Read differential gene expression analysis output,
-    return dictionary with namedtuples of scores, absolute fold
-    change and "real" (directional) fold change.
-
-    Parameters
-    ----------
-    fname: str
-        DESeq2 output file.
-        Tab-separated, containing (at least) 3 columns:
-        1. a column with names/IDs (column name is ignored),
-        2. named column "padj" (adjusted p-values)
-        3. named column "log2FoldChange"
-    pval = float of the cutoff of which genes will be flagged as differential
-
-    Returns
-    -------
-    dict
-        namedtuples of scores, absolute fold change and "real" (directional) fold change.
-    """
-    expression_change = dict()
-
-    df = pd.read_table(
-        fname,
-        index_col=0,
-        header=0,
-        dtype={
-            "resid": str,
-            "Unnamed: 0": str,
-            "log2FoldChange": float,
-            "padj": float,
-        },
-    )[["log2FoldChange", "padj"]]
-    # removes NaNs
-    df.dropna(inplace=True)
-    # check for duplicated index rows and return an error (but continue running)
-    dup_df = df[df.index.duplicated()]
-    if len(dup_df) > 0:
-        dupped_gene = str(dup_df.index[0])
-        logger.warning(
-            f"Duplicated gene names detected in differential expression file e.g. '{dupped_gene}'. "
-            "Averaging values for duplicated genes..."
-        )
-
-    # average values for duplicate gene names (none hopefully)
-    df = df.groupby(by=df.index, dropna=True).mean(0)
-
-    # absolute fold change
-    df["fc"] = df["log2FoldChange"].abs()
-
-    # get the gscore (absolute fold change if significantly differential)
-    df["score"] = df["fc"] * (df["padj"] < padj_cutoff)
-
-    for k, row in df.iterrows():
-        expression_change[k] = Expression(
-            score=row.score, absfc=row.fc, realfc=row.log2FoldChange
-        )
-    return expression_change
 
 
 def targetScore(node, G, expression_change, max_degree=3):
@@ -261,8 +201,8 @@ def targetScore(node, G, expression_change, max_degree=3):
             f"Could not calculate p-val (target vs non-target fold-change) for {node}, "
             f"targets = {len(target_fc)}, non-target = {len(non_target_fc)}."
         )
-        logger.warning(f"targets = {target_fc}")
-        logger.warning(f"non_target = {non_target_fc}")
+        logger.warning(f"targets = {target_fc[0:min(5, len(target_fc))]}...")
+        logger.warning(f"non_target = {non_target_fc[0:min(5, len(non_target_fc))]}...")
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
 
     # factor, targetScore, directTargets, totalTargets, Gscore, pval, target_fc
@@ -316,32 +256,33 @@ class Influence(object):
         self,
         outfile,
         degenes,
+        gene_gtf=None,
         GRN_source_file=None,
         GRN_target_file=None,
-        filter=False,
-        edges=100000,
+        filter=False,  # TODO: variable not exposed in CLI
+        edges=100_000,
         ncore=1,
         GRNsort_column="prob",
         padj_cutoff=0.05,
         full_output=False,
     ):
         self.ncore = ncore
+        self.gene_gtf = gene_gtf
         self.full_output = full_output
         self.GRNsort_column = GRNsort_column
-        # Load GRNs
 
-        if GRN_source_file is None and GRN_target_file is not None:
+        # Load GRNs
+        if GRN_target_file is None and GRN_source_file is None:
+            logger.error("You should provide at least one ANANSE network file!")
+            sys.exit(1)
+        logger.info(f"Loading network data, using the top {edges} edges")
+        if GRN_source_file is None:
             self.G = read_network(GRN_target_file, edges=edges)
-            logger.warning("You only provide the target network!")
-        elif GRN_target_file is None and GRN_source_file is not None:
+            logger.warning("You only provided the target network!")
+        elif GRN_target_file is None:
             self.G = read_network(GRN_source_file, edges=edges)
             logger.warning("You only provided the source network!")
-        elif GRN_target_file is None and GRN_source_file is None:
-            logger.warning("You should provide at least one ANANSE network file!")
         else:
-            logger.info(
-                f"Reading network(s), using the union of the top {edges} edges of each GRN."
-            )
             top_int_source = read_top_interactions(
                 GRN_source_file, edges=edges, GRNsort_column=GRNsort_column
             )
@@ -362,17 +303,123 @@ class Influence(object):
                 full_output=full_output,
             )
             self.G = difference(G1_source, G2_target, full_output=full_output)
-            logger.info(f"Differential network has {len(self.G.edges)} edges.")
+            if len(self.G.edges) == 0:
+                raise ValueError("No differences between networks!")
+            logger.info(f"    Differential network has {len(self.G.edges)} edges.")
+
         # Load expression file
-        self.expression_change = read_expression(degenes)
+        self.expression_change = self.read_expression(degenes, padj_cutoff)
         self.outfile = outfile
         # Filter TFs
         self.filter = filter
 
+    def read_expression(self, fname, padj_cutoff=0.05):
+        """
+        Read differential gene expression analysis output,
+        return dictionary with namedtuples of scores, absolute fold
+        change and "real" (directional) fold change.
+
+        Parameters
+        ----------
+        fname: str
+            DESeq2 output file.
+            Tab-separated, containing (at least) 3 columns:
+            1. a column with names/IDs (column name is ignored),
+            2. named column "padj" (adjusted p-values)
+            3. named column "log2FoldChange"
+
+        padj_cutoff: float, optional
+            cutoff below which genes are flagged as differential, default is 0.05
+
+        Returns
+        -------
+        dict
+            namedtuples of scores, absolute fold change and "real" (directional) fold change.
+        """
+        logger.info(
+            f"Loading expression data, using genes with an adjusted p-value below {padj_cutoff}"
+        )
+
+        df = pd.read_table(
+            fname,
+            index_col=0,
+            header=0,
+            dtype=str,
+        )
+        for col in ["log2FoldChange", "padj"]:
+            if col not in df.columns:
+                raise ValueError(
+                    f"Column '{col}' not in differential gene expression file!"
+                )
+        df = df[["log2FoldChange", "padj"]].dropna()  # removes unneeded data
+        df = df.astype(float)
+
+        network_genes = set(self.G.nodes)
+        overlap = len(network_genes & set(df.index))
+        if overlap == 0 and self.gene_gtf is not None:
+            logger.warning(
+                "Converting genes in differential expression table to HGNC symbols"
+            )
+
+            gp = genomepy.Annotation(self.gene_gtf)
+            tid2gid = gp.gtf_dict("transcript_id", "gene_id")
+            tid2name = gp.gtf_dict("transcript_id", "gene_name")
+            gid2name = gp.gtf_dict("gene_id", "gene_name")
+            df = (
+                df.rename(index=tid2name)
+                .rename(index=tid2gid)
+                .rename(index=gid2name)
+                .reset_index()
+            )
+            # take the most significant gene per duplicate (if applicable)
+            df = df.groupby("index").min("padj")
+
+        overlap = len(network_genes & set(df.index))
+        if overlap == 0:
+            logger.error(
+                "Gene names don't overlap between the "
+                "differential gene expression file and network file(s)!"
+            )
+            if self.gene_gtf is None:
+                logger.info(
+                    "If you provide a GTF file we can try to convert "
+                    "the gene expression file to HGNC names."
+                )
+            sys.exit(1)
+        logger.debug(
+            f"{overlap} genes overlap between the "
+            "differential expression file and the network file(s)"
+        )
+
+        # check for duplicated index rows and return an error (but continue running)
+        dup_df = df[df.index.duplicated()]
+        if len(dup_df) > 0:
+            dupped_gene = str(dup_df.index[0])
+            logger.warning(
+                f"Duplicated gene names detected in differential expression file e.g. '{dupped_gene}'. "
+                "Averaging values for duplicated genes..."
+            )
+            df = df.groupby(by=df.index, dropna=True).mean(0)
+
+        # absolute fold change
+        df["fc"] = df["log2FoldChange"].abs()
+
+        # get the gscore (absolute fold change if significantly differential)
+        df["score"] = df["fc"] * (df["padj"] < padj_cutoff)
+
+        expression_change = dict()
+        for k, row in df.iterrows():
+            expression_change[k] = Expression(
+                score=row.score, absfc=row.fc, realfc=row.log2FoldChange
+            )
+        return expression_change
+
     def save_reg_network(self, filename, full_output=False):
         """Save the network difference between two cell types to a file."""
+        # check if all keys are found
+        keys = self.G.edges[list(self.G.nodes)[0:2]].keys()
         with open(filename, "w") as nw:
-            if full_output:
+            if full_output and "source_wb" in keys:
                 logger.info("output full diff network")
                 header = [
                     "tf",
@@ -416,7 +463,7 @@ class Influence(object):
                     ]
                     nw.write("\t".join(str(v) for v in cols) + "\n")
             else:
-                nw.write("TF\ttarget\tweight\n")
+                nw.write("tf\ttarget\tweight\n")
                 for (u, v, ddict) in self.G.edges(data=True):
                     nw.write(u + "\t" + v + "\t" + str(ddict["weight"]) + "\n")
 

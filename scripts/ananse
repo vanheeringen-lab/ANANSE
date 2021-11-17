@@ -69,13 +69,39 @@ if __name__ == "__main__":
         default=None,
         nargs="+",
     )
+    group = p.add_argument_group("Required arguments (optional for hg38)")
+    group.add_argument(
+        "-g",
+        "--genome",
+        dest="genome",
+        help="Genome (genomepy name or FASTA file used to align the bams and peaks to).",
+        metavar="GENOME",
+        default="hg38",
+    )
+    group.add_argument(
+        "-r",
+        "--regionfiles",
+        dest="regionfiles",
+        help="One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak).",
+        metavar="FILE",
+        default=None,
+        nargs="+",  # >= 1 files
+    )
+    group.add_argument(
+        "-p",
+        "--pfmfile",
+        dest="pfmfile",
+        help="PFM file of the transcription factors to search for (default: gimme.vertebrate.v5.0)",
+        metavar="FILE",
+        default=None,
+    )
     group = p.add_argument_group("Optional arguments")
     group.add_argument(
         "-o",
         "--outdir",
         dest="outdir",
         help="Directory where you wish to store the output (default: ./ANANSE_binding)",
-        metavar="",
+        metavar="DIR",
         default="./ANANSE_binding",
     )
     group.add_argument(
@@ -83,38 +109,14 @@ if __name__ == "__main__":
         "--reference",
         dest="reference",
         help="Path to reference data directory",
-        metavar="",
+        metavar="DIR",
+        default=None,
     )
     group.add_argument(
-        "-r",
-        "--regionfiles",
-        dest="regionfiles",
-        help="One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)",
-        metavar="",
-        nargs="+",  # >= 1 files
-    )
-    group.add_argument(
-        "-g",
-        "--genome",
-        dest="genome",
-        help="Genome name, as managed by genomepy, or path to the genome FASTA used to align the bams and peaks to",
-        metavar="GENOME",
-        default="hg38",
-    )
-    group.add_argument(
-        "-d",
-        "--dist-func",
-        dest="dist_func",
-        help="bam reads are normalized to the selected distribution (default: an empirical distribution)",
-        metavar="",
-        default="peak_rank_file_dist",
-    )
-    group.add_argument(
-        "-p",
-        "--pfmfile",
-        dest="pfmfile",
-        help="PFM file of the transcription factors to search for (default gimme.vertebrate.v5.0)",
-        metavar="",
+        "--pfmscorefile",
+        dest="pfmscorefile",
+        help="Use precomputed gimmemotifs scores (gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv)",
+        metavar="FILE",
         default=None,
     )
     group.add_argument(
@@ -127,29 +129,22 @@ if __name__ == "__main__":
         nargs="*",
     )
     group.add_argument(
-        "-n",
-        "--ncore",
-        dest="ncore",
-        help="Number of processes to use for motif scanning",
-        metavar="",
-        type=int,
-        default=min(os.cpu_count(), 4),
-    )
-    group.add_argument(
-        "--pfmscorefile",
-        dest="pfmscorefile",
-        help="use precomputed gimmemotifs scores (gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv)",
-        metavar="",
-        default=None,
-    )
-    group.add_argument(
         "--jaccard-cutoff",
         dest="jaccard_cutoff",
         help="TFs with a jaccard motif similarity >= the cutoff can be used as backup model. "
              "0: any similarity, 1: perfect similarity (default is 0)",
-        metavar="",
+        metavar="FLOAT",
         type=float,
         default=0.0,
+    )
+    group.add_argument(
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of cores to use.",
+        metavar="INT",
+        type=int,
+        default=min(os.cpu_count(), 4),
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
@@ -164,35 +159,26 @@ if __name__ == "__main__":
         "-b",
         "--binding",
         dest="binding",
-        help="TF binding prediction file (from ananse binding).",
+        help="TF binding prediction file (from ANANSE binding).",
         metavar="FILE",
+        default=None,
         required=True,
     )
     group.add_argument(
         "-e",
         "--expression",
         dest="fin_expression",
-        help="Gene-level expression expression levels. The gene name (HGNC symbol in case of human) "
-        "should be present in the first column and there should be a column named tpm. "
-        "This file can be created by summarizing transcript-level TPMs "
-        "(the quant.sf from salmon or the abundances.tsv from kallisto) "
-        "to gene-level TPMs with tximeta.",
+        help="Gene expression files with gene name (HGNC symbol in case of human)"
+             " as first column and a column name 'TPM' (case insensitive). "
+             "This file can be created by summarizing transcript-level TPMs "
+             "(the quant.sf from salmon or the abundances.tsv from kallisto) "
+             "to gene-level TPMs with tximeta.",
         metavar="FILE",
         default=None,
         required=True,
         nargs="+",
     )
-    group.add_argument(
-        "-o",
-        "--outfile",
-        dest="outfile",
-        help="Name of output file",
-        metavar="FILE",
-        default=None,
-        required=True,
-    )
-
-    group = p.add_argument_group("optional arguments")
+    group = p.add_argument_group("Required arguments (optional for hg38)")
     group.add_argument(
         "-g",
         "--genome",
@@ -205,28 +191,28 @@ if __name__ == "__main__":
         "-a",
         "--annotation",
         dest="annotation",
-        help="Gene annotation in BED12 format. Not necessary if you use a genome "
-        "that was installed using genomepy with the --annotation flag.",
+        help="Gene annotation in BED12 format. "
+             "Not required when using a genomepy genome with annotation.",
         metavar="BED",
+        default=None,
+    )
+    group = p.add_argument_group("optional arguments")
+    group.add_argument(
+        "-o",
+        "--outfile",
+        dest="outfile",
+        help="Name of the output network file (default: ./ANANSE_network.tsv)",
+        metavar="FILE",
+        default="./ANANSE_network.tsv",
     )
     group.add_argument(
-        "-n",
-        "--ncore",
-        dest="ncore",
-        help="Number of core used.",
-        type=int,
-        default=4,
+        "-f",
+        "--full-output",
+        dest="full_output",
+        help="Export the full GRN output to the output file",
+        action="store_true",
+        default=False,
     )
-    # group.add_argument(
-    #     "-m",
-    #     "--memory-limit",
-    #     dest="memory_limit",
-    #     help="Memory limit (default 24G). Regardless of this limit, "
-    #          "ANANSE will use at least ~12GB for a typical analysis of human networks. "
-    #          "Setting the memory limit higher will result in faster computation.",
-    #     type=str,
-    #     default='24GB',
-    # )
     group.add_argument(
         "--include-promoter",
         "--exclude-promoter",
@@ -238,14 +224,6 @@ if __name__ == "__main__":
         nargs=0,
     )
     group.add_argument(
-        "-f",
-        "--full-output",
-        dest="full_output",
-        help="Export the full GRN output to the output file",
-        action="store_true",
-        default=False,
-    )
-    group.add_argument(
         "--include-enhancer",
         "--exclude-enhancer",
         default=True,
@@ -254,6 +232,15 @@ if __name__ == "__main__":
         dest="include_enhancer",
         action=NegateAction,
         nargs=0,
+    )
+    group.add_argument(
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of cores to use.",
+        type=int,
+        metavar="INT",
+        default=min(os.cpu_count(), 4),
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
@@ -281,15 +268,6 @@ if __name__ == "__main__":
         metavar="FILE",
         required=True,
     )
-    group.add_argument(
-        "-o",
-        "--outfile",
-        dest="outfile",
-        help="Output file.",
-        metavar="FILE",
-        default=None,
-        required=True,
-    )
     group = p.add_argument_group("optional arguments")
     group.add_argument(
         "-s",
@@ -300,19 +278,12 @@ if __name__ == "__main__":
         default=None,
     )
     group.add_argument(
-        "-i",
-        "--edges",
-        dest="edges",
-        help="Number of top edges used (default is 100,000).",
-        type=int,
-        default=100000,
-    )
-    group.add_argument(
-        "-c",
-        "--GRNsort-column",
-        dest="GRNsort_column",
-        help="column of GRN file sorted to select top interactions, 'prob' by default",
-        default="prob",
+        "-o",
+        "--outfile",
+        dest="outfile",
+        help="Name of the output influence file (default: ./ANANSE_influence.tsv)",
+        metavar="FILE",
+        default="./ANANSE_influence.tsv",
     )
     group.add_argument(
         "-f",
@@ -323,12 +294,39 @@ if __name__ == "__main__":
         default=False,
     )
     group.add_argument(
+        "-a",
+        "--annotation",
+        dest="gene_gtf",
+        help="Gene annotation in GTF format (or genomepy name). "
+             "Required if gene names were converted in ANANSE network.",
+        metavar="GTF",
+        default=None,
+    )
+    group.add_argument(
+        "-i",
+        "--edges",
+        dest="edges",
+        help="Number of top edges used (default: 100.000).",
+        type=int,
+        metavar="INT",
+        default=100000,
+    )
+    group.add_argument(
         "-j",
         "--padj",
         dest="padj_cutoff",
-        help="the pvallue wich clasifies genes (and TFs) as differential in the influence calculations",
+        help="Adjusted p-value below which genes classify as differential (default: 0.05).",
         type=float,
+        metavar="FLOAT",
         default=0.05,
+    )
+    group.add_argument(
+        "-c",
+        "--GRNsort-column",
+        dest="GRNsort_column",
+        help="Column of GRN file sorted to select top interactions, 'prob' by default",
+        default="prob",
+        metavar="STR",
     )
     group.add_argument(
         "-n",
@@ -336,7 +334,8 @@ if __name__ == "__main__":
         dest="ncore",
         help="Number of cores to use.",
         type=int,
-        default=4,
+        metavar="INT",
+        default=min(os.cpu_count(), 4),
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
@@ -347,13 +346,13 @@ if __name__ == "__main__":
     p = subparsers.add_parser(
         "view",
         add_help=False,
-        description="Explore the contents of an ananse binding file."
+        description="Explore the contents of an ANANSE binding file."
     )
     subparser_dict["view"] = p
     group = p.add_argument_group("required arguments")
     group.add_argument(
         "infile",
-        help="input binding.h5 file",
+        help="Input binding.h5 file",
         metavar="FILE",
     )
     group = p.add_argument_group("optional arguments")
@@ -361,7 +360,7 @@ if __name__ == "__main__":
         "-o",
         "--outfile",
         dest="outfile",
-        help="outputfile (tab-separated text, default: stdout)",
+        help="Output file (tab-separated text, default: stdout)",
         metavar="FILE",
         default=None,
     )
@@ -369,7 +368,7 @@ if __name__ == "__main__":
         "-t",
         "--tf",
         dest="tfs",
-        help="transcription factor(s) to display (default: all)",
+        help="Transcription factor(s) to display (default: all)",
         metavar="TF",
         default=None,
         nargs="*",
@@ -378,7 +377,7 @@ if __name__ == "__main__":
         "-r",
         "--regions",
         dest="regions",
-        help="region(s) to display (default: all)",
+        help="Region(s) to display (default: all)",
         metavar="REGION",
         default=None,
         nargs="*",
@@ -388,20 +387,20 @@ if __name__ == "__main__":
         "--format",
         dest="format",
         default="wide",
-        help="display format: wide (n columns) or long (3 columns) (default: wide)",
+        help="Display format: wide (n columns) or long (3 columns) (default: wide)",
     )
     group.add_argument(
         "-n",
         dest="n",
         metavar="INT",
-        help="number of regions and tfs to display (default: all)",
+        help="Number of regions and tfs to display (default: all)",
         default=None,
     )
     group.add_argument(
         "-lr",
         "--list-regions",
         dest="list_regions",
-        help="return a list of regions",
+        help="Return a list of regions",
         action="store_true",
         default=False,
     )
@@ -409,7 +408,7 @@ if __name__ == "__main__":
         "-lt",
         "--list-tfs",
         dest="list_tfs",
-        help="return a list of transcription factors",
+        help="Return a list of transcription factors",
         action="store_true",
         default=False,
     )
@@ -425,7 +424,7 @@ if __name__ == "__main__":
         "-i",
         "--influence-file",
         dest="infile",
-        help="ananse influence.txt file ",
+        help="ANANSE influence file",
         metavar="FILE",
         default=None,
         required=True,
@@ -437,25 +436,26 @@ if __name__ == "__main__":
         "--outdir",
         dest="outdir",
         help="Directory where you wish to store the output (default: ./ANANSE_binding)",
-        metavar="",
+        metavar="DIR",
         default="./ANANSE_binding",
     )
     group.add_argument(
         "--diff-network",
-        help="differential network file generated by ananse influence ",
+        help="Differential network file generated by ANANSE influence",
         dest="GRN_file",
         default="",
     )
     group.add_argument(
         "--edge-info",
-        help="column to use for edges of GRN, default = weight, when full_output is specified other options are  'wb_diff' ,'tf_act_diff''tf_expr_diff','tg_expr_diff'",
+        help="Column to use for edges of GRN, default: 'weight'. "
+             "When full_output is specified, options are 'wb_diff' ,'tf_act_diff', 'tf_expr_diff', 'tg_expr_diff'",
         dest="edge_info",
         type=str,
         default="weight",
     )
     group.add_argument(
         "--edge-min",
-        help="minimum value for an edge to be included in the GRN image",
+        help="Minimum value for an edge to be included in the GRN image",
         dest="edge_min",
         type=float,
         default=0.0,
@@ -469,7 +469,7 @@ if __name__ == "__main__":
     )
     group.add_argument(
         "--n-tfs",
-        help="ammount of TFs to plot in the GRN, default is top 20 differential TFs",
+        help="Amount of TFs to plot in the GRN, default is top 20 differential TFs",
         dest="n_TFs",
         type=int,
         default=20,
@@ -486,7 +486,7 @@ if __name__ == "__main__":
         "-f",
         "--full-output",
         dest="full_output",
-        help="select if the difnetwork is a full output file",
+        help="Select if the diffnetwork is a full output file",
         action="store_true",
         default=False,
     )
@@ -505,12 +505,14 @@ if __name__ == "__main__":
             if args.genome is not None:
                 try:
                     Genome(args.genome)
-                except Exception:  # noqa
-                    logger.exception(
-                        f"Genome {args.genome} not found. Have you installed your genome with genomepy? "
+                except Exception as e:  # noqa
+                    logger.error(str(e))
+                    logger.error(
+                        "  Have you installed your genome with genomepy? "
                         "See https://github.com/vanheeringen-lab/genomepy for details. "
-                        "Alternatively, you can specify a FASTA file."
                     )
+                    logger.error("  Alternatively, you can specify a FASTA file.")
+                    sys.exit(0)
 
         if args.func.__name__.startswith("run_"):
             args.func(**vars(args))

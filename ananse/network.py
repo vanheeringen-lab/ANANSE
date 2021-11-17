@@ -58,7 +58,6 @@ class Network(object):
                 export all variables to the GRN file or by default only the TF_target + prob score
         """
         self.ncore = ncore
-        self.genome = genome
         self.gene_bed = get_bed(gene_bed, genome)
         self.include_promoter = include_promoter
         self.include_enhancer = include_enhancer
