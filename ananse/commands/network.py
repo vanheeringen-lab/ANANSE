@@ -23,9 +23,7 @@ def network(args):
         gene_bed=check_path(args.annotation),
         include_promoter=args.include_promoter,
         include_enhancer=args.include_enhancer,
-        full_output=args.full_output
-        # pfmfile=args.pfmfile,
-        # promoter=args.promoter
+        full_output=args.full_output,
     )
 
     cluster = LocalCluster(
