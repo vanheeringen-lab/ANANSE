@@ -8,7 +8,7 @@ dependencies:
   - setuptools >=0.7
   - adjusttext
   - dask
-  - genomepy >=0.9.3
+  - genomepy >=0.11.0
   - gimmemotifs >=0.15.3
   - loguru
   - matplotlib >=2

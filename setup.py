@@ -49,7 +49,7 @@ setup(
         "scipy",
         "scikit-learn",
         "tables",
-        "genomepy >=0.9.3",
+        "genomepy >=0.11.0",
         "pyranges",
     ],
 )

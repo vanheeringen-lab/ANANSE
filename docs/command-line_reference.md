@@ -25,8 +25,9 @@ Notes:
 * This command will use `hg38` by default. For other genomes, **additional steps are required!** See "other species" below.
 
 <details>
-  <summary>hg38</summary>
+<summary>hg38</summary>
 
+<p>
 If you use `hg38` and the default enhancer regions, you can get significantly better predictions by using a more detailed model
 (that also includes the average ChIP-seq signal). 
 
@@ -47,11 +48,11 @@ ananse binding -A IPS.ATAC.rep1.bam IPS.ATAC.rep2.bam \
                -o IPS.binding \
                -R $DATA_DIR/ANANSE.REMAP.model.v1.0
 ```
-
+</p>
 </details>
 
 <details>
-  <summary>other species</summary>
+<summary>other species</summary>
 
 Human and mouse are supported out-of-the-box. For these two species (excluding `hg38`), you only need to specify a genome.
 For other species you will need a set of regions, a genome and gene annotation, and a custom motif to transcription factor mapping. 
@@ -105,7 +106,7 @@ ananse binding -A ATAC.rep1.bam ATAC.rep2.bam \
 </details>
 
 <details>
-  <summary>additional options</summary>
+<summary>additional options</summary>
 
 ###### --pfmscorefile
 If you expect to be running `ananse binding` multiple times on the same regions, you can precompute the motif scores once.
@@ -124,7 +125,7 @@ Use a higher value e.g. 0.1 to improve robustness of the selected model.
 </details>
 
 <details>
-  <summary>output files</summary>
+<summary>output files</summary>
 
 The output directory of `ananse binding` will contain one or two files, depending on the input data used. 
 The file called `binding.h5` contains:
@@ -146,105 +147,96 @@ If you provided multiple peaks or BED files as input, the output directory will 
 
 #### Full options
 
-Usage:
-```
-ananse binding [-A BAM [BAM ...]] [-H BAM [BAM ...]] [-o] 
-               [-R] [-r  [...]] [-g GENOME] [-d] [-p] 
-               [-f [TF ...]] [-n] [--pfmscorefile] 
-               [--jaccard-cutoff]
-```
+```shell
+usage: ananse [-h] <command> [options] binding [-A BAM [BAM ...]] [-H BAM [BAM ...]] [-g NAME] [-r FILE [FILE ...]] [-p FILE] [-o DIR] [-R DIR] [--pfmscorefile FILE] [-f [TF ...]] [--jaccard-cutoff FLOAT] [-n INT] [-h]
 
 Required arguments:
-```
   -A BAM [BAM ...], --atac-bams BAM [BAM ...]
                         ATAC-seq input BAM file(s), can be used alone or in combination with the -H option
   -H BAM [BAM ...], --histone-bams BAM [BAM ...]
-                        H3K27ac ChIP-seq input BAM file(s), can be used alone or in combibation with the -A option
-```
+                        H3K27ac ChIP-seq input BAM file(s), can be used alone or in combination with the -A option
+  -g NAME, --genome NAME
+                        Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38)
 
-Additional required arguments for other species (optional for `hg38`):
-```
-  -r  [ ...], --regionfiles  [ ...]
+Required arguments (optional for hg38):
+  -r FILE [FILE ...], --regionfiles FILE [FILE ...]
                         One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)
-  -g GENOME, --genome GENOME
-                        Genome name, as managed by genomepy, or path to the genome FASTA used to align the bams and peaks to
-  -p , --pfmfile        PFM file of the transcription factors to search for (default gimme.vertebrate.v5.0)
-```
+  -p FILE, --pfmfile FILE
+                        PFM file of the transcription factors to search for (default: gimme.vertebrate.v5.0)
 
 Optional arguments:
-```
-  -o , --outdir         Directory where you wish to store the output (default: ./ANANSE_binding)
-  -R, --reference
+  -o DIR, --outdir DIR  Directory where you wish to store the output (default: ./ANANSE_binding)
+  -R DIR, --reference DIR
                         Path to reference data directory
-  -d , --dist-func      bam reads are normalized to the selected distribution (default: an empirical distribution)
-  -f [TF [TF ...]], --factors [TF [TF ...]]
-                        Transcription factors to use. Either a space-separated list or a file with one TF per line.
-  -n , --ncpus
-                        Number of processes to use for motif scanning
-  --pfmscorefile        use precomputed gimmemotifs scores (gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv)
-  --jaccard-cutoff      TFs with a jaccard motif similarity >= the cutoff can be used as backup model. 
-                        0: any similarity, 1: perfect similarity (default is 0)
-  -h, --help            Show this help message and exit
+  --pfmscorefile FILE   Use precomputed gimmemotifs scores (gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv)
+  -f [TF ...], --factors [TF ...]
+                        Transcription factors to use. Either a space-separated list or a file with one TF per line
+  --jaccard-cutoff FLOAT
+                        TFs with a jaccard motif similarity >= the cutoff can be used as backup model. 0: any similarity, 1: perfect similarity (default is 0)
+  -n INT, --ncore INT   Number of cores to use.
+  -h, --help            show this help message and exit
 ```
-
 
 ### ananse network
 
-The `ananse network` command infers a cell type-specific GRN based on the predicted TF binding sites using `ananse binding` and the expression levels of both TFs as well as their target genes. TF-gene interaction scores, the edge weights in the network, are calculated based on the predicted TF binding probability in enhancers and the distance between the enhancers and the target gene, the predicted TF activity and the expression level of both TF and the target gene.
+The `ananse network` command infers a cell type-specific GRN based on the predicted TF binding sites,
+using `ananse binding` and the expression levels of both TFs and their target genes. 
+TF-gene interaction scores and network edge weights are calculated based on four metrics:
+- the predicted TF binding probability in enhancers,
+- the distance between the enhancers and the target gene, 
+- the predicted TF activity, 
+- and the expression level of both TF and the target gene.
 
 Note: `ananse network` needs ~12-15GB of memory for a typical analysis of a human network.
 
 #### Full options
 
+```shell
+usage: ananse [-h] <command> [options] network -b FILE -e FILE [FILE ...] [-g NAME] [-a BED] [-o FILE] [-f] [--include-promoter] [--include-enhancer] [-n INT] [-h]
 
-Usage: 
-
-``` bash
-ananse [-h] <command> [options] network -b FILE -e FILE -o FILE [-g NAME] [-a BED] [-n NCORE] [--include-promoter]
-                                        [--include-enhancer] [-h]
-```
-
-Required arguments:
-
-``` bash
+required arguments:
   -b FILE, --binding FILE
-                        TF binding prediction file (binding.h5 from ananse binding).
-  -e FILE, --expression FILE
-                        Expression scores. Should have gene names in the first column and should contain a column named
-                        tpm. Both the quant.sf from salmon or the abundances.tsv from kallisto will work fine.
-  -o FILE, --outfile	Name of output file.
-```
+                        TF binding prediction file (from ANANSE binding).
+  -e FILE [FILE ...], --expression FILE [FILE ...]
+                        Gene expression files with gene name (HGNC symbol in case of human) as first column and a column name 'TPM' (case insensitive). This file can be created by summarizing transcript-level TPMs (the
+                        quant.sf from salmon or the abundances.tsv from kallisto) to gene-level TPMs with tximeta.
 
-Optional arguments:
-
-``` bash
+Required arguments (optional for hg38):
   -g NAME, --genome NAME
-                        Genome (genomepy name or FASTA file).
+                        Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38). Not required when specifying a gene annotation bed file.
   -a BED, --annotation BED
-                        Gene annotation in BED12 format. Not necessary if you use a genome that was installed using
-                        genomepy with the --annotation flag.
-  -n NCORE, --ncore NCORE
-                        Number of core used.
-  -f , --full-output    Export not only the GRN edge weight, but all values used to calculate the weight to the GRN file
+                        Gene annotation (genomepy name or BED12 file) used to quantify expression levels. Not required when specifying a genomepy genome (with annotation).
+
+optional arguments:
+  -o FILE, --outfile FILE
+                        Name of the output network file (default: ./ANANSE_network.tsv)
+  -f, --full-output     Export the full GRN output to the output file
   --include-promoter, --exclude-promoter
-                        Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks
-                        are included.
+                        Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are included.
   --include-enhancer, --exclude-enhancer
-                        Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. By default enhancer peaks
-                        are included.
+                        Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. By default enhancer peaks are included.
+  -n INT, --ncore INT   Number of cores to use.
   -h, --help            show this help message and exit
 ```
 
-
 ### ananse influence
 
-To calculate the influence score for the transition from a *source* cell type (`-s` or `--source`) to a *target* cell type (`t` or `--target`), `ananse influence` uses the GRNs for both cell types, predicted by `ananse network`. For each network, the top 100k interactions are selected, based on the rank of the interaction scores (edge weights). Using the differential GRN, capturing the difference between the two networks, a local network is built for each TF, up to a maximal number of three edges. Using this network, the influence score is calculated based on 1) the edge distance from the TF of interest to the target gene, 2) the predicted interaction score and 3) the change in expression between the source cell type and the target cell type.
+To calculate the influence score for the transition from a *source* cell type (`-s` or `--source`) to a *target* cell type (`t` or `--target`), 
+`ananse influence` uses the GRNs for both cell types, predicted by `ananse network`. 
+For each network, the top 100k interactions are selected, based on the rank of the interaction scores (edge weights). 
+Using the differential GRN, capturing the difference between the two networks, a local network is built for each TF, up to a maximal number of three edges. 
+Using this network, the influence score is calculated based on
 
-The number of edges used is 100,000 by default but in some cases you'll get better performance with more edges. You can, for instance, try to increase to 500,000 edges by using `-i 500_000`. 
+1) the edge distance from the TF of interest to the target gene, 
+2) the predicted interaction score and 
+3) the change in expression between the source cell type and the target cell type.
+
+The number of edges used is 100,000 by default but in some cases you'll get better performance with more edges. 
+You can, for instance, try to increase to 500,000 edges by using `-i 500_000`. 
 
 Example command: 
 
-``` bash
+```shell
 $ ananse influence  -s results/FB_network.txt \
                     -t results/KRT_network.txt \
                     -d data/FB2KRT_degenes.tsv \
@@ -254,117 +246,89 @@ $ ananse influence  -s results/FB_network.txt \
 
 #### Full options
 
-Usage: 
+```shell
+usage: ananse [-h] <command> [options] influence -t FILE -d FILE [-s FILE] [-o FILE] [-f] [-a GTF] [-i INT] [-j FLOAT] [-c STR] [-n INT] [-h]
 
-``` bash
-ananse [-h] <command> [options] influence -t FILE -d FILE -o FILE [-s FILE] [-i EDGES] [-p] [-n NCORE] [-h]
-```
-
-Required arguments:
-
-``` bash
+required arguments:
   -t FILE, --target FILE
                         Network of target cell type.
   -d FILE, --degenes FILE
                         File with differential gene expression (DEseq2 output file).
-  -o FILE, --outfile FILE
-                        Output file.     
-```                        
 
-Optional arguments:
-
-``` bash
+optional arguments:
   -s FILE, --source FILE
                         Network of source cell type.
-  -i EDGES, --edges EDGES
-                        Number of top edges used (default is 100,000).
-  -j , --padj           cutoff value of which genes ananse considers differentially expressed
-  -n NCORE, --ncore NCORE
-                        Number of cores to use.
-  -f, --full-output     Run influence with all output in the diffnetwork fille, GRNs generated with the --full-output flagg
-                        are needed to run this option. default = False
-  -c, --GRNSort-column  The column the top interactions are selected upon. 'prob' by default but 'weighted_binding' is 
-                        an option to only use the binding model predictions and not the RNAseq data to select the top 
-                        interactions.
+  -o FILE, --outfile FILE
+                        Name of the output influence file (default: ./ANANSE_influence.tsv)
+  -f, --full-output     Export the full GRN output to the output file
+  -a GTF, --annotation GTF
+                        Gene annotation (genomepy name or GTF file) used to quantify expression levels. Required if gene names were converted in ANANSE network.
+  -i INT, --edges INT   Number of top edges used (default: 100.000).
+  -j FLOAT, --padj FLOAT
+                        Adjusted p-value below which genes classify as differential (default: 0.05).
+  -c STR, --GRNsort-column STR
+                        Column of GRN file sorted to select top interactions, 'prob' by default
+  -n INT, --ncore INT   Number of cores to use.
   -h, --help            show this help message and exit
 ```
 
-
-
 ### ananse plot
 
-Plot the output from the `influence.txt` output of `ananse influence` to a dotplot and when providing an `influence_diffnetwork.txt`
-also plot a GRN image of the top TFs their interactions.
+Plot the output from the `influence.tsv` output of `ananse influence` to a dotplot.
+When providing an `influence_diffnetwork.tsv` also plot a GRN image of the top TFs their interactions.
 
 Example command: 
 
-``` bash
-$ ananse plot   -i results/influence.txt \
-                --diff-network results/influence_diffnetwork.txt \
-                -o results \
+```shell
+$ ananse plot -i results/influence.tsv \
+              --diff-network results/influence_diffnetwork.tsv \
+              -o results
 ```
 
 #### Full options
 
-Usage: 
+```shell
+usage: ananse [-h] <command> [options] plot -i FILE [-o DIR] [--diff-network GRN_FILE] [--edge-info EDGE_INFO] [--edge-min EDGE_MIN] [--node-placement NETWORK_ALGORITHM] [--n-tfs N_TFS] [-c CMAP] [-f] [-h]
 
-``` bash
-ananse [-h] <command> [options] plot -i FILE -o OUTPUT_DIR --diff-network GRN_FILE --edge-info EDGE_INFO 
-                                               --edge-min EDGE_MIN --node-placement NETWORK_ALGORITHM 
-                                               --n-tfs N_TFS -c CMAP --full-output
-
-```
-
-Required arguments:
-
-``` bash
+required arguments:
   -i FILE, --influence-file FILE
-                        Influence.txt file output from the influence function
+                        ANANSE influence file
 
-```                        
-
-Optional arguments:
-
-``` bash
-  -o , --outdir FILE
-                        output dir where the output files are exported to
-  --diff-network GRN_file
-                        diff network file outputted from ananse influence
-  -n NCORE, --ncore NCORE
-                        Number of cores to use.
-  --edge-info           column from diff network file to use for edge vizualisation. Default = 'weight'  when full_output is 
-                        specified other options are 'wb_diff':weighted binding ,'tf_act_diff':TF motif activation score
-                        'tf_expr_diff':difference in TF expression between sourse and target and 'tg_expr_diff':target gene
-                        expression difference between source and target.
-  --edge-min            minimum score neded for edges to be included in the GRN image, default = 0 (inc. all edges)
+optional arguments:
+  -o DIR, --outdir DIR  Directory where you wish to store the output (default: ./ANANSE_binding)
+  --diff-network GRN_FILE
+                        Differential network file generated by ANANSE influence
+  --edge-info EDGE_INFO
+                        Column to use for edges of GRN, default: 'weight'. When full_output is specified, options are 'wb_diff' ,'tf_act_diff', 'tf_expr_diff', 'tg_expr_diff'
+  --edge-min EDGE_MIN   Minimum value for an edge to be included in the GRN image
   --node-placement NETWORK_ALGORITHM
                         pyviz cluster algorithm used for node placement, options include: neato, dot, fdp, twopi, sfdp, circo
-  --n-tfs N_TFS         number of top influence TFs included in the GRN network
-  -c CMAP, --cmap CMAP  colour pallete to use for outdegree
-  -f, --full-output     flagg to state if a full output diffnetwork is suplied, this command  and an diffnetwork generated with
-                        the full options flag are needed when plotting other edge weight types
+  --n-tfs N_TFS         Amount of TFs to plot in the GRN, default is top 20 differential TFs
+  -c CMAP, --cmap CMAP  matlotlib colour library
+  -f, --full-output     Select if the diffnetwork is a full output file
   -h, --help            show this help message and exit
 ```
+
 ### ananse view
 
 Convert the binding probabilities from  the `binding.h5` output of `ananse binding` to tab-separated text format.
-This is only necessary if you want to use the output for other purposes, as `ananse network` can only use the `.h5` file.
+This is only necessary if you want to visualize the output, or use it for other purposes, as `ananse network` can only use the `.h5` file.
 Converting all factors may take some time and memory!
 
 Example command to extract the binding probabilities for all factors in *wide* format (one column per TF):
 
-``` bash
+```shell
 $ ananse view binding.h5 -o binding.tsv
 ```
 
 Example command to extract the binding probabilities for TP53 and TP63 in *long* format, print to stdout:
 
 
-``` bash
+```shell
 $ ananse view binding.h5 -f TP53 TP63 -F long
 ```
 
-``` bash
+```shell
 loc     factor  prob
 chr1:181357-181557      TP53    0.2432
 chr1:267938-268138      TP53    0.2568
@@ -380,17 +344,25 @@ chr1:778533-778733      TP53    0.777
 
 #### Full options
 
-``` bash
-usage: ananse [-h] <command> [options] view [-o FILE] [-f [TF [TF ...]]] [-F FORMAT] FILE
+```shell
+usage: ananse [-h] <command> [options] view [-o FILE] [-t [TF ...]] [-r [REGION ...]] [-F FORMAT] [-n INT] [-lr] [-lt] [-h] FILE
 
-positional arguments:
-  FILE                  input binding.h5 file
+Explore the contents of an ANANSE binding file.
+
+required arguments:
+  FILE                  Input binding.h5 file
 
 optional arguments:
   -o FILE, --outfile FILE
-                        outputfile (tab-separated text, default: stdout)
-  -f [TF [TF ...]], --factors [TF [TF ...]]
-                        name(s) of transcription factors (default: all)
+                        Output file (tab-separated text, default: stdout)
+  -t [TF ...], --tf [TF ...]
+                        Transcription factor(s) to display (default: all)
+  -r [REGION ...], --regions [REGION ...]
+                        Region(s) to display (default: all)
   -F FORMAT, --format FORMAT
-                        format: wide or long (default: wide)
+                        Display format: wide (n columns) or long (3 columns) (default: wide)
+  -n INT                Number of regions and tfs to display (default: all)
+  -lr, --list-regions   Return a list of regions
+  -lt, --list-tfs       Return a list of transcription factors
+  -h, --help            show this help message and exit
 ```
