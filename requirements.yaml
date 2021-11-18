@@ -32,3 +32,5 @@ dependencies:
   - flake8-bugbear
   - pytest
   - pytest-cov
+  - mkdocs  # test docs with `mkdocs serve`
+  - mkdocs-material

@@ -16,7 +16,8 @@ extra_css:
   - css/extra.css
 markdown_extensions:
   - admonition
-#   - codehilite
+  - pymdownx.details
+  - pymdownx.superfences
   - footnotes
 
 extra_javascript:
