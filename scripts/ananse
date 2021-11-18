@@ -65,24 +65,24 @@ if __name__ == "__main__":
         "--histone-bams",
         dest="histone_bams",
         metavar="BAM",
-        help="H3K27ac ChIP-seq input BAM file(s), can be used alone or in combibation with the -A option",
+        help="H3K27ac ChIP-seq input BAM file(s), can be used alone or in combination with the -A option",
         default=None,
         nargs="+",
     )
-    group = p.add_argument_group("Required arguments (optional for hg38)")
     group.add_argument(
         "-g",
         "--genome",
         dest="genome",
-        help="Genome (genomepy name or FASTA file used to align the bams and peaks to).",
-        metavar="GENOME",
+        help="Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38)",
+        metavar="NAME",
         default="hg38",
     )
+    group = p.add_argument_group("Required arguments (optional for hg38)")
     group.add_argument(
         "-r",
         "--regionfiles",
         dest="regionfiles",
-        help="One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak).",
+        help="One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)",
         metavar="FILE",
         default=None,
         nargs="+",  # >= 1 files
@@ -183,7 +183,8 @@ if __name__ == "__main__":
         "-g",
         "--genome",
         dest="genome",
-        help="Genome (genomepy name or FASTA file).",
+        help="Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38). "
+             "Not required when specifying a gene annotation bed file.",
         metavar="NAME",
         default="hg38",
     )
@@ -191,8 +192,8 @@ if __name__ == "__main__":
         "-a",
         "--annotation",
         dest="annotation",
-        help="Gene annotation in BED12 format. "
-             "Not required when using a genomepy genome with annotation.",
+        help="Gene annotation (genomepy name or BED12 file) used to quantify expression levels. "
+             "Not required when specifying a genomepy genome (with annotation).",
         metavar="BED",
         default=None,
     )
@@ -297,7 +298,7 @@ if __name__ == "__main__":
         "-a",
         "--annotation",
         dest="gene_gtf",
-        help="Gene annotation in GTF format (or genomepy name). "
+        help="Gene annotation (genomepy name or GTF file) used to quantify expression levels. "
              "Required if gene names were converted in ANANSE network.",
         metavar="GTF",
         default=None,
