@@ -22,8 +22,7 @@ from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale, scale
 
 import ananse
-from ananse.enhancer_binding import CombineBedFiles
-from ananse.utils import check_input_factors, get_motif_factors
+from ananse.utils import check_input_factors, check_input_regions, get_motif_factors
 from . import PACKAGE_DIR
 
 # This motif file is not created by default
@@ -279,7 +278,7 @@ class PeakPredictor:
 
             # filter pfmscorefile and regions for overlap
             overlap = list(set(regions) & set(motif_df.index))
-            if len(overlap) < len(regions):
+            if len(overlap) < len(motif_df.index):
                 logger.debug(
                     f"Subsetting pfmscorefile to requested {len(regions)} regions"
                 )
@@ -715,52 +714,6 @@ def _load_human_factors():
     return valid_factors
 
 
-def _check_input_regions(regionfiles, genome, outdir=".", verbose=True, force=False):
-    # Load regions from BED or region text file
-    if regionfiles is None:
-        # Keep regions to None, use reference regions.
-        return
-
-    infile = regionfiles[0]
-    if len(regionfiles) > 1:
-        # merge files, assumed to be all BED
-        peak_width = 200
-        cbed = CombineBedFiles(genome=genome, peakfiles=regionfiles, verbose=verbose)
-        combined_bed = os.path.join(outdir, "regions_combined.bed")
-        cbed.run(outfile=combined_bed, width=peak_width, force=force)
-        infile = combined_bed
-
-    df = pd.read_table(infile, header=None, sep="\t", comment="#", dtype=str)
-    assert df.shape[0] > 1, "regions file must have more than 1 region!"
-
-    test = str(df.at[1, 0])  # skip potential header line
-    if bool(re.match(r"^.*:\d+-\d+$", test)):
-        # it's a regions list
-        # or it's a Seq2science counts table
-        regions = df.iloc[:, 0].tolist()
-
-    elif df.shape[1] >= 3:
-        # it's a BED file
-        regions = (
-            # For Ensembl genome names, make sure it's a string
-            df.iloc[:, 0].astype(str)
-            + ":"
-            + df.iloc[:, 1].astype(str)
-            + "-"
-            + df.iloc[:, 2].astype(str)
-        ).tolist()
-
-    else:
-        raise TypeError("Cannot identify regions file(s) type.")
-
-    # remove the header, if any.
-    header = str(regions[0])
-    if not bool(re.match(r"^.*:\d+-\d+$", header)):
-        regions = regions[1:]
-
-    return list(set(regions))
-
-
 def _check_input_files(*args):
     files = []
     for arg in args:
@@ -884,7 +837,7 @@ def predict_peaks(
         os.makedirs(outdir, exist_ok=True)
 
     # If regions are specified, read them in, combining multiple files if necessary.
-    regions = _check_input_regions(regionfiles, genome, outdir=outdir)
+    regions = check_input_regions(regionfiles, genome, outdir=outdir)
 
     if reference is not None:
         if not os.path.exists(reference):

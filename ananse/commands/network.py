@@ -1,6 +1,6 @@
 import os
 import ananse.network
-from ananse.utils import check_path
+from ananse.utils import check_path, check_input_factors, check_input_regions
 from dask.distributed import Client, LocalCluster
 from loguru import logger
 
@@ -35,9 +35,13 @@ def network(args):
         memory_limit=memory_limit,
     )
     client = Client(cluster)
+
+    regionfile = check_path(args.regions)
     b.run_network(
         binding=check_path(args.binding),
         fin_expression=check_path(args.fin_expression),
+        tfs=check_input_factors(args.factors),
+        regions=check_input_regions(regionfile, None),
         outfile=check_path(args.outfile, error_missing=False),
     )
     client.close()

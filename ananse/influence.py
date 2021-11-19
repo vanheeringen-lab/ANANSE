@@ -417,7 +417,8 @@ class Influence(object):
     def save_reg_network(self, filename, full_output=False):
         """Save the network difference between two cell types to a file."""
         # check if all keys are found
-        keys = self.G.edges[list(self.G.nodes)[0:2]].keys()
+        n = list(self.G.edges)[0]
+        keys = self.G.edges[n].keys()
         with open(filename, "w") as nw:
             if full_output and "source_wb" in keys:
                 logger.info("output full diff network")
@@ -609,7 +610,7 @@ class Influence(object):
     def run_influence(self, fin_expression=None):
         logger.info("Saving differential network.")
         self.save_reg_network(
-            (".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.txt"),
+            (".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.tsv"),
             full_output=self.full_output,
         )
 

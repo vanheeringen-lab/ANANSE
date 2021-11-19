@@ -458,11 +458,16 @@ class Network(object):
 
         hdf.close()
 
+        # this happens if there are no genes near any of the regions.
+        # (you likely specified too few regions)
+        if len(os.listdir(tmpdir)) == 0:
+            raise ValueError("No genes found near the requested regions!")
+
         ddf = dd.read_csv(os.path.join(tmpdir, "*.csv")).set_index("tf_target")
         return ddf
 
-    def _save_temp_expression(self, df, name):
-        tmp = df.rename(columns={"tpm": f"{name}_expression"})
+    def _save_temp_expression(self, df, name, column="tpm"):
+        tmp = df.rename(columns={column: f"{name}_expression"})
         tmp[f"{name}_expression"] = minmax_scale(tmp[f"{name}_expression"].rank())
         tmp.index.rename(name, inplace=True)
         tmp["key"] = 0
@@ -501,8 +506,8 @@ class Network(object):
         expression[column] = np.log2(expression[column] + 1e-5)
 
         tf_expr = expression[expression.index.isin(tfs)]
-        tf_fname = self._save_temp_expression(tf_expr, "tf")
-        target_fname = self._save_temp_expression(expression, "target")
+        tf_fname = self._save_temp_expression(tf_expr, "tf", column)
+        target_fname = self._save_temp_expression(expression, "target", column)
         # Read files (delayed) and merge on 'key' to create a Cartesian product
         # combining all TFs with all target genes.
         a = dd.read_parquet(tf_fname)
@@ -630,6 +635,7 @@ class Network(object):
             if df_expression is None:
                 logger.info("Processing binding network")
                 result = df_binding
+                result = result.reset_index()
             else:
                 logger.info("Processing expression-binding network")
                 result = df_expression.merge(
@@ -659,7 +665,7 @@ class Network(object):
         result["prob"] = result[columns].mean(1)
 
         # filter output
-        output_cols = ["tf_target", "prob"]
+        columns = ["tf_target", "prob"]
         if self.full_output:
             columns = [
                 "tf_target",
@@ -669,7 +675,7 @@ class Network(object):
                 "weighted_binding",
                 "activity",
             ]
-            output_cols = [col for col in columns if col in result]
+        output_cols = [c for c in columns if c in result.columns]
         if outfile:
             logger.info("Writing network")
             out_dir = os.path.abspath(os.path.dirname(outfile))

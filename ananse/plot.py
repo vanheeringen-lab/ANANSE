@@ -12,7 +12,7 @@ from matplotlib.lines import Line2D
 def plot_influence(infile, outfile):
     """Plot TF influence score to expression."""
 
-    mogrify = pd.read_table(infile, index_col="factor")
+    mogrify = pd.read_table(infile, sep="\t", index_col="factor")
     mogrify = mogrify.dropna()
     factors = list(mogrify.sort_values("sumScaled").tail(20).index)
     xcol = "factor_fc"
@@ -121,25 +121,30 @@ def plot_TF_GRN(
     cmap: matplotlib colour pallet used
     edge_min: minimum value the selected edge value needs to have to be included in the GRN, 0.1 seems like a good number for weight.
     """
-    if (full_output is False) & (edge_info != "weigth"):
+    if full_output is False and edge_info != "weight":
         logger.info(
-            "selected costum edge weight, but missing full output option, selecting 'weight' as edge weight instead."
+            "selected custom edge weight, but missing full output option, selecting 'weight' as edge weight instead."
         )
         edge_info = "weight"
 
-    # read the diff_network file into a network:
-    G = read_diff_network(GRN_file, full_output)
     # select the top TFs:
-    mogrify = pd.read_table(infile, index_col="factor")
+    mogrify = pd.read_table(
+        infile,
+        sep="\t",
+        index_col="factor",
+        usecols=["factor", "sumScaled", "GscoreScaled"],
+    )
     mogrify = mogrify[mogrify.GscoreScaled > 0]  # plot only TFs that are differential
-    factors = list(mogrify.sort_values("sumScaled").tail(n_TFs).index)
+    top_factors = list(mogrify.sort_values("sumScaled").tail(n_TFs).index)
+
+    if len(mogrify) == 0:
+        logger.warning(f"No differential TFs in {infile}!")
+        return
+
+    # read the diff_network file into a network
+    G = read_diff_network(GRN_file, full_output)
     # filter the diffnetwork to only contain topTF-topTF
-
-    def filter_node(n1):
-        return n1 in factors
-
-    TF_G = nx.subgraph_view(G, filter_node=filter_node)
-
+    TF_G = nx.subgraph_view(G, filter_node=lambda tf: tf in top_factors)
     # filter the diffnetwork to only contain edges above the cuttoff value
     TF_G2 = nx.DiGraph(
         ((u, v, e) for u, v, e in TF_G.edges(data=True) if e[edge_info] > edge_min)

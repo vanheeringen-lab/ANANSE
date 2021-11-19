@@ -119,17 +119,69 @@ df.to_csv(chr9_defile, sep="\t")
 
 ```
 
+create 2nd network file (after creating the first network file below)
+```python
+target = "tests/data/GRCz11_chr9/GRCz11_network.tsv"
+source = "tests/data/GRCz11_chr9/GRCz11_network_source.tsv"
+
+import pandas as pd
+import random
+
+
+df = pd.read_csv(target, sep="\t", index_col=0)
+df["log2FoldChange"] = [10*random.random() for _ in df.index]
+df["prob"] = [random.random() for _ in df.index]
+df["tf_expression"] = df["prob"]
+df["target_expression"] = df["prob"]
+df["weighted_binding"] = df["prob"]
+df["activity"] = df["prob"]
+df.to_csv(source, sep="\t")
+
+```
+
+create an influence file for ANANSE plot
+```python
+influence = "tests/data/GRCz11_chr9/influence.tsv"
+
+import pandas as pd
+
+df = pd.DataFrame({
+    "factor": ["pou2f1b", "pou3f3a", "pou1f1"],
+    "targetscore": [0, 0, 0],
+    "targetScaled": [0, 0, 0],
+    "Gscore": [0, 0, 0],
+    "GscoreScaled": [1, 1, 1],
+    "sum": [0, 0, 0],
+    "sumScaled": [1, 2, 3],
+    "directTargets": [0, 0, 0],
+    "factor_fc": [0, 0, 0],   
+})
+df.to_csv(influence, sep="\t", index=False)
+
+```
+
+
 testrun on a subset of pou2f1b pou1f1 pou3f3a pou4f3
+```bash
+cd tests/data/GRCz11_chr9
+```
+
 ```bash
 ananse binding \
 -A chr9.bam \
 -r GRCz11_chr9_regions.bed \
--f pou2f1b pou1f1 pou3f3a \
+-t pou2f1b pou1f1 pou3f3a \
 -g GRCz11/GRCz11.fa \
 -p GRCz11_chr9.pfm \
 --pfmscorefile GRCz11_chr9_scan.bed \
 -n 1 \
 -o GRCz11_binding
+```
+
+```bash
+ananse view \
+GRCz11_binding/binding.h5 \
+-n 3
 ```
 
 ```bash
@@ -139,15 +191,23 @@ ananse network \
 -g GRCz11/GRCz11.fa \
 --full-output \
 -n 1 \
--o GRCz11_network
+-o GRCz11_network.tsv
 ```
 
 ```bash
 ananse influence \
--t GRCz11_network \
+-t GRCz11_network.tsv \
 -d chr9_diffexp.tsv \
 -a GRCz11/GRCz11.fa \
 --full-output \
 -n 1 \
--o GRCz11_influence
+-o GRCz11_influence.tsv
+```
+
+```bash
+ananse plot \
+-i influence.tsv \
+-d GRCz11_influence_diffnetwork.tsv \
+-t png \
+-o GRCz11_plot
 ```
