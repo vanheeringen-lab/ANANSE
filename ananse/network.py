@@ -814,14 +814,13 @@ def get_bed(gene_bed, genome):
             out_bed = os.path.join(PACKAGE_DIR, "db", f"{genome}.genes.bed")
         else:
             gp = genomepy.Genome(genome)  # can raise descriptive FileNotFoundError
-            out_bed = gp.annotation_bed_file
-    else:
-        gp = genomepy.Annotation(out_bed)
-        out_bed = gp.annotation_bed_file
+            out_bed = gp.annotation_bed_file  # can return None
+    elif not os.path.exists(out_bed) or not out_bed.lower().endswith(".bed"):
+        # can raise descriptive FileNoTFoundError (in version >0.11.0)
+        gp = genomepy.Annotation(out_bed)  # can raise descriptive ValueError
+        out_bed = gp.annotation_bed_file  # can return None
     if out_bed is None:
         raise TypeError("Please provide a gene bed file with the -a argument.")
-    if not os.path.exists(out_bed):
-        raise FileNotFoundError(f"Could not find gene bed file {out_bed}.")
     return out_bed
 
 

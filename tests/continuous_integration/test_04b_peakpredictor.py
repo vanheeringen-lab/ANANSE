@@ -23,7 +23,9 @@ def test__check_input_regions(outdir, genome, bed1, bed2):
     regions = ananse.peakpredictor._check_input_regions(
         regionfiles, genome, outdir, verbose=True, force=True
     )
-    assert regions == ["chr1:400-600", "chr1:2400-2600", "chr1:4400-4600"]
+    assert sorted(regions) == sorted(
+        ["chr1:400-600", "chr1:2400-2600", "chr1:4400-4600"]
+    )
 
     # 1 file (BED)
     bed3 = os.path.join(outdir, "bed3.bed")
@@ -32,7 +34,9 @@ def test__check_input_regions(outdir, genome, bed1, bed2):
     regions = ananse.peakpredictor._check_input_regions(
         [bed3], None, verbose=True, force=True
     )
-    assert regions == ["chr1:0-1000", "chr1:2000-3000", "chr1:4000-5000"]
+    assert sorted(regions) == sorted(
+        ["chr1:0-1000", "chr1:2000-3000", "chr1:4000-5000"]
+    )
 
     # 1 file (regions /w header)
     bed4 = os.path.join(outdir, "bed4.bed")
@@ -43,7 +47,9 @@ def test__check_input_regions(outdir, genome, bed1, bed2):
     regions = ananse.peakpredictor._check_input_regions(
         [bed4], None, verbose=True, force=True
     )
-    assert regions == ["chr1:0-1000", "chr1:2000-3000", "chr1:4000-5000"]
+    assert sorted(regions) == sorted(
+        ["chr1:0-1000", "chr1:2000-3000", "chr1:4000-5000"]
+    )
 
 
 def test__check_input_files():

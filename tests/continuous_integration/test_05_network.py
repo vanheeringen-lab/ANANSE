@@ -31,7 +31,7 @@ def test_get_bed(outdir):
     # accepts existing files only
     test_bed = os.path.join(outdir, "test.annotation.bed")
     assert not os.path.exists(test_bed)
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises((ValueError, FileNotFoundError)):
         cmd(test_bed, None)
 
     test_fa = os.path.join(outdir, "test.fa")
