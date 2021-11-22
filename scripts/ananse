@@ -235,7 +235,7 @@ if __name__ == "__main__":
         dest="column",
         help="One or more column names to extract from the expression file(s) (default: tpm)",
         metavar="COL",
-        default=None,
+        default="tpm",
     )
     group.add_argument(
         "-f",

@@ -1,12 +1,15 @@
 from ._version import get_versions
 import os
 import sys
+from tqdm.auto import tqdm
 from loguru import logger
 
 # Remove default logger
 logger.remove()
 # Add logger
 logger.add(sys.stderr, format="{time} | {level} | {message}", level="INFO")
+# Combine tqdm output with loguru
+logger.add(lambda msg: tqdm.write(msg, end=""))
 
 # This is here to prevent very high memory usage on numpy import.
 # On a machine with many cores, just importing numpy can result in up to
