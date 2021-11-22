@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - `ananse network` will check the gene name overlap between the expression files, the motif2factor.txt and the tfs (#120).
   - if overlap is low, and a genomepy genome/annotation is given, the symbols are converted to gene names, similar to `gimme motif2factors`
   - if overlap is none, an informative error is raised
+- `ananse network` can now accept one or more column names to use from the expression file (e.g. column names from a counts table)
 - `ananse network` now optionally accepts `regions` and `tfs`, to filter the binding.h5 content.
 - `ananse network` can (at least internally) output an expression network, binding network or expression-binding network.
 - `ananse influence` will also check the gene overlap (between the merged networks and the DEgenes) (#120).

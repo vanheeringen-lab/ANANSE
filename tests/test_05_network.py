@@ -124,7 +124,7 @@ def test_combine_expression_files(outdir):
     f1 = os.path.join(outdir, "expression1.tsv")
     df1.to_csv(f1, sep="\t")
     e1 = cmd(f1, column="my_column")
-    assert df1.equals(e1)
+    assert df1["my_column"].equals(e1["expression"])
 
     df2 = pd.DataFrame(
         {
@@ -135,11 +135,11 @@ def test_combine_expression_files(outdir):
     f2 = os.path.join(outdir, "expression2.tsv")
     df2.to_csv(f2, sep="\t")
     e2 = cmd(f2, column="my_column")
-    assert df2.equals(e2)
+    assert df2["my_column"].equals(e2["expression"])
 
     # 1 file as list
     e1 = cmd([f1], column="my_column")
-    assert df1.equals(e1)
+    assert df1["my_column"].equals(e1["expression"])
 
     # 2 files (with mean of duplicate genes)
     exp_files = [f1, f2]
@@ -150,7 +150,7 @@ def test_combine_expression_files(outdir):
             "my_column": [50.0, 100.0, 200.0, 100.0],
         }
     ).set_index("gene")
-    assert df3.equals(e3)
+    assert df3["my_column"].equals(e3["expression"])
 
 
 def test_network_init():
@@ -390,7 +390,7 @@ def test_command_network(outdir):
     Args = namedtuple(
         "args",
         "genome annotation include_promoter include_enhancer binding "
-        "fin_expression tfs regions outfile full_output ncore",
+        "fin_expression tfs regions column outfile full_output ncore",
     )
     args = Args(
         genome="hg38",
@@ -401,6 +401,7 @@ def test_command_network(outdir):
         fin_expression=expression,
         tfs=tfs,
         regions=regionsfile,
+        column="tpm",
         full_output=False,
         outfile=outfile,
         ncore=1,

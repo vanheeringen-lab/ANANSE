@@ -585,15 +585,16 @@ class Network(object):
         # create the expression network
         df_expression = None
         if fin_expression is not None:
-            # expression dataframe with transcription factors as index
-            expression = combine_expression_files(fin_expression, column)
+            expression = load_expression(fin_expression, column)
 
             # check for sufficient overlap in gene/transcript names/identifiers
             # attempt to fix issues if a genomepy assembly was used
             # COMPATIBILITY: validates/fixes tf-expression and tf-gene_bed overlap
             expression = self.gene_overlap(expression, tfs)
 
-            df_expression = self.create_expression_network(expression, tfs, column)
+            df_expression = self.create_expression_network(
+                expression, tfs, "expression"
+            )
             if binding is not None:
                 logger.debug("Loading tf binding activity data")
                 act = pd.read_hdf(binding, key="_factor_activity")
@@ -919,9 +920,11 @@ def region_gene_overlap(
     return genes
 
 
-def combine_expression_files(fin_expression: Union[str, list], column="tpm"):
+def combine_expression_files(
+    fin_expression: Union[str, list], column: Union[str, list] = "tpm"
+):
     """
-    Extract the index and expression column from one or more expression files.
+    Extract the index and one or more expression columns from one or more expression files.
     We expect the index to be gene/transcript names/identifiers, and the expression to be TPMs.
 
     Within each expression file, duplicate indexes are summed.
@@ -934,7 +937,7 @@ def combine_expression_files(fin_expression: Union[str, list], column="tpm"):
         One of more files that contains gene expression data.
         First column should contain the gene/transcript names/identifiers.
 
-    column : str, optional
+    column : str or list, optional
         Column name that contains gene expression, 'tpm' by default (case insensitive).
 
     Returns
@@ -942,22 +945,68 @@ def combine_expression_files(fin_expression: Union[str, list], column="tpm"):
     pd.DataFrame
         a dataframe with one expression column and all unique indexes
     """
-    logger.info("Loading expression data")
-
     # Convert to a list of filename(s)
     if isinstance(fin_expression, str):
         fin_expression = [fin_expression]
 
     # Read all expression input files and take the mean expression per gene
-    re_column = re.compile(fr"^{column}$", re.IGNORECASE)
     expression = pd.DataFrame()
     for f in fin_expression:
-        # keep only the name and expression columns
-        subdf = pd.read_table(f, index_col=0).filter(regex=re_column)
-        # combine expression values for duplicate gene names
-        # also removes NaNs from the index
-        subdf = subdf.groupby(by=subdf.index, dropna=True).sum()
-        subdf.dropna(inplace=True)
+        subdf = filter_expression_file(f, column)
         expression = pd.concat([expression, subdf], axis=1)
-    expression = pd.DataFrame(expression.mean(1), columns=[column])
+    expression = expression.mean(1).to_frame("expression")
+    return expression
+
+
+def filter_expression_file(fin_expression: str, columns: Union[str, list]):
+    """
+    Extract the index and one or more expression columns from a single expression file.
+    We expect the index to be gene/transcript names/identifiers, and the expression to be TPMs.
+
+    Duplicate genes are summed.
+    Between columns, expression is averaged,
+    NAs are dropped.
+
+    Parameters
+    ----------
+    fin_expression : str or list
+        One file that contains one or more columns with gene expression data.
+        First column should contain the gene/transcript names/identifiers.
+
+    columns : str, optional
+        Column name(s) that contains gene expression (case insensitive).
+
+    Returns
+    -------
+    pd.DataFrame
+        a dataframe with one expression column and all unique indexes
+    """
+    if isinstance(columns, str):
+        columns = [columns]
+
+    # case insensitive column extraction
+    cols = "|".join(columns)
+    re_column = re.compile(fr"^{cols}$", re.IGNORECASE)
+    df = pd.read_table(fin_expression, index_col=0, sep="\t").filter(regex=re_column)
+    # average columns
+    df = df.mean(1).to_frame("expression")
+    # sum duplicate rows
+    df = df.groupby(by=df.index, dropna=True).sum()
+    # remove NaNs
+    df.dropna(inplace=True)
+    return df
+
+
+def load_expression(fin_expression, column):
+    logger.info("Loading expression data")
+    if isinstance(fin_expression, str):
+        fin_expression = [fin_expression]
+    if isinstance(column, str):
+        column = [column]
+
+    # expression dataframe with transcription factors as index
+    if len(fin_expression) == 1:
+        expression = filter_expression_file(fin_expression[0], column)
+    else:
+        expression = combine_expression_files(fin_expression, column)
     return expression

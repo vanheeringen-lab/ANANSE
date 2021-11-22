@@ -34,6 +34,7 @@ def network(args):
     b.run_network(
         binding=check_path(args.binding),
         fin_expression=check_path(args.fin_expression),
+        column=args.column,
         tfs=load_tfs(args.tfs),
         regions=load_regions(args.regions, args.genome, os.path.basename(args.outfile)),
         outfile=check_path(args.outfile, error_missing=False),

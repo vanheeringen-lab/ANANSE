@@ -230,6 +230,14 @@ if __name__ == "__main__":
         default=None,
     )
     group.add_argument(
+        "-c",
+        "--column",
+        dest="column",
+        help="One or more column names to extract from the expression file(s) (default: tpm)",
+        metavar="COL",
+        default=None,
+    )
+    group.add_argument(
         "-f",
         "--full-output",
         dest="full_output",
