@@ -364,7 +364,12 @@ class PeakPredictor:
                 print("{}\t{}\t{}".format(*re.split("[:-]", region)), file=f_out)
             f_out.flush()
 
-            for bam in tqdm(bams, total=len(bams)):
+            for bam in tqdm(
+                    bams,
+                    total=len(bams),
+                    desc="Reading BAM files",
+                    unit="BAM",
+            ):
                 name, regions, r_data, _ = load_heatmap_data(
                     f_out.name,
                     bam,

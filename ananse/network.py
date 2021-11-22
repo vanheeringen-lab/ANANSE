@@ -415,8 +415,7 @@ class Network(object):
                 tfs,
                 total=len(tfs),
                 desc=f"Aggregating on {chrom}",
-                unit_scale=1,
-                unit=" TFs",
+                unit="TF",
             ):
                 # Load TF binding data for this chromosome.
                 # hdf.get() is *much* faster here than pd.read_hdf()
