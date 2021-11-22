@@ -384,13 +384,13 @@ def test_run_network(network_obj, outdir):
 def test_command_network(outdir):
     outfile = os.path.join(outdir, "network.tsv")
     expression = "tests/data/network/heart_expression.tsv"
-    factors = ["GATA3"]
+    tfs = ["GATA3"]
     regionsfile = os.path.join(outdir, "regions.txt")
     write_file(regionsfile, ["chr10:11716757-11716957\n", "chr10:10-100\n"])
     Args = namedtuple(
         "args",
         "genome annotation include_promoter include_enhancer binding "
-        "fin_expression factors regions outfile full_output ncore",
+        "fin_expression tfs regions outfile full_output ncore",
     )
     args = Args(
         genome="hg38",
@@ -399,7 +399,7 @@ def test_command_network(outdir):
         include_enhancer=False,
         binding="tests/data/network/binding.h5",
         fin_expression=expression,
-        factors=factors,
+        tfs=tfs,
         regions=regionsfile,
         full_output=False,
         outfile=outfile,
@@ -411,7 +411,7 @@ def test_command_network(outdir):
     assert sorted(df.columns) == sorted(["tf_target", "prob"])
     tf_target = df["tf_target"].str.split(ananse.SEPARATOR, expand=True)
     genes = pd.read_csv(expression, sep="\t", usecols=[0])["target_id"]
-    assert set(tf_target[0]) == set(factors)
+    assert set(tf_target[0]) == set(tfs)
     assert len(tf_target[1]) == len(set(tf_target[1]))
     assert len(tf_target[1]) <= len(set(genes))
     assert all(tf_target[1].isin(genes))

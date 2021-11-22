@@ -80,9 +80,12 @@ if __name__ == "__main__":
     group = p.add_argument_group("Required arguments (optional for hg38)")
     group.add_argument(
         "-r",
-        "--regionfiles",
-        dest="regionfiles",
-        help="One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)",
+        "--regions",
+        dest="regions",
+        help="Regions to analyse. Can be "
+             "one or more BED format files (e.g. BED, narrowPeak, broadPeak) or "
+             "one file with one region per line (e.g. 'chr1:100-200') or "
+             "a space-separated list ",
         metavar="FILE",
         default=None,
         nargs="+",  # >= 1 files
@@ -122,9 +125,9 @@ if __name__ == "__main__":
     group.add_argument(
         "-t",
         "--tfs",
-        dest="factors",
+        dest="tfs",
         help="Filter Transcription Factors to use (default: all in motif2factors.txt). "
-             "Either a space-separated list or a file with one TF per line",
+             "Either a space-separated list or one or more files with one TF per line",
         metavar="TF",
         default=None,
         nargs="*",
@@ -210,9 +213,9 @@ if __name__ == "__main__":
     group.add_argument(
         "-t",
         "--tfs",
-        dest="factors",
-        help="Filter Transcription Factors to use (default: all in binding.h5). "
-             "Either a space-separated list or a file with one TF per line",
+        dest="tfs",
+        help="Filter Transcription Factors to use (default: all in motif2factors.txt). "
+             "Either a space-separated list or one or more files with one TF per line",
         metavar="TF",
         default=None,
         nargs="*",
@@ -221,7 +224,8 @@ if __name__ == "__main__":
         "-r",
         "--regions",
         dest="regions",
-        help="Filter regions to use (default: all in binding.h5). One region/BED format file.",
+        help="Filter regions to use (default: all in binding.h5). "
+             "Either one region/BED format file or a space-separated list.",
         metavar="FILE",
         default=None,
     )
@@ -386,7 +390,7 @@ if __name__ == "__main__":
     )
     group.add_argument(
         "-t",
-        "--tf",
+        "--tfs",
         dest="tfs",
         help="Transcription factor(s) to display (default: all)",
         metavar="TF",

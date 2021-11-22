@@ -6,9 +6,16 @@ import shutil
 import re
 import pandas as pd
 import tempfile
+from typing import Union
 
 import genomepy.utils
 from ananse.bed import CombineBedFiles
+
+
+def check_cores(ncore=None):
+    if ncore is None:
+        ncore = min(os.cpu_count(), 4)
+    return int(ncore)
 
 
 def check_path(arg, error_missing=True):
@@ -80,85 +87,73 @@ def get_motif_factors(motif, indirect=True):
     return motif_factors
 
 
-def check_input_factors(factors):
-    """Check factors.
+def parse_input(
+    anything: Union[str, list] = None,
+    none_ok=True,
+    parse_list=lambda x: x,
+    parse_files=None,
+    *args,
+    **kwargs,
+) -> Union[None, list]:
+    if anything is None:
+        if not none_ok:
+            raise ValueError("Input was None")
+        return None
 
-    Factors can either be a list of transcription factors, or a filename of a
-    file that contains TFs. Returns a list of factors.
+    if isinstance(anything, str):
+        anything = [anything]
+    elif not isinstance(anything, list):
+        raise ValueError(
+            f"Only None, string or list input accepted, received type {type(anything)}"
+        )
 
-    Returns
-    -------
-    list
-        List of TF names.
-    """
-    # Load factors
-    if factors is None:
-        return
-
-    fname = None
-    # if factors is a string, assume it's a filename
-    if isinstance(factors, str):
-        fname = factors
-    # if factors is a list of 1, assume it's a filename
-    elif isinstance(factors, list) and len(factors) == 1:
-        fname = factors[0]
-
-    # if the filename exists, use that.
-    # else, it's a list, assuming it's a list of TF names.
-    if fname is None or not os.path.exists(cleanpath(fname)):
-        return factors
-
-    factors = [line.strip() for line in open(cleanpath(fname))]
-    return factors
-
-
-def check_input_regions(
-    regionfiles, genome=None, outdir=".", verbose=True, force=False
-):
-    """
-    Check argument {regionfiles}.
-    If its a list of multiple files, assume they are BED files (e.g. narrowPeak) and merge them.
-    Then convert the (merged) regionfile to regions (e.g. chr1:100-200).
-
-    Parameters
-    ----------
-    regionfiles: None or str or list
-        one or more BED files, or up to one region file
-    genome: str, optional
-        fasta file. Only needed if regionfiles need to be merged
-    outdir: str, optional
-        path. Only needed if regionfiles need to be merged
-    verbose: bool, optional
-        Narrate merging? Only needed if regionfiles need to be merged
-    force: bool, optional
-        Overwrite merged bed? Only needed if regionfiles need to be merged
-
-    Returns
-    -------
-    list
-        unique regions
-    """
-    if regionfiles is None:
-        # Keep regions to None, use reference regions.
-        return
-
-    # accept a file or list of files
-    if isinstance(regionfiles, str):
-        infile = regionfiles
-    elif len(regionfiles) == 1:
-        infile = regionfiles[0]
+    as_files = [cleanpath(a) for a in anything]
+    if not all(os.path.exists(f) for f in as_files):
+        # input is in list format
+        out = parse_list(anything)
     else:
-        # merge region files, assumed to be all BED
-        peak_width = 200
-        cbed = CombineBedFiles(genome=genome, peakfiles=regionfiles, verbose=verbose)
-        combined_bed = os.path.join(outdir, "regions_combined.bed")
-        cbed.run(outfile=combined_bed, width=peak_width, force=force)
-        infile = combined_bed
+        # input is in file format
+        out = parse_files(as_files, *args, **kwargs)
+    return sorted(set(out))
+
+
+def parse_tf_files(tf_files: list) -> list:
+    """convert one or more files with one element per line into a list of elements"""
+    out = []
+    for infile in tf_files:
+        for line in open(infile):
+            out.append(line.strip().strip(","))
+    return out
+
+
+def test_tfs(tfs: list) -> list:
+    # if it looks like it could be a list of files, check for file separators
+    # (those should never be in TFs right?)
+    if len(tfs) < 50:
+        for tf in tfs:
+            if os.sep in tf:
+                raise ValueError(
+                    f"Mixed input detected: some look like a file (e.g. {tf}), others do not."
+                )
+    return tfs
+
+
+def merge_regionfiles(regionfiles, genome, outdir):
+    cbed = CombineBedFiles(genome=genome, peakfiles=regionfiles)
+    combined_bed = os.path.join(outdir, "regions_combined.bed")
+    cbed.run(outfile=combined_bed, width=200, force=True)
+    return combined_bed
+
+
+def parse_regions(regionfiles, *args, **kwargs):
+    # combine bed files into one
+    infile = regionfiles[0]
+    if len(regionfiles) > 1:
+        infile = merge_regionfiles(regionfiles, *args, **kwargs)
 
     df = pd.read_table(infile, header=None, sep="\t", comment="#", dtype=str)
-    assert df.shape[0] > 1, "regions file must have more than 1 region!"
-
-    test = str(df.at[1, 0])  # skip potential header line
+    # skip potential header line
+    test = str(df.at[0, 0] if len(df) == 1 else df.at[1, 0])
     if bool(re.match(r"^.*:\d+-\d+$", test)):
         # it's a regions list
         # or it's a Seq2science counts table
@@ -179,8 +174,41 @@ def check_input_regions(
         raise TypeError("Cannot identify regions file(s) type.")
 
     # remove the header, if any.
-    header = str(regions[0])
-    if not bool(re.match(r"^.*:\d+-\d+$", header)):
+    if not bool(re.match(r"^.*:\d+-\d+$", str(regions[0]))) and len(regions) > 1:
         regions = regions[1:]
 
-    return list(set(regions))
+    return regions
+
+
+def test_regions(regions: list) -> list:
+    if not bool(re.match(r"^.*:\d+-\d+$", str(regions[0]))):
+        raise ValueError(
+            f"A region list should be formatted like 'chr1:100-200'. Received {regions[0]}"
+        )
+    return regions
+
+
+def load_tfs(tfs: Union[str, list] = None) -> list:
+    """
+    Unpacks a string or list of TFs or files with TFs
+    """
+    return parse_input(
+        tfs,
+        parse_list=test_tfs,
+        parse_files=parse_tf_files,
+    )
+
+
+def load_regions(
+    regions: Union[str, list] = None, genome: str = None, outdir: str = None
+) -> list:
+    """
+    Unpacks a string or list of regions or files with regions
+    """
+    return parse_input(
+        regions,
+        parse_list=test_regions,
+        parse_files=parse_regions,
+        genome=genome,
+        outdir=outdir,
+    )

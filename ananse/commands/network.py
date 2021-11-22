@@ -1,21 +1,16 @@
 import os
 import ananse.network
-from ananse.utils import check_path, check_input_factors, check_input_regions
+from ananse.utils import check_path, load_tfs, load_regions, check_cores
 from dask.distributed import Client, LocalCluster
 from loguru import logger
 
 
 @logger.catch
 def network(args):
-    ncore = args.ncore
-    if ncore is None:
-        ncore = min(os.cpu_count(), 4)
-    ncore = int(ncore)
-
+    ncore = check_cores(args.ncore)
     memory_limit = "16GB"
-
-    # With one core more memory is needed
     if ncore == 1:
+        # With one core more memory is needed
         memory_limit = "20GB"
 
     b = ananse.network.Network(
@@ -36,12 +31,11 @@ def network(args):
     )
     client = Client(cluster)
 
-    regionfile = check_path(args.regions)
     b.run_network(
         binding=check_path(args.binding),
         fin_expression=check_path(args.fin_expression),
-        tfs=check_input_factors(args.factors),
-        regions=check_input_regions(regionfile, None),
+        tfs=load_tfs(args.tfs),
+        regions=load_regions(args.regions, args.genome, os.path.basename(args.outfile)),
         outfile=check_path(args.outfile, error_missing=False),
     )
     client.close()

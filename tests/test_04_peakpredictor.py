@@ -65,8 +65,8 @@ def test_peakpredictor_init(peakpredictor):
     assert p.region_type == "custom"
     assert p.species == "human"  # because hg38 is in the genome name
 
-    assert p._histone_data is None
-    assert "chr1:1010-1020" in p._atac_data.index
+    assert p.histone_data is None
+    assert "chr1:1010-1020" in p.atac_data.index
     assert p._X_columns == ["ATAC", "motif"]
     assert p._model_type == "ATAC_motif"
 
@@ -129,7 +129,7 @@ def test__jaccard_motif_graph(peakpredictor):
 def test_command_binding(outdir, genome):
     Args = namedtuple(
         "args",
-        "outdir atac_bams histone_bams regionfiles reference factors genome pfmfile pfmscorefile jaccard_cutoff ncore",
+        "outdir atac_bams histone_bams regions reference tfs genome pfmfile pfmscorefile jaccard_cutoff ncore",
     )
     out_dir = os.path.join(outdir, "binding")
     bed = os.path.join(outdir, "bed3.bed")
@@ -157,9 +157,9 @@ def test_command_binding(outdir, genome):
     #     outdir=out_dir,
     #     atac_bams=["tests/data/binding/bam1.bam"],  # chr 1, 3 reads
     #     histone_bams=None,
-    #     regionfiles=[bed],
+    #     regions=[bed],
     #     reference=None,
-    #     factors=None,
+    #     tfs=None,
     #     genome="tests/data/binding/hg38_testgenome.fa",  # chr 1 (fake)
     #     pfmfile="tests/data/binding/test.pfm",  # 1 motif (GM.5.0.Sox.0001), 1 factor (SOX12)
     #     pfmscorefile=scorefile,
@@ -188,9 +188,9 @@ def test_command_binding(outdir, genome):
         outdir=out_dir,
         atac_bams=["tests/data/GRCz11_chr9/chr9.bam"],
         histone_bams=None,
-        regionfiles=[bed],  # ["tests/data/GRCz11_chr9/GRCz11_chr9_regions.bed"],
+        regions=[bed],  # ["tests/data/GRCz11_chr9/GRCz11_chr9_regions.bed"],
         reference=None,
-        factors=["pou2f1b", "pou1f1", "pou3f3a"],
+        tfs=["pou2f1b", "pou1f1", "pou3f3a"],
         genome="tests/data/GRCz11_chr9/GRCz11/GRCz11.fa",
         pfmfile="tests/data/GRCz11_chr9/GRCz11_chr9.pfm",
         pfmscorefile="tests/data/GRCz11_chr9/GRCz11_chr9_scan.bed",

@@ -21,8 +21,7 @@ from pyfaidx import FastaIndexingError
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale, scale
 
-import ananse
-from ananse.utils import check_input_factors, check_input_regions, get_motif_factors
+from ananse.utils import load_tfs, load_regions, get_motif_factors, check_cores
 from . import PACKAGE_DIR
 
 # This motif file is not created by default
@@ -34,8 +33,8 @@ BLACKLIST_TFS = [
 
 
 class PeakPredictor:
-    _atac_data = None
-    _histone_data = None
+    atac_data = None
+    histone_data = None
     factor_models = {}
 
     def __init__(
@@ -91,28 +90,6 @@ class PeakPredictor:
             self.load_histone(histone_bams, update_models=False)
 
         self._set_model_type()
-
-    #     self._filter_reference_data()
-    #
-    # def _filter_reference_data(self):
-    #     """
-    #     remove a regions without any bam reads
-    #     """
-    #     # for custom data, this is done already
-    #     if self.region_type != "reference":
-    #         return
-    #
-    #     # filter regions for any object that has them
-    #     any_factor = list(self.f2m)[0]
-    #     df = self._load_data(any_factor)
-    #     self.regions = list(df.index)
-    #     self._motifs = self._motifs.loc[self.regions]
-    #     self._avg = df[self._avg.columns]
-    #     self._dist = df[self._dist.columns]
-    #     if self._atac_data is not None:
-    #         self._atac_data = df[["ATAC"]]
-    #     if self._histone_data is not None:
-    #         self._histone_data = df[["H3K27ac"]]
 
     def _load_motifs(self, indirect=True, factors=None):
         """Load motif-associated data.
@@ -457,7 +434,7 @@ class PeakPredictor:
             Update the model used if data is loaded, by default True.
         """
         logger.info("Loading ATAC data")
-        self._atac_data = self._load_bams(bams, title="ATAC", window=200)
+        self.atac_data = self._load_bams(bams, title="ATAC", window=200)
         if update_models:
             self._set_model_type()
 
@@ -472,7 +449,7 @@ class PeakPredictor:
             Update the model used if data is loaded, by default True.
         """
         logger.info("Loading H3K27ac data")
-        self._histone_data = self._load_bams(bams, title="H3K27ac", window=2000)
+        self.histone_data = self._load_bams(bams, title="H3K27ac", window=2000)
         if update_models:
             self._set_model_type()
 
@@ -484,11 +461,11 @@ class PeakPredictor:
         Reference regions will have the most information.
         """
         cols = ["motif"]
-        if self._atac_data is not None:
+        if self.atac_data is not None:
             cols += ["ATAC"]
             if self.region_type == "reference":
                 cols += ["ATAC.relative"]
-        if self._histone_data is not None:
+        if self.histone_data is not None:
             cols += ["H3K27ac"]
         if self.region_type == "reference":
             cols += ["average", "dist"]
@@ -554,10 +531,10 @@ class PeakPredictor:
 
     def _load_data(self, factor):
         tmp = pd.DataFrame({"motif": self._motifs[factor]}, index=self.regions)
-        if self._atac_data is not None:
-            tmp = tmp.join(self._atac_data)
-        if self._histone_data is not None:
-            tmp = tmp.join(self._histone_data)
+        if self.atac_data is not None:
+            tmp = tmp.join(self.atac_data)
+        if self.histone_data is not None:
+            tmp = tmp.join(self.histone_data)
 
         if self.region_type == "reference":
             tmp = tmp.join(self._avg)
@@ -623,7 +600,7 @@ class PeakPredictor:
             nregions = 20_000
 
         activity = pd.DataFrame()
-        for df in (self._atac_data, self._histone_data):
+        for df in (self.atac_data, self.histone_data):
             if df is None:
                 continue
 
@@ -700,8 +677,7 @@ def _get_species(genome):
 
 
 def _load_human_factors():
-    package_dir = os.path.dirname(ananse.__file__)
-    tf_xlsx = os.path.join(package_dir, "db", "lovering.tfs.xlsx")
+    tf_xlsx = os.path.join(PACKAGE_DIR, "db", "lovering.tfs.xlsx")
     valid_factors = pd.read_excel(
         tf_xlsx,
         engine="openpyxl",
@@ -731,14 +707,14 @@ def _check_input_files(*args):
             all_files_found = False
 
     if not all_files_found:
-        exit(1)
+        sys.exit(1)
 
 
 def predict_peaks(
     outdir,
     atac_bams=None,
     histone_bams=None,
-    regionfiles=None,
+    regions=None,
     reference=None,
     factors=None,
     genome=None,
@@ -779,7 +755,7 @@ def predict_peaks(
         List of BAM files, by default None
     histone_bams : list, optional
         List of H3K27ac ChIP-seq BAM files, by default None
-    regionfiles : list, optional
+    regions : str or list, optional
         BED file or text file with regions, or a list of BED, narrowPeak or
         broadPeak files If None, then the reference regions are used.
     reference : str, optional
@@ -799,7 +775,7 @@ def predict_peaks(
     ncore : int, optional
         Number of threads to use. Default is 4.
     """
-    if reference is None and regionfiles is None and pfmscorefile is None:
+    if reference is None and regions is None and pfmscorefile is None:
         warnings = [
             "Need either 1) a `reference` directory, 2) one or more `regionfiles`, "
             "or 3) a `pfmscorefile` (a set of pre-scanned regions)!",
@@ -817,7 +793,7 @@ def predict_peaks(
             logger.error(warn)
         sys.exit(1)
 
-    if reference is not None and (regionfiles is not None or pfmscorefile is not None):
+    if reference is not None and (regions is not None or pfmscorefile is not None):
         logger.error(
             "Need either a reference directory *or* a set of input regions"
             "/pfmscorefile (pfmscorefile and regionfiles can be combined)"
@@ -827,22 +803,24 @@ def predict_peaks(
     # Check if all specified BAM files exist
     _check_input_files(atac_bams, histone_bams)
 
-    # Read the factors, from a file if needed
-    factors = check_input_factors(factors)
-
     # Check genome, will fail if it is not a correct genome name or file
     Genome(genome)
-
-    if not os.path.exists(outdir):
-        os.makedirs(outdir, exist_ok=True)
-
-    # If regions are specified, read them in, combining multiple files if necessary.
-    regions = check_input_regions(regionfiles, genome, outdir=outdir)
 
     if reference is not None:
         if not os.path.exists(reference):
             logger.error(f"Reference directory {reference} does not exist!")
             sys.exit(1)
+
+    ncore = check_cores(ncore)
+
+    if not os.path.exists(outdir):
+        os.makedirs(outdir, exist_ok=True)
+
+    # Read the factors, from a file if needed
+    factors = load_tfs(factors)
+
+    # If regions are specified, read them in, combining multiple files if necessary.
+    regions = load_regions(regions, genome, outdir)
 
     p = PeakPredictor(
         reference=reference,
@@ -863,11 +841,11 @@ def predict_peaks(
 
     with HDFStore(outfile, complib="lzo", complevel=9) as hdf:
 
-        if p._atac_data is not None:
-            hdf.put(key="_atac", value=p._atac_data, format="table")
+        if p.atac_data is not None:
+            hdf.put(key="_atac", value=p.atac_data, format="table")
 
-        if p._histone_data is not None:
-            hdf.put(key="_h3k27ac", value=p._histone_data, format="table")
+        if p.histone_data is not None:
+            hdf.put(key="_h3k27ac", value=p.histone_data, format="table")
 
         logger.info("Predicting TF activity")
         factor_activity = p.predict_factor_activity()
