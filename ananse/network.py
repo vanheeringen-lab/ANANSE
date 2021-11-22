@@ -379,7 +379,9 @@ class Network(object):
         # also be done at once, however, the memory usage of dask is very finicky.
         # This is a pragmatic solution, that seems to work well, does not use a
         # lot of memory and is not too slow (~50 seconds per chromosome).
-        for chrom in chroms:
+        t = tqdm(chroms, total=len(chroms), unit="contig", desc="Aggregating")
+        for chrom in t:
+            t.set_description(f"Aggregating on {chrom}. Overall progress")
             # Get the index of all enhancers for this specific chromosome
             idx = enhancers.index.str.startswith(f"{chrom}:")
             if regions:
@@ -411,12 +413,7 @@ class Network(object):
                 continue
 
             bp = pd.DataFrame(index=enhancers[idx].index)
-            for tf in tqdm(
-                tfs,
-                total=len(tfs),
-                desc=f"Aggregating on {chrom}",
-                unit="TF",
-            ):
+            for tf in tfs:
                 # Load TF binding data for this chromosome.
                 # hdf.get() is *much* faster here than pd.read_hdf()
                 bp[tf] = hdf.get(key=tf)[idx_i].values

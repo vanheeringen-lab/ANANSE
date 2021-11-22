@@ -364,12 +364,9 @@ class PeakPredictor:
                 print("{}\t{}\t{}".format(*re.split("[:-]", region)), file=f_out)
             f_out.flush()
 
-            for bam in tqdm(
-                    bams,
-                    total=len(bams),
-                    desc="Reading BAM files",
-                    unit="BAM",
-            ):
+            t = tqdm(bams, total=len(bams), unit="BAM", desc="Reading")
+            for bam in t:
+                t.set_description(f"Reading {os.path.basename(bam)}. Overall progress")
                 name, regions, r_data, _ = load_heatmap_data(
                     f_out.name,
                     bam,
