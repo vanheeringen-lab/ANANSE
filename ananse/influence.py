@@ -4,7 +4,7 @@ import warnings
 import genomepy
 from collections import namedtuple
 from loguru import logger
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import numpy as np
 import pandas as pd
 import networkx as nx

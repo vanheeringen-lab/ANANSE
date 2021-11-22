@@ -20,6 +20,7 @@ from pandas import HDFStore
 from pyfaidx import FastaIndexingError
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale, scale
+from tqdm.auto import tqdm
 
 from ananse.utils import load_tfs, load_regions, get_motif_factors, check_cores
 from . import PACKAGE_DIR
@@ -363,7 +364,7 @@ class PeakPredictor:
                 print("{}\t{}\t{}".format(*re.split("[:-]", region)), file=f_out)
             f_out.flush()
 
-            for bam in bams:
+            for bam in tqdm(bams, total=len(bams)):
                 name, regions, r_data, _ = load_heatmap_data(
                     f_out.name,
                     bam,
