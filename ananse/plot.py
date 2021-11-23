@@ -38,8 +38,7 @@ def plot_influence(infile, outfile):
 
 def read_diff_network(diff_network_file, full_output):
     """read the differential network file outputed by the influence command."""
-    if full_output is False:
-        data_columns = ["tf", "target", "weight"]
+    data_columns = ["tf", "target", "weight"]
     if full_output:
         data_columns = [
             "tf",
@@ -77,7 +76,7 @@ def read_diff_network(diff_network_file, full_output):
                     f"Could not parse edge weight of edge {(row['tf'])}:{(row['target'])}"
                 )
                 raise
-        if full_output:
+        else:
             try:
                 G.add_edge(
                     row["tf"],

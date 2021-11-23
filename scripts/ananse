@@ -85,7 +85,7 @@ if __name__ == "__main__":
         help="Regions to analyse. Can be "
              "one or more BED format files (e.g. BED, narrowPeak, broadPeak) or "
              "one file with one region per line (e.g. 'chr1:100-200') or "
-             "a space-separated list ",
+             "a space-separated list. Optional if a pfmscorefile is provided (used to filter those regions instead)",
         metavar="FILE",
         default=None,
         nargs="+",  # >= 1 files
@@ -136,10 +136,10 @@ if __name__ == "__main__":
         "--jaccard-cutoff",
         dest="jaccard_cutoff",
         help="TFs with a jaccard motif similarity >= the cutoff can be used as backup model. "
-             "0: any similarity, 1: perfect similarity (default is 0)",
+             "0: any similarity, 1: perfect similarity (default is 0.1)",
         metavar="FLOAT",
         type=float,
-        default=0.0,
+        default=0.1,
     )
     group.add_argument(
         "-n",
@@ -160,26 +160,27 @@ if __name__ == "__main__":
     subparser_dict["network"] = p
     group = p.add_argument_group("required arguments")
     group.add_argument(
-        "-b",
-        "--binding",
+        # "-b",
+        # "--binding",
         dest="binding",
-        help="TF binding prediction file (from ANANSE binding).",
+        help="TF binding prediction file (ANANSE binding output)",
         metavar="FILE",
         default=None,
-        required=True,
+        # required=True,
     )
     group.add_argument(
         "-e",
         "--expression",
         dest="fin_expression",
-        help="Gene expression files with gene name (HGNC symbol in case of human)"
-             " as first column and a column name 'TPM' (case insensitive). "
-             "This file can be created by summarizing transcript-level TPMs "
-             "(the quant.sf from salmon or the abundances.tsv from kallisto) "
-             "to gene-level TPMs with tximeta.",
+        help="Gene expression file(s) with genes as first column and "
+             "expression column(s) in TPM values (column name(s) specified below). "
+             "Genes must be in HGNC symbols, unless a genomepy gene annotation is provided. "
+             "Files can include transcript-level TPMs "
+             "(the quant.sf from salmon or the abundances.tsv from kallisto), "
+             "or gene-level TPMs tables (summarized with e.g. tximeta). ",
         metavar="FILE",
         default=None,
-        required=True,
+        # required=True,
         nargs="+",
     )
     group = p.add_argument_group("Required arguments (optional for hg38)")
@@ -187,8 +188,7 @@ if __name__ == "__main__":
         "-g",
         "--genome",
         dest="genome",
-        help="Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38). "
-             "Not required when specifying a gene annotation bed file.",
+        help="Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38)",
         metavar="NAME",
         default="hg38",
     )
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         "--annotation",
         dest="annotation",
         help="Gene annotation (genomepy name or BED12 file) used to quantify expression levels. "
-             "Not required when specifying a genomepy genome (with annotation).",
+             "Optional when a genomepy genome (with annotation) is providing.",
         metavar="BED",
         default=None,
     )
@@ -233,7 +233,8 @@ if __name__ == "__main__":
         "-c",
         "--column",
         dest="column",
-        help="One or more column names to extract from the expression file(s) (default: tpm)",
+        help="One or more (case insensitive) column names to extract "
+             "from the expression file(s) (default: tpm)",
         metavar="COL",
         default="tpm",
     )
@@ -296,7 +297,8 @@ if __name__ == "__main__":
         "-d",
         "--degenes",
         dest="expression",
-        help="File with differential gene expression (DEseq2 output file).",
+        help="File with differential gene expression (DEseq2 output file). "
+             "Genes must be in HGNC symbols, unless a genomepy gene annotation is provided. ",
         metavar="FILE",
         required=True,
     )
@@ -329,8 +331,7 @@ if __name__ == "__main__":
         "-a",
         "--annotation",
         dest="gene_gtf",
-        help="Gene annotation (genomepy name or GTF file) used to quantify expression levels. "
-             "Required if gene names were converted in ANANSE network.",
+        help="Gene annotation (genomepy name or GTF file) used to quantify expression levels",
         metavar="GTF",
         default=None,
     )
@@ -384,7 +385,7 @@ if __name__ == "__main__":
     group = p.add_argument_group("required arguments")
     group.add_argument(
         "infile",
-        help="Input binding.h5 file",
+        help="TF binding prediction file (ANANSE binding output)",
         metavar="FILE",
     )
     group = p.add_argument_group("optional arguments")
@@ -453,13 +454,21 @@ if __name__ == "__main__":
     p = subparsers.add_parser("plot", add_help=False)
     group = p.add_argument_group("required arguments")
     group.add_argument(
-        "-i",
-        "--influence-file",
+        # "-i",
+        # "--influence-file",
         dest="infile",
-        help="ANANSE influence file",
+        help="TF influence file (ANANSE influence output)",
         metavar="FILE",
-        default=None,
-        required=True,
+        # default=None,
+        # required=True,
+    )
+    group.add_argument(
+        "-d",
+        "--diff-network",
+        help="TF influence diffnetwork file (also ANANSE influence output)",
+        dest="GRN_file",
+        metavar="FILE",
+        # default=None,
     )
     group = p.add_argument_group("optional arguments")
     group.add_argument(
@@ -469,13 +478,6 @@ if __name__ == "__main__":
         help="Directory where you wish to store the output (default: ./ANANSE_plot)",
         metavar="DIR",
         default="./ANANSE_plot",
-    )
-    group.add_argument(
-        "-d"
-        "--diff-network",
-        help="ANANSE influence diffnetwork file (automatically generated)",
-        dest="GRN_file",
-        default="",
     )
     group.add_argument(
         "--edge-info",

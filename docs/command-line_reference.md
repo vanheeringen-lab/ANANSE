@@ -76,7 +76,7 @@ and a **motif database** (what to look for) with motif to transcription factor m
 Take care to select a gene annotation with the same gene symbols for your transcription factors 
 as are present in your (differential) gene expression files.
 
-##### --regionfiles
+##### --regions
 You can use your own set of enhancer regions or putative cis-regulatory elements. 
 This will limit the analysis to ATAC/ChIP peaks in these regions.
 
@@ -124,16 +124,17 @@ If you specify a file, e.g. `mymotifs.pfm`, the command expects `mymotifs.motif2
     ##### --pfmscorefile
     If you expect to be running `ananse binding` multiple times on the same regions, you can precompute the motif scores once.
     This can be done with command `gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv`.
+
     * GENOME is the genome fasta file you used to align the BAM files to.
-    * REGIONS can be one FASTA, BED (including narrowPeak) or TSV with `chr:start-end` in the first columns
-    (similar to `--regionsfiles` above).
-    * SCAN is your desired output filepath.
+    * REGIONS can be one FASTA, BED (including narrowPeak) or TSV with `chr:start-end` in the first column
+    (similar to `--regions` above).
+    * SCAN.tsv is your desired output filepath.
     
     ##### --jaccard-cutoff
     Not every transcription factor is present in the ANANSE database.
     For factors lacking a model, you can use another factor that shares one or more binding motifs.
     The jaccard-cutoff sets the minimum similarity score (between 0 for no similarity, 1 for perfect similarity).
-    Use a higher value e.g. 0.1 to improve robustness of the selected model.
+    Use a higher value e.g. 0.2 to improve robustness of the selected model.
 
 <p></p> [comment]: <- (empty line)
 
@@ -165,7 +166,8 @@ If you specify a file, e.g. `mymotifs.pfm`, the command expects `mymotifs.motif2
 #### Full options
 
 ```shell
-usage: ananse [-h] <command> [options] binding [-A BAM [BAM ...]] [-H BAM [BAM ...]] [-g NAME] [-r FILE [FILE ...]] [-p FILE] [-o DIR] [-R DIR] [--pfmscorefile FILE] [-t [TF ...]] [--jaccard-cutoff FLOAT] [-n INT] [-h]
+usage: ananse [-h] <command> [options] binding [-A BAM [BAM ...]] [-H BAM [BAM ...]] [-g NAME] [-r FILE [FILE ...]] [-p FILE] [-o DIR] [-R DIR]
+                                               [--pfmscorefile FILE] [-t [TF ...]] [--jaccard-cutoff FLOAT] [-n INT] [-h]
 
 Required arguments:
   -A BAM [BAM ...], --atac-bams BAM [BAM ...]
@@ -176,8 +178,9 @@ Required arguments:
                         Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38)
 
 Required arguments (optional for hg38):
-  -r FILE [FILE ...], --regionfiles FILE [FILE ...]
-                        One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)
+  -r FILE [FILE ...], --regions FILE [FILE ...]
+                        Regions to analyse. Can be one or more BED format files (e.g. BED, narrowPeak, broadPeak) or one file with one region per line
+                        (e.g. 'chr1:100-200') or a space-separated list. Optional if a pfmscorefile is provided (used to filter those regions instead)
   -p FILE, --pfmfile FILE
                         PFM file of the transcription factors to search for (default: gimme.vertebrate.v5.0)
 
@@ -187,9 +190,11 @@ Optional arguments:
                         Path to reference data directory
   --pfmscorefile FILE   Use precomputed gimmemotifs scores (gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv)
   -t [TF ...], --tfs [TF ...]
-                        Filter Transcription Factors to use (default: all in motif2factors.txt). Either a space-separated list or a file with one TF per line
+                        Filter Transcription Factors to use (default: all in motif2factors.txt). Either a space-separated list or one or more files with
+                        one TF per line
   --jaccard-cutoff FLOAT
-                        TFs with a jaccard motif similarity >= the cutoff can be used as backup model. 0: any similarity, 1: perfect similarity (default is 0)
+                        TFs with a jaccard motif similarity >= the cutoff can be used as backup model. 0: any similarity, 1: perfect similarity (default
+                        is 0.1)
   -n INT, --ncore INT   Number of cores to use.
   -h, --help            show this help message and exit
 ```
@@ -216,40 +221,52 @@ $ ananse network -b ANANSE_binding/binding.h5 \
                  -o ANANSE_network.tsv
 ```
 
+##### Gene expression
+
+Gene expression in TPM (abundances). 
+These can be extracted from one or more files, such as Salmon quant.sf files, or seq2science count-TPM tables.
+The name(s) of the column(s) to extract can be specified (case-insensitive) with the `--column` argument.
+
 ##### Gene symbols
 
 The gene symbols used in the expression file must match with those in the pfmfile.
 For Human and mouse data, these are HGNC names. 
-For a pfmfile generated with `gimme motif2factors`, these are gene names or gene ids, depending on your gene annotation GTF file.
+For a pfmfile generated with `gimme motif2factors`, these are usually gene names (or gene ids, depending on your gene annotation GTF file).
 
 If you provide a genomepy name (with annotation) to the `--genome` and/or `--annotation` argument, 
-the names in the expression file will be converted automatically (if the original names don't match).
+the symbols in the expression file will be converted to gene names automatically (if the original names don't match).
 If gene symbols are converted from transcripts/gene ids to gene names, expression levels are summed for duplicates.
 
 #### Full options
 
 ```shell
-usage: ananse [-h] <command> [options] network -b FILE -e FILE [FILE ...] [-g NAME] [-a BED] [-o FILE] [-t [TF ...]] [-r FILE] [-f] [--include-promoter] [--include-enhancer] [-n INT] [-h]
+usage: ananse [-h] <command> [options] network [-e FILE [FILE ...]] [-g NAME] [-a BED] [-o FILE] [-t [TF ...]] [-r FILE] [-c COL] [-f]
+                                               [--include-promoter] [--include-enhancer] [-n INT] [-h]
+                                               FILE
 
 required arguments:
-  -b FILE, --binding FILE
-                        TF binding prediction file (from ANANSE binding).
+  FILE                  TF binding prediction file (ANANSE binding output)
   -e FILE [FILE ...], --expression FILE [FILE ...]
-                        Gene expression files with gene name (HGNC symbol in case of human) as first column and a column name 'TPM' (case insensitive). This file can be created by summarizing transcript-level TPMs (the quant.sf from salmon or the abundances.tsv from kallisto) to gene-level TPMs with tximeta.
+                        Gene expression file(s) with genes as first column and expression column(s) in TPM values (column name(s) specified below). Genes
+                        must be in HGNC symbols, unless a genomepy gene annotation is provided. Files can include transcript-level TPMs (the quant.sf
+                        from salmon or the abundances.tsv from kallisto), or gene-level TPMs tables (summarized with e.g. tximeta).
 
 Required arguments (optional for hg38):
   -g NAME, --genome NAME
-                        Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38). Not required when specifying a gene annotation bed file.
+                        Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38)
   -a BED, --annotation BED
-                        Gene annotation (genomepy name or BED12 file) used to quantify expression levels. Not required when specifying a genomepy genome (with annotation).
+                        Gene annotation (genomepy name or BED12 file) used to quantify expression levels. Optional when a genomepy genome (with
+                        annotation) is providing.
 
 optional arguments:
   -o FILE, --outfile FILE
                         Name of the output network file (default: ./ANANSE_network.tsv)
   -t [TF ...], --tfs [TF ...]
-                        Filter Transcription Factors to use (default: all in binding.h5). Either a space-separated list or a file with one TF per line
+                        Filter Transcription Factors to use (default: all in motif2factors.txt). Either a space-separated list or one or more files with
+                        one TF per line
   -r FILE, --regions FILE
-                        Filter regions to use (default: all in binding.h5). One region/BED format file.
+                        Filter regions to use (default: all in binding.h5). Either one region/BED format file or a space-separated list.
+  -c COL, --column COL  One or more (case insensitive) column names to extract from the expression file(s) (default: tpm)
   -f, --full-output     Export the full GRN output to the output file
   --include-promoter, --exclude-promoter
                         Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are included.
@@ -287,12 +304,12 @@ $ ananse influence  -s results/FB_network.txt \
 ##### Gene symbols
 
 The gene symbols used in the differential expression file must match with those in the pfmfile.
-For Human and mouse data, these are HGNC names.
-For a pfmfile generated with `gimme motif2factors`, these are gene names or gene ids, depending on your gene annotation GTF file.
+For Human and mouse data, these are HGNC names. 
+For a pfmfile generated with `gimme motif2factors`, these are usually gene names (or gene ids, depending on your gene annotation GTF file).
 
-If you provide a genomepy name (with annotation) to the `--annotation` argument,
-the names in the differential expression file will be converted automatically (if the original names don't match).
-If gene symbols are converted from transcripts/gene ids to gene names, the lowest adjusted p-value is selected for duplicates
+If you provide a genomepy name (with annotation) to the `--annotation` argument, 
+the symbols in the differential expression file will be converted to gene names automatically (if the original names don't match).
+If gene symbols are converted from transcripts/gene ids to gene names, the lowest adjusted p-value is selected for duplicates.
 
 #### Full options
 
@@ -303,7 +320,8 @@ required arguments:
   -t FILE, --target FILE
                         Network of target cell type.
   -d FILE, --degenes FILE
-                        File with differential gene expression (DEseq2 output file).
+                        File with differential gene expression (DEseq2 output file). Genes must be in HGNC symbols, unless a genomepy gene annotation is
+                        provided.
 
 optional arguments:
   -s FILE, --source FILE
@@ -312,7 +330,7 @@ optional arguments:
                         Name of the output influence file (default: ./ANANSE_influence.tsv)
   -f, --full-output     Export the full GRN output to the output file
   -a GTF, --annotation GTF
-                        Gene annotation (genomepy name or GTF file) used to quantify expression levels. Required if gene names were converted in ANANSE network.
+                        Gene annotation (genomepy name or GTF file) used to quantify expression levels
   -i INT, --edges INT   Number of top edges used (default: 100.000).
   -j FLOAT, --padj FLOAT
                         Adjusted p-value below which genes classify as differential (default: 0.05).
@@ -338,18 +356,20 @@ $ ananse plot -i results/influence.tsv \
 #### Full options
 
 ```shell
-usage: ananse [-h] <command> [options] plot -i FILE [-o DIR] [-d--diff-network GRN_FILE] [--edge-info EDGE_INFO] [--edge-min EDGE_MIN] [--node-placement NETWORK_ALGORITHM] [--n-tfs N_TFS] [-c CMAP] [-f] [-t FTYPE] [-h]
+usage: ananse [-h] <command> [options] plot [-d FILE] [-o DIR] [--edge-info EDGE_INFO] [--edge-min EDGE_MIN] [--node-placement NETWORK_ALGORITHM]
+                                            [--n-tfs N_TFS] [-c CMAP] [-f] [-t FTYPE] [-h]
+                                            FILE
 
 required arguments:
-  -i FILE, --influence-file FILE
-                        ANANSE influence file
+  FILE                  TF influence file (ANANSE influence output)
+  -d FILE, --diff-network FILE
+                        TF influence diffnetwork file (also ANANSE influence output)
 
 optional arguments:
   -o DIR, --outdir DIR  Directory where you wish to store the output (default: ./ANANSE_plot)
-  -d--diff-network GRN_FILE
-                        ANANSE influence diffnetwork file (automatically generated)
   --edge-info EDGE_INFO
-                        Column to use for edges of GRN, default: 'weight'. When full_output is specified, options are 'wb_diff' ,'tf_act_diff', 'tf_expr_diff', 'tg_expr_diff'
+                        Column to use for edges of GRN, default: 'weight'. When full_output is specified, options are 'wb_diff' ,'tf_act_diff',
+                        'tf_expr_diff', 'tg_expr_diff'
   --edge-min EDGE_MIN   Minimum value for an edge to be included in the GRN image
   --node-placement NETWORK_ALGORITHM
                         pyviz cluster algorithm used for node placement, options include: neato, dot, fdp, twopi, sfdp, circo
@@ -412,12 +432,12 @@ usage: ananse [-h] <command> [options] view [-o FILE] [-t [TF ...]] [-r [REGION 
 Explore the contents of an ANANSE binding file.
 
 required arguments:
-  FILE                  Input binding.h5 file
+  FILE                  TF binding prediction file (ANANSE binding output)
 
 optional arguments:
   -o FILE, --outfile FILE
                         Output file (tab-separated text, default: stdout)
-  -t [TF ...], --tf [TF ...]
+  -t [TF ...], --tfs [TF ...]
                         Transcription factor(s) to display (default: all)
   -r [REGION ...], --regions [REGION ...]
                         Region(s) to display (default: all)
