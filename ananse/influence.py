@@ -336,6 +336,7 @@ class Influence(object):
         dict
             namedtuples of scores, absolute fold change and "real" (directional) fold change.
         """
+        cutoff = 0.6  # fraction of overlap that is "good enough"
         logger.info(
             f"Loading expression data, using genes with an adjusted p-value below {padj_cutoff}"
         )
@@ -355,11 +356,16 @@ class Influence(object):
         df = df.astype(float)
 
         network_genes = set(self.G.nodes)
-        overlap = len(network_genes & set(df.index))
-        if overlap == 0 and self.gene_gtf is not None:
+        pct_overlap = len(network_genes & set(df.index)) / len(set(df.index))
+        logger.debug(f"{round(pct_overlap, 2)}% overlap")
+        pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
+        logger.debug(f"{round(pct_overlap, 2)}% overlap")
+        if pct_overlap < cutoff and self.gene_gtf is not None:
             logger.warning(
                 "Converting genes in differential expression table to HGNC symbols"
             )
+            backup_pct_overlap = pct_overlap
+            backup_df = df.copy()
 
             gp = genomepy.Annotation(self.gene_gtf)
             tid2gid = gp.gtf_dict("transcript_id", "gene_id")
@@ -374,6 +380,13 @@ class Influence(object):
             # take the most significant gene per duplicate (if applicable)
             df = df.groupby("index").min("padj")
 
+            pct_overlap = len(network_genes & set(df.index)) / len(set(df.index))
+            logger.debug(f"{round(pct_overlap, 2)}% overlap")
+            pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
+            logger.debug(f"{round(pct_overlap, 2)}% overlap")
+            if pct_overlap <= backup_pct_overlap:
+                df = backup_df
+
         overlap = len(network_genes & set(df.index))
         if overlap == 0:
             logger.error(
@@ -387,7 +400,7 @@ class Influence(object):
                 )
             sys.exit(1)
         logger.debug(
-            f"{overlap} genes overlap between the "
+            f"{overlap} genes ({round(pct_overlap, 2)}%) overlap between the "
             "differential expression file and the network file(s)"
         )
 
