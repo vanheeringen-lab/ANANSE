@@ -357,7 +357,9 @@ class Influence(object):
 
         network_genes = set(self.G.nodes)
         pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
-        logger.debug(f"{round(pct_overlap, 2)}% of genes found in DE genes and network(s)")
+        logger.debug(
+            f"{round(pct_overlap, 2)}% of genes found in DE genes and network(s)"
+        )
         if pct_overlap < cutoff and self.gene_gtf is not None:
             logger.warning(
                 "Converting genes in differential expression table to HGNC symbols"
@@ -379,7 +381,9 @@ class Influence(object):
             df = df.groupby("index").min("padj")
 
             pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
-            logger.debug(f"{round(pct_overlap, 2)}% of genes found in DE genes and network(s)")
+            logger.debug(
+                f"{round(pct_overlap, 2)}% of genes found in DE genes and network(s)"
+            )
             if pct_overlap <= backup_pct_overlap:
                 df = backup_df
 
