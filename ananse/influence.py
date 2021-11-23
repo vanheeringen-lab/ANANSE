@@ -356,10 +356,8 @@ class Influence(object):
         df = df.astype(float)
 
         network_genes = set(self.G.nodes)
-        pct_overlap = len(network_genes & set(df.index)) / len(set(df.index))
-        logger.debug(f"{round(pct_overlap, 2)}% overlap")
         pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
-        logger.debug(f"{round(pct_overlap, 2)}% overlap")
+        logger.debug(f"{round(pct_overlap, 2)}% of genes found in DE genes and network(s)")
         if pct_overlap < cutoff and self.gene_gtf is not None:
             logger.warning(
                 "Converting genes in differential expression table to HGNC symbols"
@@ -380,10 +378,8 @@ class Influence(object):
             # take the most significant gene per duplicate (if applicable)
             df = df.groupby("index").min("padj")
 
-            pct_overlap = len(network_genes & set(df.index)) / len(set(df.index))
-            logger.debug(f"{round(pct_overlap, 2)}% overlap")
             pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
-            logger.debug(f"{round(pct_overlap, 2)}% overlap")
+            logger.debug(f"{round(pct_overlap, 2)}% of genes found in DE genes and network(s)")
             if pct_overlap <= backup_pct_overlap:
                 df = backup_df
 
@@ -400,7 +396,7 @@ class Influence(object):
                 )
             sys.exit(1)
         logger.debug(
-            f"{overlap} genes ({round(pct_overlap, 2)}%) overlap between the "
+            f"{overlap} genes overlap between the "
             "differential expression file and the network file(s)"
         )
 
