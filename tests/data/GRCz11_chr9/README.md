@@ -186,7 +186,7 @@ GRCz11_binding/binding.h5 \
 
 ```bash
 ananse network \
--b GRCz11_binding/binding.h5 \
+GRCz11_binding/binding.h5 \
 -e expression_chr9_quant.sf \
 -g GRCz11/GRCz11.fa \
 --full-output \
@@ -206,7 +206,7 @@ ananse influence \
 
 ```bash
 ananse plot \
--i influence.tsv \
+influence.tsv \
 -d GRCz11_influence_diffnetwork.tsv \
 -t png \
 -o GRCz11_plot
