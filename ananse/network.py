@@ -693,24 +693,19 @@ class Network(object):
         cutoff = 0.6  # fraction of overlap that is "good enough"
         tfs = set(tfs)
         gp = genomepy.Annotation(self.gene_bed)
-        bed_genes = gp.genes()
+        bed_genes = set(gp.genes())
+        expression_genes = set(expression.index)
 
-        overlapping_tfs = set(expression.index) & tfs
-        overlap_tf_exp = len(overlapping_tfs) / len(tfs)
-        logger.debug(
-            f"{int(100 * overlap_tf_exp)}% of TFs found in the expression file(s)"
-        )
-
-        overlapping_tfs = set(bed_genes) & tfs
-        overlap_tf_bed = len(overlapping_tfs) / len(tfs)
-        logger.debug(f"{int(100 * overlap_tf_bed)}% of TFs found in the BED file")
-
-        overlapping_tfs = tfs.intersection(set(expression.index), set(bed_genes))
-        overlap_total = len(overlapping_tfs) / len(tfs)
+        # overlap_tf_exp = len(expression_genes & tfs) / len(tfs)
+        # logger.debug(
+        #     f"{int(100 * overlap_tf_exp)}% of TFs found in the expression file(s)"
+        # )
+        # overlap_tf_bed = len(bed_genes & tfs) / len(tfs)
+        # logger.debug(f"{int(100 * overlap_tf_bed)}% of TFs found in the BED file")
+        overlap_total = len(tfs & expression_genes & bed_genes) / len(tfs)
         logger.info(
             f"{int(100 * overlap_total)}% of TFs found in both BED and expression file(s)"
         )
-
         if overlap_total > cutoff:
             return expression
         if gp.annotation_gtf_file is None:
@@ -720,65 +715,66 @@ class Network(object):
             return expression
 
         logger.warning("Converting genes in expression table and BED to HGNC symbols")
+        backup_overlap_total = overlap_total
+        backup_expression = expression.copy()
+        backup_gene_bed = self.gene_bed
+
         # assumption: you used gimme motif2factors on the GTF file of this genome
         tid2gid = gp.gtf_dict("transcript_id", "gene_id")
         tid2name = gp.gtf_dict("transcript_id", "gene_name")
         gid2name = gp.gtf_dict("gene_id", "gene_name")
 
-        if overlap_tf_exp <= cutoff:
-            expression = (
-                expression.rename(index=tid2name)
-                .rename(index=tid2gid)
-                .rename(index=gid2name)
-            )
+        expression = (
+            expression.rename(index=tid2name)
+            .rename(index=tid2gid)
+            .rename(index=gid2name)
+        )
+        # merge duplicate genes
+        expression = expression.groupby(by=expression.index).sum()
+        # metrics
+        expression_genes = set(expression.index)
+        overlap_tf_exp = len(expression_genes & tfs) / len(tfs)
+        logger.debug(
+            f"{int(100 * overlap_tf_exp)}% of TFs found in the expression file(s)"
+        )
 
-            # metrics
-            overlapping_tfs = set(expression.index) & tfs
-            overlap_tf_exp = len(overlapping_tfs) / len(tfs)
-            logger.debug(
-                f"{int(100 * overlap_tf_exp)}% of TFs found in the expression file(s)"
-            )
+        bed = (
+            gp.bed.copy()
+            .set_index("name")
+            .rename(index=tid2name)
+            .rename(index=tid2gid)
+            .rename(index=gid2name)
+            .reset_index()
+        )
+        # merge duplicate genes
+        group = bed.groupby("name")
+        bed["start"] = group["start"].transform("min")
+        bed["end"] = group["end"].transform("max")
+        drop_cols = set(bed.columns) - {"name", "chrom", "start", "end", "strand"}
+        for col in drop_cols:
+            bed[col] = 0
+        bed.drop_duplicates(inplace=True, ignore_index=True)
+        # metrics
+        bed_genes = set(bed.name)
+        overlap_tf_bed = len(bed_genes & tfs) / len(tfs)
+        logger.debug(f"{int(100 * overlap_tf_bed)}% of TFs found in the BED file")
+        # write BED to file
+        tmp_bed = NamedTemporaryFile(
+            prefix=f"ananse.{gp.name}", suffix=".annotation.bed", delete=False
+        ).name
+        cols = genomepy.annotation.utils.BED12_FORMAT  # fixes column order
+        genomepy.annotation.utils.write_annot(bed[cols], tmp_bed)
+        self._tmp_files.append(tmp_bed)
+        self.gene_bed = tmp_bed
 
-            # merge duplicate genes
-            expression = expression.groupby(by=expression.index).sum()
-
-        if overlap_tf_bed <= cutoff:
-            bed = (
-                gp.bed.copy()
-                .set_index("name")
-                .rename(index=tid2name)
-                .rename(index=tid2gid)
-                .rename(index=gid2name)
-                .reset_index()
-            )
-
-            # metrics
-            bed_genes = bed.name
-            overlapping_tfs = set(bed_genes) & tfs
-            overlap_tf_bed = len(overlapping_tfs) / len(tfs)
-            logger.debug(f"{int(100 * overlap_tf_bed)}% of TFs found in the BED file")
-
-            # merge duplicate genes
-            group = bed.groupby("name")
-            bed["start"] = group["start"].transform("min")
-            bed["end"] = group["end"].transform("max")
-            drop_cols = set(bed.columns) - {"name", "chrom", "start", "end", "strand"}
-            for col in drop_cols:
-                bed[col] = 0
-            bed.drop_duplicates(inplace=True, ignore_index=True)
-            tpm_bed = NamedTemporaryFile(
-                prefix=f"ananse.{gp.name}", suffix=".annotation.bed", delete=False
-            ).name
-            cols = genomepy.annotation.utils.BED12_FORMAT  # fixes column order
-            genomepy.annotation.utils.write_annot(bed[cols], tpm_bed)
-            self._tmp_files.append(tpm_bed)
-            self.gene_bed = tpm_bed
-
-        overlapping_tfs = tfs.intersection(set(expression.index), set(bed_genes))
-        overlap_total = len(overlapping_tfs) / len(tfs)
+        overlap_total = len(tfs & expression_genes & bed_genes) / len(tfs)
         logger.info(
             f"{int(100 * overlap_total)}% of TFs found in both BED and expression file(s)"
         )
+        if overlap_total <= backup_overlap_total:
+            overlap_total = backup_overlap_total
+            expression = backup_expression
+            self.gene_bed = backup_gene_bed
 
         if overlap_total > 0:
             if overlap_total <= cutoff:
