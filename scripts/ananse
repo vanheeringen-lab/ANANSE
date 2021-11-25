@@ -88,7 +88,7 @@ if __name__ == "__main__":
              "a space-separated list. Optional if a pfmscorefile is provided (used to filter those regions instead)",
         metavar="FILE",
         default=None,
-        nargs="+",  # >= 1 files
+        nargs="*",
     )
     group.add_argument(
         "-p",
@@ -228,6 +228,7 @@ if __name__ == "__main__":
              "Either one region/BED format file or a space-separated list.",
         metavar="FILE",
         default=None,
+        nargs="*",
     )
     group.add_argument(
         "-c",
@@ -237,6 +238,7 @@ if __name__ == "__main__":
              "from the expression file(s) (default: tpm)",
         metavar="COL",
         default="tpm",
+        nargs="*",
     )
     group.add_argument(
         "-f",
