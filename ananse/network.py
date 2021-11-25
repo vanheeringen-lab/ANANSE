@@ -366,6 +366,8 @@ class Network(object):
             regions = set(regions) & set(enhancers.index)
             chroms = [region.split(":")[0] for region in regions]
             logger.info(f"Using {len(regions)} of {len(set(enhancers.index))} regions.")
+        # Filter for contigs with genes
+        chroms = set(chroms) & set(genomepy.Annotation(self.gene_bed).bed.chrom)
         if len(chroms) == 0:
             raise ValueError(
                 "No regions in the binding file overlap with given regions! "
