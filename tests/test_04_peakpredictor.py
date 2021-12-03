@@ -12,6 +12,15 @@ from ananse.commands import binding
 from tests import write_file
 
 
+def test__istable():
+    assert ananse.peakpredictor._istable("table.tsv")
+    assert ananse.peakpredictor._istable(["table.tsv"])
+
+    assert not ananse.peakpredictor._istable(["table.tsv", "and something else"])
+    assert not ananse.peakpredictor._istable("not a table")
+    assert not ananse.peakpredictor._istable(["not a table"])
+
+
 def test__check_input_files():
     missing_files = ["this_file_does_not_exist"]
     with pytest.raises(ReferenceError):
@@ -73,6 +82,25 @@ def test_peakpredictor_init(peakpredictor):
     # assert len(p.motif_graph) == 707
 
 
+def test_load_counts(peakpredictor):
+    p = deepcopy(peakpredictor)
+
+    regionsfile = "tests/data/GRCz11_chr9/GRCz11_chr9_regions.bed"
+    regions = ananse.peakpredictor.load_regions(regionsfile)
+    p.regions = regions
+    countsfile = "tests/data/GRCz11_chr9/GRCz11_chr9_raw.tsv"
+    p.load_counts(countsfile, None, "ATAC")
+
+    assert len(p.atac_data) == len(regions)
+
+    regions = ["9:2802-3002"]
+    p.regions = regions
+    countsfile = "tests/data/GRCz11_chr9/GRCz11_chr9_raw.tsv"
+    p.load_counts(countsfile, None, "ATAC")
+
+    assert len(p.atac_data) == len(regions)
+
+
 def test__scan_motifs(peakpredictor):
     region = "chr1:1010-1020"
     tf = "SOX12"
@@ -129,7 +157,7 @@ def test__jaccard_motif_graph(peakpredictor):
 def test_command_binding(outdir, genome):
     Args = namedtuple(
         "args",
-        "outdir atac_bams histone_bams regions reference tfs genome pfmfile pfmscorefile jaccard_cutoff ncore",
+        "outdir atac_bams histone_bams columns regions reference tfs genome pfmfile pfmscorefile jaccard_cutoff ncore",
     )
     out_dir = os.path.join(outdir, "binding")
     bed = os.path.join(outdir, "bed3.bed")
@@ -188,6 +216,7 @@ def test_command_binding(outdir, genome):
         outdir=out_dir,
         atac_bams=["tests/data/GRCz11_chr9/chr9.bam"],
         histone_bams=None,
+        columns=None,
         regions=[bed],  # ["tests/data/GRCz11_chr9/GRCz11_chr9_regions.bed"],
         reference=None,
         tfs=["pou2f1b", "pou1f1", "pou3f3a"],

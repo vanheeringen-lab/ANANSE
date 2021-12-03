@@ -43,6 +43,7 @@ class PeakPredictor:
         reference=None,
         atac_bams=None,
         histone_bams=None,
+        columns=None,
         regions=None,
         genome="hg38",
         pfmfile=None,
@@ -85,10 +86,16 @@ class PeakPredictor:
         self._load_regions(regions, pfmscorefile)
         # load ATAC data
         if atac_bams is not None:
-            self.load_atac(atac_bams, update_models=False)
+            if _istable(atac_bams):
+                self.load_counts(atac_bams, columns, "ATAC")
+            else:
+                self.load_atac(atac_bams, update_models=False)
         # load histone ChIP-seq data
         if histone_bams is not None:
-            self.load_histone(histone_bams, update_models=False)
+            if _istable(histone_bams):
+                self.load_counts(histone_bams, columns, "H3K27ac")
+            else:
+                self.load_histone(histone_bams, update_models=False)
 
         self._set_model_type()
 
@@ -376,8 +383,9 @@ class PeakPredictor:
                     rmdup=True,
                     rmrepeats=True,
                 )
-                if len(r_data.T[0]) == n_regions:
-                    tmp[name] = r_data.T[0]
+                r_data = r_data.T[0]
+                if len(r_data) == n_regions:
+                    tmp[name] = r_data
                 else:
                     # "regions" contains overlap, "r_data.T[0]" contains scores (order is identical)
                     df = pd.DataFrame(
@@ -386,13 +394,16 @@ class PeakPredictor:
                         dtype=str,
                     )
                     df["region"] = df["chrom"] + ":" + df["start"] + "-" + df["end"]
-                    df[name] = r_data.T[0]
+                    df[name] = r_data
                     df = df[["region", name]].set_index("region")
 
                     # merge on regions to get scores for overlapping regions (set rest to 0)
                     tmp = tmp.join(df)
                     tmp[name].fillna(0.0, inplace=True)
 
+        return self._normalize_reads(tmp, title)
+
+    def _normalize_reads(self, tmp, title):
         fname = f"{self.data_dir}/{title}.qnorm.ref.txt.gz"
         if os.path.exists(fname):
             logger.debug(f"Quantile normalization for {title}")
@@ -425,6 +436,73 @@ class PeakPredictor:
         tmp[title] = tmp[title] / tmp[title].max()
 
         return tmp
+
+    def load_counts(self, table, columns=None, attribute="ATAC"):
+        """Load counts from a seq2science raw counts table.
+
+        Parameters
+        ----------
+        table : str
+            Counts table with the nr of reads under each peak per sample
+        columns : list or string, optional
+            Name of the columns (case-insensitive) in the counts table to use
+            (default: all columns)
+        attribute : str, optional
+            data type contained in the counts table
+            (options: ["ATAC", "H3K27ac"], default: "ATAC")
+        """
+        # error checking
+        if attribute not in ["ATAC", "H3K27ac"]:
+            raise ValueError("Attribute must be either ATAC or H3K27ac!")
+        logger.info(f"Loading {attribute} data")
+        if isinstance(table, list):
+            table = table[0]
+        if not os.path.exists(table):
+            raise FileNotFoundError(f"Could not find {table}")
+
+        # load & filter df
+        df = pd.read_table(table, sep="\t", comment="#", index_col=0)
+        if len(df) != len(self.regions):
+            df = df[df.index.isin(self.regions)]
+        if len(df) == 0:
+            raise ValueError(
+                "regionsfile (or pfmscorefile) and counts table don't overlap!"
+            )
+        if isinstance(columns, str):
+            columns = [columns]
+        if isinstance(columns, list):
+            logger.info(f"  Using {len(columns)} columns")
+            cols = "|".join(columns)
+            re_column = re.compile(fr"^{cols}$", re.IGNORECASE)
+            df = df.filter(regex=re_column)
+            if len(df.columns) != len(columns):
+                raise ValueError(
+                    f"{len(columns)} columns requested, but only {len(df.columns)} "
+                    f"found in {os.path.basename(table)}"
+                )
+        elif columns is None:
+            logger.debug(f"  Using all {len(df.columns)} columns")
+        else:
+            raise TypeError(
+                f"columns must be a sting, list or None. Received {type(columns)}"
+            )
+        if len(df.columns) == 0:
+            raise ValueError("Columns must contain at least one valid column name!")
+
+        # check the average region distance
+        dist = df.index.str.split(r":|-", expand=True)
+        dist = dist.to_frame()
+        dist["dist"] = dist[2].astype(int) - dist[1].astype(int)  # end-start
+        dist = int(dist["dist"].mean(axis=0))
+        expected = 2000 if attribute == "H3K27ac" else 200
+        if abs(1 - dist / expected) > 0.1:  # allow some variation
+            logger.warning(f"Expected region width is {expected}, got {dist}.")
+
+        # normalize & save
+        if attribute == "ATAC":
+            self.atac_data = self._normalize_reads(df, attribute)
+        elif attribute == "H3K27ac":
+            self.histone_data = self._normalize_reads(df, attribute)
 
     def load_atac(self, bams, update_models=True):
         """Load ATAC-seq counts from BAM files.
@@ -693,6 +771,12 @@ def _load_human_factors():
     return valid_factors
 
 
+def _istable(arg):
+    as_str = isinstance(arg, str) and arg.endswith(".tsv")
+    as_lst = isinstance(arg, list) and len(arg) == 1 and arg[0].endswith(".tsv")
+    return as_str or as_lst
+
+
 def _check_input_files(*args):
     files = []
     for arg in args:
@@ -717,6 +801,7 @@ def predict_peaks(
     outdir,
     atac_bams=None,
     histone_bams=None,
+    columns=None,
     regions=None,
     reference=None,
     factors=None,
@@ -755,9 +840,13 @@ def predict_peaks(
     outdir : str
         Name of output directory.
     atac_bams : list, optional
-        List of BAM files, by default None
+        List of BAM files
+        (or one counts table with reads per peak), by default None
     histone_bams : list, optional
-        List of H3K27ac ChIP-seq BAM files, by default None
+        List of H3K27ac ChIP-seq BAM files
+        (or one counts table with reads per peak), by default None
+    columns : list, optional
+        List of count table columns to use, by default all columns are used.
     regions : str or list, optional
         BED file or text file with regions, or a list of BED, narrowPeak or
         broadPeak files If None, then the reference regions are used.
@@ -828,6 +917,7 @@ def predict_peaks(
     p = PeakPredictor(
         reference=reference,
         atac_bams=atac_bams,
+        columns=columns,
         histone_bams=histone_bams,
         regions=regions,
         genome=genome,

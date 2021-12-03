@@ -22,6 +22,12 @@ rm chr9_reads.sam
 rm chr9.sam
 ```
 
+subset counts to chromosome 9
+```bash
+head -n 2 $counts | cut -f 1-10 > GRCz11_chr9_raw.tsv
+cat $counts | cut -f 1-10  | grep -G ^9 >> GRCz11_chr9_raw.tsv
+```
+
 subset regions to chromosome 9
 ```bash
 cat $regionsfile | grep -G ^9 > GRCz11_chr9_regions.bed
@@ -169,6 +175,19 @@ cd tests/data/GRCz11_chr9
 ```bash
 ananse binding \
 -A chr9.bam \
+-r GRCz11_chr9_regions.bed \
+-t pou2f1b pou1f1 pou3f3a \
+-g GRCz11/GRCz11.fa \
+-p GRCz11_chr9.pfm \
+--pfmscorefile GRCz11_chr9_scan.bed \
+-n 1 \
+-o GRCz11_binding
+```
+
+```bash
+ananse binding \
+-A GRCz11_chr9_raw.tsv \
+-c GSM3756599 GSM3756600 \
 -r GRCz11_chr9_regions.bed \
 -t pou2f1b pou1f1 pou3f3a \
 -g GRCz11/GRCz11.fa \
