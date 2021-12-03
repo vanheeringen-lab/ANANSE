@@ -476,7 +476,7 @@ class PeakPredictor:
             re_column = re.compile(fr"^{cols}$", re.IGNORECASE)
             df = df.filter(regex=re_column)
             if len(df.columns) != len(columns):
-                raise ValueError(
+                logger.warning(
                     f"{len(columns)} columns requested, but only {len(df.columns)} "
                     f"found in {os.path.basename(table)}"
                 )
