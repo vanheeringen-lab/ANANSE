@@ -5,6 +5,7 @@ import warnings
 
 import genomepy
 from loguru import logger
+import pandas as pd
 from pybedtools import BedTool
 
 
@@ -220,3 +221,40 @@ class CombineBedFiles:
                 shutil.copy2(merged_bed, outfile)
             finally:
                 shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+def df_to_bedtool(df_in):
+    """sort, save and load a dataframe into a BedTool class"""
+    tmpfile = tempfile.NamedTemporaryFile(suffix=".bed", delete=False).name
+    df_in[1] = df_in[1].astype(int)
+    df_in.sort_values([0, 1], inplace=True)
+    df_in.to_csv(tmpfile, sep="\t", index=False, header=False)
+    return BedTool(tmpfile)
+
+
+def map_counts(regions: list, counts: pd.DataFrame) -> pd.DataFrame:
+    """
+    map regions in the countsfile to intersecting regions in the regions list.
+    counts mapping to multiple regions are duplicated.
+    missing regions are set to 0.
+    """
+    r = pd.Series(regions).str.split(r":|-", expand=True)
+    r = df_to_bedtool(r)
+
+    c = counts.index.str.split(r":|-", expand=True).to_frame()
+    c = df_to_bedtool(c)
+
+    # get overlapping regions, with the original location in the counts file
+    intersect = r.intersect(c, sorted=True, wa=True, wb=True, loj=True).fn
+
+    # map intersecting count locations to their corresponding region (can duplicate rows)
+    df = pd.read_table(intersect, sep="\t", comment="#", header=None, dtype=str)
+    df.columns = ["chrom", "start_r", "end_r", "_", "start_c", "end_c"]
+    df["region"] = df["chrom"] + ":" + df["start_r"] + "-" + df["end_r"]
+    df.index = df["chrom"] + ":" + df["start_c"] + "-" + df["end_c"]
+    df = df[["region"]]
+
+    mapped_counts = df.join(counts).set_index("region", drop=True)
+    mapped_counts.index.name = None
+    mapped_counts.fillna(0.0, inplace=True)
+    return mapped_counts

@@ -22,6 +22,7 @@ from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale, scale
 from tqdm.auto import tqdm
 
+from ananse.bed import map_counts
 from ananse.utils import load_tfs, load_regions, get_motif_factors, check_cores
 from . import PACKAGE_DIR
 
@@ -442,7 +443,7 @@ class PeakPredictor:
 
         Parameters
         ----------
-        table : str
+        table : str or list
             Counts table with the nr of reads under each peak per sample
         columns : list or string, optional
             Name of the columns (case-insensitive) in the counts table to use
@@ -462,7 +463,15 @@ class PeakPredictor:
 
         # load & filter df
         df = pd.read_table(table, sep="\t", comment="#", index_col=0)
-        if len(df) != len(self.regions):
+        if any(df.duplicated()):
+            logger.info(
+                f"  Averaging counts for duplicate regions in {os.path.basename(table)}"
+            )
+            df = df.groupby(df.index).mean(1)
+        if len(set(self.regions) & set(df.index)) != len(self.regions):
+            logger.error("  Mapping to regions")
+            df = map_counts(self.regions, df)
+        elif len(self.regions) != len(df.index):
             df = df[df.index.isin(self.regions)]
         if len(df) == 0:
             raise ValueError(
