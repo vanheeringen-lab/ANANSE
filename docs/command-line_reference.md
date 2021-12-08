@@ -166,14 +166,13 @@ If you specify a file, e.g. `mymotifs.pfm`, the command expects `mymotifs.motif2
 #### Full options
 
 ```shell
-usage: ananse [-h] <command> [options] binding [-A BAM [BAM ...]] [-H BAM [BAM ...]] [-g NAME] [-r FILE [FILE ...]] [-p FILE] [-o DIR] [-R DIR]
-                                               [--pfmscorefile FILE] [-t [TF ...]] [--jaccard-cutoff FLOAT] [-n INT] [-h]
+usage: ananse [-h] <command> [options] binding [-A BAM [BAM ...]] [-H BAM [BAM ...]] [-g NAME] [-r [FILE ...]] [-p FILE] [-o DIR] [-c [COL ...]] [-R DIR] [--pfmscorefile FILE] [-t [TF ...]] [--jaccard-cutoff FLOAT] [-n INT] [-h]
 
 Required arguments:
   -A BAM [BAM ...], --atac-bams BAM [BAM ...]
-                        ATAC-seq input BAM file(s), can be used alone or in combination with the -H option
+                        ATAC-seq input BAM file(s) (or one counts table with reads per peak), can be used alone or in combination with the -H option
   -H BAM [BAM ...], --histone-bams BAM [BAM ...]
-                        H3K27ac ChIP-seq input BAM file(s), can be used alone or in combination with the -A option
+                        H3K27ac ChIP-seq input BAM file(s) (or one counts table with reads per peak), can be used alone or in combination with the -A option
   -g NAME, --genome NAME
                         Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38)
 
@@ -186,6 +185,8 @@ Required arguments (optional for hg38):
 
 Optional arguments:
   -o DIR, --outdir DIR  Directory where you wish to store the output (default: ./ANANSE_binding)
+  -c [COL ...], --columns [COL ...]
+                        One or more (case insensitive) column names to extract from the counts table(s) (default: all)
   -R DIR, --reference DIR
                         Path to reference data directory
   --pfmscorefile FILE   Use precomputed gimmemotifs scores (gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv)
@@ -266,7 +267,7 @@ optional arguments:
                         one TF per line
   -r FILE, --regions FILE
                         Filter regions to use (default: all in binding.h5). Either one region/BED format file or a space-separated list.
-  -c COL, --column COL  One or more (case insensitive) column names to extract from the expression file(s) (default: tpm)
+  -c COL, --columns COL One or more (case insensitive) column names to extract from the expression file(s) (default: tpm)
   -f, --full-output     Export the full GRN output to the output file
   --include-promoter, --exclude-promoter
                         Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. By default promoter peaks are included.
