@@ -18,13 +18,13 @@ All functionality is also available through a Python API.
 ANANSE is free and open source research software. If you find it useful please cite our preprint:
 
 !!! note "Citation"
-    > Xu, Q., Georgiou, G., Veenstra, G.J.C., Zhou, H., and van Heeringen, S.J. (2020). **ANANSE: An enhancer network-based computational approach for predicting key transcription factors in cell fate determination.** [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.06.05.135798v2).
+    > Quan Xu, Georgios Georgiou, Siebren Frölich, Maarten van der Sande, Gert Jan C Veenstra, Huiqing Zhou, Simon J van Heeringen, **ANANSE: an enhancer network-based computational approach for predicting key transcription factors in cell fate determination**, Nucleic Acids Research, Volume 49, Issue 14, 20 August 2021, Pages 7966–7985, [https://doi.org/10.1093/nar/gkab598](https://doi.org/10.1093/nar/gkab598)
 
 ### Getting started
 
-* The easiest way to install ANANSE is using [bioconda](https://bioconda.github.io/) on Linux (including [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10) ) or Mac. 
+* Install ANANSE on Linux or Mac, see the [Installation](installation.md) page for details.
 * Have a look at these simple [examples](examples.md) to get a taste of what is possible.
-* Check out the more detailed [command-line reference](command-line_reference.md).
+* Check out the [command-line reference](command-line_reference.md) to get going with your own data.
 * There’s also an [python API documentation](API_documentation.md) for Python users.
 
 ### Get help
