@@ -17,12 +17,13 @@ To run `ANANSE` on your sample(s), a matching genome and gene annotation is nece
 
 #### genomepy
 
-We recommand that you download these with [genomepy](https://github.com/vanheeringen-lab/genomepy).
+We recommend that you download these with [genomepy](https://github.com/vanheeringen-lab/genomepy).
 If you installed ANANSE with conda, genomepy is present in the ANANSE environment.
 
-To install a genome with `genomepy` you can use this command, which will download both the genome `FASTA` and the gene annotation `BED` file, and exports them to the PATH.
+To install a genome with `genomepy` you can use this command, 
+which will download both the genome `FASTA` and the gene annotation `BED` and `GTF` files.
 
-``` bash
+```shell
 # activate ananse environment
 conda activate ananse
 

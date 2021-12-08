@@ -1,4 +1,3 @@
-import inspect
 import itertools
 import os
 import re
@@ -21,19 +20,27 @@ from pandas import HDFStore
 from pyfaidx import FastaIndexingError
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale, scale
+from tqdm.auto import tqdm
 
-import ananse
-from ananse.enhancer_binding import CombineBedFiles
-from ananse.utils import check_input_factors, get_motif_factors
+from ananse.utils import load_tfs, load_regions, get_motif_factors, check_cores
+from . import PACKAGE_DIR
 
 # This motif file is not created by default
 #   * f"{self.data_dir}/reference.factor.feather"
 
+BLACKLIST_TFS = [
+    "NO ORTHOLOGS FOUND",  # gimme motif2factors artifact
+]
+
 
 class PeakPredictor:
+    atac_data = None
+    histone_data = None
+    factor_models = {}
+
     def __init__(
         self,
-        reference,  # positional in this setup
+        reference=None,
         atac_bams=None,
         histone_bams=None,
         regions=None,
@@ -43,6 +50,10 @@ class PeakPredictor:
         pfmscorefile=None,
         ncore=4,
     ):
+        if reference is None:
+            reference = os.path.join(PACKAGE_DIR, "db", "default_reference")
+        if not os.path.exists(reference):
+            raise NotADirectoryError(f"Could not find {reference}")
         self.data_dir = reference
 
         if atac_bams is None and histone_bams is None:
@@ -55,52 +66,27 @@ class PeakPredictor:
         self.species = _get_species(genome)
 
         if pfmfile is None and self.species not in ["human", "mouse"]:
-            logger.warning(
-                f"The genome '{genome}' is not recognized as human or mouse."
-            )
-            logger.warning(
-                "If you do have another species, the motif file likely needs to be adapted."
-            )
-            logger.warning(
-                "Currently mouse and human gene names are used to link motif to TFs."
-            )
-            logger.warning(
-                "If your gene symbols are different, then you will need to create a new mapping"
-            )
-            logger.warning(
-                "and use the `-p` argument. For a possible method to do this, see here:"
-            )
-            logger.warning(
-                "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors"
-            )
+            warnings = [
+                f"The genome '{genome}' is not recognized as human or mouse.",
+                "If you do have another species, the motif file likely needs to be adapted.",
+                "Currently mouse and human gene names are used to link motif to TFs.",
+                "If your gene symbols are different, then you will need to create a new mapping",
+                "and use the `-p` argument. For a possible method to do this, see here:",
+                "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors",
+            ]
+            for warn in warnings:
+                logger.warning(warn)
 
-        # Set basic information
         self.ncore = ncore
-        self._atac_data = None
-        self._histone_data = None
-        self.factor_models = {}
         self.pfmfile = pfmfile
+        # load motifs, f2m and motif_graph
         self._load_motifs(factors=factors)
-
-        # if the reference regions are used, we can use existing data such
-        # as motif scores.
-        if regions is None:
-            self.region_type = "reference"
-            self._load_reference_data()
-        # If we have custom regions we have to scan for motifs.
-        else:
-            self.region_type = "custom"
-            self.regions = regions
-            if pfmscorefile is None:
-                self._scan_motifs(regions)
-            else:
-                self._load_prescanned_motifs(pfmscorefile)
-
-        # Load ATAC data
+        # load regions, _motifs and region_type
+        self._load_regions(regions, pfmscorefile)
+        # load ATAC data
         if atac_bams is not None:
             self.load_atac(atac_bams, update_models=False)
-
-        # Load histone ChIP-seq data
+        # load histone ChIP-seq data
         if histone_bams is not None:
             self.load_histone(histone_bams, update_models=False)
 
@@ -123,9 +109,9 @@ class PeakPredictor:
         """
         # load motifs
         if self.pfmfile is None:
-            logger.info("using default motif file")
+            logger.info("Loading default motif file")
         else:
-            logger.info(f"using specified motif file: {self.pfmfile}")
+            logger.info(f"Loading specified motif file: {self.pfmfile}")
         self.motifs = read_motifs(self.pfmfile, as_dict=True)
 
         # load factor2motifs
@@ -133,7 +119,7 @@ class PeakPredictor:
             pfmfile=self.pfmfile, indirect=indirect, factors=factors
         )
         n = len(self.f2m)
-        logger.info(f"using motifs for {n} factor{'' if n == 1 else 's'}")
+        logger.info(f"  Using motifs for {n} factor{'' if n == 1 else 's'}")
 
         # load jaccard motif graph
         self._jaccard_motif_graph(indirect, factors)
@@ -161,6 +147,16 @@ class PeakPredictor:
                     continue
 
                 f2m.setdefault(factor, []).append(name)
+
+        # remove blacklisted TFs
+        for tf in BLACKLIST_TFS:
+            if tf in f2m:
+                del f2m[tf]
+
+        if len(f2m) == 0:
+            raise ValueError(
+                "Zero factors remain after filtering the motif2factors.txt associated with pfmfile!"
+            )
         return f2m
 
     def _jaccard_motif_graph(self, indirect, factors):
@@ -204,50 +200,79 @@ class PeakPredictor:
                 jaccard = i / u
                 self.motif_graph.add_edge(tf1, tf2, weight=1 - jaccard)
 
-    def _load_reference_data(self):
-        """Load data for reference regions.
-
-        Will load three types of data:
-        * Motif scores.
-        * The average peak coverage (self._avg)
-        * The distance from the peak to nearest TSS. (self._dist)
-
-        All of these data are only used with the reference set of regions.
+    def _load_regions(self, regions=None, pfmscorefile=None):
         """
-        # Read motifs
-        logger.info("loading motifs for reference")
-        fpath = os.path.join(self.data_dir, "reference.factor.feather")
-        if not os.path.exists(fpath):
-            raise FileNotFoundError(
-                f"{fpath} not found. For hg38, download the REMAP "
-                "reference dataset and specify it location with -R, "
-                "or (for any species) specify regions with -r"
-            )
-        self._motifs = pd.read_feather(fpath)
-        self._motifs.set_index(self._motifs.columns[0], inplace=True)
+        loads
+        - self.regions: a list of regions to work with
+        - self._motifs: a pd.DataFrame with regions as index,
+            motifs as columns, and motif scores as values
+        - self.region_type: a str for internal stuff
+        """
+        if pfmscorefile is not None:
+            # if we have a pre-scanned file,
+            # use regions from the index (optionally filtered by regions)
+            self.region_type = "custom"
+            self._load_prescanned_motifs(pfmscorefile, regions)
+            self.regions = list(self._motifs.index)
+        elif regions is not None:
+            # if we have custom regions we have to scan for motifs.
+            self.region_type = "custom"
+            self.regions = list(set(regions))
+            self._scan_motifs(regions)
+        else:
+            # if the reference regions are used,
+            # we can use existing data such as motif scores.
+            self.region_type = "reference"
+            self._load_reference_data()
+        logger.info(f"  Using {len(self.regions)} regions")
 
-        # Read average coverage
-        logger.info("loading average peak coverage for reference")
-        self._avg = pd.read_table(
-            f"{self.data_dir}/reference.coverage.txt",
-            sep="\t",
-            comment="#",
-            index_col=0,
-        )
-        self._avg.columns = ["average"]
-        self._avg["average"] = self._avg["average"] / self._avg["average"].max()
+    def _load_prescanned_motifs(self, pfmscorefile, regions=None):
+        """
+        Use pre-scanned gimmemotifs motif scores.
 
-        # Read distance to TSS
-        logger.info("loading distance for reference")
-        self._dist = pd.read_table(
-            f"{self.data_dir}/reference.dist_to_tss.txt",
-            sep="\t",
-            comment="#",
-            index_col=0,
-        )
+        Parameters
+        ----------
+        pfmscorefile : str/file
+            pre-scanned gimmemotifs scores file
 
-        # Set regions
-        self.regions = self._avg.index
+        regions : list, optional
+            list of regions to filter the pfmscorefile by
+        """
+        logger.info("Loading pre-scanned motif scores")
+
+        motif_df = pd.read_table(pfmscorefile, comment="#", index_col=0)
+
+        if regions is not None:
+            # warn if regions are not found in the pfmscorefile (likely a typo/later addition)
+            invalid = set(regions) - set(motif_df.index)
+            if len(invalid) > 0:
+                logger.warning(f"{len(invalid)} regions not found in the pfmscorefile:")
+                logger.warning(", ".join(list(invalid)))
+                logger.warning(
+                    "These regions are ignored. "
+                    "Create a new pfmscorefile with these regions to include them!"
+                )
+                regions = list(set(regions) - invalid)
+
+            # filter pfmscorefile and regions for overlap
+            overlap = list(set(regions) & set(motif_df.index))
+            if len(overlap) < len(motif_df.index):
+                logger.debug(
+                    f"Subsetting pfmscorefile to requested {len(regions)} regions"
+                )
+                motif_df = motif_df.loc[overlap]
+
+        self._motifs = pd.DataFrame(index=motif_df.index)
+        cols = motif_df.columns.to_list()
+        for factor in self.f2m:
+            motifs = self.f2m[factor]
+            if not bool(set(motifs) & set(cols)):
+                logger.warning(
+                    f"No motifs for factor '{factor}' "
+                    f"were found in pfmscorefile '{os.path.basename(pfmscorefile)}'"
+                )
+                continue
+            self._motifs[factor] = motif_df[motifs].mean(1)
 
     def _scan_motifs(self, regions, **kwargs):
         """[summary]
@@ -257,7 +282,7 @@ class PeakPredictor:
         regions : [type]
             [description]
         """
-        logger.info("Scanning regions for motifs.")
+        logger.info("Scanning regions for motifs")
         with NamedTemporaryFile("w") as regionfile:
             print("region", file=regionfile)
             for region in regions:
@@ -285,40 +310,64 @@ class PeakPredictor:
             for factor in self.f2m:
                 self._motifs[factor] = motif_df[self.f2m[factor]].mean(1)
 
-    def _load_prescanned_motifs(self, pfmscorefile):
-        """
-        Use pre-scanned gimmemotifs motif scores.
+    def _load_reference_data(self):
+        """Load data for reference regions.
 
-        Parameters
-        ----------
-        pfmscorefile : str/file
-            pre-scanned gimmemotifs scores file
-        """
-        logger.info("loading pre-scanned motif scores")
+        Will load three types of data:
+        * Motif scores.
+        * The average peak coverage (self._avg)
+        * The distance from the peak to nearest TSS. (self._dist)
 
-        motif_df = pd.read_table(pfmscorefile, comment="#", index_col=0)
-        self._motifs = pd.DataFrame(index=motif_df.index)
-        cols = motif_df.columns.to_list()
-        for factor in self.f2m:
-            motifs = self.f2m[factor]
-            if not bool(set(motifs) & set(cols)):
-                logger.warning(
-                    f"no motifs for factor '{factor}' "
-                    f"were found in pfmscorefile '{os.path.basename(pfmscorefile)}'"
-                )
-                continue
-            self._motifs[factor] = motif_df[motifs].mean(1)
+        All of these data are only used with the reference set of regions.
+        """
+        # Read motifs
+        logger.info("Loading motifs for reference")
+        fpath = os.path.join(self.data_dir, "reference.factor.feather")
+        if not os.path.exists(fpath):
+            raise FileNotFoundError(
+                f"{fpath} not found. For hg38, download the REMAP "
+                "reference dataset and specify it location with -R, "
+                "or (for any species) specify regions with -r"
+            )
+        self._motifs = pd.read_feather(fpath)
+        self._motifs.set_index(self._motifs.columns[0], inplace=True)
+
+        # Read average coverage
+        logger.info("Loading average peak coverage for reference")
+        self._avg = pd.read_table(
+            f"{self.data_dir}/reference.coverage.txt",
+            sep="\t",
+            comment="#",
+            index_col=0,
+        )
+        self._avg.columns = ["average"]
+        self._avg["average"] = self._avg["average"] / self._avg["average"].max()
+
+        # Read distance to TSS
+        logger.info("Loading distance for reference")
+        self._dist = pd.read_table(
+            f"{self.data_dir}/reference.dist_to_tss.txt",
+            sep="\t",
+            comment="#",
+            index_col=0,
+        )
+
+        # Set regions
+        self.regions = list(self._avg.index)
 
     def _load_bams(self, bams, title, window=200):
         tmp = pd.DataFrame(index=self.regions)
+        n_regions = len(self.regions)
         with NamedTemporaryFile(mode="w") as f_out:
 
             for region in self.regions:
                 print("{}\t{}\t{}".format(*re.split("[:-]", region)), file=f_out)
             f_out.flush()
 
-            for bam in bams:
-                result = load_heatmap_data(
+            t = tqdm(bams, total=len(bams), unit="BAM", desc="Reading")
+            for bam in t:
+                t.set_description(f"Reading {os.path.basename(bam)}. Overall progress")
+                name, regions, r_data, _ = load_heatmap_data(
                     f_out.name,
                     bam,
                     bins=1,
@@ -327,11 +376,26 @@ class PeakPredictor:
                     rmdup=True,
                     rmrepeats=True,
                 )
-                tmp[result[0]] = result[2].T[0]
+                if len(r_data.T[0]) == n_regions:
+                    tmp[name] = r_data.T[0]
+                else:
+                    # "regions" contains overlap, "r_data.T[0]" contains scores (order is identical)
+                    df = pd.DataFrame(
+                        np.array(regions)[:, 0:3],
+                        columns=["chrom", "start", "end"],
+                        dtype=str,
+                    )
+                    df["region"] = df["chrom"] + ":" + df["start"] + "-" + df["end"]
+                    df[name] = r_data.T[0]
+                    df = df[["region", name]].set_index("region")
+
+                    # merge on regions to get scores for overlapping regions (set rest to 0)
+                    tmp = tmp.join(df)
+                    tmp[name].fillna(0.0, inplace=True)
 
         fname = f"{self.data_dir}/{title}.qnorm.ref.txt.gz"
         if os.path.exists(fname):
-            logger.debug(f"quantile normalization for {title}")
+            logger.debug(f"Quantile normalization for {title}")
             qnorm_ref = pd.read_table(fname, index_col=0)["qnorm_ref"].values
             if len(self.regions) != len(qnorm_ref):
                 qnorm_ref = np.random.choice(
@@ -372,8 +436,8 @@ class PeakPredictor:
         update_models : bool, optional
             Update the model used if data is loaded, by default True.
         """
-        logger.info("loading ATAC data")
-        self._atac_data = self._load_bams(bams, title="ATAC", window=200)
+        logger.info("Loading ATAC data")
+        self.atac_data = self._load_bams(bams, title="ATAC", window=200)
         if update_models:
             self._set_model_type()
 
@@ -387,8 +451,8 @@ class PeakPredictor:
         update_models : bool, optional
             Update the model used if data is loaded, by default True.
         """
-        logger.info("loading H3K27ac data")
-        self._histone_data = self._load_bams(bams, title="H3K27ac", window=2000)
+        logger.info("Loading H3K27ac data")
+        self.histone_data = self._load_bams(bams, title="H3K27ac", window=2000)
         if update_models:
             self._set_model_type()
 
@@ -400,11 +464,11 @@ class PeakPredictor:
         Reference regions will have the most information.
         """
         cols = ["motif"]
-        if self._atac_data is not None:
+        if self.atac_data is not None:
             cols += ["ATAC"]
             if self.region_type == "reference":
                 cols += ["ATAC.relative"]
-        if self._histone_data is not None:
+        if self.histone_data is not None:
             cols += ["H3K27ac"]
         if self.region_type == "reference":
             cols += ["average", "dist"]
@@ -414,11 +478,10 @@ class PeakPredictor:
 
         # Load models
         logger.info("Loading models")
-        # print(os.path.join(self.data_dir, self._model_type))
         for fname in glob(os.path.join(self.data_dir, self._model_type, "*.pkl")):
             factor = fname.split("/")[-1].replace(".pkl", "")
             self.factor_models[factor] = joblib.load(fname)
-        logger.info(f"{len(self.factor_models)} models found")
+        logger.info(f"  Using {len(self.factor_models)} models")
 
     def factors(self):
         """return a list of factors based on the f2m dict"""
@@ -470,24 +533,16 @@ class PeakPredictor:
         return pd.DataFrame(proba, index=self.regions)
 
     def _load_data(self, factor):
-        # if self.region_type == "reference":
-        # logger.debug("Reading motif data")
-
-        tmp = pd.DataFrame(
-            {factor: self._motifs[factor]}, index=self.regions
-        )  # pd.read_table(os.path.join(self.data_dir, f"{factor}.motif.txt.gz"), index_col=0)
-        # else:
-        tmp.columns = ["motif"]
-        if self._atac_data is not None:
-            tmp = tmp.join(self._atac_data)
-        if self._histone_data is not None:
-            tmp = tmp.join(self._histone_data)
+        tmp = pd.DataFrame({"motif": self._motifs[factor]}, index=self.regions)
+        if self.atac_data is not None:
+            tmp = tmp.join(self.atac_data)
+        if self.histone_data is not None:
+            tmp = tmp.join(self.histone_data)
 
         if self.region_type == "reference":
             tmp = tmp.join(self._avg)
             tmp = tmp.join(self._dist)
         tmp = tmp.dropna()
-        # logger.debug(str(self._X_columns))
         return tmp[self._X_columns]
 
     def _load_model(self, factor, jaccard_cutoff=0.0):
@@ -548,7 +603,7 @@ class PeakPredictor:
             nregions = 20_000
 
         activity = pd.DataFrame()
-        for df in (self._atac_data, self._histone_data):
+        for df in (self.atac_data, self.histone_data):
             if df is None:
                 continue
 
@@ -625,8 +680,7 @@ def _get_species(genome):
 
 
 def _load_human_factors():
-    package_dir = os.path.dirname(ananse.__file__)
-    tf_xlsx = os.path.join(package_dir, "db", "lovering.tfs.xlsx")
+    tf_xlsx = os.path.join(PACKAGE_DIR, "db", "lovering.tfs.xlsx")
     valid_factors = pd.read_excel(
         tf_xlsx,
         engine="openpyxl",
@@ -637,52 +691,6 @@ def _load_human_factors():
     ].values
     valid_factors = list(set(valid_factors) - {"EP300"})
     return valid_factors
-
-
-def _check_input_regions(regionfiles, genome, outdir=".", verbose=True, force=False):
-    # Load regions from BED or region text file
-    if regionfiles is None:
-        # Keep regions to None, use reference regions.
-        return
-
-    infile = regionfiles[0]
-    if len(regionfiles) > 1:
-        # merge files, assumed to be all BED
-        peak_width = 200
-        cbed = CombineBedFiles(genome=genome, peakfiles=regionfiles, verbose=verbose)
-        combined_bed = os.path.join(outdir, "regions_combined.bed")
-        cbed.run(outfile=combined_bed, width=peak_width, force=force)
-        infile = combined_bed
-
-    df = pd.read_table(infile, header=None, sep="\t", comment="#", dtype=str)
-    assert df.shape[0] > 2, "regions file must have more that 2 regions."
-
-    test = str(df.at[1, 0])
-    if bool(re.match(r"^.*:\d+-\d+$", test)):
-        # it's a regions list
-        # or it's a Seq2science counts table
-        regions = df.iloc[:, 0].tolist()
-
-    elif df.shape[1] >= 3:
-        # it's a BED file
-        regions = (
-            # For Ensembl genome names, make sure it's a string
-            df.iloc[:, 0].astype(str)
-            + ":"
-            + df.iloc[:, 1].astype(str)
-            + "-"
-            + df.iloc[:, 2].astype(str)
-        ).tolist()
-
-    else:
-        raise TypeError("Cannot identify regions file(s) type.")
-
-    # remove the header, if any.
-    header = str(regions[0])
-    if not bool(re.match(r"^.*:\d+-\d+$", header)):
-        regions = regions[1:]
-
-    return regions
 
 
 def _check_input_files(*args):
@@ -702,14 +710,14 @@ def _check_input_files(*args):
             all_files_found = False
 
     if not all_files_found:
-        exit(1)
+        sys.exit(1)
 
 
 def predict_peaks(
     outdir,
     atac_bams=None,
     histone_bams=None,
-    regionfiles=None,
+    regions=None,
     reference=None,
     factors=None,
     genome=None,
@@ -750,7 +758,7 @@ def predict_peaks(
         List of BAM files, by default None
     histone_bams : list, optional
         List of H3K27ac ChIP-seq BAM files, by default None
-    regionfiles : list, optional
+    regions : str or list, optional
         BED file or text file with regions, or a list of BED, narrowPeak or
         broadPeak files If None, then the reference regions are used.
     reference : str, optional
@@ -770,51 +778,52 @@ def predict_peaks(
     ncore : int, optional
         Number of threads to use. Default is 4.
     """
-    if reference is None and regionfiles is None:
-        logger.error("Need either input regions or location of a reference set!")
-        logger.error(
-            "For human, you can download the REMAP reference here: https://doi.org/10.5281/zenodo.4768075 "
-            "(please see the docs on how to install this)."
-        )
-        logger.error(
-            "Otherwise you need to specify one or more BED or narrowPeak files"
-        )
-        logger.error(
-            "with potential enhancer regions, for instance, all ATAC-seq peaks"
-        )
-        logger.error("from your combined experiments.")
+    if reference is None and regions is None and pfmscorefile is None:
+        warnings = [
+            "Need either 1) a `reference` directory, 2) one or more `regionfiles`, "
+            "or 3) a `pfmscorefile` (a set of pre-scanned regions)!",
+            "1) For human data, you can download the REMAP reference here: "
+            "https://doi.org/10.5281/zenodo.4768075",
+            "2) As regionfiles you can specify one or more BED/narrowPeak files "
+            "(with potential enhancer regions, for instance, all ATAC-seq peaks "
+            "from your combined experiments)",
+            "3) To get pre-scanned regions, run "
+            "`gimme scan -Tz --gc -g GENOME REGIONFILES > pfmscorefile.tsv` "
+            "(nice if you plan to reuse these regions)",
+            "Please see the docs for more info on these options.",
+        ]
+        for warn in warnings:
+            logger.error(warn)
         sys.exit(1)
 
-    if reference is not None and regionfiles is not None:
-        logger.error("Need either a reference location *or* or a set of input regions")
+    if reference is not None and (regions is not None or pfmscorefile is not None):
+        logger.error(
+            "Need either a reference directory *or* a set of input regions"
+            "/pfmscorefile (pfmscorefile and regionfiles can be combined)"
+        )
         sys.exit(1)
 
     # Check if all specified BAM files exist
     _check_input_files(atac_bams, histone_bams)
 
-    # Read the factors, from a file if needed
-    factors = check_input_factors(factors)
-
     # Check genome, will fail if it is not a correct genome name or file
     Genome(genome)
-
-    if not os.path.exists(outdir):
-        os.makedirs(outdir, exist_ok=True)
-
-    # If regions are specified, read them in, combining multiple files if
-    # necessary.
-    regions = _check_input_regions(regionfiles, genome, outdir=outdir)
-
-    if reference is None:
-        install_dir = os.path.dirname(
-            os.path.abspath(inspect.getfile(inspect.currentframe()))
-        )
-        reference = os.path.join(install_dir, "db", "default_reference")
 
     if reference is not None:
         if not os.path.exists(reference):
             logger.error(f"Reference directory {reference} does not exist!")
             sys.exit(1)
+
+    ncore = check_cores(ncore)
+
+    if not os.path.exists(outdir):
+        os.makedirs(outdir, exist_ok=True)
+
+    # Read the factors, from a file if needed
+    factors = load_tfs(factors)
+
+    # If regions are specified, read them in, combining multiple files if necessary.
+    regions = load_regions(regions, genome, outdir)
 
     p = PeakPredictor(
         reference=reference,
@@ -835,16 +844,18 @@ def predict_peaks(
 
     with HDFStore(outfile, complib="lzo", complevel=9) as hdf:
 
-        if p._atac_data is not None:
-            hdf.put(key="_atac", value=p._atac_data, format="table")
+        if p.atac_data is not None:
+            hdf.put(key="_atac", value=p.atac_data, format="table")
 
-        if p._histone_data is not None:
-            hdf.put(key="_h3k27ac", value=p._histone_data, format="table")
+        if p.histone_data is not None:
+            hdf.put(key="_h3k27ac", value=p.histone_data, format="table")
 
         logger.info("Predicting TF activity")
         factor_activity = p.predict_factor_activity()
         hdf.put(key="_factor_activity", value=factor_activity, format="table")
 
+        logger.info("Predicting binding per TF:")
+        proba = None
         for factor in p.factors():
             try:
                 proba = p.predict_proba(factor, jaccard_cutoff=jaccard_cutoff)
@@ -853,8 +864,15 @@ def predict_peaks(
                     value=proba.iloc[:, -1].reset_index(drop=True).astype(np.float16),
                     format="table",
                 )
-
             except ValueError as e:
                 logger.debug(str(e))
 
+        if proba is None:
+            # PeakPredictor.predict_proba() went wrong for all TFs
+            logger.error(
+                "Something went wrong! Please let us know by raising an issue with "
+                "your ANANSE version and the log output at "
+                "https://github.com/vanheeringen-lab/ANANSE/issues"
+            )
+            sys.exit(1)
         hdf.put(key="_index", value=proba.index.to_series(), format="table")

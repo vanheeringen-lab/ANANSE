@@ -7,23 +7,52 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `ananse.view` now optionally accepts `regions` and `tfs`, to filter the output.
+- `ananse.view` can also output the header of (up to) `n` TFs & regions.
+- `ananse.view` can also output a list of all regions or tfs.
+- `ananse network` will check the gene name overlap between the expression files, the motif2factor.txt and the tfs (#120).
+  - if overlap is low, and a genomepy genome/annotation is given, the symbols are converted to gene names, similar to `gimme motif2factors`
+  - if overlap is none, an informative error is raised
+- `ananse network` can now accept one or more column names to use from the expression file (e.g. column names from a counts table)
+- `ananse network` now optionally accepts `regions` and `tfs`, to filter the binding.h5 content.
+- `ananse network` can (at least internally) output an expression network, binding network or expression-binding network.
+- `ananse influence` will also check the gene overlap (between the merged networks and the DEgenes) (#120).
+  - if overlap is low, and a genomepy genome/annotation is given, the symbols are converted to gene names, similar to `gimme motif2factors`
+  - if overlap is none, an informative error is raised
+- `ananse plot` now optionally accepts a file `type` for the output plots (e.g. pdf, png)
+- all ananse CLI functions now have a default output file/dir
+- **ADDITIONAL UNIT TESTS!**
+- **TEST DATA!** See `tests/data/GRCz11_chr9` 
+  - including a README.md on the creation and bash command for every function.
 
 ### Changed
 
 - Now uses em-dash as gene separator (—), instead of underscore (_). _Should_ solve issues with gene names having underscores, as em-dash is a pretty obscure char.
+- `ananse binding` will ignore BLACKLIST_TFS in motif2factors.txt. Currently, this is only the artifact `"NO ORTHOLOGS FOUND"`.
 - refactored jaccard stuff
   - reduced jaccard graph size (no more duplicates/self edged)
   - reduced logger messages (max 1 message per motif now)
 - `ananse binding` documentation changed to clearly reflect the complexity of non-`hg38`
   - with expandable sections to reduce clutter for the `hg38` gang
 - `ananse binding` will now only scan the motifs in the analysis
-- cleaned up `ananse binding --help` messages
+- `ananse binding` will now only scan the regions overlapping the pfmscorefile and regions (if both are given)
+- changed the hardcoded `.txt` file extensions in `ananse plot` to `.tsv` 
+- cleaned up `ananse --help` messages
 
 ### Removed
+
+- `ananse binding` now requires a genome fasta (to create `_factor_activity`)
+- legacy code (`enhancer_binding` is now `bed`, containing only the relevant code)
 
 ### Fixed
 - jaccard index with custom pfmfiles
 - `ananse view --help`
+- issue in `ananse binding` when specified regions have no bam coverage (#153)
+- issue in `ananse binding` when probability cant be found for any TF (#147)
+- issue in `ananse network` when executing run_network() from python
+- `ananse network` merges duplicate genes and transcription factors (#142)
+- issue in `ananse influence` when using only 1 network
+- `ananse plot` will no longer warn you incorrectly about your "weight" 
 
 
 ## [0.3.0] - 2021-07-14

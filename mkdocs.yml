@@ -1,7 +1,7 @@
 site_name: ANANSE
 site_description: ANalysis Algorithm for Networks Specified by Enhancers.
-site_author: Quan Xu
-copyright: Copyright &copy; 2020 <a href="https://github.com/vanheeringen-lab">vanheeringen-lab</a>, Maintained by <a href="mailto:qxuchn@gmail.com" target="_blank">Quan Xu</a>.
+site_author: Quan Xu, Georgios Georgiou, Siebren Frölich, Maarten van der Sande, Jos Smits, Simon van Heeringen
+copyright: Copyright &copy; 2020 <a href="https://github.com/vanheeringen-lab">vanheeringen-lab</a>.
 
 
 repo_url: https://github.com/vanheeringen-lab/ANANSE/
@@ -16,7 +16,8 @@ extra_css:
   - css/extra.css
 markdown_extensions:
   - admonition
-#   - codehilite
+  - pymdownx.details
+  - pymdownx.superfences
   - footnotes
 
 extra_javascript:
