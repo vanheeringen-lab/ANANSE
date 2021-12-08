@@ -2,20 +2,21 @@
 
 ### What is ANANSE?
 
-ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to use these GRNs to identify the key transcription factors in cell fate determination. You can use it to study transcription regulation during development and differentiation, or to generate a shortlist of transcription factors for trans-differentiation experiments. It is written in Python and it contains command-line script that includes the following three tools:
+ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to identify key transcription factors between two GRNs. You can use it to study transcription regulation during development and differentiation, or to generate a shortlist of transcription factors for trans-differentiation experiments. 
+
+ANANSE is written in Python and comes with a command-line interface that includes the following commands:
 
 | Command           | Function                                                       |
 | ----------------- | -------------------------------------------------------------- |
-|  ananse binding   | predict cell type-specific transcription factor binding profiles   |
-|  ananse network   | infer a cell type-specific gene regulatory network           |
-|  ananse influence | infer key transcription factors during cell fate determination |   
+|  ananse binding   | predict transcription factor binding profiles                  |
+|  ananse network   | infer a gene regulatory network                                |
+|  ananse influence | infer key transcription factors between two networks           |   
 |  ananse plot      | plot influence results in a dotplot and optionally a GRN of the Top TFs |   
-|  ananse view      | inspect the output of `ananse binding` |
+|  ananse view      | inspect the output of `ananse binding`                         |
 
+All functionality is also available through a [Python API](API_documentation.md).
 
-All functionality is also available through a Python API.
-
-ANANSE is free and open source research software. If you find it useful please cite our preprint:
+ANANSE is free and open source research software. If you find it useful please cite it:
 
 !!! note "Citation"
     > Quan Xu, Georgios Georgiou, Siebren Frölich, Maarten van der Sande, Gert Jan C Veenstra, Huiqing Zhou, Simon J van Heeringen, **ANANSE: an enhancer network-based computational approach for predicting key transcription factors in cell fate determination**, Nucleic Acids Research, Volume 49, Issue 14, 20 August 2021, Pages 7966–7985, [https://doi.org/10.1093/nar/gkab598](https://doi.org/10.1093/nar/gkab598)
@@ -25,7 +26,6 @@ ANANSE is free and open source research software. If you find it useful please c
 * Install ANANSE on Linux or Mac, see the [Installation](installation.md) page for details.
 * Have a look at these simple [examples](examples.md) to get a taste of what is possible.
 * Check out the [command-line reference](command-line_reference.md) to get going with your own data.
-* There’s also an [python API documentation](API_documentation.md) for Python users.
 
 ### Get help
 
