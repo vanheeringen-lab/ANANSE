@@ -10,6 +10,7 @@ ANANSE is a computational approach to infer enhancer-based gene regulatory netwo
 |  ananse network   | infer a cell type-specific gene regulatory network           |
 |  ananse influence | infer key transcription factors during cell fate determination |   
 |  ananse plot      | plot influence results in a dotplot and optionally a GRN of the Top TFs |   
+|  ananse view      | inspect the output of `ananse binding` |
 
 
 All functionality is also available through a Python API.
@@ -30,8 +31,7 @@ ANANSE is free and open source research software. If you find it useful please c
 
 * First, check the [FAQ](faq.md) for common issues.
 * The preferred way to get support is through the [Github issues page](https://github.com/vanheeringen-lab/ANANSE/issues).
-* Finally, you can reach us by email to <a href="mailto:qxuchn@gmail.com" target="_blank">Quan Xu</a> or <a href="mailto:simon.vanheeringen@gmail.com" target="_blank">Simon J. van Heeringen</a>.
-* You can also visit our website at <a href="https://github.com/vanheeringen-lab" target="_blank">vanheeringen-lab</a>
+* Finally, you can reach us by email to <a href="mailto:simon.vanheeringen@gmail.com" target="_blank">Simon J. van Heeringen</a> or <a href="mailto:qxuchn@gmail.com" target="_blank">Quan Xu</a>.
 
 ### Full contents
 
@@ -55,6 +55,7 @@ ANANSE is free and open source research software. If you find it useful please c
     - [Command: ananse network](command-line_reference/#ananse-network)
     - [Command: ananse influence](command-line_reference/#ananse-influence)
     - [Command: ananse plot](command-line_reference/#ananse-plot)
+    - [Command: ananse view](command-line_reference/#ananse-view)
 * [API documentation](API_documentation.md)
     - [Working with the `binding` Class](API_documentation/#working-with-binding-class)
     - [Working with the `network` Class](API_documentation/#working-with-network-class)
