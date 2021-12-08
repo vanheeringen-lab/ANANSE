@@ -2,7 +2,7 @@
 
 ### Prediction of transcription factor binding
 
-This uses the example data described [here](examples.html).
+This uses the example data described [here](examples.md).
 
 ```
 from ananse.peakpredictor import predict_peaks
@@ -27,10 +27,11 @@ def binding(args):
 The `Network` class include all functions used to infer cell type specific gene regulatory network.
 
 ```python
+import glob
 from ananse.network import Network
 from dask.distributed import Client
 
-b = ananse.network.Network(
+b = Network(
     genome="hg38", 
     include_promoter=True,
     include_enhancer=True
@@ -43,6 +44,7 @@ with Client() as client:
         binding="heart.binding/binding.h5",
         fin_expression=glob.glob("heart.binding/heart*TPM.txt"),
         outfile="heart.network.txt",
+    )
 
 ```
 
