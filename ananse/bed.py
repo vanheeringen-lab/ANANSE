@@ -254,7 +254,9 @@ def map_counts(regions: list, counts: pd.DataFrame) -> pd.DataFrame:
     df.index = df["chrom"] + ":" + df["start_c"] + "-" + df["end_c"]
     df = df[["region"]]
 
+    # replace the locations with regions + add missing regions
     mapped_counts = df.join(counts).set_index("region", drop=True)
+    # fix formatting
     mapped_counts.index.name = None
     mapped_counts.fillna(0.0, inplace=True)
     return mapped_counts

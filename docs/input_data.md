@@ -149,9 +149,9 @@ Example of a quantification file:
 
 |           | tpm      |
 | --------- | -------- |
-| A1BG	    | 9.579771 |
-| A1CF	    | 0.0223   |
-| A2ML1	    | 664.452  |
+| A1BG      | 9.579771 |
+| A1CF      | 0.0223   |
+| A2ML1     | 664.452  |
 
 Example `--columns` argument:
 
@@ -163,7 +163,7 @@ The differential expression data normally comes from an RNA-seq experiment.
 This file can be created using, for instance, [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html).
 
 The file must be tab-separated, with genes (we suggest using `gene_name`s) in the first column, 
-a column names `padj` and a column named `log2FoldChange`.
+a column named `padj` and a column named `log2FoldChange`.
 Column `log2FoldChange` is the **log2 of the fold change** of each gene between conditions.
 Column `padj` is the **adjusted p-value** of the differential gene expression test.
 
@@ -175,11 +175,11 @@ Notes:
 
 Example of a differential expression file:
 
-|           | log2FoldChange	| padj   |
+|           | log2FoldChange    | padj   |
 | --------- | ----------------- | ------ |
-| ANPEP	    | 7.44242618323665	| 0.001  |
-| CD24	    | -8.44520139575174	| 0      |
-| COL1A2    | 8.265875689393	| 0.0123 |
+| ANPEP     | 7.44242618323665  | 0.001  |
+| CD24      | -8.44520139575174 | 0      |
+| COL1A2    | 8.265875689393    | 0.0123 |
 
 ### Motif database
 
