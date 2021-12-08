@@ -56,7 +56,8 @@ if __name__ == "__main__":
         "--atac-bams",
         dest="atac_bams",
         metavar="BAM",
-        help="ATAC-seq input BAM file(s), can be used alone or in combination with the -H option",
+        help="ATAC-seq input BAM file(s) (or one counts table with reads per peak), "
+             "can be used alone or in combination with the -H option",
         default=None,
         nargs="+",
     )
@@ -65,7 +66,8 @@ if __name__ == "__main__":
         "--histone-bams",
         dest="histone_bams",
         metavar="BAM",
-        help="H3K27ac ChIP-seq input BAM file(s), can be used alone or in combination with the -A option",
+        help="H3K27ac ChIP-seq input BAM file(s) (or one counts table with reads per peak), "
+             "can be used alone or in combination with the -A option",
         default=None,
         nargs="+",
     )
@@ -106,6 +108,16 @@ if __name__ == "__main__":
         help="Directory where you wish to store the output (default: ./ANANSE_binding)",
         metavar="DIR",
         default="./ANANSE_binding",
+    )
+    group.add_argument(
+        "-c",
+        "--columns",
+        dest="columns",
+        help="One or more (case insensitive) column names to extract "
+             "from the counts table(s) (default: all)",
+        metavar="COL",
+        default=None,
+        nargs="*",
     )
     group.add_argument(
         "-R",
@@ -232,7 +244,7 @@ if __name__ == "__main__":
     )
     group.add_argument(
         "-c",
-        "--column",
+        "--columns",
         dest="column",
         help="One or more (case insensitive) column names to extract "
              "from the expression file(s) (default: tpm)",

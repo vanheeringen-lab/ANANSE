@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 
 import ananse.bed
 from tests import compare_contents, write_file
@@ -87,3 +88,14 @@ def test_cbedf(outdir, genome, bed1, bed2):
     for line in lines:
         chrom, start, stop = line.split()[0:3]
         assert int(stop) - int(start) == width
+
+
+def test_map_counts():
+    regions = ["9:2820-2830", "9:16100-16200", "9:3000-3010", "8:1-2"]
+    table = "tests/data/GRCz11_chr9/GRCz11_chr9_raw.tsv"
+    counts = pd.read_table(table, sep="\t", comment="#", index_col=0)
+    mapped_counts = ananse.bed.map_counts(regions, counts)
+    assert len(mapped_counts) == len(regions)  # all regions in df
+    assert len(mapped_counts.columns) == 9  # all samples in df
+    assert all(mapped_counts.index.isin(regions))
+    assert mapped_counts.loc["8:1-2"].sum() == 0  # missing regions zero

@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `ananse.binding` now accepts a raw counts file instead of BAM files.
+- `ananse.binding` now has a (case-insensitive) `--columns` argument to filter the counts table by.
 - `ananse.view` now optionally accepts `regions` and `tfs`, to filter the output.
 - `ananse.view` can also output the header of (up to) `n` TFs & regions.
 - `ananse.view` can also output a list of all regions or tfs.
