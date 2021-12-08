@@ -469,7 +469,7 @@ class PeakPredictor:
             )
             df = df.groupby(df.index).mean(1)
         if len(set(self.regions) & set(df.index)) != len(self.regions):
-            logger.error("  Mapping to regions")
+            logger.debug("  Mapping to regions")
             df = map_counts(self.regions, df)
         elif len(self.regions) != len(df.index):
             df = df[df.index.isin(self.regions)]

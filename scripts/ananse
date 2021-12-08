@@ -114,7 +114,7 @@ if __name__ == "__main__":
         "--columns",
         dest="columns",
         help="One or more (case insensitive) column names to extract "
-             "from the count table(s) (default: all)",
+             "from the counts table(s) (default: all)",
         metavar="COL",
         default=None,
         nargs="*",
