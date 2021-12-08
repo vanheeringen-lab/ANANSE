@@ -9,97 +9,24 @@
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/maintainability)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/test_coverage)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/test_coverage)
+
 ### Prediction of key transcription factors in cell fate determination using enhancer networks
-ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to use these GRNs to identify the key transcription factors in cell fate determination. You can use it to generate a shortlist of transcription factors for trans-differentiation experiments, but also to generate cell type-specific gene regulatory networks or to study transcription regulation during development and differentiation. It is written in Python and it contains three command-line scripts: `ananse binding`, `ananse network`, and `ananse influence`. A graphical overview of the tools is shown below.
+ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to identify key transcription factors between two GRNs. You can use it to study transcription regulation during development and differentiation, or to generate a shortlist of transcription factors for trans-differentiation experiments. 
+
+ANANSE is written in Python and comes with a command-line interface that includes 3 main commands: `ananse binding`, `ananse network`, and `ananse influence`. A graphical overview of the tools is shown below.
 
 ![](docs/img/Fig2.png)
 
-## Quick start
+Check out the **[ANANSE documentation](https://anansepy.readthedocs.io/en/master/)** for 
+* [installation instructions](https://anansepy.readthedocs.io/en/master/installation/)
+* [command explanations](https://anansepy.readthedocs.io/en/master/command-line_reference/)
+* [input explanations and examples](https://anansepy.readthedocs.io/en/master/input_data/)
+* [usage examples](https://anansepy.readthedocs.io/en/master/examples/)
+* [FAQ](https://anansepy.readthedocs.io/en/master/faq/)
+* and more!
+ 
+For documentation on the **development version** see [here](https://anansepy.readthedocs.io/en/develop/).
 
-Read the **[full ANANSE documentation](https://anansepy.readthedocs.io/en/master/)** for detailed installation instructions and usage examples. For documentation on the **development version** see [here](https://anansepy.readthedocs.io/en/develop/).
-
-### Installation
-
-The most straightforward way to install ANANSE is via conda using the bioconda channel.
-
-#### 1. If you have not used bioconda before, first set up the necessary channels (in this order!). You only have to do this once.
-
-```
-$ conda config --add channels defaults
-$ conda config --add channels bioconda
-$ conda config --add channels conda-forge
-```
-
-#### 2. Install ANANSE from bioconda
-
-``` 
-# Create an environment called ananse with all dependencies
-$ conda create -n ananse ananse
-
-# Activate the environment
-$ conda activate ananse
-```
-
-Don't forget to activate the environment with `conda activate ananse` whenever you want to use ANANSE.
-
-#### 3. Using the development version
-
-The latest version, but may not always be stable. 
-
-```
-# Activate the environment
-$ conda activate ananse
-
-# Install development version
-$ pip install git+https://github.com/vanheeringen-lab/ANANSE.git@develop
-```
-
-### Usage
-
-
-
-The three command-line tools (`binding`, `network` and `influence`) can be used separately, but are designed to work together. In general, for a full ANANSE analysis, you would infer binding and calculate the GRN for two (or more) different cell types and then use `ananse influence` to determine influential TFs for the transition from one cell type to the other.
-
-Before you can use the ANANSE tools, you have to install your genome with corresponding annotation using [genomepy](https://github.com/vanheeringen-lab/genomepy). For instance, to use `hg38`:
-
-```
-genomepy install hg38 --annotation
-```
-
-
-#### Genome-wide prediction of transcription factor binding: ananse binding
-
-To predict binding, you need either ATAC-seq and/or H3K27ac ChIP-seq data as BAM files. Using both of these types of data will give the most accurate results, however, either of the two will also work. ANANSE will automatically choose the relevant model depending on which data you use as input. If you have human data, mapped to `hg38`, you can use a more advanced model based on 
-
-```
-ananse binding -A <ATAC.bam> -H <H3k27ac.bam> -o out
-```
-
-
-#### Gene regulatory network inference: ananse network
-
-To create a gene regulatory network you will need a binding prediction from `ananse binding` and one or more files with gene expression quantification. The file should have the **gene** identifier in the first column and a column with `TPM` as a head. You can use, for instance, the `quant.sf` from salmon or the `abundances.tsv` from kallisto, converted to gene-level TPMs with [tximport](https://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html). Here we will run `ananse network` with 4 threads:
-
-```
-ananse network -b out/binding.h5 -e <gene_tpm.txt> -o network.txt -n 4
-```
-
-#### Transcription factor influence score: ananse influence
-
-To calculate the influence score, you will need two network files from `ananse network` and a differential expression file. The differential expression file can be generated with DESeq2, where you use the *source* cell type as the reference. This means that up-regulated genes (log2 fold change > 0) will have a higher expression in the *target* cell type.
-
-```
-ananse influence -s source.network.txt -t target.network.txt -d source2target.de.tsv -o source2target.out.txt -n 4 -p
-```
-
-## Development installation
-
-* Clone the repo from git.
-* Checkout the `develop` branch.
-* Install a development environment with conda: `conda env create -n ananse_dev -f requirements.yaml`.
-* Activate the environment with `conda activate ananse_dev`.
-* Install ANANSE with `python setup.py develop`.
-  
 ## Citation
 
 > ANANSE: an enhancer network-based computational approach for predicting key transcription factors in cell fate determination 
