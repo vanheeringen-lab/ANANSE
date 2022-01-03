@@ -9,13 +9,13 @@ dependencies:
   - adjusttext
   - dask
   - genomepy >=0.11.0
-  - gimmemotifs >=0.15.3
+  - gimmemotifs >=0.17.0
   - loguru
   - matplotlib >=2
   - networkx
   - numpy
   - openpyxl
-  - pandas <1.3  # tmp version limit. will be fixed in gimmemotifs >0.16.1
+  - pandas
   - pybedtools
   - pygraphviz
   - pyranges

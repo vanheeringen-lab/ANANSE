@@ -146,8 +146,7 @@ class PeakPredictor:
                 if factors is not None and factor not in factors:
                     continue
 
-                # TODO: this is temporary, while the motif database we use
-                # not very clean...
+                # TODO: this is temporary, while the motif database we use is not very clean...
                 if self.species == "human":
                     factor = factor.upper()
 
@@ -299,13 +298,6 @@ class PeakPredictor:
 
             # only scan motifs for our factors
             motifs = list(self.motifs.values())
-            # TODO: after gimme > 0.16.1, this code block can be removed (fixed in #d088778)
-            tmp = NamedTemporaryFile(mode="w", delete=False)
-            for m in motifs:
-                tmp.write("{}\n".format(m.to_pwm()))
-            tmp.close()
-            motifs = tmp.name
-            # TODO: end of code block
             motif_df = scan_regionfile_to_table(
                 regionfile.name,
                 self.genome,
