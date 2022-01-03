@@ -51,7 +51,7 @@ jobs:
         --cov=./ --cov-report=xml
 
     - name: Upload code coverage ☂️
-      uses: paambaati/codeclimate-action@v3
-      if: github.repository_owner == 'vanheeringen-lab'
+      uses: paambaati/codeclimate-action@v3.0.0
+      # if: github.repository_owner == 'vanheeringen-lab'
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
