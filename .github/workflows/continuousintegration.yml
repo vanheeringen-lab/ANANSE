@@ -10,18 +10,18 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest  # ${{ matrix.os }}
     defaults:
       run:
         shell: bash -l {0}
-    strategy:
-      matrix:
-        python-version: [3.8]
-        os: [ubuntu-latest]  # [ubuntu-latest, macos-latest]
-      fail-fast: false
+#    strategy:
+#      matrix:
+#        python-version: [3.8]
+#        os: [ubuntu-latest]  # [ubuntu-latest, macos-latest]
+#      fail-fast: false
 
     env:
-      TARGETS: "ananse/ tests/"
+      TARGETS: "setup.py ananse/ tests/"
 
     steps:
     - name: checkout 👀
@@ -30,7 +30,7 @@ jobs:
     - name: Install dependencies 🔨
       uses: conda-incubator/setup-miniconda@v2
       with:
-        python-version: ${{ matrix.python-version }}
+        # python-version: ${{ matrix.python-version }}
         mamba-version: "*"
         channels: bioconda,conda-forge,defaults
         channel-priority: true
@@ -51,7 +51,7 @@ jobs:
         --cov=./ --cov-report=xml
 
     - name: Upload code coverage ☂️
-      uses: paambaati/codeclimate-action@v2.7.5
-      if: github.repository_owner == 'vanheeringen-lab'
+      uses: paambaati/codeclimate-action@v3.0.0
+      # if: github.repository_owner == 'vanheeringen-lab'
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
