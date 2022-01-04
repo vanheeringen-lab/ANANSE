@@ -55,6 +55,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - `ananse network` merges duplicate genes and transcription factors (#142)
 - issue in `ananse influence` when using only 1 network
 - `ananse plot` will no longer warn you incorrectly about your "weight" 
+- `ananse plot` error "OSError: Format: "dot" not recognized."
 
 
 ## [0.3.0] - 2021-07-14
