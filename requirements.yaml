@@ -17,7 +17,8 @@ dependencies:
   - openpyxl
   - pandas
   - pybedtools
-  - pygraphviz
+  - pydot >=1.4.1   # required for networkx plots
+  - pygraphviz >=1.7   # required for networkx plots
   - pyranges
   - pytables  # required for pandas.read_hfd()
   - scikit-learn
