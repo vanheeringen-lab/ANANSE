@@ -980,7 +980,7 @@ def filter_expression_file(fin_expression: str, columns: Union[str, list]):
 
     # case insensitive column extraction
     cols = "|".join(columns)
-    re_column = re.compile(fr"^{cols}$", re.IGNORECASE)
+    re_column = re.compile(rf"^{cols}$", re.IGNORECASE)
     df = pd.read_table(fin_expression, index_col=0, sep="\t").filter(regex=re_column)
     # average columns
     df = df.mean(1).to_frame("expression")

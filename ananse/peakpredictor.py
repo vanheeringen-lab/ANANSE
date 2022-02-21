@@ -474,7 +474,7 @@ class PeakPredictor:
         if isinstance(columns, list):
             logger.info(f"  Using {len(columns)} columns")
             cols = "|".join(columns)
-            re_column = re.compile(fr"^{cols}$", re.IGNORECASE)
+            re_column = re.compile(rf"^{cols}$", re.IGNORECASE)
             df = df.filter(regex=re_column)
             if len(df.columns) != len(columns):
                 logger.warning(
