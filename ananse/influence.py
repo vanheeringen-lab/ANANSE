@@ -358,7 +358,7 @@ class Influence(object):
         network_genes = set(self.G.nodes)
         pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
         logger.debug(
-            f"{round(pct_overlap, 2)}% of genes found in DE genes and network(s)"
+            f"{int(100 * pct_overlap)}% of genes found in DE genes and network(s)"
         )
         if pct_overlap < cutoff and self.gene_gtf is not None:
             logger.warning(
@@ -382,7 +382,7 @@ class Influence(object):
 
             pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
             logger.debug(
-                f"{round(pct_overlap, 2)}% of genes found in DE genes and network(s)"
+                f"{int(100 * pct_overlap)}% of genes found in DE genes and network(s)"
             )
             if pct_overlap <= backup_pct_overlap:
                 df = backup_df
