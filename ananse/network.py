@@ -225,9 +225,7 @@ class Network(object):
         """
         # look for genes near enhancer regions
         if self.genes_pr is None:
-            raise ValueError(
-                "Set self.genes_pr first!"
-            )
+            raise ValueError("Set self.genes_pr first!")
         genes = self.genes_pr.join(enhancer_pr).as_df()
         if genes.empty:
             return pd.DataFrame()
