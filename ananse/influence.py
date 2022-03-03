@@ -1,4 +1,5 @@
 """Predict TF influence score"""
+import os
 import sys
 import warnings
 import genomepy
@@ -203,17 +204,19 @@ def targetScore(node, G, expression_change, max_degree=3):
         )
         logger.warning(f"targets = {target_fc[0:min(5, len(target_fc))]}...")
         logger.warning(f"non_target = {non_target_fc[0:min(5, len(non_target_fc))]}...")
-    target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
 
-    # factor, targetScore, directTargets, totalTargets, Gscore, pval, target_fc
+    gscore = expression_change[node].score
+    factor_fc = expression_change[node].absfc if node in expression_change else 0
+    target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
     return (
-        node,
-        total_score,
-        G.out_degree(node),
-        len(targets),
-        expression_change[node].absfc if node in expression_change else 0,
-        pval,
-        target_fc_diff,
+        node,  # factor
+        G.out_degree(node),  # directTargets
+        len(targets),  # totalTargets
+        total_score,  # targetscore
+        gscore,  # Gscore
+        factor_fc,  # factor_fc
+        pval,  # pval
+        target_fc_diff,  # target_fc
     )
 
 
@@ -489,7 +492,6 @@ class Influence(object):
 
         # differentially expressed TFs
         detfs = [tf for tf in tfs if tf in self.expression_change]
-
         if len(detfs) == 0:
             logger.error(
                 "No overlapping transcription factors found between the network file(s) "
@@ -506,9 +508,13 @@ class Influence(object):
         else:
             logger.info(f"Out of these, {len(detfs)} are differentially expressed.")
 
-        result = []
-        if self.ncore > 1:
-            try:
+        influence_file = open(self.outfile, "w")
+        influence_file.write(
+            "factor\tdirectTargets\ttotalTargets\ttargetscore\tGscore\tfactor_fc\tpval\ttarget_fc\n"
+        )
+
+        try:
+            if self.ncore > 1:
                 pool = mp.Pool(self.ncore)
                 jobs = []
                 for tf in detfs:
@@ -518,68 +524,38 @@ class Influence(object):
                             (tf, self.G, self.expression_change, max_degree),
                         )
                     )
+                pool.close()
                 with tqdm(total=len(jobs)) as pbar:
                     for j in jobs:
-                        result.append(j.get())
+                        print(j.get(), file=influence_file, sep="\t")
                         pbar.update(1)
-                pool.close()
-            except Exception as e:
-                if "multiprocessing" in e.__repr__():
-                    logger.error(str(e))
-                    logger.error("Error seems to be related to multiprocessing.")
-                    logger.error(
-                        "In some cases running `ananse influence` with `-n 1` will solve this issue."
-                    )
-                    logger.error(
-                        "If it doesn't, then please file a bug report (with the output of the command run with `-n 1`) at:"
-                    )
-                    logger.error("https://github.com/vanheeringen-lab/ANANSE/issues")
-                    sys.exit(1)
-                raise
-        else:
-            for tf in tqdm(detfs):
-                result.append(
-                    targetScore(tf, self.G, self.expression_change, max_degree)
-                )
+                pool.join()
 
-        # Get results and write to file
-        influence_file = open(self.outfile, "w")
-        influence_file.write(
-            "factor\tdirectTargets\ttotalTargets\ttargetscore\tGscore\tfactor_fc\tpval\ttarget_fc\n"
-        )
+            else:
+                for tf in tqdm(detfs):
+                    line = targetScore(tf, self.G, self.expression_change, max_degree)
+                    print(line, file=influence_file, sep="\t")
 
-        for (
-            factor,
-            score,
-            direct_targets,
-            total_targets,
-            factor_fc,
-            pval,
-            target_fc,
-        ) in result:
-            print(
-                factor,
-                direct_targets,
-                total_targets,
-                score,
-                self.expression_change[factor].score,
-                factor_fc,
-                pval,
-                target_fc,
-                file=influence_file,
-                sep="\t",
-            )
-        print("\n", file=influence_file)
+            influence_file.close()
 
-        influence_file.close()
+        except Exception as e:
+            pool = None  # noqa: force garbage collection on orphaned workers
 
-        scores_df = pd.read_table(self.outfile, index_col=0)
-        scores_df["targetScaled"] = minmax_scale(
-            rankdata(scores_df["targetscore"], method="dense")
-        )
-        scores_df.sort_values("targetScaled", inplace=True, ascending=False)
+            # remove the incomplete file
+            influence_file.close()
+            os.remove(influence_file.name)
 
-        return self.outfile
+            if "multiprocessing" in e.__repr__():
+                msgs = [
+                    str(e),
+                    "The error seems to be related to multiprocessing.",
+                    "In some cases running `ananse influence` with `-n 1` will solve this issue.",
+                    "If it doesn't, please file a bug report (with the output of the command run with `-n 1`) at:",
+                    "https://github.com/vanheeringen-lab/ANANSE/issues",
+                ]
+                _ = [logger.error(msg) for msg in msgs]
+                sys.exit(1)
+            raise e
 
     def run_influence_score(self, influence_file, fin_expression=None):
         """Calculate influence score from target score and gscore"""
@@ -622,13 +598,11 @@ class Influence(object):
 
     def run_influence(self, fin_expression=None):
         logger.info("Saving differential network.")
-        self.save_reg_network(
-            (".".join(self.outfile.split(".")[:-1]) + "_diffnetwork.tsv"),
-            full_output=self.full_output,
-        )
+        diffnetwork = os.path.splitext(self.outfile)[0] + "_diffnetwork.tsv"
+        self.save_reg_network(diffnetwork, self.full_output)
 
         logger.info("Calculating target scores.")
-        influence_file = self.run_target_score()
+        self.run_target_score()
 
         logger.info("Calculating influence scores.")
-        self.run_influence_score(influence_file, fin_expression=fin_expression)
+        self.run_influence_score(self.outfile, fin_expression)
