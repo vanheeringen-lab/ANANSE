@@ -39,6 +39,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - `ananse binding` will now only scan the motifs in the analysis
 - `ananse binding` will now only scan the regions overlapping the pfmscorefile and regions (if both are given)
 - changed the hardcoded `.txt` file extensions in `ananse plot` to `.tsv` 
+- `ananse network` now loads the gene bed into pyranges once (instead of once per chromosome).
 - cleaned up `ananse --help` messages
 
 ### Removed
