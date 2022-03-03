@@ -224,6 +224,10 @@ class Network(object):
             DataFrame with enhancer regions, gene names, distance and weight.
         """
         # look for genes near enhancer regions
+        if self.genes_pr is None:
+            raise ValueError(
+                "Set self.genes_pr first!"
+            )
         genes = self.genes_pr.join(enhancer_pr).as_df()
         if genes.empty:
             return pd.DataFrame()
@@ -359,7 +363,7 @@ class Network(object):
             logger.info(f"Using {len(regions)} of {len(set(enhancers.index))} regions.")
 
         # Read gene regions
-        self._load_pyranges(up, down)
+        self._load_pyranges(up, down)  # sets self.genes_pr
 
         # Filter for contigs with genes
         chroms = set(chroms) & set(self.genes_pr.as_df()["Chromosome"])
