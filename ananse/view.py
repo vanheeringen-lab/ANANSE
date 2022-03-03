@@ -72,7 +72,7 @@ def view_h5(
     if fmt not in ["wide", "long"]:
         raise ValueError("fmt should be either 'wide' or 'long'")
 
-    with pd.HDFStore(fname) as hdf:
+    with pd.HDFStore(fname, "r") as hdf:
         if n:
             n = int(n)
             tfs = tfs[: min(len(tfs), n)]
