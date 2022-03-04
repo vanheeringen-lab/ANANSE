@@ -176,6 +176,12 @@ def difference(grn_source, grn_target, full_output=False):
     return grn_diff
 
 
+# def get_weight(grn, path):
+#     dist_prod = np.cumprod([grn[s][t]["weight"] for s, t in zip(path, path[1:])])[-1]
+#     norm_dist_prod = dist_prod / (len(path) - 1)
+#     return norm_dist_prod
+
+
 def target_score(node, grn, expression_change, targets):
     """
     Calculate the target score, as (mostly) explained in equation 5:
@@ -184,26 +190,101 @@ def target_score(node, grn, expression_change, targets):
     ts = 0
     for target in targets:
         all_paths = {}
-        # Calculate all paths from TF to target to select to path with the lowest total weight
+        # Calculate all paths from TF to target to select to path with the highest multiplied weight
         for path in nx.all_simple_paths(grn, node, target, cutoff=2):
             if len(path) <= 3:
-                weight = np.cumprod([grn[s][t]["weight"] for s, t in zip(path, path[1:])])[
-                    -1
-                ]
+                weight = np.cumprod(
+                    [grn[s][t]["weight"] for s, t in zip(path, path[1:])]
+                )[-1]
                 # Add weight, corrected for the length of the path
                 all_paths[tuple(path)] = weight / (len(path) - 1)
         if len(all_paths) > 0:
             path, weight = sorted(all_paths.items(), key=lambda pw: pw[1])[-1]
-
+            # the level (or the number of steps) that gene is away from transcription factor
+            pathlen = len(path)
             # expression score of the target
-            g = expression_change[target].score
-            # interaction score between the tf and the target
-            p = weight
-            # number of edges between the tf and the target
-            l = len(path)  # noqa
-            score = g * p / l
+            g = expression_change[target].score if target in expression_change else 0
+            # TODO: why divide by path length again?
+            # Introduced in https://github.com/vanheeringen-lab/ANANSE/commit/ba67ebb8e7bafd1df13fb439485b6a590482e924
+            score = g / pathlen * weight
             ts += score
     return ts
+
+    # ts = 0
+    # for target in targets:
+    #     path = targets[target]
+    #     weight = get_weight(grn, path)
+    #     # target expression score * (interaction score / interaction distance)
+    #     score = expression_change[target].score * weight
+    #     ts += score
+    # return ts
+
+    # ts = 0
+    # for target in targets:
+    #     # path = targets[target]
+    #     # weight = get_weight(grn, path)
+    #     if target in grn.neighbors(node):
+    #         weight = grn[node][target]["weight"]
+    #     else:
+    #         paths = nx.all_simple_paths(grn, node, target, cutoff=2)
+    #         all_weights = [get_weight(grn, path) for path in paths if len(path) <= 3]
+    #         if len(all_weights) == 0:
+    #             continue
+    #         weight = sorted(all_weights, key=lambda pw: pw[1])[-1]
+    #
+    #     # target expression score * (interaction score / interaction distance)
+    #     score = expression_change[target].score * weight
+    #     ts += score
+    # return ts
+
+
+# def inv_weight(u, v, data):
+#     w = -np.log(data["weight"])
+#     # w = 1 / data["weight"]
+#     return w
+
+
+def influence_scores(node, grn, expression_change, de_genes):
+    """
+    Calculate the influence scores of a transcription factor.
+
+    Parameters
+    ----------
+    node : str
+        Transcription factor name, present in G as a node
+    grn : nx.DiGraph
+        A network with gene names as nodes and interaction scores as weights
+    expression_change : dict
+        A dictionary with interaction scores and log fold changes per transcription factor
+
+    Returns
+    -------
+    tuple
+        interaction data of the given transcription factor
+    """
+    # get all genes that are
+    # - direct or indirectly targeted by the TF
+    # - not the TF itself
+    # - differentially expressed
+    targets = nx.single_source_dijkstra(grn, node, cutoff=2)[1]
+    # targets = nx.single_source_dijkstra(grn, node, cutoff=2, weight=inv_weight)[1]
+    targets = {k: v for k, v in targets.items() if len(v) in [1, 2]}
+
+    de_targets = {k: v for k, v in targets.items() if k in de_genes}
+    targetscore = target_score(node, grn, expression_change, de_targets)
+
+    pval, target_fc_diff = fold_change_scores(node, grn, expression_change)
+    factor_fc = expression_change[node].absfc if node in expression_change else 0
+    return (
+        node,  # factor
+        grn.out_degree(node),  # noqa. directTargets
+        len(targets),  # totalTargets
+        targetscore,  # targetscore
+        expression_change[node].score,  # Gscore
+        factor_fc,  # factor_fc
+        pval,  # pval
+        target_fc_diff,  # target_fc
+    )
 
 
 def fold_change_scores(node, grn, expression_change):
@@ -233,50 +314,6 @@ def fold_change_scores(node, grn, expression_change):
         # logger.warning(f"non_target = {non_target_fc[0:min(5, len(non_target_fc))]}...")
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
     return pval, target_fc_diff
-
-
-def influence_scores(node, grn, expression_change):
-    """
-    Calculate the influence scores of a transcription factor.
-
-    Parameters
-    ----------
-    node : str
-        Transcription factor name, present in G as a node
-    grn : nx.DiGraph
-        A network with gene names as nodes and interaction scores as weights
-    expression_change : dict
-        A dictionary with interaction scores and log fold changes per transcription factor
-
-    Returns
-    -------
-    tuple
-        interaction data of the given transcription factor
-    """
-    # get all genes that are
-    # - direct or indirectly targeted by the TF
-    # - not the TF itself
-    # - differentially expressed
-    targets = nx.single_source_dijkstra(grn, node, cutoff=2)[1]
-    targets = {k: v for k, v in targets.items() if len(v) in [1, 2]}
-
-    # filter for significant targets (score > 0)
-    de_genes = set(g for g in expression_change if expression_change[g].score != 0)
-    de_targets = set(targets) & de_genes
-    targetscore = target_score(node, grn, expression_change, de_targets)
-
-    pval, target_fc_diff = fold_change_scores(node, grn, expression_change)
-    factor_fc = expression_change[node].absfc if node in expression_change else 0
-    return (
-        node,  # factor
-        grn.out_degree(node),  # noqa. directTargets
-        len(targets),  # totalTargets
-        targetscore,  # targetscore
-        expression_change[node].score,  # Gscore
-        factor_fc,  # factor_fc
-        pval,  # pval
-        target_fc_diff,  # target_fc
-    )
 
 
 def filter_tf(scores_df, network=None, tpmfile=None, tpm=20, overlap=0.98):
@@ -544,22 +581,26 @@ class Influence(object):
         logger.info(f"Differential network contains {len(tfs)} transcription factors.")
 
         # differentially expressed TFs
-        detfs = [tf for tf in tfs if tf in self.expression_change]
-        if len(detfs) == 0:
+        de_tfs = [tf for tf in tfs if tf in self.expression_change]
+        if len(de_tfs) == 0:
             logger.error(
                 "No overlapping transcription factors found between the network file(s) "
                 "(-s/--source, -t/--target) and the differential expression data (-d/--degenes)!"
             )
             sys.exit(1)
 
-        detfs = [tf for tf in detfs if self.expression_change[tf].realfc > 0]
-        if len(detfs) == 0:
-            logger.error(
-                "No differentially expressed TFs found with a log2 fold change above 0!"
-            )
+        de_tfs = set(tf for tf in de_tfs if self.expression_change[tf].score > 0)
+        if len(de_tfs) == 0:
+            logger.error("No differentially expressed TFs found!")
             sys.exit(1)
         else:
-            logger.info(f"Out of these, {len(detfs)} are differentially expressed.")
+            logger.info(f"Out of these, {len(de_tfs)} are differentially expressed.")
+
+        # differentially expressed genes
+        de_genes = set(
+            g for g in self.expression_change if self.expression_change[g].score > 0
+        )
+        de_genes = de_genes & self.G.nodes
 
         influence_file = open(self.outfile, "w")
         influence_file.write(
@@ -570,11 +611,11 @@ class Influence(object):
             if self.ncore > 1:
                 pool = mp.Pool(self.ncore)
                 jobs = []
-                for tf in detfs:
+                for tf in de_tfs:
                     jobs.append(
                         pool.apply_async(
                             influence_scores,
-                            (tf, self.G, self.expression_change),
+                            (tf, self.G, self.expression_change, de_genes),
                         )
                     )
                 pool.close()
@@ -585,8 +626,10 @@ class Influence(object):
                 pool.join()
 
             else:
-                for tf in tqdm(detfs):
-                    line = influence_scores(tf, self.G, self.expression_change)
+                for tf in tqdm(de_tfs):
+                    line = influence_scores(
+                        tf, self.G, self.expression_change, de_genes
+                    )
                     print(*line, file=influence_file, sep="\t")
 
             influence_file.close()

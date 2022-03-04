@@ -53,8 +53,14 @@ def test_read_expression(influence_obj):
 
 
 def test_influence_scores(influence_obj):
+    de_genes = set(
+        g
+        for g in influence_obj.expression_change
+        if influence_obj.expression_change[g].score > 0
+    )
+    de_genes = de_genes & influence_obj.G.nodes
     line = ananse.influence.influence_scores(
-        "FOXK2", influence_obj.G, influence_obj.expression_change
+        "FOXK2", influence_obj.G, influence_obj.expression_change, de_genes
     )
     assert line[0] == "FOXK2"
     assert line[1] == 10  # all test edges
@@ -76,7 +82,7 @@ def test_run_target_score(outdir):
         grn_target_file="tests/data/influence/network.tsv",
         edges=10,
         gene_gtf="tests/data/GRCz11_chr9/GRCz11/GRCz11.annotation.gtf",
-        padj_cutoff=0.0,
+        padj_cutoff=0.05,
     )
     i.run_target_score()
     assert os.path.exists(i.outfile)
