@@ -186,11 +186,12 @@ def target_score(node, grn, expression_change, targets):
         all_paths = {}
         # Calculate all paths from TF to target to select to path with the lowest total weight
         for path in nx.all_simple_paths(grn, node, target, cutoff=2):
-            weight = np.cumprod([grn[s][t]["weight"] for s, t in zip(path, path[1:])])[
-                -1
-            ]
-            # Add weight, corrected for the length of the path
-            all_paths[tuple(path)] = weight / (len(path) - 1)
+            if len(path) <= 3:
+                weight = np.cumprod([grn[s][t]["weight"] for s, t in zip(path, path[1:])])[
+                    -1
+                ]
+                # Add weight, corrected for the length of the path
+                all_paths[tuple(path)] = weight / (len(path) - 1)
         if len(all_paths) > 0:
             path, weight = sorted(all_paths.items(), key=lambda pw: pw[1])[-1]
 
@@ -252,12 +253,16 @@ def influence_scores(node, grn, expression_change):
     tuple
         interaction data of the given transcription factor
     """
-    # get all genes that are direct or indirectly targeted by the TF (self excluded)
-    targets = set(nx.single_source_dijkstra(grn, node, cutoff=2)[1]) - {node}
+    # get all genes that are
+    # - direct or indirectly targeted by the TF
+    # - not the TF itself
+    # - differentially expressed
+    targets = nx.single_source_dijkstra(grn, node, cutoff=2)[1]
+    targets = {k: v for k, v in targets.items() if len(v) in [1, 2]}
 
     # filter for significant targets (score > 0)
     de_genes = set(g for g in expression_change if expression_change[g].score != 0)
-    de_targets = targets & de_genes
+    de_targets = set(targets) & de_genes
     targetscore = target_score(node, grn, expression_change, de_targets)
 
     pval, target_fc_diff = fold_change_scores(node, grn, expression_change)
