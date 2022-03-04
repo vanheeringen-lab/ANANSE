@@ -50,5 +50,6 @@ setup(
         "tables",
         "genomepy >=0.11.0",
         "pyranges",
+        "tqdm",
     ],
 )
