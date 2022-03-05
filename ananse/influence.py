@@ -208,38 +208,16 @@ def target_score(node, grn, expression_change, targets):
             ts += score
     return ts
 
-    # ts = 0
-    # for target in targets:
-    #     path = targets[target]
-    #     weight = get_weight(grn, path)
-    #     # target expression score * (interaction score / interaction distance)
-    #     score = expression_change[target].score * weight
-    #     ts += score
-    # return ts
 
-    # ts = 0
-    # for target in targets:
-    #     # path = targets[target]
-    #     # weight = get_weight(grn, path)
-    #     if target in grn.neighbors(node):
-    #         weight = grn[node][target]["weight"]
-    #     else:
-    #         paths = nx.all_simple_paths(grn, node, target, cutoff=2)
-    #         all_weights = [get_weight(grn, path) for path in paths if len(path) <= 3]
-    #         if len(all_weights) == 0:
-    #             continue
-    #         weight = sorted(all_weights, key=lambda pw: pw[1])[-1]
-    #
-    #     # target expression score * (interaction score / interaction distance)
-    #     score = expression_change[target].score * weight
-    #     ts += score
-    # return ts
-
-
-# def inv_weight(u, v, data):
-#     w = -np.log(data["weight"])
-#     # w = 1 / data["weight"]
-#     return w
+# TODO: this version is ~O(n^2) faster, and returns near identical scores
+# def target_score(grn, expression_change, targets):
+#     ts = 0
+#     for target in targets:
+#         path = targets[target]
+#         weight = get_weight(grn, path)
+#         score = expression_change[target].score / len(path) * weight
+#         ts += score
+#     return ts
 
 
 def influence_scores(node, grn, expression_change, de_genes):
@@ -586,14 +564,14 @@ class Influence(object):
             )
             sys.exit(1)
 
-        de_tfs = set(tf for tf in de_tfs if self.expression_change[tf].score > 0)
+        # TODO: should 'realfc' this not be 'score' (padj<cutoff), or even 'absfc'?
+        de_tfs = set(tf for tf in de_tfs if self.expression_change[tf].realfc > 0)
         if len(de_tfs) == 0:
-            logger.error("No differentially expressed TFs found!")
+            # expression_change[tf].score > 0 == differentially expressed
+            logger.error("No increasingly expressed TFs found!")
             sys.exit(1)
         else:
-            logger.info(
-                f"    Out of these, {len(de_tfs)} are differentially expressed."
-            )
+            logger.info(f"    Out of these, {len(de_tfs)} are increasingly expressed.")
 
         # differentially expressed genes
         genes = self.grn.nodes
