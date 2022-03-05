@@ -58,9 +58,9 @@ def test_influence_scores(influence_obj):
         for g in influence_obj.expression_change
         if influence_obj.expression_change[g].score > 0
     )
-    de_genes = de_genes & influence_obj.G.nodes
+    de_genes = de_genes & influence_obj.grn.nodes
     line = ananse.influence.influence_scores(
-        "FOXK2", influence_obj.G, influence_obj.expression_change, de_genes
+        "FOXK2", influence_obj.grn, influence_obj.expression_change, de_genes
     )
     assert line[0] == "FOXK2"
     assert line[1] == 10  # all test edges

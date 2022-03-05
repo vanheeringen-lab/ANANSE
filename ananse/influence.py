@@ -94,7 +94,7 @@ def read_network(
                     tf_activity=row["activity"],
                 )
             else:
-                grn.add_edge(source, target, weight=row["prob"], n=1)
+                grn.add_edge(source, target, weight=row["prob"])  # , n=1)
         except Exception:
             logger.error(f"Could not parse edge weight {source}:{target}")
             raise
@@ -136,7 +136,7 @@ def difference(grn_source, grn_target, full_output=False):
                     source_weight=source_weight,
                     target_weight=target_weight,
                     # neglogweight=-np.log(diff_weight),
-                    n=1,
+                    # n=1,
                     tf_expr_diff=(
                         (ddict["tf_expression"]) - (grn_source[u][v]["tf_expression"])
                     ),
@@ -171,15 +171,16 @@ def difference(grn_source, grn_target, full_output=False):
                     u,
                     v,
                     weight=diff_weight,
-                    n=1,  # neglogweight=-np.log(diff_weight)
+                    # n=1,  # neglogweight=-np.log(diff_weight)
                 )
     return grn_diff
 
 
-# def get_weight(grn, path):
-#     dist_prod = np.cumprod([grn[s][t]["weight"] for s, t in zip(path, path[1:])])[-1]
-#     norm_dist_prod = dist_prod / (len(path) - 1)
-#     return norm_dist_prod
+def get_weight(grn, path):
+    weight = np.cumprod([grn[s][t]["weight"] for s, t in zip(path, path[1:])])[-1]
+    # Add weight correction for the length of the path
+    weight = weight / (len(path) - 1)
+    return weight
 
 
 def target_score(node, grn, expression_change, targets):
@@ -189,23 +190,20 @@ def target_score(node, grn, expression_change, targets):
     """
     ts = 0
     for target in targets:
-        all_paths = {}
         # Calculate all paths from TF to target to select to path with the highest multiplied weight
+        all_paths = {}
         for path in nx.all_simple_paths(grn, node, target, cutoff=2):
-            if len(path) <= 3:
-                weight = np.cumprod(
-                    [grn[s][t]["weight"] for s, t in zip(path, path[1:])]
-                )[-1]
-                # Add weight, corrected for the length of the path
-                all_paths[tuple(path)] = weight / (len(path) - 1)
+            all_paths[tuple(path)] = get_weight(grn, path)
         if len(all_paths) > 0:
             path, weight = sorted(all_paths.items(), key=lambda pw: pw[1])[-1]
             # the level (or the number of steps) that gene is away from transcription factor
+            # TODO: this is the number of nodes. 1 higher than the number of steps!
             pathlen = len(path)
             # expression score of the target
             g = expression_change[target].score if target in expression_change else 0
-            # TODO: why divide by path length again?
-            # Introduced in https://github.com/vanheeringen-lab/ANANSE/commit/ba67ebb8e7bafd1df13fb439485b6a590482e924
+            # TODO: why divide by path length AGAIN? (already happens in the weight function)
+            # TODO: maybe this was left in by accident?
+            # TODO: see https://github.com/vanheeringen-lab/ANANSE/commit/ba67ebb8e7bafd1df13fb439485b6a590482e924
             score = g / pathlen * weight
             ts += score
     return ts
@@ -251,7 +249,7 @@ def influence_scores(node, grn, expression_change, de_genes):
     Parameters
     ----------
     node : str
-        Transcription factor name, present in G as a node
+        Transcription factor name, present in grn as a node
     grn : nx.DiGraph
         A network with gene names as nodes and interaction scores as weights
     expression_change : dict
@@ -263,12 +261,11 @@ def influence_scores(node, grn, expression_change, de_genes):
         interaction data of the given transcription factor
     """
     # get all genes that are
-    # - direct or indirectly targeted by the TF
-    # - not the TF itself
+    # - direct or indirectly targeted by the TF (cutoff + weight)
+    # - not the TF itself (because we divide by len(path)-1 elsewhere)
     # - differentially expressed
-    targets = nx.single_source_dijkstra(grn, node, cutoff=2)[1]
-    # targets = nx.single_source_dijkstra(grn, node, cutoff=2, weight=inv_weight)[1]
-    targets = {k: v for k, v in targets.items() if len(v) in [1, 2]}
+    targets = nx.single_source_dijkstra(grn, node, cutoff=2, weight=None)[1]  # noqa
+    _ = targets.pop(node, None)
 
     de_targets = {k: v for k, v in targets.items() if k in de_genes}
     targetscore = target_score(node, grn, expression_change, de_targets)
@@ -377,10 +374,10 @@ class Influence(object):
             sys.exit(1)
         logger.info(f"Loading network data, using the top {edges} edges")
         if grn_source_file is None:
-            self.G = read_network(grn_target_file, edges=edges)
+            self.grn = read_network(grn_target_file, edges=edges)
             logger.warning("You only provided the target network!")
         elif grn_target_file is None:
-            self.G = read_network(grn_source_file, edges=edges)
+            self.grn = read_network(grn_source_file, edges=edges)
             logger.warning("You only provided the source network!")
         else:
             top_int = read_top_interactions(
@@ -398,10 +395,10 @@ class Influence(object):
                 sort_by=sort_by,
                 full_output=full_output,
             )
-            self.G = difference(grn_source, grn_target, full_output=full_output)
-            if len(self.G.edges) == 0:
+            self.grn = difference(grn_source, grn_target, full_output=full_output)
+            if len(self.grn.edges) == 0:
                 raise ValueError("No differences between networks!")
-            logger.info(f"    Differential network has {len(self.G.edges)} edges.")
+            logger.info(f"    Differential network has {len(self.grn.edges)} edges.")
 
         # Load expression file
         self.expression_change = self.read_expression(degenes, padj_cutoff)
@@ -448,7 +445,7 @@ class Influence(object):
         df = df[["log2FoldChange", "padj"]].dropna()  # removes unneeded data
         df = df.astype(float)
 
-        network_genes = set(self.G.nodes)
+        network_genes = set(self.grn.nodes)
         pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
         logger.debug(
             f"{int(100 * pct_overlap)}% of genes found in DE genes and network(s)"
@@ -523,8 +520,8 @@ class Influence(object):
     def save_reg_network(self, filename, full_output=False):
         """Save the network difference between two cell types to a file."""
         # check if all keys are found
-        n = list(self.G.edges)[0]
-        keys = self.G.edges[n].keys()
+        n = list(self.grn.edges)[0]
+        keys = self.grn.edges[n].keys()
         with open(filename, "w") as nw:
             if full_output and "source_wb" in keys:
                 logger.info("output full diff network")
@@ -548,7 +545,7 @@ class Influence(object):
                     "target_tf_act",
                 ]
                 nw.write("\t".join(header) + "\n")
-                for (u, v, ddict) in self.G.edges(data=True):
+                for (u, v, ddict) in self.grn.edges(data=True):
                     cols = [
                         u,
                         v,
@@ -571,13 +568,13 @@ class Influence(object):
                     nw.write("\t".join(str(v) for v in cols) + "\n")
             else:
                 nw.write("tf\ttarget\tweight\n")
-                for (u, v, ddict) in self.G.edges(data=True):
+                for (u, v, ddict) in self.grn.edges(data=True):
                     nw.write(u + "\t" + v + "\t" + str(ddict["weight"]) + "\n")
 
     def run_target_score(self):
         """Run target score for all TFs."""
 
-        tfs = [node for node in self.G.nodes() if self.G.out_degree(node) > 0]
+        tfs = [node for node in self.grn.nodes() if self.grn.out_degree(node) > 0]
         logger.info(f"Differential network contains {len(tfs)} transcription factors.")
 
         # differentially expressed TFs
@@ -594,13 +591,19 @@ class Influence(object):
             logger.error("No differentially expressed TFs found!")
             sys.exit(1)
         else:
-            logger.info(f"Out of these, {len(de_tfs)} are differentially expressed.")
+            logger.info(
+                f"    Out of these, {len(de_tfs)} are differentially expressed."
+            )
 
         # differentially expressed genes
+        genes = self.grn.nodes
+        logger.info(f"Differential network contains {len(genes)} genes.")
         de_genes = set(
-            g for g in self.expression_change if self.expression_change[g].score > 0
+            g
+            for g in self.expression_change
+            if g in genes and self.expression_change[g].score > 0
         )
-        de_genes = de_genes & self.G.nodes
+        logger.info(f"    Out of these, {len(de_genes)} are differentially expressed.")
 
         influence_file = open(self.outfile, "w")
         influence_file.write(
@@ -615,7 +618,7 @@ class Influence(object):
                     jobs.append(
                         pool.apply_async(
                             influence_scores,
-                            (tf, self.G, self.expression_change, de_genes),
+                            (tf, self.grn, self.expression_change, de_genes),
                         )
                     )
                 pool.close()
@@ -628,7 +631,7 @@ class Influence(object):
             else:
                 for tf in tqdm(de_tfs):
                     line = influence_scores(
-                        tf, self.G, self.expression_change, de_genes
+                        tf, self.grn, self.expression_change, de_genes
                     )
                     print(*line, file=influence_file, sep="\t")
 
@@ -686,7 +689,7 @@ class Influence(object):
 
         if self.filter_tfs:
             scores_df2 = filter_tf(
-                network=self.G, scores_df=scores_df, tpmfile=fin_expression
+                network=self.grn, scores_df=scores_df, tpmfile=fin_expression
             )
             scores_df2.to_csv(
                 ".".join(self.outfile.split(".")[:-1]) + "_filtered.txt", sep="\t"
