@@ -1,5 +1,6 @@
 """Predict TF influence score"""
 import os
+import shutil
 import sys
 import warnings
 import genomepy
@@ -14,6 +15,7 @@ from sklearn.preprocessing import minmax_scale
 from scipy.stats import rankdata, mannwhitneyu
 
 from . import SEPARATOR
+from .utils import mytmpdir
 
 
 warnings.filterwarnings("ignore")
@@ -583,7 +585,9 @@ class Influence(object):
         )
         logger.info(f"    Out of these, {len(de_genes)} are differentially expressed.")
 
-        influence_file = open(self.outfile, "w")
+        tmpdir = mytmpdir()
+        tmpfile = os.path.join(tmpdir, os.path.basename(self.outfile))
+        influence_file = open(tmpfile, "w")
         influence_file.write(
             "factor\tdirectTargets\ttotalTargets\ttargetscore\tGscore\tfactor_fc\tpval\ttarget_fc\n"
         )
@@ -614,14 +618,10 @@ class Influence(object):
                     print(*line, file=influence_file, sep="\t")
 
             influence_file.close()
+            shutil.move(tmpfile, self.outfile)
 
         except Exception as e:
             pool = None  # noqa: force garbage collection on orphaned workers
-
-            # remove the incomplete file
-            influence_file.close()
-            os.remove(influence_file.name)
-
             if "multiprocessing" in e.__repr__():
                 msgs = [
                     str(e),
