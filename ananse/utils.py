@@ -48,7 +48,7 @@ def mytmpdir():
     returns a temp directory that is removed when the process is completed
     the directory is not removed if the process is killed by the user
     """
-    if not hasattr(mytmpdir, "dir") or not mytmpdir.dir:
+    if not hasattr(mytmpdir, "dir") or not os.path.exists(mytmpdir.dir):
         # can also be removed with clean_tmp()
         mytmpdir.dir = tempfile.mkdtemp(prefix=f"ANANSE_{os.getpid()}.")
         atexit.register(shutil.rmtree, mytmpdir.dir, ignore_errors=True)

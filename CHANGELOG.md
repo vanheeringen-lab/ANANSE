@@ -55,6 +55,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - issue in `ananse network` when executing run_network() from python
 - `ananse network` merges duplicate genes and transcription factors (#142)
 - issue in `ananse influence` when using only 1 network
+- `ananse influence` made slightly faster.
+- `ananse influence` hopefully uses less memory now.
+- `ananse influence` now skips pvalues for TFs without any targets or non-targets.
 - `ananse plot` will no longer warn you incorrectly about your "weight" 
 - `ananse plot` error "OSError: Format: "dot" not recognized."
 
