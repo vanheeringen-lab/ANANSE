@@ -505,7 +505,7 @@ class Influence(object):
         keys = self.grn.edges[n].keys()
         with open(filename, "w") as nw:
             if full_output and "wb_source" in keys:
-                logger.info("output full diff network")
+                logger.info("    Writing full differential network.")
                 header = [
                     "tf",
                     "target",
