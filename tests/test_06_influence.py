@@ -19,14 +19,21 @@ def influence_obj(outdir):
 
 
 def test_read_network():
-    grn = ananse.influence.read_network("tests/data/influence/network.tsv", edges=10)
-    assert len(grn.nodes) == 10 + 1  # including a self-edge
+    grn = ananse.influence.read_network(
+        "tests/data/influence/network.tsv", edges=10, full_output=False
+    )
+    assert len(grn.edges) == 10  # 1 TF + 10 target genes
+    assert len(grn.nodes) == 11  # 1 TF + 10 target genes
+    # full_output=False
+    assert "tf_activity" not in grn["FOXK2"]["AL935186.11"].keys()
 
     top_int = ["FOXK2—AL935186.11", "FOXK2—ABCA7"]
     grn = ananse.influence.read_network(
-        "tests/data/influence/network.tsv", interactions=top_int
+        "tests/data/influence/network.tsv", interactions=top_int, full_output=True
     )
-    assert len(grn.nodes) == 3
+    assert len(grn.nodes) == 3  # 1 TF + 2 target genes
+    # full_output=True
+    assert "tf_activity" in grn["FOXK2"]["AL935186.11"].keys()
 
 
 def test_read_top_interactions():
