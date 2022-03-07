@@ -58,7 +58,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - `ananse influence` made slightly faster.
 - `ananse influence` hopefully uses less memory now.
 - `ananse influence` now skips pvalues for TFs without any targets or non-targets.
-- `ananse influence`'s `read_top_interactions` will now return the desired number of edges, not the union of two sets of edges long.
 - `ananse plot` will no longer warn you incorrectly about your "weight" 
 - `ananse plot` error "OSError: Format: "dot" not recognized."
 

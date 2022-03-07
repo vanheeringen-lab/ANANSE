@@ -24,30 +24,21 @@ warnings.filterwarnings("ignore")
 Expression = namedtuple("Expression", ["score", "absfc", "realfc"])
 
 
-def read_top_interactions(source, target, edges=100_000, sort_by="prob"):
-    """Read two network files and return the top interactions."""
-    source_int = pd.read_csv(
-        source,
-        usecols=["tf_target", sort_by],
-        sep="\t",
-        dtype="float64",
-        converters={"tf_target": str},
-    )
-    source_int.rename(columns={sort_by: "source"}, inplace=True)
+def read_top_interactions(fname, edges=100_000, sort_by="prob"):
+    """
+    Read network file and return the top interactions.
 
-    target_int = pd.read_csv(
-        target,
-        usecols=["tf_target", sort_by],
-        sep="\t",
-        dtype="float64",
-        converters={"tf_target": str},
-    )
-    target_int.rename(columns={sort_by: "target"}, inplace=True)
-
-    top_int = pd.merge(target_int, source_int, on="tf_target", how="outer")
-    top_int["score"] = top_int["source"] * top_int["target"]
-    top_int.sort_values("score", ascending=False, inplace=True)
-    top_int = top_int.head(edges)["tf_target"].to_list()
+    Incorporates the combined metric (probability score) by default to select the most
+    certain interactions, however other sorting options such as the weighted binding score
+    can be applied too.
+    """
+    # read the GRN file
+    rnet = pd.read_csv(fname, usecols=["tf_target", sort_by], sep="\t")
+    # sort based on the selected value (default probability score)
+    rnet.sort_values(sort_by, ascending=False, inplace=True)
+    # takes all edges if there are less than requested
+    rnet = rnet.head(edges)
+    top_int = set(rnet["tf_target"])
     return top_int
 
 
@@ -360,9 +351,14 @@ class Influence(object):
             self.grn = read_network(grn_source_file, edges=edges)
             logger.warning("You only provided the source network!")
         else:
-            top_int = read_top_interactions(
-                grn_source_file, grn_target_file, edges, sort_by=sort_by
+            top_int_source = read_top_interactions(
+                grn_source_file, edges=edges, sort_by=sort_by
             )
+            top_int_target = read_top_interactions(
+                grn_target_file, edges=edges, sort_by=sort_by
+            )
+            # combine the top edges of each input network
+            top_int = set.union(top_int_source, top_int_target)
             grn_source = read_network(
                 grn_source_file,
                 interactions=top_int,
