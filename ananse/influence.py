@@ -37,7 +37,7 @@ def read_top_interactions(fname, edges=100_000, sort_by="prob"):
         fname,
         usecols=["tf_target", sort_by],
         sep="\t",
-        dtype={"tf_target": str, sort_by: "float16"},
+        dtype={"tf_target": str, sort_by: "float32"},
     )
     # sort based on the selected value (default probability score)
     rnet.sort_values(sort_by, ascending=False, inplace=True, ignore_index=True)
@@ -82,7 +82,7 @@ def read_network(
     if interactions is not None:
         rnet = rnet[rnet.tf_target.isin(interactions)]
     elif edges is not None:
-        rnet = rnet.head(edges)  # no interactions so take the top head of interactions
+        rnet = rnet.head(edges)
 
     # split the transcription factor and target gene into 2 columns
     rnet[["source", "target"]] = rnet["tf_target"].str.split(SEPARATOR, expand=True)
@@ -116,10 +116,9 @@ def difference(grn_source, grn_target, full_output=False):
     score in the target network.
     """
     grn_diff = nx.DiGraph()
-    # lets check if the full GRN output is loaded and if so output all attributes to the diffnetwork:
     if full_output:
         logger.info("Calculating differential GRN with full output")
-        # lets load all the  edges into the diffnetwork
+        # load all the edges into the diffnetwork
         for u, v, ddict in grn_target.edges(data=True):
             # u = source node, v = target node, ddict = dictionary of edge attributes
             # calculate the weight difference and output all attributes
@@ -274,7 +273,9 @@ def fold_change_scores(node, grn, expression_change):
     target_fc = [expression_change[t].absfc for t in direct_targets]
     non_target_fc = [expression_change[t].absfc for t in non_direct_targets]
     try:
-        pval = mannwhitneyu(target_fc, non_target_fc)[1]
+        # asymptotic method prevents recursion errors.
+        # TODO: review when scipy closes https://github.com/scipy/scipy/issues/14622
+        pval = mannwhitneyu(target_fc, non_target_fc, method="asymptotic")[1]
     except (RecursionError, ValueError) as e:
         pval = np.NAN
         logger.warning(e)
