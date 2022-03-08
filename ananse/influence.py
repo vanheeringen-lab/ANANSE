@@ -29,7 +29,7 @@ def read_top_interactions(
     source, target, edges: Union[int, None] = 100_000, sort_by="prob"
 ):
     """
-    Read two network files and return the top shared interactions,
+    Read two network files and return the top source to target interactions,
     using the designated scoring metric (by default the combined probability).
 
     If edges is none, return all shared interactions.
@@ -62,8 +62,8 @@ def read_top_interactions(
         sys.exit(1)
 
     if edges is not None:
-        # get the top interactions by their combined scores
-        top_int = top_int["source"] * top_int["target"]
+        # get the top differential interactions
+        top_int = top_int["target"] - top_int["source"]
         top_int.sort_values(ascending=False, inplace=True)
         top_int = top_int.head(edges)
 

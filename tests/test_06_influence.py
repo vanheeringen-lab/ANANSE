@@ -40,7 +40,9 @@ def test_read_top_interactions():
     fname = "tests/data/influence/network.tsv"
     top = ananse.influence.read_top_interactions(fname, fname, edges=10)
     assert len(top) == 10
-    assert top[0] == "FOXK2—AL935186.11"
+    # I'm cheating here. 2x the same input means no difference.
+    # So the list is sorted lexicographically
+    assert top[0] == "FOXK2—ABCA7"
 
     top = ananse.influence.read_top_interactions(
         fname, fname, edges=1, sort_by="activity"
