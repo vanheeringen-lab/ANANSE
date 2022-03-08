@@ -179,41 +179,35 @@ def get_weight(grn, path):
     return weight
 
 
-def target_score(node, grn, expression_change, targets):
+def target_score(grn, expression_change, targets):
     """
     Calculate the target score, as (mostly) explained in equation 5:
     https://academic.oup.com/nar/article/49/14/7966/6318498#M5
     """
     ts = 0
     for target in targets:
-        # Calculate all paths from TF to target to select to path with the highest multiplied weight
-        all_paths = {}
-        for path in nx.all_simple_paths(grn, node, target, cutoff=2):
-            all_paths[tuple(path)] = get_weight(grn, path)
-        if len(all_paths) > 0:
-            path, weight = sorted(all_paths.items(), key=lambda pw: pw[1])[-1]
-            # the level (or the number of steps) that gene is away from transcription factor
-            # TODO: this is the number of nodes. 1 higher than the number of steps!
-            pathlen = len(path)
-            # expression score of the target
-            g = expression_change[target].score if target in expression_change else 0
-            # TODO: why divide by path length AGAIN? (already happens in the weight function)
-            # TODO: maybe this was left in by accident?
-            # TODO: see https://github.com/vanheeringen-lab/ANANSE/commit/ba67ebb8e7bafd1df13fb439485b6a590482e924
-            score = g / pathlen * weight
-            ts += score
+        path = targets[target]
+        weight = get_weight(grn, path)
+        # the level (or the number of steps) that gene is away from transcription factor
+        # TODO: this is the number of nodes. 1 higher than the number of steps!
+        pathlen = len(path)
+        # expression score of the target
+        g = expression_change[target].score
+        # TODO: why divide by path length AGAIN? (already happens in the weight function)
+        # TODO: maybe this was left in by accident?
+        # TODO: see https://github.com/vanheeringen-lab/ANANSE/commit/ba67ebb8e7bafd1df13fb439485b6a590482e924
+        score = g / pathlen * weight
+        ts += score
     return ts
 
 
-# TODO: this version is ~O(n^2) faster, and returns near identical scores
-# def target_score(grn, expression_change, targets):
-#     ts = 0
-#     for target in targets:
-#         path = targets[target]
-#         weight = get_weight(grn, path)
-#         score = expression_change[target].score / len(path) * weight
-#         ts += score
-#     return ts
+def len_weight(_, __, data):
+    """networkx weight function"""
+    # the weight is actually a positive metric, with values between 0-1.
+    # with this function, the weighted path ~= the regular path (number of interactions),
+    # but sorted by from highest to lowest weight
+    w = 1 - data["weight"] / 100
+    return w
 
 
 def influence_scores(node, grn, expression_change, de_genes):
@@ -235,14 +229,14 @@ def influence_scores(node, grn, expression_change, de_genes):
         interaction data of the given transcription factor
     """
     # get all genes that are
-    # - direct or indirectly targeted by the TF (cutoff + weight)
+    # - up to 'cutoff' interactions away from a TF
     # - not the TF itself (because we divide by len(path)-1 elsewhere)
     # - differentially expressed
-    targets = nx.single_source_dijkstra(grn, node, cutoff=2, weight=None)[1]  # noqa
+    targets = nx.single_source_dijkstra(grn, node, cutoff=2, weight=len_weight)[1]
     _ = targets.pop(node, None)
 
     de_targets = {k: v for k, v in targets.items() if k in de_genes}
-    targetscore = target_score(node, grn, expression_change, de_targets)
+    targetscore = target_score(grn, expression_change, de_targets)
 
     pval, target_fc_diff = fold_change_scores(node, grn, expression_change)
     factor_fc = expression_change[node].absfc if node in expression_change else 0
