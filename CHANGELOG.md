@@ -40,6 +40,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - `ananse binding` will now only scan the regions overlapping the pfmscorefile and regions (if both are given)
 - changed the hardcoded `.txt` file extensions in `ananse plot` to `.tsv` 
 - `ananse network` now loads the gene bed into pyranges once (instead of once per chromosome).
+- `ananse influence` now used the top 500.000 TF-gene interactions. By default, filtering for highest positive interactions.
 - cleaned up `ananse --help` messages
 
 ### Removed
