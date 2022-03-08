@@ -345,18 +345,18 @@ if __name__ == "__main__":
         "-a",
         "--annotation",
         dest="gene_gtf",
-        help="Gene annotation (genomepy name or GTF file) used to quantify expression levels",
+        help="Gene annotation (genomepy name or GTF file) used to quantify expression levels.",
         metavar="GTF",
         default=None,
     )
     group.add_argument(
         "-i",
-        "--edges",
+        "--interactions",
         dest="edges",
-        help="Number of top edges used (default: 100.000).",
+        help="Number of top TF-gene interactions used (default: 500.000).",
         type=int,
         metavar="INT",
-        default=100000,
+        default=500_000,
     )
     group.add_argument(
         "-j",
@@ -369,9 +369,9 @@ if __name__ == "__main__":
     )
     group.add_argument(
         "-c",
-        "--GRNsort-column",
+        "--column",
         dest="GRNsort_column",
-        help="Column of GRN file sorted to select top interactions, 'prob' by default",
+        help="Column of the network file(s) to select top interactions (default: prob).",
         default="prob",
         metavar="STR",
     )
