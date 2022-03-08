@@ -2,6 +2,7 @@
 import os
 import shutil
 import sys
+from typing import Union
 import warnings
 import genomepy
 from collections import namedtuple
@@ -24,31 +25,58 @@ warnings.filterwarnings("ignore")
 Expression = namedtuple("Expression", ["score", "absfc", "realfc"])
 
 
-def read_top_interactions(fname, edges=100_000, sort_by="prob"):
+def read_top_interactions(
+    source, target, edges: Union[int, None] = 100_000, sort_by="prob"
+):
     """
-    Read network file and return the top interactions.
+    Read two network files and return the top shared interactions,
+    using the designated scoring metric (by default the combined probability).
 
-    Incorporates the combined metric (probability score) by default to select the most
-    certain interactions, however other sorting options such as the weighted binding score
-    can be applied too.
+    If edges is none, return all shared interactions.
     """
-    # read the GRN file
-    rnet = pd.read_csv(
-        fname,
-        usecols=["tf_target", sort_by],
-        sep="\t",
-        dtype={"tf_target": str, sort_by: "float32"},
+    # filter for shared edges
+    def read_minimal_network(fname, col):
+        return pd.read_csv(
+            fname,
+            usecols=["tf_target", col],
+            sep="\t",
+            dtype={"tf_target": str, col: "float32"},
+            index_col="tf_target",
+        )
+
+    source_int = read_minimal_network(source, sort_by)
+    source_int.rename(columns={sort_by: "source"}, inplace=True)
+    target_int = read_minimal_network(target, sort_by)
+    target_int.rename(columns={sort_by: "target"}, inplace=True)
+
+    top_int = pd.merge(
+        target_int,
+        source_int,
+        left_index=True,
+        right_index=True,
+        how="inner",  # shared
+        sort=False,
     )
-    # sort based on the selected value (default probability score)
-    rnet.sort_values(sort_by, ascending=False, inplace=True, ignore_index=True)
-    # takes all edges if there are less than requested
-    rnet = rnet.head(edges)
-    top_int = set(rnet["tf_target"].unique())  # adding unique() speeds it up!
+    if len(top_int) == 0:
+        logger.error("No shared edges between networks!")
+        sys.exit(1)
+
+    if edges is not None:
+        # get the top interactions by their combined scores
+        top_int = top_int["source"] * top_int["target"]
+        top_int.sort_values(ascending=False, inplace=True)
+        top_int = top_int.head(edges)
+
+    top_int = top_int.index.to_list()
     return top_int
 
 
 def read_network(
-    fname, edges=100_000, interactions=None, sort_by="prob", full_output=False
+    fname,
+    edges: Union[int, None] = 100_000,
+    interactions=None,
+    sort_by="prob",
+    full_output=False,
 ):
     """
     Read a network file and return a networkx DiGraph.
@@ -58,7 +86,7 @@ def read_network(
 
     Peak memory usage is about ~5GB per million edges (tested with 0.1m, 1m and 10m edges)
     """
-    # read GRN files
+    # select GRN data
     data_columns = ["tf_target", "prob"]
     if full_output:
         data_columns = [
@@ -77,18 +105,19 @@ def read_network(
         dtype="float64",
         converters={"tf_target": str},
     )
-    # sort on selection variable
-    rnet.sort_values(sort_by, ascending=False, inplace=True)
     if interactions is not None:
-        rnet = rnet[rnet.tf_target.isin(interactions)]
+        rnet = rnet[rnet["tf_target"].isin(interactions)]
     elif edges is not None:
+        # sort on selected variable
+        rnet.sort_values(sort_by, ascending=False, inplace=True, ignore_index=True)
         rnet = rnet.head(edges)
 
     # split the transcription factor and target gene into 2 columns
     rnet[["source", "target"]] = rnet["tf_target"].str.split(SEPARATOR, expand=True)
-    rnet.drop(["tf_target"], inplace=True, axis=1)
 
-    # rename the columns
+    # drop unused columns
+    rnet.drop(["tf_target"], inplace=True, axis=1)
+    # rename used columns
     rnet.rename(
         columns={
             "prob": "weight",
@@ -108,12 +137,9 @@ def read_network(
 
 def difference(grn_source, grn_target, full_output=False):
     """
-    Calculate the network different between two GRNs.
-
-    First take the nodes from both networks, and add
-    edges from the target network that are missing in the source network.
-    Then add edges present in both but with a higher interaction
-    score in the target network.
+    Create a network with interactions that are
+    - present in both source and target network
+    - more significant in the target network
     """
     grn_diff = nx.DiGraph()
     if full_output:
@@ -123,7 +149,7 @@ def difference(grn_source, grn_target, full_output=False):
             # u = source node, v = target node, ddict = dictionary of edge attributes
             # calculate the weight difference and output all attributes
             weight_source = grn_source.edges[u, v]["weight"]
-            weight_target = grn_target.edges[u, v]["weight"]
+            weight_target = ddict["weight"]
             weight_diff = weight_target - weight_source
             if weight_diff > 0:
                 # if the interaction probability is higher in the target than in the
@@ -164,11 +190,7 @@ def difference(grn_source, grn_target, full_output=False):
             weight_target = grn_target.edges[u, v]["weight"]
             weight_diff = weight_target - weight_source
             if weight_diff > 0:
-                grn_diff.add_edge(
-                    u,
-                    v,
-                    weight=weight_diff,
-                )
+                grn_diff.add_edge(u, v, weight=weight_diff)
     return grn_diff
 
 
@@ -228,6 +250,8 @@ def influence_scores(node, grn, expression_change, de_genes):
         A network with gene names as nodes and interaction scores as weights
     expression_change : dict
         A dictionary with interaction scores and log fold changes per transcription factor
+    de_genes : list or set or dict
+        A list-like with genes present in expression_change that have a score > 0
 
     Returns
     -------
@@ -272,6 +296,7 @@ def fold_change_scores(node, grn, expression_change):
 
     target_fc = [expression_change[t].absfc for t in direct_targets]
     non_target_fc = [expression_change[t].absfc for t in non_direct_targets]
+    # TODO: try except should now be unnecessary
     try:
         # asymptotic method prevents recursion errors.
         # TODO: review when scipy closes https://github.com/scipy/scipy/issues/14622
@@ -279,12 +304,6 @@ def fold_change_scores(node, grn, expression_change):
     except (RecursionError, ValueError) as e:
         pval = np.NAN
         logger.warning(e)
-        # logger.warning(
-        #     f"Could not calculate p-val (target vs non-target fold-change) for {node}, "
-        #     f"targets = {len(target_fc)}, non-target = {len(non_target_fc)}."
-        # )
-        # logger.warning(f"targets = {target_fc[0:min(5, len(target_fc))]}...")
-        # logger.warning(f"non_target = {non_target_fc[0:min(5, len(non_target_fc))]}...")
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
     return pval, target_fc_diff
 
@@ -356,14 +375,9 @@ class Influence(object):
             self.grn = read_network(grn_source_file, edges=edges)
             logger.warning("You only provided the source network!")
         else:
-            top_int_source = read_top_interactions(
-                grn_source_file, edges=edges, sort_by=sort_by
+            top_int = read_top_interactions(
+                grn_source_file, grn_target_file, edges, sort_by=sort_by
             )
-            top_int_target = read_top_interactions(
-                grn_target_file, edges=edges, sort_by=sort_by
-            )
-            # combine the top edges of each input network
-            top_int = set.union(top_int_source, top_int_target)
             grn_source = read_network(
                 grn_source_file,
                 interactions=top_int,
@@ -378,7 +392,8 @@ class Influence(object):
             )
             self.grn = difference(grn_source, grn_target, full_output=full_output)
             if len(self.grn.edges) == 0:
-                raise ValueError("No differences between networks!")
+                logger.error("No differences between networks!")
+                sys.exit(1)
             logger.info(f"    Differential network has {len(self.grn.edges)} edges.")
 
         # Load expression file
@@ -420,9 +435,10 @@ class Influence(object):
         )
         for col in ["log2FoldChange", "padj"]:
             if col not in df.columns:
-                raise ValueError(
+                logger.error(
                     f"Column '{col}' not in differential gene expression file!"
                 )
+                sys.exit(1)
         df = df[["log2FoldChange", "padj"]].dropna()  # removes unneeded data
         df = df.astype(float)
 

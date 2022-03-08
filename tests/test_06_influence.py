@@ -38,18 +38,40 @@ def test_read_network():
 
 def test_read_top_interactions():
     fname = "tests/data/influence/network.tsv"
-    top = ananse.influence.read_top_interactions(fname, edges=10)
+    top = ananse.influence.read_top_interactions(fname, fname, edges=10)
     assert len(top) == 10
+    assert top[0] == "FOXK2—AL935186.11"
 
-    top = ananse.influence.read_top_interactions(fname, edges=1)
-    assert top == {"FOXK2—AL935186.11"}
-
-    top = ananse.influence.read_top_interactions(fname, edges=1, sort_by="activity")
-    assert top == {"FOXK2—ABCA7"}
+    top = ananse.influence.read_top_interactions(
+        fname, fname, edges=1, sort_by="activity"
+    )
+    assert top == ["FOXK2—ABCA7"]
 
 
 def test_difference():
-    pass  # TODO
+    tf = "FOXK2"
+    target = "AL935186.11"
+    fname = "tests/data/influence/network.tsv"
+    top = [
+        f"{tf}—{target}",  # this one is present in the network file
+        "FOXK2—AL935186.2",
+        "FOXK2—AL954715.6",
+    ]
+
+    grn_source = ananse.influence.read_network(
+        fname, interactions=top, full_output=True
+    )
+    grn_target = grn_source.copy()
+    # 1 edge with target weight > source weight
+    grn_source[tf][target]["weight"] = 0.1
+    grn_target[tf][target]["weight"] = 0.2
+    diff = ananse.influence.difference(grn_source, grn_target)
+    assert list(diff.nodes) == [tf, target]
+    assert list(diff.edges.data()) == [(tf, target, {"weight": 0.1})]
+
+    diff = ananse.influence.difference(grn_source, grn_target, full_output=True)
+    assert list(diff.nodes) == [tf, target]
+    assert list(diff.edges.data("weight_target")) == [(tf, target, 0.2)]
 
 
 def test_read_expression(influence_obj):
