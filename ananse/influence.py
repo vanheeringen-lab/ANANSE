@@ -1,4 +1,6 @@
 """Predict TF influence score"""
+from heapq import heappush, heappop
+from itertools import count
 import os
 import shutil
 import sys
@@ -22,6 +24,94 @@ warnings.filterwarnings("ignore")
 
 # Here because of multiprocessing and pickling
 Expression = namedtuple("Expression", ["score", "absfc", "realfc"])
+
+
+# This piece of code is adapted from the networkx code licensed under a 3-clause license:
+# https://networkx.org/documentation/networkx-2.7/#license
+def dijkstra_prob_length(G, source, weight, cutoff=None, target=None):
+    """Uses Dijkstra's algorithm to find shortest weighted paths
+    Parameters
+    ----------
+    G : NetworkX graph
+    source : node
+        Starting node for paths.
+    weight: string
+        Name of attribute that contains weight (as a probability between 0 and 1).
+    target : node label, optional
+        Ending node for path. Search is halted when target is found.
+    cutoff : integer or float, optional
+        Minimum combined, weighted probability.
+        If cutoff is provided, only return paths with summed weight >= cutoff.
+    Returns
+    -------
+    distance : dictionary
+        A mapping from node to shortest distance to that node from one
+        of the source nodes.
+    Raises
+    ------
+    NodeNotFound
+        If the `source` is not in `G`.
+    """
+    weight_function = lambda u, v, data: -np.log10(data.get(weight, 1))  # noqa: E731
+    paths = {source: [source]}
+
+    if cutoff < 0 or cutoff > 1:
+        raise ValueError(
+            "cutoff (combined, weighted probability) should be between 0 and 1"
+        )
+    if cutoff == 0:
+        cutoff = None
+    else:
+        cutoff = -np.log10(cutoff)
+
+    G_succ = G._succ if G.is_directed() else G._adj
+
+    push = heappush
+    pop = heappop
+    dist = {}  # dictionary of final distances
+    seen = {}
+    # fringe is heapq with 3-tuples (distance,c,node)
+    # use the count c to avoid comparing nodes (may not be able to)
+    c = count()
+    fringe = []
+
+    seen[source] = 0
+    push(fringe, (0, next(c), source))
+    while fringe:
+        (d, _, v) = pop(fringe)
+        if v in dist:
+            continue  # already searched this node.
+        dist[v] = d
+        if v == target:
+            break
+        for u, e in G_succ[v].items():
+            cost = weight_function(v, u, e)
+            if cost is None:
+                continue
+
+            # This is the major difference, both probability and length are taken
+            # into account
+            length = len(paths[v])
+            vu_dist = dist[v] + cost - np.log10(1 / length)
+            if length > 1:
+                vu_dist = vu_dist + np.log10(1 / (length - 1))
+
+            if cutoff is not None:
+                if vu_dist > cutoff:
+                    continue
+            if u in dist:
+                u_dist = dist[u]
+                if vu_dist < u_dist:
+                    raise ValueError("Contradictory paths found:", "negative weights?")
+            elif u not in seen or vu_dist < seen[u]:
+                seen[u] = vu_dist
+                push(fringe, (vu_dist, next(c), u))
+                if paths is not None:
+                    paths[u] = paths[v] + [u]
+
+    paths = {k: v for k, v in paths.items() if len(v) > 1}
+    dist = {k: 10 ** -v for k, v in dist.items() if k in paths}
+    return paths, dist
 
 
 def read_top_interactions(fname, edges=100_000, sort_by="prob"):
@@ -172,42 +262,18 @@ def difference(grn_source, grn_target, full_output=False):
     return grn_diff
 
 
-def get_weight(grn, path):
-    weight = np.cumprod([grn[s][t]["weight"] for s, t in zip(path, path[1:])])[-1]
-    # Add weight correction for the length of the path
-    weight = weight / (len(path) - 1)
-    return weight
-
-
 def target_score(grn, expression_change, targets):
     """
     Calculate the target score, as (mostly) explained in equation 5:
     https://academic.oup.com/nar/article/49/14/7966/6318498#M5
     """
     ts = 0
-    for target in targets:
-        path = targets[target]
-        weight = get_weight(grn, path)
-        # the level (or the number of steps) that gene is away from transcription factor
-        # TODO: this is the number of nodes. 1 higher than the number of steps!
-        pathlen = len(path)
+    for target, weight in targets.items():
         # expression score of the target
         g = expression_change[target].score
-        # TODO: why divide by path length AGAIN? (already happens in the weight function)
-        # TODO: maybe this was left in by accident?
-        # TODO: see https://github.com/vanheeringen-lab/ANANSE/commit/ba67ebb8e7bafd1df13fb439485b6a590482e924
-        score = g / pathlen * weight
+        score = g * weight
         ts += score
     return ts
-
-
-def len_weight(_, __, data):
-    """networkx weight function"""
-    # the weight is actually a positive metric, with values between 0-1.
-    # with this function, the weighted path ~= the regular path (number of interactions),
-    # but sorted by from highest to lowest weight
-    w = 1 - data["weight"] / 100
-    return w
 
 
 def influence_scores(node, grn, expression_change, de_genes):
@@ -229,13 +295,13 @@ def influence_scores(node, grn, expression_change, de_genes):
         interaction data of the given transcription factor
     """
     # get all genes that are
-    # - up to 'cutoff' interactions away from a TF
+    # - up to 'cutoff' distance away from a TF
+    #   this is the cumulative probability normalized by the length
     # - not the TF itself (because we divide by len(path)-1 elsewhere)
     # - differentially expressed
-    targets = nx.single_source_dijkstra(grn, node, cutoff=2, weight=len_weight)[1]
-    _ = targets.pop(node, None)
+    paths, weights = dijkstra_prob_length(grn, node, "weight", cutoff=0.6)
 
-    de_targets = {k: v for k, v in targets.items() if k in de_genes}
+    de_targets = {k: v for k, v in weights.items() if k in de_genes}
     targetscore = target_score(grn, expression_change, de_targets)
 
     pval, target_fc_diff = fold_change_scores(node, grn, expression_change)
@@ -243,7 +309,7 @@ def influence_scores(node, grn, expression_change, de_genes):
     return (
         node,  # factor
         grn.out_degree(node),  # noqa. directTargets
-        len(targets),  # totalTargets
+        len(paths),  # totalTargets
         targetscore,  # targetscore
         expression_change[node].score,  # Gscore
         factor_fc,  # factor_fc
