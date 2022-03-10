@@ -356,8 +356,8 @@ class Influence(object):
             )
 
             if len(self.grn.edges) == 0:
-               logger.error("No differences between networks!")
-               sys.exit(1)
+                logger.error("No differences between networks!")
+                sys.exit(1)
             logger.info(f"    Differential network has {len(self.grn.edges)} edges.")
 
         # Load expression file
