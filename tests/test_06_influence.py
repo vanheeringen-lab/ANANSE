@@ -17,9 +17,21 @@ def influence_obj(outdir):
     )
     return i
 
+@pytest.fixture
+def source_network():
+    return "tests/data/influence/ES.full.small.txt"
 
-def test_read_network():
-    grn = ananse.influence.read_network(
+@pytest.fixture
+def target_network():
+    return "tests/data/influence/KC.full.small.txt"
+
+@pytest.fixture
+def diff_exp():
+    return "tests/data/influence/DEG.small.tsv"
+
+
+def test_read_network_to_graph():
+    grn = ananse.influence.read_network_to_graph(
         "tests/data/influence/network.tsv", edges=10, full_output=False
     )
     assert len(grn.edges) == 10  # 1 TF + 10 target genes
@@ -28,24 +40,12 @@ def test_read_network():
     assert "tf_activity" not in grn["FOXK2"]["AL935186.11"].keys()
 
     top_int = ["FOXK2—AL935186.11", "FOXK2—ABCA7"]
-    grn = ananse.influence.read_network(
+    grn = ananse.influence.read_network_to_graph(
         "tests/data/influence/network.tsv", interactions=top_int, full_output=True
     )
     assert len(grn.nodes) == 3  # 1 TF + 2 target genes
     # full_output=True
     assert "tf_activity" in grn["FOXK2"]["AL935186.11"].keys()
-
-
-def test_read_top_interactions():
-    fname = "tests/data/influence/network.tsv"
-    top = ananse.influence.read_top_interactions(fname, edges=10)
-    assert len(top) == 10
-
-    top = ananse.influence.read_top_interactions(fname, edges=1)
-    assert top == {"FOXK2—AL935186.11"}
-
-    top = ananse.influence.read_top_interactions(fname, edges=1, sort_by="activity")
-    assert top == {"FOXK2—ABCA7"}
 
 
 def test_difference():
@@ -78,10 +78,6 @@ def test_filter_tf():
     pass  # TODO
 
 
-def test_save_reg_network():
-    pass  # TODO
-
-
 def test_run_target_score(outdir):
     i = ananse.influence.Influence(
         outfile=os.path.join(outdir, "influence.tsv"),
@@ -94,7 +90,7 @@ def test_run_target_score(outdir):
     i.run_target_score()
     assert os.path.exists(i.outfile)
     df = pd.read_table(i.outfile, index_col=0)
-    assert df.loc["FOXK2"]["directTargets"] == 10
+    assert df.loc["FOXK2"]["direct_targets"] == 10
     assert round(df.loc["FOXK2"]["pval"], 2) == 0.15
 
     # same output with multiprocessing
@@ -110,8 +106,24 @@ def test_run_influence_score():
     pass  # TODO
 
 
-def test_run_influence():
-    pass  # TODO
+def test_run_influence(source_network, target_network, diff_exp, outdir):
+    for params in (True, (2, 9), (26,3)), (False, (2, 9), (21,3)):
+        outfile = os.path.join(outdir, "out.txt")
+        i = ananse.influence.Influence(
+            outfile,
+            diff_exp,
+            grn_source_file=source_network,
+            grn_target_file=target_network,
+            edges=30,
+            full_output=False,
+            select_after_join=params[0],
+        )
+        i.run_influence()
+        df = pd.read_table(outfile)
+        assert df.shape == params[1]
+
+        df = pd.read_table(os.path.splitext(outfile)[0] + "_diffnetwork.tsv")
+        assert df.shape == params[2]
 
 
 def test_command_influence():

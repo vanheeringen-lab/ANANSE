@@ -158,14 +158,18 @@ def difference(
         logger.info(f"Selecting top {edges} edges after calculating difference")
         diff_network = diff_network.sort_values("weight").tail(edges)
 
-    logger.info("Saving differential network.")
-    diff_network.to_csv(outfile, sep="\t")
-
-    # split the transcription factor and target gene into 2 columns
-    diff_network[["source", "target"]] = diff_network.index.to_series().str.split(
-        SEPARATOR, expand=True
+    # split the transcription factor and target gene into 2 columns, make sure they end up
+    # in the first columns
+    source_target = (
+        diff_network.index.to_series()
+        .str.split(SEPARATOR, expand=True)
+        .rename(columns={0: "source", 1: "target"})
     )
+    diff_network = pd.concat((source_target, diff_network), axis=1)
     diff_network.reset_index(drop=True, inplace=True)
+
+    logger.info("Saving differential network.")
+    diff_network.to_csv(outfile, sep="\t", index=False)
     # load into a network with TFs and TGs as nodes, and the interaction scores as edges
     grn = nx.from_pandas_edgelist(diff_network, edge_attr=True, create_using=nx.DiGraph)
 
@@ -363,7 +367,7 @@ class Influence(object):
             self.grn = difference(
                 grn_source_file,
                 grn_target_file,
-                "out_diffnetwork.txt",
+                outfile,
                 edges=edges,
                 column=sort_by,
                 full_output=full_output,
