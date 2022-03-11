@@ -107,9 +107,8 @@ def read_network_to_graph(
 
     return grn
 
-
 def difference(
-    grn_source, grn_target, outfile, edges=100_000, column="prob", full_output=False
+    grn_source, grn_target, outfile, edges=100_000, column="prob", full_output=False, select_after_join=False
 ):
     """
     Calculate the network different between two GRNs.
@@ -126,9 +125,16 @@ def difference(
     logger.info("Loading target network.")
     target = read_network(grn_target, edges=None, full_output=full_output)
 
+    if edges and not select_after_join:
+        logger.info(f"Selecting top {edges} edges before calculating difference")
+        source = source.sort_values(column).tail(edges)
+        target = target.sort_values(column).tail(edges)
+
+
     # Calculate difference
     logger.info("Calculating differential network.")
-    diff_network = target.join(source, lsuffix="_target", rsuffix="_source")
+    # Fill weight not present in source network with 0
+    diff_network = target.join(source, lsuffix="_target", rsuffix="_source").fillna(0)
     diff_network["weight"] = (
         diff_network[f"{column}_target"] - diff_network[f"{column}_source"]
     )
@@ -142,7 +148,8 @@ def difference(
         )
 
     # Only keep top edges
-    if edges:
+    if edges and select_after_join:
+        logger.info(f"Selecting top {edges} edges after calculating difference")
         diff_network = diff_network.sort_values("weight").tail(edges)
 
     logger.info("Saving differential network.")
@@ -326,6 +333,7 @@ class Influence(object):
         sort_by="prob",
         padj_cutoff=0.05,
         full_output=False,
+        select_after_join=False,
     ):
         self.ncore = ncore
         self.gene_gtf = gene_gtf
@@ -353,6 +361,7 @@ class Influence(object):
                 edges=edges,
                 column=sort_by,
                 full_output=full_output,
+                select_after_join=select_after_join,
             )
 
             if len(self.grn.edges) == 0:

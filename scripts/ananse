@@ -359,6 +359,13 @@ if __name__ == "__main__":
         default=500_000,
     )
     group.add_argument(
+        "--select-after-join",
+        dest="select_after_join",
+        help="Select top interactions on differential network, instead of input networks.",
+        default=False,
+        action="store_true"
+    )
+    group.add_argument(
         "-j",
         "--padj",
         dest="padj_cutoff",
