@@ -17,13 +17,16 @@ def influence_obj(outdir):
     )
     return i
 
+
 @pytest.fixture
 def source_network():
     return "tests/data/influence/ES.full.small.txt"
 
+
 @pytest.fixture
 def target_network():
     return "tests/data/influence/KC.full.small.txt"
+
 
 @pytest.fixture
 def diff_exp():
@@ -107,7 +110,7 @@ def test_run_influence_score():
 
 
 def test_run_influence(source_network, target_network, diff_exp, outdir):
-    for params in (True, (2, 9), (26,3)), (False, (2, 9), (21,3)):
+    for params in (True, (2, 9), (26, 3)), (False, (2, 9), (21, 3)):
         outfile = os.path.join(outdir, "out.txt")
         i = ananse.influence.Influence(
             outfile,
