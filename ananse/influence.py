@@ -107,8 +107,15 @@ def read_network_to_graph(
 
     return grn
 
+
 def difference(
-    grn_source, grn_target, outfile, edges=100_000, column="prob", full_output=False, select_after_join=False
+    grn_source,
+    grn_target,
+    outfile,
+    edges=100_000,
+    column="prob",
+    full_output=False,
+    select_after_join=False,
 ):
     """
     Calculate the network different between two GRNs.
@@ -129,7 +136,6 @@ def difference(
         logger.info(f"Selecting top {edges} edges before calculating difference")
         source = source.sort_values(column).tail(edges)
         target = target.sort_values(column).tail(edges)
-
 
     # Calculate difference
     logger.info("Calculating differential network.")
