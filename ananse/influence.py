@@ -153,10 +153,11 @@ def difference(
     # Only keep top edges
     if edges and select_after_join:
         logger.info(f"    Selecting top {edges} edges after calculating difference")
-        if sort_by == "prob":
-            sort_by = "weight"
-        else:
-            sort_by = GRN_COLUMNS.get(sort_by, sort_by) + "_target"
+        sort_by = GRN_COLUMNS.get(sort_by, sort_by)
+        if sort_by != "weight":
+            diff_network[sort_by] = (
+                diff_network[f"{sort_by}_target"] - diff_network[f"{sort_by}_source"]
+            )
         diff_network = diff_network.sort_values(sort_by).tail(edges)
 
     # split the transcription factor and target gene into 2 columns, make sure they end up
