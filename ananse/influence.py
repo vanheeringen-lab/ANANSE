@@ -598,7 +598,6 @@ class Influence(object):
         scores_df["target_score_scaled"] = minmax_scale(
             rankdata(scores_df["target_score"], method="dense")
         )
-        scores_df["G_score"] = scores_df["G_score"]
         scores_df["G_score_scaled"] = minmax_scale(
             rankdata(scores_df["G_score"], method="dense")
         )
