@@ -361,7 +361,9 @@ class Influence(object):
 
         logger.info(f"Loading network data, using the top {edges} edges")
         if edges and not full_output and sort_by is not "prob":
-            logger.error(f"Sorting by column '{sort_by}' is not possible without the full output!")
+            logger.error(
+                f"Sorting by column '{sort_by}' is not possible without the full output!"
+            )
             sys.exit(1)
         if grn_source_file is None:
             self.grn = read_network_to_graph(
