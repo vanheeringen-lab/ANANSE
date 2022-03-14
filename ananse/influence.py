@@ -323,7 +323,7 @@ def influence_scores(node, grn, expression_change, de_genes):
     return (
         node,  # factor
         grn.out_degree(node),  # noqa. direct_targets
-        len(targets),  # total_targets
+        len(paths),  # total_targets
         targetscore,  # target_score
         expression_change[node].score,  # G_score
         factor_fc,  # factor_fc
