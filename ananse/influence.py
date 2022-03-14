@@ -141,7 +141,7 @@ def difference(
     # Fill weight not present in source network with 0
     diff_network = target.join(source, lsuffix="_target", rsuffix="_source").fillna(0)
     diff_network["weight"] = (
-        diff_network[f"weight_target"] - diff_network[f"weight_source"]
+        diff_network["weight_target"] - diff_network["weight_source"]
     )
 
     # Only keep edges that are higher in target network
@@ -153,7 +153,7 @@ def difference(
     # Only keep top edges
     if edges and select_after_join:
         logger.info(f"    Selecting top {edges} edges after calculating difference")
-        if sort_by is "prob":
+        if sort_by == "prob":
             sort_by = "weight"
         else:
             sort_by = GRN_COLUMNS.get(sort_by, sort_by) + "_target"
@@ -360,7 +360,7 @@ class Influence(object):
             sys.exit(1)
 
         logger.info(f"Loading network data, using the top {edges} edges")
-        if edges and not full_output and sort_by is not "prob":
+        if edges and not full_output and sort_by != "prob":
             logger.error(
                 f"Sorting by column '{sort_by}' is not possible without the full output!"
             )
