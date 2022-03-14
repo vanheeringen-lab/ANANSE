@@ -12,20 +12,20 @@ from matplotlib.lines import Line2D
 def plot_influence(infile, outfile):
     """Plot TF influence score to expression."""
 
-    mogrify = pd.read_table(infile, sep="\t", index_col="factor")
-    mogrify = mogrify.dropna()
-    factors = list(mogrify.sort_values("sumScaled").tail(20).index)
+    df = pd.read_table(infile, sep="\t", index_col="factor")
+    df = df.dropna()
+    factors = list(df.sort_values("influence_score").tail(20).index)
     xcol = "factor_fc"
     plt.figure(figsize=(8, 6))
     sns.regplot(
-        data=mogrify,
+        data=df,
         x=xcol,
-        y="sumScaled",
+        y="influence_score",
         fit_reg=False,
-        scatter_kws={"s": mogrify["directTargets"] / 10, "alpha": 0.5},
+        scatter_kws={"s": df["direct_targets"] / 10, "alpha": 0.5},
     )
-    x = mogrify.loc[factors, xcol]
-    y = mogrify.loc[factors, "sumScaled"]
+    x = df.loc[factors, xcol]
+    y = df.loc[factors, "influence_score"]
     texts = []
     for s, xt, yt in zip(factors, x, y):
         texts.append(plt.text(xt, yt, s))
@@ -127,16 +127,16 @@ def plot_TF_GRN(
         edge_info = "weight"
 
     # select the top TFs:
-    mogrify = pd.read_table(
+    df = pd.read_table(
         infile,
         sep="\t",
         index_col="factor",
-        usecols=["factor", "sumScaled", "GscoreScaled"],
+        usecols=["factor", "influence_score", "G_score_scaled"],
     )
-    mogrify = mogrify[mogrify.GscoreScaled > 0]  # plot only TFs that are differential
-    top_factors = list(mogrify.sort_values("sumScaled").tail(n_TFs).index)
+    df = df[df.G_score_scaled > 0]  # plot only TFs that are differential
+    top_factors = list(df.sort_values("influence_score").tail(n_TFs).index)
 
-    if len(mogrify) == 0:
+    if len(df) == 0:
         logger.warning(f"No differential TFs in {infile}!")
         return
 

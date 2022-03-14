@@ -57,7 +57,7 @@ if __name__ == "__main__":
         dest="atac_bams",
         metavar="BAM",
         help="ATAC-seq input BAM file(s) (or one counts table with reads per peak), "
-             "can be used alone or in combination with the -H option",
+        "can be used alone or in combination with the -H option",
         default=None,
         nargs="+",
     )
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         dest="histone_bams",
         metavar="BAM",
         help="H3K27ac ChIP-seq input BAM file(s) (or one counts table with reads per peak), "
-             "can be used alone or in combination with the -A option",
+        "can be used alone or in combination with the -A option",
         default=None,
         nargs="+",
     )
@@ -85,9 +85,9 @@ if __name__ == "__main__":
         "--regions",
         dest="regions",
         help="Regions to analyse. Can be "
-             "one or more BED format files (e.g. BED, narrowPeak, broadPeak) or "
-             "one file with one region per line (e.g. 'chr1:100-200') or "
-             "a space-separated list. Optional if a pfmscorefile is provided (used to filter those regions instead)",
+        "one or more BED format files (e.g. BED, narrowPeak, broadPeak) or "
+        "one file with one region per line (e.g. 'chr1:100-200') or "
+        "a space-separated list. Optional if a pfmscorefile is provided (used to filter those regions instead)",
         metavar="FILE",
         default=None,
         nargs="*",
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         "--columns",
         dest="columns",
         help="One or more (case insensitive) column names to extract "
-             "from the counts table(s) (default: all)",
+        "from the counts table(s) (default: all)",
         metavar="COL",
         default=None,
         nargs="*",
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         "--tfs",
         dest="tfs",
         help="Filter Transcription Factors to use (default: all in motif2factors.txt). "
-             "Either a space-separated list or one or more files with one TF per line",
+        "Either a space-separated list or one or more files with one TF per line",
         metavar="TF",
         default=None,
         nargs="*",
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         "--jaccard-cutoff",
         dest="jaccard_cutoff",
         help="TFs with a jaccard motif similarity >= the cutoff can be used as backup model. "
-             "0: any similarity, 1: perfect similarity (default is 0.1)",
+        "0: any similarity, 1: perfect similarity (default is 0.1)",
         metavar="FLOAT",
         type=float,
         default=0.1,
@@ -185,11 +185,11 @@ if __name__ == "__main__":
         "--expression",
         dest="fin_expression",
         help="Gene expression file(s) with genes as first column and "
-             "expression column(s) in TPM values (column name(s) specified below). "
-             "Genes must be in HGNC symbols, unless a genomepy gene annotation is provided. "
-             "Files can include transcript-level TPMs "
-             "(the quant.sf from salmon or the abundances.tsv from kallisto), "
-             "or gene-level TPMs tables (summarized with e.g. tximeta). ",
+        "expression column(s) in TPM values (column name(s) specified below). "
+        "Genes must be in HGNC symbols, unless a genomepy gene annotation is provided. "
+        "Files can include transcript-level TPMs "
+        "(the quant.sf from salmon or the abundances.tsv from kallisto), "
+        "or gene-level TPMs tables (summarized with e.g. tximeta). ",
         metavar="FILE",
         default=None,
         # required=True,
@@ -209,7 +209,7 @@ if __name__ == "__main__":
         "--annotation",
         dest="annotation",
         help="Gene annotation (genomepy name or BED12 file) used to quantify expression levels. "
-             "Optional when a genomepy genome (with annotation) is providing.",
+        "Optional when a genomepy genome (with annotation) is providing.",
         metavar="BED",
         default=None,
     )
@@ -227,7 +227,7 @@ if __name__ == "__main__":
         "--tfs",
         dest="tfs",
         help="Filter Transcription Factors to use (default: all in motif2factors.txt). "
-             "Either a space-separated list or one or more files with one TF per line",
+        "Either a space-separated list or one or more files with one TF per line",
         metavar="TF",
         default=None,
         nargs="*",
@@ -237,7 +237,7 @@ if __name__ == "__main__":
         "--regions",
         dest="regions",
         help="Filter regions to use (default: all in binding.h5). "
-             "Either one region/BED format file or a space-separated list.",
+        "Either one region/BED format file or a space-separated list.",
         metavar="FILE",
         default=None,
         nargs="*",
@@ -247,7 +247,7 @@ if __name__ == "__main__":
         "--columns",
         dest="column",
         help="One or more (case insensitive) column names to extract "
-             "from the expression file(s) (default: tpm)",
+        "from the expression file(s) (default: tpm)",
         metavar="COL",
         default="tpm",
         nargs="*",
@@ -301,7 +301,7 @@ if __name__ == "__main__":
     group.add_argument(
         "-t",
         "--target",
-        dest="GRN_target_file",
+        dest="target_file",
         help="Network of target cell type.",
         metavar="FILE",
         default=None,
@@ -312,7 +312,7 @@ if __name__ == "__main__":
         "--degenes",
         dest="expression",
         help="File with differential gene expression (DEseq2 output file). "
-             "Genes must be in HGNC symbols, unless a genomepy gene annotation is provided. ",
+        "Genes must be in HGNC symbols, unless a genomepy gene annotation is provided. ",
         metavar="FILE",
         required=True,
     )
@@ -320,7 +320,7 @@ if __name__ == "__main__":
     group.add_argument(
         "-s",
         "--source",
-        dest="GRN_source_file",
+        dest="source_file",
         help="Network of source cell type.",
         metavar="FILE",
         default=None,
@@ -345,18 +345,25 @@ if __name__ == "__main__":
         "-a",
         "--annotation",
         dest="gene_gtf",
-        help="Gene annotation (genomepy name or GTF file) used to quantify expression levels",
+        help="Gene annotation (genomepy name or GTF file) used to quantify expression levels.",
         metavar="GTF",
         default=None,
     )
     group.add_argument(
         "-i",
-        "--edges",
+        "--interactions",
         dest="edges",
-        help="Number of top edges used (default: 100.000).",
+        help="Number of top TF-gene interactions used (default: 500.000).",
         type=int,
         metavar="INT",
-        default=100000,
+        default=500_000,
+    )
+    group.add_argument(
+        "--select-after-join",
+        dest="select_after_join",
+        help="Select top interactions on differential network, instead of input networks.",
+        default=False,
+        action="store_true",
     )
     group.add_argument(
         "-j",
@@ -369,9 +376,9 @@ if __name__ == "__main__":
     )
     group.add_argument(
         "-c",
-        "--GRNsort-column",
-        dest="GRNsort_column",
-        help="Column of GRN file sorted to select top interactions, 'prob' by default",
+        "--column",
+        dest="sort_column",
+        help="Column of the network file(s) to select top interactions (default: prob).",
         default="prob",
         metavar="STR",
     )
@@ -393,7 +400,7 @@ if __name__ == "__main__":
     p = subparsers.add_parser(
         "view",
         add_help=False,
-        description="Explore the contents of an ANANSE binding file."
+        description="Explore the contents of an ANANSE binding file.",
     )
     subparser_dict["view"] = p
     group = p.add_argument_group("required arguments")
@@ -496,7 +503,7 @@ if __name__ == "__main__":
     group.add_argument(
         "--edge-info",
         help="Column to use for edges of GRN, default: 'weight'. "
-             "When full_output is specified, options are 'wb_diff' ,'tf_act_diff', 'tf_expr_diff', 'tg_expr_diff'",
+        "When full_output is specified, options are 'wb_diff' ,'tf_act_diff', 'tf_expr_diff', 'tg_expr_diff'",
         dest="edge_info",
         type=str,
         default="weight",
