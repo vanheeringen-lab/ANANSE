@@ -4,6 +4,7 @@ import shutil
 import sys
 import warnings
 import genomepy
+from typing import Union
 from collections import namedtuple
 from loguru import logger
 from tqdm.auto import tqdm
@@ -23,10 +24,18 @@ warnings.filterwarnings("ignore")
 # Here because of multiprocessing and pickling
 Expression = namedtuple("Expression", ["score", "absfc", "realfc"])
 
+# dictionary used to convert column names from ANANSE network
+# to column names for ANANSE influence
+GRN_COLUMNS = {
+    "prob": "weight",
+    # "weighted_binding": "weighted_binding",
+    # "tf_expression": "tf_expression",
+    # "target_expression": "tg_expression",
+    "activity": "tf_activity",
+}
 
-def read_network(
-    fname, edges=100_000, interactions=None, sort_by="prob", full_output=False
-):
+
+def read_network(fname, full_output=False):
     """
     Read a network file and return a DataFrame.
 
@@ -60,7 +69,11 @@ def read_network(
 
 
 def read_network_to_graph(
-    fname, edges=100_000, interactions=None, sort_by="prob", full_output=False
+    fname,
+    edges: Union[int, None] = 100_000,
+    interactions=None,
+    sort_by="prob",
+    full_output=False,
 ):
     """
     Read a network file and return a networkx DiGraph.
@@ -70,19 +83,11 @@ def read_network_to_graph(
 
     Peak memory usage is about ~5GB per million edges (tested with 0.1m, 1m and 10m edges)
     """
-    rnet = read_network(
-        fname,
-        edges=edges,
-        interactions=interactions,
-        sort_by=sort_by,
-        full_output=full_output,
-    )
-    # sort on selection variable
-    rnet.sort_values(sort_by, ascending=False, inplace=True)
+    rnet = read_network(fname, full_output)
     if interactions is not None:
         rnet = rnet[rnet.index.isin(interactions)]
     elif edges is not None:
-        rnet = rnet.head(edges)
+        rnet = rnet.sort_values(sort_by).tail(edges)
 
     # split the transcription factor and target gene into 2 columns
     rnet[["source", "target"]] = rnet.index.to_series().str.split(
@@ -91,16 +96,7 @@ def read_network_to_graph(
     rnet.reset_index(drop=True, inplace=True)
 
     # rename the columns
-    rnet.rename(
-        columns={
-            "prob": "weight",
-            # "weighted_binding": "weighted_binding",
-            # "tf_expression": "tf_expression",
-            "target_expression": "tg_expression",
-            "activity": "tf_activity",
-        },
-        inplace=True,
-    )
+    rnet.rename(columns=GRN_COLUMNS, inplace=True)
 
     # load into a network with TFs and TGs as nodes, and the interaction scores as edges
     grn = nx.from_pandas_edgelist(rnet, edge_attr=True, create_using=nx.DiGraph)
@@ -111,9 +107,9 @@ def read_network_to_graph(
 def difference(
     grn_source,
     grn_target,
-    outfile,
+    outfile=None,
     edges=100_000,
-    column="prob",
+    sort_by="prob",
     full_output=False,
     select_after_join=False,
 ):
@@ -128,35 +124,40 @@ def difference(
 
     # read GRN files
     logger.info("Loading source network.")
-    source = read_network(grn_source, edges=None, full_output=full_output)
-    logger.info("Loading target network.")
-    target = read_network(grn_target, edges=None, full_output=full_output)
-
+    source = read_network(grn_source, full_output)
     if edges and not select_after_join:
-        logger.info(f"Selecting top {edges} edges before calculating difference")
-        source = source.sort_values(column).tail(edges)
-        target = target.sort_values(column).tail(edges)
+        source = source.sort_values(sort_by).tail(edges)
+    source.rename(columns=GRN_COLUMNS, inplace=True)
+
+    logger.info("Loading target network.")
+    target = read_network(grn_target, full_output)
+    if edges and not select_after_join:
+        logger.info(f"    Selecting top {edges} edges before calculating difference")
+        target = target.sort_values(sort_by).tail(edges)
+    target.rename(columns=GRN_COLUMNS, inplace=True)
 
     # Calculate difference
     logger.info("Calculating differential network.")
     # Fill weight not present in source network with 0
     diff_network = target.join(source, lsuffix="_target", rsuffix="_source").fillna(0)
     diff_network["weight"] = (
-        diff_network[f"{column}_target"] - diff_network[f"{column}_source"]
+        diff_network[f"weight_target"] - diff_network[f"weight_source"]
     )
 
     # Only keep edges that are higher in target network
     diff_network = diff_network[diff_network["weight"] > 0]
 
     if not full_output:
-        diff_network.drop(
-            columns=[f"{column}_target", f"{column}_source"], inplace=True
-        )
+        diff_network.drop(columns=["weight_target", "weight_source"], inplace=True)
 
     # Only keep top edges
     if edges and select_after_join:
-        logger.info(f"Selecting top {edges} edges after calculating difference")
-        diff_network = diff_network.sort_values("weight").tail(edges)
+        logger.info(f"    Selecting top {edges} edges after calculating difference")
+        if sort_by is "prob":
+            sort_by = "weight"
+        else:
+            sort_by = GRN_COLUMNS.get(sort_by, sort_by) + "_target"
+        diff_network = diff_network.sort_values(sort_by).tail(edges)
 
     # split the transcription factor and target gene into 2 columns, make sure they end up
     # in the first columns
@@ -168,8 +169,10 @@ def difference(
     diff_network = pd.concat((source_target, diff_network), axis=1)
     diff_network.reset_index(drop=True, inplace=True)
 
-    logger.info("Saving differential network.")
-    diff_network.to_csv(outfile, sep="\t", index=False)
+    if outfile:
+        logger.info("Saving differential network.")
+        diff_network.to_csv(outfile, sep="\t", index=False)
+
     # load into a network with TFs and TGs as nodes, and the interaction scores as edges
     grn = nx.from_pandas_edgelist(diff_network, edge_attr=True, create_using=nx.DiGraph)
 
@@ -254,10 +257,10 @@ def influence_scores(node, grn, expression_change, de_genes):
     factor_fc = expression_change[node].absfc if node in expression_change else 0
     return (
         node,  # factor
-        grn.out_degree(node),  # noqa. directTargets
-        len(targets),  # totalTargets
-        targetscore,  # targetscore
-        expression_change[node].score,  # Gscore
+        grn.out_degree(node),  # noqa. direct_targets
+        len(targets),  # total_targets
+        targetscore,  # target_score
+        expression_change[node].score,  # G_score
         factor_fc,  # factor_fc
         pval,  # pval
         target_fc_diff,  # target_fc
@@ -357,6 +360,9 @@ class Influence(object):
             sys.exit(1)
 
         logger.info(f"Loading network data, using the top {edges} edges")
+        if edges and not full_output and sort_by is not "prob":
+            logger.error(f"Sorting by column '{sort_by}' is not possible without the full output!")
+            sys.exit(1)
         if grn_source_file is None:
             self.grn = read_network_to_graph(
                 grn_target_file, edges=edges, sort_by=sort_by
@@ -368,10 +374,10 @@ class Influence(object):
                 grn_source_file,
                 grn_target_file,
                 outfile,
-                edges=edges,
-                column=sort_by,
-                full_output=full_output,
-                select_after_join=select_after_join,
+                edges,
+                sort_by,
+                full_output,
+                select_after_join,
             )
 
             if len(self.grn.edges) == 0:
@@ -421,6 +427,7 @@ class Influence(object):
                 logger.error(
                     f"Column '{col}' not in differential gene expression file!"
                 )
+                sys.exit(1)
         df = df[["log2FoldChange", "padj"]].dropna()  # removes unneeded data
         df = df.astype(float)
 
@@ -536,7 +543,7 @@ class Influence(object):
         tmpfile = os.path.join(tmpdir, os.path.basename(self.outfile))
         influence_file = open(tmpfile, "w")
         influence_file.write(
-            "factor\tdirect_targets\ttotalTargets\ttarget_score\tG_score\tfactor_fc\tpval\ttarget_fc\n"
+            "factor\tdirect_targets\ttotal_targets\ttarget_score\tG_score\tfactor_fc\tpval\ttarget_fc\n"
         )
 
         try:
@@ -584,7 +591,7 @@ class Influence(object):
     def run_influence_score(self, influence_file, fin_expression=None):
         """Calculate influence score from target score and gscore"""
 
-        scores_df = pd.read_table(influence_file, index_col=0)
+        scores_df = pd.read_table(influence_file, index_col="factor")
         scores_df["target_score_scaled"] = minmax_scale(
             rankdata(scores_df["target_score"], method="dense")
         )
