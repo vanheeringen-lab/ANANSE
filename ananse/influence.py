@@ -115,7 +115,7 @@ def dijkstra_prob_length(G, source, weight, cutoff=None, target=None):  # noqa
                     paths[u] = paths[v] + [u]  # noqa
 
     paths = {k: v for k, v in paths.items() if len(v) > 1}
-    dist = {k: 10 ** -v for k, v in dist.items() if k in paths}
+    dist = {k: 10**-v for k, v in dist.items() if k in paths}
     return paths, dist
 
 
