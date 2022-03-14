@@ -28,31 +28,36 @@ Expression = namedtuple("Expression", ["score", "absfc", "realfc"])
 
 # This piece of code is adapted from the networkx code licensed under a 3-clause license:
 # https://networkx.org/documentation/networkx-2.7/#license
-def dijkstra_prob_length(G, source, weight, cutoff=None, target=None):
+def dijkstra_prob_length(G, source, weight, cutoff=None, target=None):  # noqa
     """Uses Dijkstra's algorithm to find shortest weighted paths
+
     Parameters
     ----------
     G : NetworkX graph
     source : node
         Starting node for paths.
     weight: string
-        Name of attribute that contains weight (as a probability between 0 and 1).
+        Name of attribute that contains weight (as a probability between 0 and 1,
+        where 0 is the minimum and 1 the maximum).
     target : node label, optional
         Ending node for path. Search is halted when target is found.
     cutoff : integer or float, optional
         Minimum combined, weighted probability.
         If cutoff is provided, only return paths with summed weight >= cutoff.
+
     Returns
     -------
-    distance : dictionary
-        A mapping from node to shortest distance to that node from one
+    paths, distance : dictionaries
+        Dictionary of shortest paths keyed by target, and
+        a mapping from node to shortest distance to that node from one
         of the source nodes.
+
     Raises
     ------
     NodeNotFound
         If the `source` is not in `G`.
     """
-    weight_function = lambda u, v, data: -np.log10(data.get(weight, 1))  # noqa: E731
+    weight_function = lambda u, v, data: -np.log10(data.get(weight, 1))  # noqa
     paths = {source: [source]}
 
     if cutoff < 0 or cutoff > 1:
@@ -64,7 +69,7 @@ def dijkstra_prob_length(G, source, weight, cutoff=None, target=None):
     else:
         cutoff = -np.log10(cutoff)
 
-    G_succ = G._succ if G.is_directed() else G._adj
+    G_succ = G._succ if G.is_directed() else G._adj  # noqa
 
     push = heappush
     pop = heappop
@@ -92,7 +97,7 @@ def dijkstra_prob_length(G, source, weight, cutoff=None, target=None):
             # This is the major difference, both probability and length are taken
             # into account
             length = len(paths[v])
-            vu_dist = dist[v] + cost - np.log10(1 / length)
+            vu_dist = dist[v] + cost - np.log10(1 / length)  # noqa
             if length > 1:
                 vu_dist = vu_dist + np.log10(1 / (length - 1))
 
@@ -107,7 +112,7 @@ def dijkstra_prob_length(G, source, weight, cutoff=None, target=None):
                 seen[u] = vu_dist
                 push(fringe, (vu_dist, next(c), u))
                 if paths is not None:
-                    paths[u] = paths[v] + [u]
+                    paths[u] = paths[v] + [u]  # noqa
 
     paths = {k: v for k, v in paths.items() if len(v) > 1}
     dist = {k: 10 ** -v for k, v in dist.items() if k in paths}
@@ -262,15 +267,16 @@ def difference(grn_source, grn_target, full_output=False):
     return grn_diff
 
 
-def target_score(grn, expression_change, targets):
+def target_score(expression_change, targets):
     """
     Calculate the target score, as (mostly) explained in equation 5:
     https://academic.oup.com/nar/article/49/14/7966/6318498#M5
     """
     ts = 0
     for target, weight in targets.items():
-        # expression score of the target
+        # g: expression score of the target
         g = expression_change[target].score
+        # weight: cumulative probability normalized by the length
         score = g * weight
         ts += score
     return ts
@@ -296,13 +302,12 @@ def influence_scores(node, grn, expression_change, de_genes):
     """
     # get all genes that are
     # - up to 'cutoff' distance away from a TF
-    #   this is the cumulative probability normalized by the length
-    # - not the TF itself (because we divide by len(path)-1 elsewhere)
+    #   (this is the cumulative probability normalized by the length)
     # - differentially expressed
     paths, weights = dijkstra_prob_length(grn, node, "weight", cutoff=0.6)
 
     de_targets = {k: v for k, v in weights.items() if k in de_genes}
-    targetscore = target_score(grn, expression_change, de_targets)
+    targetscore = target_score(expression_change, de_targets)
 
     pval, target_fc_diff = fold_change_scores(node, grn, expression_change)
     factor_fc = expression_change[node].absfc if node in expression_change else 0
