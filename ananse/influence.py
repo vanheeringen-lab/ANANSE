@@ -313,7 +313,10 @@ def influence_scores(node, grn, expression_change, de_genes):
     # - up to 'cutoff' distance away from a TF
     #   (this is the cumulative probability normalized by the length)
     # - differentially expressed
-    paths, weights = dijkstra_prob_length(grn, node, "weight", cutoff=0.6)
+
+    # cutoff between 0.25 to 0.32 yields the same amount of targets
+    # as nx.single_source_dijkstra(cutoff=2, weight=None), empirically determined.
+    paths, weights = dijkstra_prob_length(grn, node, "weight", cutoff=0.285)
 
     de_targets = {k: v for k, v in weights.items() if k in de_genes}
     targetscore = target_score(expression_change, de_targets)
