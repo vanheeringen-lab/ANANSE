@@ -65,33 +65,6 @@ def read_diff_network(diff_network_file, full_output):
     )
     grn = nx.from_pandas_edgelist(rnet, edge_attr=True, create_using=nx.DiGraph)
     return grn
-    # G = nx.DiGraph()  # initiate empty network
-    # for _, row in rnet.iterrows():
-    #     if full_output is False:
-    #         try:
-    #             G.add_edge(row["source"], row["target"], weight=row["weight"], n=1)
-    #         except Exception:
-    #             logger.error(
-    #                 f"Could not parse edge weight of edge {(row['tf'])}:{(row['target'])}"
-    #             )
-    #             raise
-    #     else:
-    #         try:
-    #             G.add_edge(
-    #                 row["source"],
-    #                 row["target"],
-    #                 weight=row["weight"],
-    #                 wb_diff=row["weighted_binding_target"] - row["weighted_binding_source"],
-    #                 tf_expr_diff=row["tf_expression_target"] - row["tf_expression_source"],
-    #                 #tg_expr_diff=row["tg_expression_target"] - row["tg_expression_source"],
-    #                 tf_act_diff=row["tf_activity_target"] - row["tf_activity_source"],
-    #             )
-    #         except Exception:
-    #             logger.error(
-    #                 f"Could not parse edge weight {(row['source'])}:{(row['target'])}"
-    #             )
-    #             raise
-    # return G
 
 
 def plot_grn(
