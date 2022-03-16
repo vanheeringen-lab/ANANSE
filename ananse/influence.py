@@ -67,16 +67,17 @@ def dijkstra_prob_length(G, source, weight, cutoff=None, target=None):  # noqa
     NodeNotFound
         If the `source` is not in `G`.
     """
-    weight_function = lambda u, v, data: -np.log10(data.get(weight, 1))  # noqa
+    # cumulative weight function for values < 1
+    weight_function = lambda u, v, data: -np.log10(data[weight])  # noqa
     paths = {source: [source]}
 
-    if cutoff < 0 or cutoff > 1:
-        raise ValueError(
-            "cutoff (combined, weighted probability) should be between 0 and 1"
-        )
     if cutoff == 0:
         cutoff = None
-    else:
+    if cutoff is not None:
+        if cutoff < 0 or cutoff > 1:
+            raise ValueError(
+                "cutoff (combined, weighted probability) should be between 0 and 1"
+            )
         cutoff = -np.log10(cutoff)
 
     G_succ = G._succ if G.is_directed() else G._adj  # noqa
@@ -289,7 +290,7 @@ def target_score(expression_change, targets):
     return ts
 
 
-def influence_scores(node, grn, expression_change, de_genes):
+def influence_scores(node, grn, expression_change, de_genes, max_steps=2):
     """
     Calculate the influence scores of a transcription factor.
 
@@ -303,18 +304,21 @@ def influence_scores(node, grn, expression_change, de_genes):
         A dictionary with interaction scores and log fold changes per transcription factor
     de_genes : list or set or dict
         A list-like with genes present in expression_change that have a score > 0
+    max_steps : int
+        The maximum number of steps between the TF and the target gene
+        (example with 2 steps: TF -> intermediate TF -> target gene)
 
     Returns
     -------
     tuple
         interaction data of the given transcription factor
     """
-    # get all genes that are
-    # - up to 'cutoff' distance away from a TF
-    #   (this is the cumulative probability normalized by the length)
+    # sum target scores for all genes that are
+    # - up to 'max_steps' away from the TF
     # - differentially expressed
-    paths, weights = dijkstra_prob_length(grn, node, "weight", cutoff=0.6)
-
+    sub_grn = nx.generators.ego_graph(grn, node, radius=max_steps)
+    # dijkstra_prob_length cutoff between 0.25 to 0.32 yields the same targets
+    paths, weights = dijkstra_prob_length(sub_grn, node, "weight")
     de_targets = {k: v for k, v in weights.items() if k in de_genes}
     targetscore = target_score(expression_change, de_targets)
 
