@@ -929,11 +929,7 @@ def predict_peaks(
     )
 
     outfile = os.path.join(outdir, "binding.h5")
-    # Make sure we create a new file
-    with open(outfile, "w"):
-        pass
-
-    with HDFStore(outfile, complib="lzo", complevel=9) as hdf:
+    with HDFStore(outfile, "w", complib="lzo", complevel=9) as hdf:
 
         if p.atac_data is not None:
             hdf.put(key="_atac", value=p.atac_data, format="table")
@@ -951,7 +947,7 @@ def predict_peaks(
             try:
                 proba = p.predict_proba(factor, jaccard_cutoff=jaccard_cutoff)
                 hdf.put(
-                    key=f"{factor}",
+                    key=factor,
                     value=proba.iloc[:, -1].reset_index(drop=True).astype(np.float16),
                     format="table",
                 )

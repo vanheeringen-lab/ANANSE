@@ -21,7 +21,8 @@ def get_binding_tfs(binding, all_tfs=False):
         hdf = pd.HDFStore(binding, "r")
         # TODO: This is hacky (depending on "_"), however the hdf.keys() method is
         #       much slower. Currently all TF names do *not* start with "_"
-        tfs = set(x for x in dir(hdf.root) if not x.startswith("_"))
+        keys = hdf.root.__members__
+        tfs = set(k for k in keys if not k.startswith("_"))
         hdf.close()
     return list(tfs)
 
