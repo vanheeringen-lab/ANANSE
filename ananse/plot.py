@@ -40,25 +40,7 @@ def read_diff_network(diff_network_file, full_output):
     """read the differential network file outputed by the influence command."""
     data_columns = ["tf", "target", "weight"]
     if full_output:
-        data_columns = [
-            "tf",
-            "target",
-            "weight",
-            "weight_source",
-            "weight_target",
-            "tf_expr_diff",
-            "tf_expr_source",
-            "tf_expr_target",
-            "tg_expr_diff",
-            "tg_expr_source",
-            "tg_expr_target",
-            "wb_diff",
-            "wb_source",
-            "wb_target",
-            "tf_act_diff",
-            "source_tf_act",
-            "target_tf_act",
-        ]
+        data_columns = None  # all
     rnet = pd.read_csv(
         diff_network_file,
         sep="\t",
