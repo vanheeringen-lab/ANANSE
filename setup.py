@@ -41,6 +41,7 @@ setup(
         "dask",
         "gimmemotifs >=0.17.0",
         "loguru",
+        "matplotlib",
         "networkx",
         "numpy",
         "openpyxl",
@@ -50,6 +51,7 @@ setup(
         "tables",
         "genomepy >=0.11.0",
         "pyranges",
+        "seaborn",
         "tqdm",
     ],
 )

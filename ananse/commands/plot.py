@@ -2,7 +2,7 @@ import os
 
 from loguru import logger
 
-from ananse.plot import plot_influence, plot_TF_GRN
+from ananse.plot import plot_influence, plot_grn
 
 
 @logger.catch
@@ -12,7 +12,7 @@ def plot(args):
     plot_influence(args.infile, influence_plot)
     if args.GRN_file:
         influence_grn = os.path.join(args.outdir, f"topTF_GRN.{args.ftype}")
-        plot_TF_GRN(
+        plot_grn(
             args.infile,
             args.GRN_file,
             influence_grn,
