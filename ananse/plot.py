@@ -38,21 +38,35 @@ def plot_influence(infile, outfile):
 
 def read_diff_network(diff_network_file, full_output):
     """read the differential network file outputed by the influence command."""
-    data_columns = ["tf", "target", "weight"]
+    data_columns = ["source", "target", "weight"]
     if full_output:
-        data_columns = None  # all
+        data_columns = [
+            "source",
+            "target",
+            "weight_target",
+            "tf_expression_target",
+            "target_expression_target",
+            "weighted_binding_target",
+            "tf_activity_target",
+            "weight_source",
+            "tf_expression_source",
+            "target_expression_source",
+            "weighted_binding_source",
+            "tf_activity_source",
+            "weight",
+        ]
     rnet = pd.read_csv(
         diff_network_file,
         sep="\t",
         usecols=data_columns,
         dtype="float64",
-        converters={"tf": str, "target": str},
+        converters={"source": str, "target": str},
     )
     G = nx.DiGraph()  # initiate empty network
     for _, row in rnet.iterrows():
         if full_output is False:
             try:
-                G.add_edge(row["tf"], row["target"], weight=row["weight"], n=1)
+                G.add_edge(row["source"], row["target"], weight=row["weight"], n=1)
             except Exception:
                 logger.error(
                     f"Could not parse edge weight of edge {(row['tf'])}:{(row['target'])}"
@@ -61,17 +75,17 @@ def read_diff_network(diff_network_file, full_output):
         else:
             try:
                 G.add_edge(
-                    row["tf"],
+                    row["source"],
                     row["target"],
                     weight=row["weight"],
-                    wb_diff=row["wb_diff"],
-                    tf_expr_diff=row["tf_expr_diff"],
-                    tg_expr_diff=row["tg_expr_diff"],
-                    tf_act_diff=row["tf_act_diff"],
+                    wb_diff=row["weighted_binding_target"] - row["weighted_binding_source"],
+                    tf_expr_diff=row["tf_expression_target"] - row["tf_expression_source"],
+                    tg_expr_diff=row["tg_expression_target"] - row["tg_expression_source"],
+                    tf_act_diff=row["tf_activity_target"] - row["tf_activity_source"],
                 )
             except Exception:
                 logger.error(
-                    f"Could not parse edge weight {(row['tf'])}:{(row['target'])}"
+                    f"Could not parse edge weight {(row['source'])}:{(row['target'])}"
                 )
                 raise
     return G
