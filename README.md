@@ -5,7 +5,7 @@
 
 [![Documentation Status](https://readthedocs.org/projects/anansepy/badge/?version=master)](https://anansepy.readthedocs.io/en/master/?badge=master)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/ananse/badges/license.svg)](https://anaconda.org/bioconda/ananse)
-[![DOI:10.1101/2020.06.05.135798](http://img.shields.io/badge/DOI-10.1101/2020.06.05.135798-B31B1B.svg)](https://doi.org/10.1101/2020.06.05.135798)
+[![DOI:10.1093/nar/gkab598](http://img.shields.io/badge/DOI-10.1093/nar/gkab598-B31B1B.svg)](https://doi.org/10.1093/nar/gkab598)
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/maintainability)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/test_coverage)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/test_coverage)
