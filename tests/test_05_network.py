@@ -88,29 +88,6 @@ def test_get_factors(outdir):
     assert out_tfs == tfs
 
 
-def test_region_gene_overlap(outdir):
-    cmd = ananse.network.region_gene_overlap
-
-    test_bed = os.path.join(outdir, "test.annotation.bed")
-    write_file(test_bed, ["chr1\t100\t200\tmy_favourite_TF\t0\t+\t0\t0\t0\t0\t0\t0\n"])
-    df = pd.DataFrame(
-        {
-            "Chromosome": ["chr1"],
-            "Start": [300],
-            "End": [400],
-        }
-    )
-    region_pr = pr.PyRanges(df)
-
-    # no overlap
-    df = cmd(region_pr, test_bed, 0, 0)
-    assert len(df) == 0
-
-    # overlap after extension
-    df = cmd(region_pr, test_bed, 0, 201)
-    assert len(df) == 1
-
-
 def test_combine_expression_files(outdir):
     cmd = ananse.network.combine_expression_files
 
@@ -204,7 +181,27 @@ def test_distance_weight(network_obj):
     assert dw.shape[0] == 101
 
 
+def test__load_pyranges(network_obj):
+    n = deepcopy(network_obj)
+    assert n.genes_pr is None
+
+    n.gene_bed = "tests/data/GRCz11_chr9/GRCz11/GRCz11.annotation.bed"
+    n._load_pyranges(up=50, down=10)
+    df = n.genes_pr.as_df()
+
+    assert set(df["Chromosome"]) == {"9"}
+
+    row = df[df["Name"] == "ENSDART00000128486"]
+    expected_start = 22076368 - 10
+    expected_end = 22076418
+    assert int(row["Start"]) == expected_start
+    assert int(row["End"]) == expected_end
+
+
 def test_enhancer2gene(network_obj):
+    n = deepcopy(network_obj)
+    n._load_pyranges()
+
     # TODO: expand
     df = pd.DataFrame(
         {
@@ -214,7 +211,7 @@ def test_enhancer2gene(network_obj):
         }
     )
     peak_pr = pr.PyRanges(df)
-    genes = network_obj.enhancer2gene(peak_pr)
+    genes = n.enhancer2gene(peak_pr)
     assert genes.at["chr1:300-400", "gene"] == "OR4F5"
 
 

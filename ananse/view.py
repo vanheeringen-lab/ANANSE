@@ -21,7 +21,8 @@ def get_binding_tfs(binding, all_tfs=False):
         hdf = pd.HDFStore(binding, "r")
         # TODO: This is hacky (depending on "_"), however the hdf.keys() method is
         #       much slower. Currently all TF names do *not* start with "_"
-        tfs = set(x for x in dir(hdf.root) if not x.startswith("_"))
+        keys = hdf.root.__members__
+        tfs = set(k for k in keys if not k.startswith("_"))
         hdf.close()
     return list(tfs)
 
@@ -72,7 +73,7 @@ def view_h5(
     if fmt not in ["wide", "long"]:
         raise ValueError("fmt should be either 'wide' or 'long'")
 
-    with pd.HDFStore(fname) as hdf:
+    with pd.HDFStore(fname, "r") as hdf:
         if n:
             n = int(n)
             tfs = tfs[: min(len(tfs), n)]

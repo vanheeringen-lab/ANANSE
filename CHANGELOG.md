@@ -39,6 +39,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - `ananse binding` will now only scan the motifs in the analysis
 - `ananse binding` will now only scan the regions overlapping the pfmscorefile and regions (if both are given)
 - changed the hardcoded `.txt` file extensions in `ananse plot` to `.tsv` 
+- `ananse network` now loads the gene bed into pyranges once (instead of once per chromosome).
+- `ananse influence` now uses the top 500.000 TF-gene interactions. By default, filtering for highest positive interactions.
 - cleaned up `ananse --help` messages
 
 ### Removed
@@ -54,6 +56,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - issue in `ananse network` when executing run_network() from python
 - `ananse network` merges duplicate genes and transcription factors (#142)
 - issue in `ananse influence` when using only 1 network
+- `ananse influence` made ~~slightly~~ much faster.
+- `ananse influence` hopefully uses less memory now.
+- `ananse influence` now skips pvalues for TFs without any targets or non-targets.
 - `ananse plot` will no longer warn you incorrectly about your "weight" 
 - `ananse plot` error "OSError: Format: "dot" not recognized."
 

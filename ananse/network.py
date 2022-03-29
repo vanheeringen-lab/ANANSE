@@ -29,6 +29,7 @@ warnings.filterwarnings("ignore")
 
 class Network(object):
     _tmp_files = []
+    genes_pr = None
 
     def __init__(
         self,
@@ -63,54 +64,43 @@ class Network(object):
         self.include_enhancer = include_enhancer
         self.full_output = full_output
 
-    # @staticmethod
-    # def unique_enhancers(fname):
-    #     """Extract a list of unique enhancers.
-    #
-    #     Parameters
-    #     ----------
-    #     fname : str
-    #         File name of a tab-separated file that contains an 'enhancer' column.
-    #
-    #     Returns
-    #     -------
-    #         PyRanges object with enhancers
-    #     """
-    #     logger.info("reading enhancers")
-    #
-    #     # Read enhancer regions from binding file
-    #     header = pd.read_table(fname, nrows=0)
-    #     idx = header.columns.get_loc("enhancer")
-    #     skiprows = 1
-    #     chunksize = 2_000_000
-    #     enhancers = np.array([])
-    #     while True:
-    #         try:
-    #             tmp = pd.read_table(
-    #                 fname,
-    #                 usecols=[idx],
-    #                 header=None,
-    #                 nrows=chunksize,
-    #                 skiprows=skiprows,
-    #             )
-    #         except pd.errors.EmptyDataError:
-    #             break
-    #         if tmp.shape[0] == 0 or tmp.iloc[0, 0] in enhancers:
-    #             break
-    #
-    #         skiprows += chunksize
-    #         enhancers = np.hstack((enhancers, tmp.iloc[:, 0].unique()))
-    #     enhancers = np.unique(enhancers)
-    #
-    #     # Split into columns and create PyRanges object
-    #     p = re.compile("[:-]")
-    #     enhancers = pr.PyRanges(
-    #         pd.DataFrame(
-    #             [re.split(p, e) for e in enhancers],
-    #             columns=["Chromosome", "Start", "End"],
-    #         )
-    #     )
-    #     return enhancers
+    def _load_pyranges(self, up=1e5, down=1e5):
+        """
+        Load the gene bed into pyranges, and extend their locations.
+        Used to limit the search space for enhancer elements.
+
+        Parameters
+        ----------
+        up : int, optional
+            Maximum upstream region to include, by default 1e5
+        down : int, optional
+            Maximum downstream region to include, by default 1e5
+
+        Returns
+        -------
+        pyranges object
+        """
+        genes = pr.read_bed(self.gene_bed)
+        genes.columns = [col.capitalize() for col in genes.columns]
+        # Convert to DataFrame & we don't need intron/exon information
+        genes = genes.as_df().iloc[:, :6]
+
+        # Get the TSS only
+        genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
+            genes["Strand"] == "+", "Start"
+        ]
+        genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
+            genes["Strand"] == "-", "End"
+        ]
+
+        # Extend up and down
+        genes.loc[genes["Strand"] == "+", "Start"] -= up
+        genes.loc[genes["Strand"] == "+", "End"] += down
+        genes.loc[genes["Strand"] == "-", "Start"] -= down
+        genes.loc[genes["Strand"] == "-", "End"] += up
+
+        genes = pr.PyRanges(genes)
+        self.genes_pr = genes
 
     @staticmethod
     def distance_weight(
@@ -204,7 +194,7 @@ class Network(object):
 
     def enhancer2gene(
         self,
-        peak_pr,
+        enhancer_pr,
         up=100_000,
         down=100_000,
         alpha=1e4,
@@ -215,7 +205,7 @@ class Network(object):
 
         Parameters
         ----------
-        peak_pr : PyRanges object
+        enhancer_pr : PyRanges object
             PyRanges object with enhancer regions.
         up : int, optional
             Upstream maximum distance, by default 100kb.
@@ -233,7 +223,10 @@ class Network(object):
         pandas.DataFrame
             DataFrame with enhancer regions, gene names, distance and weight.
         """
-        genes = region_gene_overlap(peak_pr, self.gene_bed, up, down)
+        # look for genes near enhancer regions
+        if self.genes_pr is None:
+            raise ValueError("Set self.genes_pr first!")
+        genes = self.genes_pr.join(enhancer_pr).as_df()
         if genes.empty:
             return pd.DataFrame()
 
@@ -304,7 +297,7 @@ class Network(object):
             Maximum upstream region to include, by default 1e5
         regions : list, optional
             List of regions to aggregate on.
-        down : [type], optional
+        down : int, optional
             Maximum downstream region to include, by default 1e5
         alpha : float, optional
             Distance at which the weight will be half, by default None
@@ -366,8 +359,12 @@ class Network(object):
             regions = set(regions) & set(enhancers.index)
             chroms = [region.split(":")[0] for region in regions]
             logger.info(f"Using {len(regions)} of {len(set(enhancers.index))} regions.")
+
+        # Read gene regions
+        self._load_pyranges(up, down)  # sets self.genes_pr
+
         # Filter for contigs with genes
-        chroms = set(chroms) & set(genomepy.Annotation(self.gene_bed).bed.chrom)
+        chroms = set(chroms) & set(self.genes_pr.as_df()["Chromosome"])
         if len(chroms) == 0:
             raise ValueError(
                 "No regions in the binding file overlap with given regions! "
@@ -863,57 +860,6 @@ def get_factors(binding: str = None, tfs: list = None):
     return list(set(out_tfs))
 
 
-def region_gene_overlap(
-    region_pr,
-    gene_bed,
-    up=100_000,
-    down=100_000,
-):
-    """
-    Couple enhancers to genes.
-
-    Parameters
-    ----------
-    region_pr : PyRanges object
-        PyRanges object with enhancer regions.
-    gene_bed : str
-        gene_bed
-    up : int, optional
-        Upstream maximum distance, by default 100kb.
-    down : int, optional
-        Upstream maximum distance, by default 100kb.
-
-    Returns
-    -------
-    pandas.DataFrame
-        DataFrame with enhancer regions, gene names, distance and weight.
-    """
-    genes = pr.read_bed(gene_bed)
-    genes.columns = [col.capitalize() for col in genes.columns]
-    # Convert to DataFrame & we don't need intron/exon information
-    genes = genes.as_df().iloc[:, :6]
-
-    # Get the TSS only
-    genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
-        genes["Strand"] == "+", "Start"
-    ]
-    genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
-        genes["Strand"] == "-", "End"
-    ]
-
-    # Extend up and down
-    genes.loc[genes["Strand"] == "+", "Start"] -= up
-    genes.loc[genes["Strand"] == "+", "End"] += down
-    genes.loc[genes["Strand"] == "-", "Start"] -= down
-    genes.loc[genes["Strand"] == "-", "End"] += up
-
-    # Perform the overlap
-    genes = pr.PyRanges(genes)
-    genes = genes.join(region_pr).as_df()
-
-    return genes
-
-
 def combine_expression_files(
     fin_expression: Union[str, list], column: Union[str, list] = "tpm"
 ):
@@ -980,7 +926,7 @@ def filter_expression_file(fin_expression: str, columns: Union[str, list]):
 
     # case insensitive column extraction
     cols = "|".join(columns)
-    re_column = re.compile(fr"^{cols}$", re.IGNORECASE)
+    re_column = re.compile(rf"^{cols}$", re.IGNORECASE)
     df = pd.read_table(fin_expression, index_col=0, sep="\t").filter(regex=re_column)
     # average columns
     df = df.mean(1).to_frame("expression")

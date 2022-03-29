@@ -11,7 +11,7 @@ def test_get_binding_tfs():
     cmd = ananse.view.get_binding_tfs
     binding = "tests/data/network/binding.h5"
     ret = cmd(binding)
-    assert len(ret) == 30
+    assert len(ret) == 33
     assert "NFKB2" in ret
 
 
@@ -23,7 +23,7 @@ def test_view_h5():
     regions = cmd(binding, list_regions=True)
     assert regions.shape == (61786, 1)
     tfs = cmd(binding, list_tfs=True)
-    assert tfs.shape == (30, 1)
+    assert tfs.shape == (33, 1)
 
     # all = regions x TFs
     complete_view = cmd(binding)
