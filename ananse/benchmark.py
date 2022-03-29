@@ -431,7 +431,7 @@ class NetworkBenchmark:
 
             logger.info(f"Creating merged file for {network} networks.")
             network_dfs = []
-            fnames = glob.glob(self.network_files[network])
+            fnames = glob(self.network_files[network])
             for fname in fnames:
                 name = fname
                 for part in self.network_files[network].split("*"):
