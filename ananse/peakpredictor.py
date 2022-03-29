@@ -691,7 +691,7 @@ class PeakPredictor:
                     # float16 will give NaN's
                     signal = df[col].astype("float32")
                     signal = pd.DataFrame({col: scale(signal)}, index=df.index)
-                    if df.shape[0] < nregions:
+                    if df.shape[0] <= nregions:
                         signal.to_csv(f.name, sep="\t")
                     else:
                         signal.sample(nregions).to_csv(f.name, sep="\t")
@@ -702,6 +702,7 @@ class PeakPredictor:
                                 genome=self.genome,
                                 method="bayesianridge",
                                 pfmfile=self.pfmfile,
+                                ncpus=self.ncore,
                             ),
                             how="outer",
                         )

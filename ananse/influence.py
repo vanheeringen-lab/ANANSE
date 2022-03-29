@@ -499,11 +499,14 @@ class Influence(object):
                     f"Column '{col}' not in differential gene expression file!"
                 )
                 sys.exit(1)
-        df = df[["log2FoldChange", "padj"]].dropna()  # removes unneeded data
-        df = df.astype(float)
+        df = df[["log2FoldChange", "padj"]].astype(float)
 
+        # convert to gene names if overlap is poor
         network_genes = set(self.grn.nodes)
-        pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
+        df_genes = set(df.index)
+        pct_overlap = len(network_genes & df_genes) / min(
+            len(network_genes), len(df_genes)
+        )
         logger.debug(
             f"{int(100 * pct_overlap)}% of genes found in DE genes and network(s)"
         )
@@ -527,12 +530,26 @@ class Influence(object):
             # take the most significant gene per duplicate (if applicable)
             df = df.groupby("index").min("padj")
 
-            pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
+            df_genes = set(df.index)
+            pct_overlap = len(network_genes & df_genes) / min(
+                len(network_genes), len(df_genes)
+            )
             logger.debug(
                 f"{int(100 * pct_overlap)}% of genes found in DE genes and network(s)"
             )
             if pct_overlap <= backup_pct_overlap:
                 df = backup_df
+
+        # any gene names helped to determine compatibility, but NAs aren't needed.
+        df.dropna(inplace=True)
+        # merge duplicate genes
+        dup_df = df[df.index.duplicated()]
+        if len(dup_df) > 0:
+            logger.warning(
+                "Duplicated gene names detected in differential expression file e.g. "
+                f"'{str(dup_df.index[0])}'. Averaging values for duplicated genes..."
+            )
+            df = df.groupby(by=df.index, dropna=True).mean(0)
 
         overlap = len(network_genes & set(df.index))
         if overlap == 0:
@@ -542,24 +559,13 @@ class Influence(object):
             )
             if self.gene_gtf is None:
                 logger.info(
-                    "If you provide a GTF file we can try to convert "
-                    "the gene expression file to HGNC names."
+                    "If you provide a GTF file we can try to convert genes to HGNC symbols"
                 )
             sys.exit(1)
         logger.debug(
             f"{overlap} genes overlap between the "
             "differential expression file and the network file(s)"
         )
-
-        # check for duplicated index rows and return an error (but continue running)
-        dup_df = df[df.index.duplicated()]
-        if len(dup_df) > 0:
-            dupped_gene = str(dup_df.index[0])
-            logger.warning(
-                f"Duplicated gene names detected in differential expression file e.g. '{dupped_gene}'. "
-                "Averaging values for duplicated genes..."
-            )
-            df = df.groupby(by=df.index, dropna=True).mean(0)
 
         # absolute fold change
         df["fc"] = df["log2FoldChange"].abs()
