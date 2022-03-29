@@ -286,6 +286,9 @@ def read_network(fname, name=None):
     else:
         df = pd.read_table(network)
     df = fix_columns(df)
+    
+    # Make sure there are no duplicate interactions
+    df.drop_duplicates(subset=["tf", "target"], inplace=True)
     df = df.set_index(["tf", "target"])
 
     # Assuming last column is the edge weight
@@ -440,6 +443,7 @@ class NetworkBenchmark:
                 df = read_network(fname)
                 df.columns = [f"{network}.{name}"]
                 network_dfs.append(df)
+            
             logger.info("Concatenating...")
             df = pd.concat(network_dfs, axis=1)
             df.reset_index().to_feather(outfile)
@@ -537,4 +541,5 @@ class NetworkBenchmark:
             # g.set_xticklabels(rotation=30)
 
             if outname:
-                g.savefig(outname)
+                extension = os.path.splitext(outname)[1]
+                g.savefig(outname.replace(extension, f".{metric}{extension}"))
