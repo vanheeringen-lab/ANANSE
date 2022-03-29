@@ -4,6 +4,7 @@ import re
 import sys
 from glob import glob
 from tempfile import NamedTemporaryFile
+import pyBigWig
 
 import joblib
 import networkx as nx
@@ -15,6 +16,7 @@ from genomepy import Genome
 from gimmemotifs.moap import moap
 from gimmemotifs.motif import read_motifs
 from gimmemotifs.scanner import scan_regionfile_to_table
+from gimmemotifs.preprocessing import coverage_table
 from loguru import logger
 from pandas import HDFStore
 from pyfaidx import FastaIndexingError
@@ -37,20 +39,22 @@ BLACKLIST_TFS = [
 class PeakPredictor:
     atac_data = None
     histone_data = None
+    cage_data = None
     factor_models = {}
 
     def __init__(
-        self,
-        reference=None,
-        atac_bams=None,
-        histone_bams=None,
-        columns=None,
-        regions=None,
-        genome="hg38",
-        pfmfile=None,
-        factors=None,
-        pfmscorefile=None,
-        ncore=4,
+            self,
+            reference=None,
+            atac_bams=None,
+            histone_bams=None,
+            cage_tpms=None,
+            columns=None,
+            regions=None,
+            genome="hg38",
+            pfmfile=None,
+            factors=None,
+            pfmscorefile=None,
+            ncore=4,
     ):
         if reference is None:
             reference = os.path.join(PACKAGE_DIR, "db", "default_reference")
@@ -58,8 +62,9 @@ class PeakPredictor:
             raise NotADirectoryError(f"Could not find {reference}")
         self.data_dir = reference
 
-        if atac_bams is None and histone_bams is None:
-            raise ValueError("Need either ATAC-seq or H3K27ac BAM file(s).")
+        if atac_bams is None and histone_bams is None and cage_tpms is None:
+            raise ValueError("Need either ATAC-seq or H3K27ac BAM file(s) "
+                             "or CAGE bidirectional sites (TPM) .tsv file.")
 
         if genome is None:
             logger.warning("Assuming genome is hg38")
@@ -83,8 +88,15 @@ class PeakPredictor:
         self.pfmfile = pfmfile
         # load motifs, f2m and motif_graph
         self._load_motifs(factors=factors)
+
+        # load CAGE bidirectional sites data and regions
+        if cage_tpms is not None:
+            if _istable(cage_tpms):
+                self._load_cage(regions, pfmscorefile, cage_tpms)
+
         # load regions, _motifs and region_type
-        self._load_regions(regions, pfmscorefile)
+        else:
+            self._load_regions(regions, pfmscorefile)
         # load ATAC data
         if atac_bams is not None:
             if _istable(atac_bams):
@@ -206,6 +218,117 @@ class PeakPredictor:
             if i and u:  # both > 0
                 jaccard = i / u
                 self.motif_graph.add_edge(tf1, tf2, weight=1 - jaccard)
+
+    def _load_cage(self, regions=None, pfmscorefile=None, cage_tpms=None):
+        """Load CAGE data: Bidirectional regions and TPMs
+
+        The CAGE file needs to contain two columns:
+            1. regions in chr:start-end format
+            2. TPMs
+
+        The file extension should end with .tsv
+
+        * self._avg : Bidirectional regions are used to determine ReMap 2022 ChIP-seq coverage.
+                        - Only hg19 or hg38 supported.
+        * self._scan.motifs() : Bidirectional regions are scanned for motifs.
+        * self.region_type: a str for selecting model types.
+        * self.regions : Bidirectional regions are loaded.
+        * self.cage_data : CAGE TPMs are log transformed and quantile normalized.
+
+        Parameters
+        ----------
+        regions : list, optional
+            list of regions to filter the pfmscorefile by (Not yet supported)
+        pfmscorefile : str/file
+            pre-scanned gimmemotifs scores file (Not yet supported)
+        cage_tpms : str
+            file should contain bidirectional regions and TPMs
+        """
+        # error checking
+        if not os.path.exists(cage_tpms):
+            raise FileNotFoundError(f"Could not find {cage_tpms}")
+        elif regions is not None:
+            raise ValueError("Using custom regions with CAGE input is currently not supported.")
+        else:
+
+            # load cage tpms
+            data = pd.read_table(cage_tpms, sep="\t", comment="#")
+            if len(data.columns) != 2:
+                raise ValueError(
+                    "For the CAGE TPM file, please give only two columns: regions and TPMs"
+                )
+            if len(data) == 0:
+                raise ValueError(
+                    "CAGE TPM file is empty."
+                )
+            data.columns = ["regions", "CAGE"]
+
+            regions_split = data["regions"].str.split('[:-]', expand=True)
+            regions_split.columns = ["chrom", "start", "end"]
+            regions_split["start"] = regions_split["start"].astype(int)
+            regions_split["end"] = regions_split["end"].astype(int)
+            center = ((regions_split["start"] + regions_split["end"]) / 2).astype(int)
+            regions_split["start"] = center - 100
+            regions_split["end"] = center + 100
+
+            # Create region .bed file from CAGE input
+            force_rerun = True
+            regions_bed = f"{os.path.join(PACKAGE_DIR, 'db')}/regions.bed"
+            if force_rerun or not os.path.exists(regions_bed):
+                regions_split.to_csv(regions_bed, header=False, index=False, sep="\t")
+
+            # Determine average ReMap coverage (Currently only for genome = "hg19" or "hg38")
+            coverage_bw_path = ""
+            if "hg19" in self.genome:
+                coverage_bw_path = f"{os.path.join(PACKAGE_DIR, 'db')}/remap2022.hg19.w50.bw"
+            if "hg38" in self.genome:
+                coverage_bw_path = f"{os.path.join(PACKAGE_DIR, 'db')}/remap2022.hg38.w50.bw"
+
+            if len(coverage_bw_path) > 0:
+                self.region_type = "CAGE"  # Used later for selecting model type
+
+                logger.info("Determining average peak coverage")
+                remap_cov = coverage_table(peakfile=regions_bed, datafiles={coverage_bw_path}, window=200)
+                remap_cov = remap_cov.set_index(data["regions"])
+                remap_cov.rename(columns={remap_cov.columns[0]: "average"}, inplace=True)
+                self._avg = remap_cov
+                self._avg.columns = ["average"]
+                self._avg["average"] = self._avg["average"] / self._avg["average"].max()
+            else:
+                logger.info("   Warning: Skipping ReMap coverage. Currently, only genome hg19 and hg38 supported.")
+                self.region_type = "custom"
+
+            # Remove ref_bed file to keep things clean
+            if os.path.exists(regions_bed):
+                os.remove(regions_bed)
+
+            # # Merge regions into chr:start-end format again
+            data["regions"] = regions_split["chrom"] + ":" + regions_split["start"].astype(str) + "-" + regions_split[
+                "end"].astype(str)
+
+            print(data.head())
+
+            if pfmscorefile is not None:
+                # if we have a pre-scanned file,
+                # use regions from the index (optionally filtered by regions)
+                self._load_prescanned_motifs(pfmscorefile, regions)
+                self.regions = list(self._motifs.index)
+            else:
+                # Scan for motifs
+                self._scan_motifs(data["regions"])
+
+            # Set regions
+            self.regions = list(data["regions"])
+
+            # normalize & save
+            logger.info("   Transformation and normalization.")
+            data = data.set_index("regions")
+            data = np.log1p(data)
+            data = qnorm.quantile_normalize(data)
+            data.loc[:, :] = minmax_scale(data)
+            self.cage_data = data
+
+        logger.info(f"  Using {len(self.regions)} regions")
 
     def _load_regions(self, regions=None, pfmscorefile=None):
         """
@@ -419,7 +542,7 @@ class PeakPredictor:
             if mean_ref.shape[0] == tmp.shape[0]:
                 mean_ref.index = tmp.index
                 tmp[f"{title}.relative"] = (
-                    tmp[title] - mean_ref.loc[tmp.index]["mean_ref"].values
+                        tmp[title] - mean_ref.loc[tmp.index]["mean_ref"].values
                 )
                 tmp[f"{title}.relative"] = scale(tmp[f"{title}.relative"])
             else:
@@ -549,9 +672,14 @@ class PeakPredictor:
                 cols += ["ATAC.relative"]
         if self.histone_data is not None:
             cols += ["H3K27ac"]
+        if self.cage_data is not None:
+            cols += ["CAGE"]
+            if self.region_type == "CAGE":
+                cols += ["average"]
         if self.region_type == "reference":
             cols += ["average", "dist"]
         cols = sorted(cols)
+        logger.info(f"  Columns being used for model type: {cols}")
         self._X_columns = cols
         self._model_type = "_".join(cols)
 
@@ -579,7 +707,7 @@ class PeakPredictor:
 
         Predict binding probability for either a TF (factor) or a set of
         motifs. Prediction will be based on the data that been loaded,
-        either ATAC-seq or H3K27ac data or both.
+        either ATAC-seq or H3K27ac data or both or CAGE bidirectional regions.
 
         Parameters
         ----------
@@ -617,10 +745,14 @@ class PeakPredictor:
             tmp = tmp.join(self.atac_data)
         if self.histone_data is not None:
             tmp = tmp.join(self.histone_data)
+        if self.cage_data is not None:
+            tmp = tmp.join(self.cage_data)
 
         if self.region_type == "reference":
             tmp = tmp.join(self._avg)
             tmp = tmp.join(self._dist)
+        if self.region_type == "CAGE":
+            tmp = tmp.join(self._avg)
         tmp = tmp.dropna()
         return tmp[self._X_columns]
 
@@ -674,7 +806,7 @@ class PeakPredictor:
         Parameters
         ----------
         """
-        # Run ridge regression using motif score to predict (relative) ATAC/H3K27ac signal
+        # Run ridge regression using motif score to predict (relative) ATAC/H3K27ac/CAGE signal
         try:
             nregions = int(nregions)
         except ValueError:
@@ -682,7 +814,7 @@ class PeakPredictor:
             nregions = 20_000
 
         activity = pd.DataFrame()
-        for df in (self.atac_data, self.histone_data):
+        for df in (self.atac_data, self.histone_data, self.cage_data):
             if df is None:
                 continue
 
@@ -799,18 +931,19 @@ def _check_input_files(*args):
 
 
 def predict_peaks(
-    outdir,
-    atac_bams=None,
-    histone_bams=None,
-    columns=None,
-    regions=None,
-    reference=None,
-    factors=None,
-    genome=None,
-    pfmfile=None,
-    pfmscorefile=None,
-    jaccard_cutoff=0.0,
-    ncore=4,
+        outdir,
+        atac_bams=None,
+        histone_bams=None,
+        cage_tpms=None,
+        columns=None,
+        regions=None,
+        reference=None,
+        factors=None,
+        genome=None,
+        pfmfile=None,
+        pfmscorefile=None,
+        jaccard_cutoff=0.0,
+        ncore=4,
 ):
     """Predict binding in a set of genomic regions.
 
@@ -818,6 +951,10 @@ def predict_peaks(
     combination with motif scores. The model that is used is flexible, based
     on the input data. The most accurate model will be the one that uses the
     references regions in combination with both ATAC-seq and H3K27ac ChIP-seq.
+
+    In addition, CAGE-seq bidirectional sites (TPM) can be used as a proxy for
+    cis-regulatory elements. The most accurate model uses ReMap2020 TF peak data.
+    (Currently, only hg19 has been taken along)
 
     The result will will be saved to an outputfile called `binding.tsv` in the
     output directory, specified by the `outdir` argument. This file wil contain
@@ -846,6 +983,9 @@ def predict_peaks(
     histone_bams : list, optional
         List of H3K27ac ChIP-seq BAM files
         (or one counts table with reads per peak), by default None
+    cage_tpms : str, optional
+        .tsv file with bidirectional regions chr:start-end (=columns 1)
+        and TPM values (=column 2) generated with CAGEfightR, by default None
     columns : list, optional
         List of count table columns to use, by default all columns are used.
     regions : str or list, optional
@@ -868,7 +1008,8 @@ def predict_peaks(
     ncore : int, optional
         Number of threads to use. Default is 4.
     """
-    if reference is None and regions is None and pfmscorefile is None:
+
+    if reference is None and regions is None and pfmscorefile is None and cage_tpms is None:
         warnings = [
             "Need either 1) a `reference` directory, 2) one or more `regionfiles`, "
             "or 3) a `pfmscorefile` (a set of pre-scanned regions)!",
@@ -920,6 +1061,7 @@ def predict_peaks(
         atac_bams=atac_bams,
         columns=columns,
         histone_bams=histone_bams,
+        cage_tpms=cage_tpms,
         regions=regions,
         genome=genome,
         pfmfile=pfmfile,
@@ -940,6 +1082,9 @@ def predict_peaks(
 
         if p.histone_data is not None:
             hdf.put(key="_h3k27ac", value=p.histone_data, format="table")
+
+        if p.cage_data is not None:
+            hdf.put(key="_cage", value=p.cage_data, format="table")
 
         logger.info("Predicting TF activity")
         factor_activity = p.predict_factor_activity()
