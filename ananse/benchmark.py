@@ -286,7 +286,7 @@ def read_network(fname, name=None):
     else:
         df = pd.read_table(network)
     df = fix_columns(df)
-    
+
     # Make sure there are no duplicate interactions
     df.drop_duplicates(subset=["tf", "target"], inplace=True)
     df = df.set_index(["tf", "target"])
@@ -443,7 +443,7 @@ class NetworkBenchmark:
                 df = read_network(fname)
                 df.columns = [f"{network}.{name}"]
                 network_dfs.append(df)
-            
+
             logger.info("Concatenating...")
             df = pd.concat(network_dfs, axis=1)
             df.reset_index().to_feather(outfile)
