@@ -84,6 +84,9 @@ class Network(object):
         genes.columns = [col.capitalize() for col in genes.columns]
         # Convert to DataFrame & we don't need intron/exon information
         genes = genes.as_df().iloc[:, :6]
+        
+        # Drop genes found on >1 contig
+        genes = genes.drop_duplicates(subset=["Name"], keep=False)
 
         # Get the TSS only
         genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
