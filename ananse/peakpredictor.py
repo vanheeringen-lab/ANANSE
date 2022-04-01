@@ -679,7 +679,9 @@ class PeakPredictor:
             nregions = int(nregions)
         except ValueError:
             nregions = 50_000
-            logger.warning(f"nregions is not an integer, using default number of {nregions}")
+            logger.warning(
+                f"nregions is not an integer, using default number of {nregions}"
+            )
 
         activity = pd.DataFrame()
         state = np.random.RandomState(567)  # Consistently select same regions
@@ -697,7 +699,9 @@ class PeakPredictor:
                         if df.shape[0] < nregions:
                             signal.to_csv(f.name, sep="\t")
                         else:
-                            signal.sample(nregions, random_state=state).to_csv(f.name, sep="\t")
+                            signal.sample(nregions, random_state=state).to_csv(
+                                f.name, sep="\t"
+                            )
                         try:
                             activity = activity.join(
                                 moap(
@@ -707,11 +711,11 @@ class PeakPredictor:
                                     pfmfile=self.pfmfile,
                                 ),
                                 how="outer",
-                                rsuffix=f"_{i}"
+                                rsuffix=f"_{i}",
                             )
                         except Exception as e:
                             print(e)
-    
+
         # Rank aggregation
         for col in activity:
             activity[col] = rankdata(activity[col])
