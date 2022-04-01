@@ -756,6 +756,8 @@ class Network(object):
         for col in drop_cols:
             bed[col] = 0
         bed.drop_duplicates(inplace=True, ignore_index=True)
+        # exclude genes found on >1 contig
+        bed.drop_duplicates(subset=["Name"], keep=False, inplace=True, ignore_index=True)
         # metrics
         bed_genes = set(bed.name)
         overlap_tf_bed = len(bed_genes & tfs) / len(tfs)
