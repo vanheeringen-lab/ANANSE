@@ -692,7 +692,7 @@ class Network(object):
         cutoff = 0.6  # fraction of overlap that is "good enough"
         tfs = set(tfs)
         gp = genomepy.Annotation(self.gene_bed)
-        bed_genes = set(gp.genes())
+        bed_genes = set(gp.genes("bed"))
         expression_genes = set(expression.index)
 
         # overlap_tf_exp = len(expression_genes & tfs) / len(tfs)

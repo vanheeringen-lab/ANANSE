@@ -134,12 +134,14 @@ def plot_grn(
     tf_grn2 = nx.DiGraph(
         ((u, v, e) for u, v, e in tf_grn.edges(data=True) if e[edge_info] > edge_min)
     )
-    # make the network directed agian after filtering
+    # make the network directed again after filtering
     tf_grn2 = tf_grn2.to_directed()
     # remove TFs with no interactions
     tf_grn2.remove_nodes_from(list(nx.isolates(tf_grn2)))
     # load all edge info for scaling edge width
     edge_atribute = list(nx.get_edge_attributes(tf_grn2, edge_info).values())
+    if len(edge_atribute) == 0:
+        raise ValueError("Top factors do not share any connections.")
     edge_atribute_scaled = minmax_scale(
         edge_atribute, feature_range=(0, 1), axis=0, copy=True
     )
