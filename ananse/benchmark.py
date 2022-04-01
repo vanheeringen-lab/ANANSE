@@ -477,11 +477,12 @@ class NetworkBenchmark:
                         test_network[ref_col], test_network[col]
                     )
                     roc_auc = roc_auc_score(test_network[ref_col], test_network[col])
+                    exp_name = os.path.splitext(os.path.basename(col))[0]
                     logger.info(
-                        f"{name}\t{network}\t{col.split('.')[-1]}\t{pr_auc:0.5f}\t{roc_auc:0.2f}"
+                        f"{name}\t{network}\t{exp_name}\t{pr_auc:0.5f}\t{roc_auc:0.2f}"
                     )
                     self.benchmark_results.append(
-                        [name, network, col.split(".")[-1], pr_auc, roc_auc]
+                        [name, network, exp_name, pr_auc, roc_auc]
                     )
 
     def plot(self, outname=None):
