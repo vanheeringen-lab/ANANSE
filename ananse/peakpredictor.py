@@ -691,12 +691,11 @@ class PeakPredictor:
 
             for col in df.columns:
                 with NamedTemporaryFile() as f:
+                    signal = df[col].astype("float32")  # float16 will give NaN's
+                    signal = pd.DataFrame({col: scale(signal)}, index=df.index)
                     # Run 3 times for more stable result
                     for i in range(3):
-                        # float16 will give NaN's
-                        signal = df[col].astype("float32")
-                        signal = pd.DataFrame({col: scale(signal)}, index=df.index)
-                        if df.shape[0] < nregions:
+                        if len(df) <= nregions:
                             signal.to_csv(f.name, sep="\t")
                         else:
                             signal.sample(nregions, random_state=state).to_csv(
@@ -709,6 +708,7 @@ class PeakPredictor:
                                     genome=self.genome,
                                     method="bayesianridge",
                                     pfmfile=self.pfmfile,
+                                    ncpus=self.ncore,
                                 ),
                                 how="outer",
                                 rsuffix=f"_{i}",
