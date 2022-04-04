@@ -798,7 +798,7 @@ class PeakPredictor:
 
         return model, factor
 
-    def predict_factor_activity(self, nregions=20_000):
+    def predict_factor_activity(self, nregions=50_000):
         """Predict TF activity.
 
         Predicted based on motif activity using ridge regression.
@@ -810,35 +810,43 @@ class PeakPredictor:
         try:
             nregions = int(nregions)
         except ValueError:
-            logger.warning("nregions is not an integer, using default number of 20_000")
-            nregions = 20_000
+            nregions = 50_000
+            logger.warning(
+                f"nregions is not an integer, using default number of {nregions}"
+            )
 
         activity = pd.DataFrame()
+        state = np.random.RandomState(567)  # Consistently select same regions
         for df in (self.atac_data, self.histone_data, self.cage_data):
             if df is None:
                 continue
 
             for col in df.columns:
                 with NamedTemporaryFile() as f:
-                    # float16 will give NaN's
-                    signal = df[col].astype("float32")
+                    signal = df[col].astype("float32")  # float16 will give NaN's
                     signal = pd.DataFrame({col: scale(signal)}, index=df.index)
-                    if df.shape[0] < nregions:
-                        signal.to_csv(f.name, sep="\t")
-                    else:
-                        signal.sample(nregions).to_csv(f.name, sep="\t")
-                    try:
-                        activity = activity.join(
-                            moap(
-                                f.name,
-                                genome=self.genome,
-                                method="bayesianridge",
-                                pfmfile=self.pfmfile,
-                            ),
-                            how="outer",
-                        )
-                    except Exception as e:
-                        print(e)
+                    # Run 3 times for more stable result
+                    for i in range(3):
+                        if len(df) <= nregions:
+                            signal.to_csv(f.name, sep="\t")
+                        else:
+                            signal.sample(nregions, random_state=state).to_csv(
+                                f.name, sep="\t"
+                            )
+                        try:
+                            activity = activity.join(
+                                moap(
+                                    f.name,
+                                    genome=self.genome,
+                                    method="bayesianridge",
+                                    pfmfile=self.pfmfile,
+                                    ncpus=self.ncore,
+                                ),
+                                how="outer",
+                                rsuffix=f"_{i}",
+                            )
+                        except Exception as e:
+                            print(e)
 
         # Rank aggregation
         for col in activity:

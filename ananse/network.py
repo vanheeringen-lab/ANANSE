@@ -85,6 +85,9 @@ class Network(object):
         # Convert to DataFrame & we don't need intron/exon information
         genes = genes.as_df().iloc[:, :6]
 
+        # Drop genes found on >1 contig
+        genes = genes.drop_duplicates(subset=["Name"], keep=False)
+
         # Get the TSS only
         genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
             genes["Strand"] == "+", "Start"
@@ -692,7 +695,7 @@ class Network(object):
         cutoff = 0.6  # fraction of overlap that is "good enough"
         tfs = set(tfs)
         gp = genomepy.Annotation(self.gene_bed)
-        bed_genes = set(gp.genes())
+        bed_genes = set(gp.genes("bed"))
         expression_genes = set(expression.index)
 
         # overlap_tf_exp = len(expression_genes & tfs) / len(tfs)
@@ -753,6 +756,10 @@ class Network(object):
         for col in drop_cols:
             bed[col] = 0
         bed.drop_duplicates(inplace=True, ignore_index=True)
+        # exclude genes found on >1 contig
+        bed.drop_duplicates(
+            subset=["name"], keep=False, inplace=True, ignore_index=True
+        )
         # metrics
         bed_genes = set(bed.name)
         overlap_tf_bed = len(bed_genes & tfs) / len(tfs)
