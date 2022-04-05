@@ -285,7 +285,7 @@ class PeakPredictor:
         )
         data.set_index("regions", inplace=True)
         if any(data.index.duplicated()):
-            logger.info(f"  Averaging TPMs for duplicate regions in CAGE file")
+            logger.info("  Averaging TPMs for duplicate regions in CAGE file")
             data = data.groupby(data.index).mean(1)
 
         # Get the overlap of normalized regions between

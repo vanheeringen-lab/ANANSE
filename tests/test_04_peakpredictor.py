@@ -157,7 +157,7 @@ def test__jaccard_motif_graph(peakpredictor):
 def test_command_binding(outdir, genome):
     Args = namedtuple(
         "args",
-        "outdir atac_bams histone_bams columns regions reference tfs genome pfmfile pfmscorefile jaccard_cutoff ncore",
+        "outdir atac_bams histone_bams cage_tpms columns regions reference tfs genome pfmfile pfmscorefile jaccard_cutoff ncore",
     )
     out_dir = os.path.join(outdir, "binding")
     bed = os.path.join(outdir, "bed3.bed")
@@ -216,6 +216,7 @@ def test_command_binding(outdir, genome):
         outdir=out_dir,
         atac_bams=["tests/data/GRCz11_chr9/chr9.bam"],
         histone_bams=None,
+        cage_tpms=None,
         columns=None,
         regions=[bed],  # ["tests/data/GRCz11_chr9/GRCz11_chr9_regions.bed"],
         reference=None,
