@@ -991,10 +991,10 @@ def predict_peaks(
     references regions in combination with both ATAC-seq and H3K27ac ChIP-seq.
 
     In addition, CAGE-seq bidirectional sites (TPM) can be used as a proxy for
-    cis-regulatory elements. The most accurate model uses ReMap2020 TF peak data.
-    (Currently, only hg19 has been taken along)
+    cis-regulatory elements. The most accurate model uses ReMap2022 TF peak data.
+    (Currently, only hg19 and hg38 have been taken along)
 
-    The result will will be saved to an outputfile called `binding.tsv` in the
+    The result will be saved to an output file called `binding.h5` in the
     output directory, specified by the `outdir` argument. This file wil contain
     three columns: factor, enhancer and binding. The binding columns represents
     the binding probability.
@@ -1022,7 +1022,7 @@ def predict_peaks(
         List of H3K27ac ChIP-seq BAM files
         (or one counts table with reads per peak), by default None
     cage_tpms : str, optional
-        .tsv file with bidirectional regions chr:start-end (=columns 1)
+        table with bidirectional regions chr:start-end (=columns 1)
         and TPM values (=column 2) generated with CAGEfightR, by default None
     columns : list, optional
         List of count table columns to use, by default all columns are used.
