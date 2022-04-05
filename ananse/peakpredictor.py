@@ -25,7 +25,13 @@ from sklearn.preprocessing import minmax_scale, scale
 from tqdm.auto import tqdm
 
 from ananse.bed import map_counts
-from ananse.utils import load_tfs, load_regions, get_motif_factors, check_cores, mytmpdir
+from ananse.utils import (
+    load_tfs,
+    load_regions,
+    get_motif_factors,
+    check_cores,
+    mytmpdir,
+)
 from . import PACKAGE_DIR
 
 # This motif file is not created by default
@@ -43,18 +49,18 @@ class PeakPredictor:
     factor_models = {}
 
     def __init__(
-            self,
-            reference=None,
-            atac_bams=None,
-            histone_bams=None,
-            cage_tpms=None,
-            columns=None,
-            regions=None,
-            genome="hg38",
-            pfmfile=None,
-            factors=None,
-            pfmscorefile=None,
-            ncore=4,
+        self,
+        reference=None,
+        atac_bams=None,
+        histone_bams=None,
+        cage_tpms=None,
+        columns=None,
+        regions=None,
+        genome="hg38",
+        pfmfile=None,
+        factors=None,
+        pfmscorefile=None,
+        ncore=4,
     ):
         if reference is None:
             reference = os.path.join(PACKAGE_DIR, "db", "default_reference")
@@ -66,7 +72,8 @@ class PeakPredictor:
             raise ValueError(
                 "Need either ATAC-seq and/or H3K27ac BAM file(s), "
                 "ATAC-seq and/or H3K27ac coverage table(s), "
-                "or a CAGE bidirectional sites TPM file.")
+                "or a CAGE bidirectional sites TPM file."
+            )
 
         if genome is None:
             logger.warning("Assuming genome is hg38")
@@ -260,7 +267,7 @@ class PeakPredictor:
         data["CAGE"] = data["CAGE"].astype(np.float32)
 
         # Normalize regions to the window size
-        regions_split = data["regions"].str.split('[:-]', expand=True)
+        regions_split = data["regions"].str.split("[:-]", expand=True)
         regions_split.columns = ["chrom", "start", "end"]
         regions_split["start"] = regions_split["start"].astype(int)
         regions_split["end"] = regions_split["end"].astype(int)
@@ -269,12 +276,16 @@ class PeakPredictor:
         regions_split["end"] = center + window // 2
 
         # Merge normalized regions into chr:start-end format
-        data["regions"] = regions_split["chrom"] + ":" + regions_split["start"].astype(str) + "-" + regions_split["end"].astype(str)
+        data["regions"] = (
+            regions_split["chrom"]
+            + ":"
+            + regions_split["start"].astype(str)
+            + "-"
+            + regions_split["end"].astype(str)
+        )
         data.set_index("regions", inplace=True)
         if any(data.index.duplicated()):
-            logger.info(
-                f"  Averaging TPMs for duplicate regions in CAGE file"
-            )
+            logger.info(f"  Averaging TPMs for duplicate regions in CAGE file")
             data = data.groupby(data.index).mean(1)
 
         # Get the overlap of normalized regions between
@@ -310,24 +321,35 @@ class PeakPredictor:
 
             genome = "hg19" if "hg19" in self.genome else "hg38"
             link = f"https://zenodo.org/record/6404593/files/remap2022.{genome}.w50.bw"
-            coverage_bw_path = os.path.join(PACKAGE_DIR, "db", f"remap2022.{genome}.w50.bw")
+            coverage_bw_path = os.path.join(
+                PACKAGE_DIR, "db", f"remap2022.{genome}.w50.bw"
+            )
             if not os.path.exists(coverage_bw_path):
                 logger.info("Downloading bigwig...")
                 _ = urlretrieve(link, coverage_bw_path)
 
             # Create a regions file from CAGE input
             regions_bed = os.path.join(mytmpdir(), "regions.bed")
-            data.index.to_frame().to_csv(regions_bed, header=False, index=False, sep="\t")
+            data.index.to_frame().to_csv(
+                regions_bed, header=False, index=False, sep="\t"
+            )
 
             logger.info("Determining average peak coverage")
-            remap_cov = coverage_table(peakfile=regions_bed, datafiles={coverage_bw_path}, window=window, ncpus=self.ncore)
+            remap_cov = coverage_table(
+                peakfile=regions_bed,
+                datafiles={coverage_bw_path},
+                window=window,
+                ncpus=self.ncore,
+            )
             remap_cov = remap_cov.set_index(data.index)
             remap_cov.rename(columns={remap_cov.columns[0]: "average"}, inplace=True)
             self._avg = remap_cov
             self._avg.columns = ["average"]
             self._avg["average"] = self._avg["average"] / self._avg["average"].max()
         else:
-            logger.warning("   Skipping ReMap coverage. Currently, only genome hg19 and hg38 supported.")
+            logger.warning(
+                "   Skipping ReMap coverage. Currently, only genome hg19 and hg38 supported."
+            )
             self.region_type = "custom"
 
         # normalize & save TPMs
@@ -549,7 +571,7 @@ class PeakPredictor:
             if mean_ref.shape[0] == tmp.shape[0]:
                 mean_ref.index = tmp.index
                 tmp[f"{title}.relative"] = (
-                        tmp[title] - mean_ref.loc[tmp.index]["mean_ref"].values
+                    tmp[title] - mean_ref.loc[tmp.index]["mean_ref"].values
                 )
                 tmp[f"{title}.relative"] = scale(tmp[f"{title}.relative"])
             else:
@@ -947,19 +969,19 @@ def _check_input_files(*args):
 
 
 def predict_peaks(
-        outdir,
-        atac_bams=None,
-        histone_bams=None,
-        cage_tpms=None,
-        columns=None,
-        regions=None,
-        reference=None,
-        factors=None,
-        genome=None,
-        pfmfile=None,
-        pfmscorefile=None,
-        jaccard_cutoff=0.0,
-        ncore=4,
+    outdir,
+    atac_bams=None,
+    histone_bams=None,
+    cage_tpms=None,
+    columns=None,
+    regions=None,
+    reference=None,
+    factors=None,
+    genome=None,
+    pfmfile=None,
+    pfmscorefile=None,
+    jaccard_cutoff=0.0,
+    ncore=4,
 ):
     """Predict binding in a set of genomic regions.
 
@@ -1025,7 +1047,12 @@ def predict_peaks(
         Number of threads to use. Default is 4.
     """
 
-    if reference is None and regions is None and pfmscorefile is None and cage_tpms is None:
+    if (
+        reference is None
+        and regions is None
+        and pfmscorefile is None
+        and cage_tpms is None
+    ):
         warnings = [
             "Need either 1) a `reference` directory, 2) one or more `regionfiles`, "
             "or 3) a `pfmscorefile` (a set of pre-scanned regions)!",
