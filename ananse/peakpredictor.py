@@ -353,9 +353,9 @@ class PeakPredictor:
             self.region_type = "custom"
 
         # normalize & save TPMs
-        logger.info("   Transformation and normalization.")
+        # logger.info("   Transformation and normalization.")
         data = np.log1p(data)
-        data = qnorm.quantile_normalize(data)
+        # data = qnorm.quantile_normalize(data)
         data.loc[:, :] = minmax_scale(data)
         self.cage_data = data
 

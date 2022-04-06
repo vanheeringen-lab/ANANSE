@@ -4,6 +4,7 @@ import os
 import pytest
 from string import ascii_lowercase
 
+import pandas as pd
 import networkx as nx
 
 import ananse.peakpredictor
@@ -116,6 +117,57 @@ def test__load_prescanned_motifs(peakpredictor):
     score = peakpredictor._motifs.at[region, tf]
     # rounding to reduce flakiness
     assert round(float(score), 2) == -0.86  # -0.99  new scores with gimme 0.17.0
+
+
+def test__load_cage(outdir, peakpredictor):
+    # create some cage data
+    cage_tpms = os.path.join(outdir, "cage.tsv")
+    pd.DataFrame(
+        {
+            "regions": [
+                "chr1:10-20",  # not matching regions
+                "chr1:610-920",  # not matching regions, raw window size
+                "chr1:1010-1020",
+                "chr1:1200-1400",  # not matching pfmscorefile
+            ],
+            "TPM": [12.3, 4.56, 7.89, 0],
+        }
+    ).to_csv(cage_tpms, sep="\t", index=False)
+
+    pfmscorefile = os.path.join(outdir, "pfmscorefile.tsv")
+    pd.DataFrame(
+        {
+            "": ["chr1:10-20", "chr1:760-770", "chr1:1010-1020"],
+            "GM.5.0.Sox.0001": [12.3, 4.56, 7.89],
+        }
+    ).to_csv(pfmscorefile, sep="\t", index=False)
+
+    p = deepcopy(peakpredictor)
+    p.genome = "asd"  # we dont want to download 750 MB
+
+    # only pfmfile (with 3 normalized regions)
+    p._load_cage(
+        cage_tpms=cage_tpms, regions=None, pfmscorefile=pfmscorefile, window=10
+    )
+    # all regions in the pfmscore file match (after normalizing the tpm regions)
+    assert sorted(p.regions) == ["chr1:10-20", "chr1:1010-1020", "chr1:760-770"]
+    # CAGE TPM values scaled and ordered correctly
+    assert round(p.cage_data.at["chr1:760-770", "CAGE"], 1) == 0.0
+    assert round(p.cage_data.at["chr1:1010-1020", "CAGE"], 1) == 0.5
+    assert round(p.cage_data.at["chr1:10-20", "CAGE"], 1) == 1.0
+
+    # pfmfile and regions (with 1 matching normalized region)
+    p._load_cage(
+        cage_tpms=cage_tpms,
+        regions=[
+            "chr1:1010-1020",
+            "chr1:1234-1245",  # invalid
+        ],
+        pfmscorefile=pfmscorefile,
+        window=10,
+    )
+    # only overlapping regions kept
+    assert p.regions == ["chr1:1010-1020"]
 
 
 def test__load_reference_data(peakpredictor):
