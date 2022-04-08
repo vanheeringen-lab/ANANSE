@@ -330,7 +330,7 @@ class PeakPredictor:
 
             # Create a regions file from CAGE input
             regions_bed = os.path.join(mytmpdir(), "regions.bed")
-            data.index.to_frame().to_csv(
+            data.index.to_series().str.split("[:-]", expand=True).to_csv(
                 regions_bed, header=False, index=False, sep="\t"
             )
 
