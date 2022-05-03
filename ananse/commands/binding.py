@@ -10,6 +10,7 @@ def binding(args):
         args.outdir,
         atac_bams=args.atac_bams,
         histone_bams=args.histone_bams,
+        cage_tpms=args.cage_tpms,
         columns=args.columns,
         regions=args.regions,
         reference=args.reference,
