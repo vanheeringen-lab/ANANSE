@@ -1,39 +1,36 @@
-#!/usr/bin/env python
-
-# Copyright (c) 2009-2019 Quan Xu <qxuchn@gmail.com>
-#
-# This module is free software. You can redistribute it and/or modify it under
-# the terms of the MIT License, see the file COPYING included with this
-# distribution.
-
 """Build gene regulatory network"""
-
-# Python imports
 import os
 import math
 import re
 import shutil
 import sys
 import warnings
+from typing import Union
 
 import numpy as np
 import pandas as pd
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
+import genomepy
 import dask.dataframe as dd
 from tempfile import NamedTemporaryFile, mkdtemp
 from dask.distributed import progress
 from loguru import logger
-from pandas import HDFStore
 from tqdm.auto import tqdm
-
 import pyranges as pr
 
+from ananse.utils import cleanpath
+from ananse.view import get_binding_tfs
+from . import SEPARATOR, PACKAGE_DIR
+
+
 warnings.filterwarnings("ignore")
-PACKAGE_DIR = os.path.dirname(__file__)
 
 
 class Network(object):
+    _tmp_files = []
+    genes_pr = None
+
     def __init__(
         self,
         ncore=1,
@@ -41,6 +38,7 @@ class Network(object):
         gene_bed=None,
         include_promoter=False,
         include_enhancer=True,
+        full_output=False,
     ):
         """
         infer cell type-specific gene regulatory network
@@ -57,87 +55,55 @@ class Network(object):
                 Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. (default: False)
             include_enhancer : bool
                 Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. (default: True)
+            full_output : bool
+                export all variables to the GRN file or by default only the TF_target + prob score
         """
         self.ncore = ncore
-        self.genome = genome
-        self._tmp_files = []
-
-        # # Motif information file
-        # if pfmfile is None:
-        #     self.pfmfile = "../data/gimme.vertebrate.v5.1.pfm"
-        # else:
-        #     self.pfmfile = pfmfile
-
-        # self.motifs2factors = self.pfmfile.replace(".pfm", ".motif2factors.txt")
-        # self.factortable = self.pfmfile.replace(".pfm", ".factortable.txt")
-
-        # Gene information file
-        self.gene_bed = gene_bed
-        if gene_bed is None:
-            if self.genome in ["hg38", "hg19"]:
-                self.gene_bed = os.path.join(
-                    PACKAGE_DIR, "db", f"{self.genome}.genes.bed"
-                )
-            else:
-                raise TypeError("Please provide a gene bed file with -a argument.")
-        if not os.path.exists(self.gene_bed):
-            raise FileNotFoundError(
-                f"Could not find the gene bed file {self.gene_bed}."
-            )
-
-        # self.promoter = promoter
+        self.gene_bed = get_bed(gene_bed, genome)
         self.include_promoter = include_promoter
-
         self.include_enhancer = include_enhancer
+        self.full_output = full_output
 
-    @staticmethod
-    def unique_enhancers(fname):
-        """Extract a list of unique enhancers.
+    def _load_pyranges(self, up=1e5, down=1e5):
+        """
+        Load the gene bed into pyranges, and extend their locations.
+        Used to limit the search space for enhancer elements.
 
         Parameters
         ----------
-        fname : str
-            File name of a tab-separated file that contains an 'enhancer' column.
+        up : int, optional
+            Maximum upstream region to include, by default 1e5
+        down : int, optional
+            Maximum downstream region to include, by default 1e5
 
         Returns
         -------
-            PyRanges object with enhancers
+        pyranges object
         """
-        logger.info("reading enhancers")
+        genes = pr.read_bed(self.gene_bed)
+        genes.columns = [col.capitalize() for col in genes.columns]
+        # Convert to DataFrame & we don't need intron/exon information
+        genes = genes.as_df().iloc[:, :6]
 
-        # Read enhancers from binding file
-        header = pd.read_table(fname, nrows=0)
-        idx = header.columns.get_loc("enhancer")
-        skiprows = 1
-        chunksize = 2_000_000
-        enhancers = np.array([])
-        while True:
-            try:
-                tmp = pd.read_table(
-                    fname,
-                    usecols=[idx],
-                    header=None,
-                    nrows=chunksize,
-                    skiprows=skiprows,
-                )
-            except pd.errors.EmptyDataError:
-                break
-            if tmp.shape[0] == 0 or tmp.iloc[0, 0] in enhancers:
-                break
+        # Drop genes found on >1 contig
+        genes = genes.drop_duplicates(subset=["Name"], keep=False)
 
-            skiprows += chunksize
-            enhancers = np.hstack((enhancers, tmp.iloc[:, 0].unique()))
-        enhancers = np.unique(enhancers)
+        # Get the TSS only
+        genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
+            genes["Strand"] == "+", "Start"
+        ]
+        genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
+            genes["Strand"] == "-", "End"
+        ]
 
-        # Split into columns and create PyRanges object
-        p = re.compile("[:-]")
-        enhancers = pr.PyRanges(
-            pd.DataFrame(
-                [re.split(p, e) for e in enhancers],
-                columns=["Chromosome", "Start", "End"],
-            )
-        )
-        return enhancers
+        # Extend up and down
+        genes.loc[genes["Strand"] == "+", "Start"] -= up
+        genes.loc[genes["Strand"] == "+", "End"] += down
+        genes.loc[genes["Strand"] == "-", "Start"] -= down
+        genes.loc[genes["Strand"] == "-", "End"] += up
+
+        genes = pr.PyRanges(genes)
+        self.genes_pr = genes
 
     @staticmethod
     def distance_weight(
@@ -231,7 +197,7 @@ class Network(object):
 
     def enhancer2gene(
         self,
-        peak_pr,
+        enhancer_pr,
         up=100_000,
         down=100_000,
         alpha=1e4,
@@ -242,7 +208,7 @@ class Network(object):
 
         Parameters
         ----------
-        peak_pr : PyRanges object
+        enhancer_pr : PyRanges object
             PyRanges object with enhancer regions.
         up : int, optional
             Upstream maximum distance, by default 100kb.
@@ -260,7 +226,12 @@ class Network(object):
         pandas.DataFrame
             DataFrame with enhancer regions, gene names, distance and weight.
         """
-        genes = region_gene_overlap(peak_pr, self.gene_bed)
+        # look for genes near enhancer regions
+        if self.genes_pr is None:
+            raise ValueError("Set self.genes_pr first!")
+        genes = self.genes_pr.join(enhancer_pr).as_df()
+        if genes.empty:
+            return pd.DataFrame()
 
         # Get the distance from center of enhancer to TSS
         # Correct for extension
@@ -304,8 +275,9 @@ class Network(object):
 
     def aggregate_binding(
         self,
-        binding_fname,
+        binding,
         tfs=None,
+        regions=None,
         up=1e5,
         down=1e5,
         alpha=None,
@@ -319,14 +291,16 @@ class Network(object):
 
         Parameters
         ----------
-        binding_fname : str
+        binding : str
             Filename of binding network.
         tfs : list, optional
             List of transcription factor names, by default None, which means
             that all TFs will be used.
         up : int, optional
             Maximum upstream region to include, by default 1e5
-        down : [type], optional
+        regions : list, optional
+            List of regions to aggregate on.
+        down : int, optional
             Maximum downstream region to include, by default 1e5
         alpha : float, optional
             Distance at which the weight will be half, by default None
@@ -344,8 +318,10 @@ class Network(object):
         dask.DataFrame
             DataFrame with delayed computations.
         """
-        if not os.path.exists(binding_fname):
-            raise ValueError(f"File {binding_fname} does not exist!")
+        logger.info("Loading binding data")
+
+        if not os.path.exists(cleanpath(binding)):
+            raise ValueError(f"File {binding} does not exist!")
 
         if combine_function not in ["mean", "max", "sum"]:
             raise NotImplementedError(
@@ -361,27 +337,42 @@ class Network(object):
                 "promoter region is larger than the maximum distance to use"
             )
 
-        hdf = HDFStore(binding_fname, "r")
-
-        # TODO: This is hacky (depending on "_"), however the hdf.keys() method is
-        # much slower. Currently all TF names do *not* start with "_"
-        all_tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
-        logger.info(f"Binding file contains {len(all_tfs)} TFs.")
+        # Read TFs
+        all_tfs = get_binding_tfs(binding)
         if tfs is None:
             tfs = all_tfs
+        if len(tfs) == 0:
+            raise ValueError(
+                "No transcription factor overlap between requested TFs and binding file! "
+                f"Use `ananse view --list-tfs {binding}` to inspect the TFs in the file."
+            )
+        if len(tfs) == len(all_tfs):
+            logger.info(f"Using all {len(set(tfs))} TFs.")
         else:
-            not_valid = set(all_tfs) - set(tfs)
-            if len(not_valid) > 1:
-                logger.warning(
-                    f"The following TFs are found in {binding_fname}, but do not seem to be TFs:"
-                )
-                logger.warning(", ".join(not_valid))
-            tfs = set(tfs) & set(all_tfs)
-            logger.info(f"Using {len(tfs)} TFs.")
+            logger.info(f"Using {len(tfs)} of {len(set(all_tfs))} TFs.")
 
-        # Read enhancer index from hdf5 file
+        hdf = pd.HDFStore(binding, "r")
+
+        # Read enhancer regions
         enhancers = hdf.get(key="_index")
-        chroms = enhancers.index.to_series().str.replace(":.*", "").unique()
+        chroms = set(enhancers.index.str.replace(":.*", ""))
+        if regions is None:
+            logger.info(f"Using all {len(set(enhancers.index))} regions.")
+        else:
+            regions = set(regions) & set(enhancers.index)
+            chroms = [region.split(":")[0] for region in regions]
+            logger.info(f"Using {len(regions)} of {len(set(enhancers.index))} regions.")
+
+        # Read gene regions
+        self._load_pyranges(up, down)  # sets self.genes_pr
+
+        # Filter for contigs with genes
+        chroms = set(chroms) & set(self.genes_pr.as_df()["Chromosome"])
+        if len(chroms) == 0:
+            raise ValueError(
+                "No regions in the binding file overlap with given regions! "
+                f"Use `ananse view --list-regions {binding}` to inspect the regions in the file."
+            )
 
         tmpdir = mkdtemp()
         self._tmp_files.append(tmpdir)  # mark for deletion later
@@ -390,11 +381,15 @@ class Network(object):
         # also be done at once, however, the memory usage of dask is very finicky.
         # This is a pragmatic solution, that seems to work well, does not use a
         # lot of memory and is not too slow (~50 seconds per chromosome).
-        for chrom in chroms:
-            logger.info(f"Aggregating binding for genes on {chrom}")
-
+        t = tqdm(chroms, total=len(chroms), unit="contig", desc="Aggregating")
+        for chrom in t:
+            t.set_description(f"Aggregating on {chrom}. Overall progress")
             # Get the index of all enhancers for this specific chromosome
-            idx = enhancers.index.str.contains(f"^{chrom}:")
+            idx = enhancers.index.str.startswith(f"{chrom}:")
+            if regions:
+                region_idx = enhancers.index.isin(regions)
+                idx = list(np.array(idx) * np.array(region_idx))
+
             idx_i = np.arange(enhancers.shape[0])[idx]
 
             # Create a pyranges object
@@ -414,13 +409,13 @@ class Network(object):
                 promoter=promoter,
                 full_weight_region=full_weight_region,
             )
-            gene_df = gene_df.dropna()
+            gene_df.dropna(inplace=True)
+            if gene_df.empty:
+                logger.debug(f"No genes found on {chrom}")
+                continue
 
             bp = pd.DataFrame(index=enhancers[idx].index)
-
-            for tf in tqdm(
-                tfs, total=len(tfs), desc="Aggregating", unit_scale=1, unit=" TFs"
-            ):
+            for tf in tfs:
                 # Load TF binding data for this chromosome.
                 # hdf.get() is *much* faster here than pd.read_hdf()
                 bp[tf] = hdf.get(key=tf)[idx_i].values
@@ -454,18 +449,23 @@ class Network(object):
             )
 
             # Create dataframe with two columns: tf_gene and weighted_binding score
-            tmp["tf_target"] = tmp["tf"] + "_" + tmp["gene"]
+            tmp["tf_target"] = tmp["tf"] + SEPARATOR + tmp["gene"]
             tmp[["tf_target", "weighted_binding"]].to_csv(
                 os.path.join(tmpdir, f"{chrom}.csv"), index=False
             )
 
         hdf.close()
 
+        # this happens if there are no genes near any of the regions.
+        # (you likely specified too few regions)
+        if len(os.listdir(tmpdir)) == 0:
+            raise ValueError("No genes found near the requested regions!")
+
         ddf = dd.read_csv(os.path.join(tmpdir, "*.csv")).set_index("tf_target")
         return ddf
 
-    def _save_temp_expression(self, df, name):
-        tmp = df.rename(columns={"tpm": f"{name}_expression"})
+    def _save_temp_expression(self, df, name, column="tpm"):
+        tmp = df.rename(columns={column: f"{name}_expression"})
         tmp[f"{name}_expression"] = minmax_scale(tmp[f"{name}_expression"].rank())
         tmp.index.rename(name, inplace=True)
         tmp["key"] = 0
@@ -476,103 +476,36 @@ class Network(object):
         tmp.reset_index().to_parquet(fname, index=False)
         return fname
 
-    def create_expression_network(
-        self, fin_expression, column="tpm", tfs=None, bindingfile=None
-    ):
+    def create_expression_network(self, expression, tfs, column="tpm"):
         """Create a gene expression based network.
 
-        Based on a file with gene expression levels (a TPM column), a
+        Based on file(s) with gene expression levels (a TPM column), a
         dask DataFrame is generated with the combined expression levels
-        of the tf and the target gene. By default, the expresison levels
+        of the tf and the target gene. By default, the expression levels
         are ranked and subsequently scaled between 0 and 1.
 
         Parameters
         ----------
-        fin_expression : str or list
-            One of more files that contains gene expression data.
-            First column should contain the gene names in HGNC symbols.
+        expression : pd.DataFrame
+            gene expression data.
+            First column should contain the gene names.
+
+        tfs : list
+            List of TF gene names. All TFs will be used by default.
 
         column : str, optional
             Column name that contains gene expression, 'tpm' by default (case insensitive).
-
-        tfs : list, optional
-            List of TF gene names. All TFs will be used by default.
-
-        bindingfile : str, optional
-            Output file from ANANSE binding.
 
         Returns
         -------
             Dask DataFrame with gene expression based values.
         """
-        # Convert to a list of filename(s)
-        if isinstance(fin_expression, str):
-            fin_expression = [fin_expression]
-
-        # Read all expression input files and take the mean expression per gene
-        re_column = re.compile(fr"^{column}$", re.IGNORECASE)
-        expression = pd.DataFrame(
-            pd.concat(
-                [
-                    pd.read_table(f, index_col=0).filter(regex=re_column)
-                    for f in fin_expression
-                ],
-                axis=1,
-            ).mean(1),
-            columns=[column],
-        )
+        # log transform expression values
         expression[column] = np.log2(expression[column] + 1e-5)
 
-        genes = pd.read_table(
-            self.gene_bed, usecols=[3], comment="#", names=["name"], index_col=0
-        )
-        overlap = len(genes.index.intersection(expression.index))
-        if overlap / expression.shape[0] < 0.1:
-            logger.error(
-                "gene annotation identifiers do not seem to match between annotation and expression files!"
-            )
-            sample_exp = ", ".join(expression.sample(5).index.values)
-            sample_gene = ", ".join(genes.sample(5).index.values)
-            logger.error(f"expression sample: {sample_exp}")
-            logger.error(f"annotation sample: {sample_gene}")
-            sys.exit(1)
-
-        # Create the TF list, based on valid transcription factors
-        if tfs is None:
-            try:
-                act = pd.read_hdf(bindingfile, key="_factor_activity")
-                if "factor" in act.columns:
-                    act = act.set_index("factor")
-                tfs = list(set(act.index.tolist()))
-            except KeyError:
-                tffile = os.path.join(PACKAGE_DIR, "db", "tfs.txt")
-                tfs = pd.read_csv(tffile, header=None)[0].tolist()
-
-        # Save TFs and targets as temporary files
-        idx = expression.index[expression.index.isin(tfs)]
-        tmp = expression.loc[idx]
-        if tmp.shape[0] == 0:
-            logger.error(
-                "None of the transcription factors are found in your expression file."
-            )
-            logger.error(
-                "If you have human data, please make sure you use HGNC symbols (gene names)."
-            )
-            logger.error(
-                "If you have non-human data, you have to create a custom motif to gene mapping."
-            )
-            logger.error("See this link for one possibility to create this file: ")
-            logger.error(
-                "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors"
-            )
-            logger.error(
-                "If you use a custom motif mapping, you will also have (re)run `gimme binding` with this file."
-            )
-            sys.exit(1)
-
-        tf_fname = self._save_temp_expression(tmp, "tf")
-        target_fname = self._save_temp_expression(expression, "target")
-
+        tf_expr = expression[expression.index.isin(tfs)]
+        tf_fname = self._save_temp_expression(tf_expr, "tf", column)
+        target_fname = self._save_temp_expression(expression, "target", column)
         # Read files (delayed) and merge on 'key' to create a Cartesian product
         # combining all TFs with all target genes.
         a = dd.read_parquet(tf_fname)
@@ -582,7 +515,7 @@ class Network(object):
         # Use one-column index that contains TF and target genes.
         # This is necessary for dask, as dask cannot merge on a MultiIndex.
         # Otherwise this would be an inefficient and unnecessary step.
-        network["tf_target"] = network["tf"] + "_" + network["target"]
+        network["tf_target"] = network["tf"] + SEPARATOR + network["target"]
         network = network[
             ["tf", "target", "tf_target", "tf_expression", "target_expression"]
         ]
@@ -591,10 +524,12 @@ class Network(object):
 
     def run_network(
         self,
-        binding,
+        binding=None,
         fin_expression=None,
         tfs=None,
+        regions=None,
         outfile=None,
+        column="tpm",
         up=1e5,
         down=1e5,
         alpha=None,
@@ -603,18 +538,32 @@ class Network(object):
     ):
         """Create network.
 
+        Generates a gene-regulatory network with a TF-target gene interaction "prob" score based on the mean rank of:
+        1. Binding score based on ATAC/H3K27ac data of nearby enhancers.
+        2. TF Activity (single score per TF based on general TF motif behaviour in the trained dataset)
+        3. TF expression score
+        4. Target expression score
+
         Parameters
         ----------
-        binding : str
-            Filename with binding information. Should contain at least three
-            columns: "factor", "enhancer" and "binding".
+        binding : str, optional
+            Filename with binding information. Should contain at least four
+            columns: "factor", "enhancer", "binding" and "_factor_activity".
+            Required if no expression file(s) are provided.
         fin_expression : str or list, optional
             Filename of list of filenames with expression information.
+            Required if no binding file is provided.
         tfs : list, optional
             List of transcription factors to use, by default None, which means
-            all TFs will be used.
+            all TFs in the binding file will be used.
+            Required if no binding file is provided.
+        regions : list, optional
+            List of regions to limit the binding network to.
         outfile : str, optional
             Output file. If None, returns a dataframe.
+        column : string, optional
+            Name of the column containing the expression data in the expression file(s).
+            Defaults to 'tpm' (case insensitive).
         up : int, optional
             Upstream maximum distance, by default 100kb.
         down : int, optional
@@ -624,19 +573,45 @@ class Network(object):
         promoter : int, optional
             Promoter region, by default 2000.
         full_weight_region : int, optional
-            Region that will receive full weight, by default 5000."""
-        # Expression base network
-        logger.info("Loading expression")
-        df_expression = self.create_expression_network(
-            fin_expression, tfs=tfs, bindingfile=binding
-        )
+            Region that will receive full weight, by default 5000.
+        """
+        # get all TFs from binding (or database),
+        # then intersect with given TFs (if any)
+        # COMPATIBILITY: validates binding-tf (or database-tf) overlap
+        tfs = get_factors(binding, tfs)
 
-        # Use a version of the binding network, either promoter-based, enhancer-based
-        # or both.
-        if self.include_promoter or self.include_enhancer:
+        # create the expression network
+        df_expression = None
+        if fin_expression is not None:
+            expression = load_expression(fin_expression, column)
+
+            # check for sufficient overlap in gene/transcript names/identifiers
+            # attempt to fix issues if a genomepy assembly was used
+            # COMPATIBILITY: validates/fixes tf-expression and tf-gene_bed overlap
+            expression = self.gene_overlap(expression, tfs)
+
+            df_expression = self.create_expression_network(
+                expression, tfs, "expression"
+            )
+            if binding is not None:
+                logger.debug("Loading tf binding activity data")
+                act = pd.read_hdf(binding, key="_factor_activity")
+                act = act.set_index("factor")
+                act.index.name = "tf"
+                act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
+                df_expression = df_expression.merge(
+                    act, right_index=True, left_on="tf", how="left"
+                ).fillna(0.5)
+            df_expression = df_expression.drop(columns=["tf"])
+
+        # create the binding network
+        # promoter-based, enhancer-based or both.
+        df_binding = None
+        if binding is not None and (self.include_promoter or self.include_enhancer):
             df_binding = self.aggregate_binding(
                 binding,
                 tfs=tfs,
+                regions=regions,
                 up=up,
                 down=down,
                 alpha=alpha,
@@ -645,61 +620,175 @@ class Network(object):
                 combine_function="sum",
             )
 
-            try:
-                act = pd.read_hdf(binding, key="_factor_activity")
-                if "factor" in act.columns:
-                    act = act.set_index("factor")
-                logger.info("Reading factor activity")
-                act.index.name = "tf"
-                act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
-                df_expression = df_expression.merge(
-                    act, right_index=True, left_on="tf", how="left"
-                ).fillna(0.5)
-            except KeyError:
-                pass
-
-            df_expression = df_expression.drop(columns=["tf"])
-
-            # This is where the heavy lifting of all delayed computations gets done
-            # logger.info("Computing network")
-            if fin_expression is not None:
+        # (combine networks and) compute delayed operations
+        if df_binding is None:
+            if df_expression is None:
+                raise ValueError(
+                    "Networks are based on at least one of "
+                    "expression, promoter binding or enhancer binding!"
+                )
+            else:
+                logger.info("Processing expression network")
+                result = df_expression
+        else:
+            if df_expression is None:
+                logger.info("Processing binding network")
+                result = df_binding
+                result = result.reset_index()
+            else:
+                logger.info("Processing expression-binding network")
                 result = df_expression.merge(
                     df_binding, right_index=True, left_on="tf_target", how="left"
                 )
                 result = result.persist()
                 result = result.fillna(0)
-                logger.info("Computing network")
-                progress(result)
-                result = result.compute()
-            else:
-                result = df_binding
+                # TODO: move client from commands.network into this module
+                if "client" in globals():
+                    progress(result)
+        # This is where the heavy lifting of all delayed computations gets done
+        result = result.compute()
 
+        if "weighted_binding" in result:
             result["weighted_binding"] = minmax_scale(
                 rankdata(result["weighted_binding"], method="min")
             )
+        columns = [
+            "tf_expression",
+            "target_expression",
+            "weighted_binding",
+            "activity",
+        ]
+        columns = [col for col in columns if col in result]
+        logger.debug(f"Using {', '.join(columns)}")
+        # Combine the individual scores
+        result["prob"] = result[columns].mean(1)
+
+        # filter output
+        columns = ["tf_target", "prob"]
+        if self.full_output:
             columns = [
+                "tf_target",
+                "prob",
                 "tf_expression",
                 "target_expression",
                 "weighted_binding",
                 "activity",
             ]
-            columns = [col for col in columns if col in result]
-            logger.info(f"Using {', '.join(columns)}")
-            # Combine the individual scores
-            result["prob"] = result[columns].mean(1)
-
-        else:
-            result = df_expression
-            result["prob"] = result[["tf_expression", "target_expression"]].mean(1)
-            result = result.compute()
-
+        output_cols = [c for c in columns if c in result.columns]
         if outfile:
             logger.info("Writing network")
             out_dir = os.path.abspath(os.path.dirname(outfile))
             os.makedirs(out_dir, exist_ok=True)
-            result[["tf_target", "prob"]].to_csv(outfile, sep="\t", index=False)
+            result[output_cols].to_csv(outfile, sep="\t", index=False)
         else:
-            return result[["tf_target", "prob"]]
+            return result[output_cols]
+
+    def gene_overlap(self, expression: pd.DataFrame, tfs: list):
+        """
+        For ANANSE Network to run properly, we need overlap between 3 files/sets with gene names:
+        - TFs (from motif2factors.txt/binding file)
+        - expression file(s)
+        - gene annotation BED file
+
+        if the overlap is low, attempt to convert the names to those of the TFs with genomepy.
+        """
+        cutoff = 0.6  # fraction of overlap that is "good enough"
+        tfs = set(tfs)
+        gp = genomepy.Annotation(self.gene_bed)
+        bed_genes = set(gp.genes("bed"))
+        expression_genes = set(expression.index)
+
+        # overlap_tf_exp = len(expression_genes & tfs) / len(tfs)
+        # logger.debug(
+        #     f"{int(100 * overlap_tf_exp)}% of TFs found in the expression file(s)"
+        # )
+        # overlap_tf_bed = len(bed_genes & tfs) / len(tfs)
+        # logger.debug(f"{int(100 * overlap_tf_bed)}% of TFs found in the BED file")
+        overlap_total = len(tfs & expression_genes & bed_genes) / len(tfs)
+        logger.info(
+            f"{int(100 * overlap_total)}% of TFs found in both BED and expression file(s)"
+        )
+        if overlap_total > cutoff:
+            return expression
+        if gp.annotation_gtf_file is None:
+            if overlap_total == 0:
+                incompatible_gene_error()
+            logger.warning("Are TFs, expression and gene_bed using the same symbols?")
+            return expression
+
+        logger.warning("Converting genes in expression table and BED to HGNC symbols")
+        backup_overlap_total = overlap_total
+        backup_expression = expression.copy()
+        backup_gene_bed = self.gene_bed
+
+        # assumption: you used gimme motif2factors on the GTF file of this genome
+        tid2gid = gp.gtf_dict("transcript_id", "gene_id")
+        tid2name = gp.gtf_dict("transcript_id", "gene_name")
+        gid2name = gp.gtf_dict("gene_id", "gene_name")
+
+        expression = (
+            expression.rename(index=tid2name)
+            .rename(index=tid2gid)
+            .rename(index=gid2name)
+        )
+        # merge duplicate genes
+        expression = expression.groupby(by=expression.index).sum()
+        # metrics
+        expression_genes = set(expression.index)
+        overlap_tf_exp = len(expression_genes & tfs) / len(tfs)
+        logger.debug(
+            f"{int(100 * overlap_tf_exp)}% of TFs found in the expression file(s)"
+        )
+
+        bed = (
+            gp.bed.copy()
+            .set_index("name")
+            .rename(index=tid2name)
+            .rename(index=tid2gid)
+            .rename(index=gid2name)
+            .reset_index()
+        )
+        # merge duplicate genes
+        group = bed.groupby("name")
+        bed["start"] = group["start"].transform("min")
+        bed["end"] = group["end"].transform("max")
+        drop_cols = set(bed.columns) - {"name", "chrom", "start", "end", "strand"}
+        for col in drop_cols:
+            bed[col] = 0
+        bed.drop_duplicates(inplace=True, ignore_index=True)
+        # exclude genes found on >1 contig
+        bed.drop_duplicates(
+            subset=["name"], keep=False, inplace=True, ignore_index=True
+        )
+        # metrics
+        bed_genes = set(bed.name)
+        overlap_tf_bed = len(bed_genes & tfs) / len(tfs)
+        logger.debug(f"{int(100 * overlap_tf_bed)}% of TFs found in the BED file")
+        # write BED to file
+        tmp_bed = NamedTemporaryFile(
+            prefix=f"ananse.{gp.name}", suffix=".annotation.bed", delete=False
+        ).name
+        cols = genomepy.annotation.utils.BED12_FORMAT  # fixes column order
+        genomepy.annotation.utils.write_annot(bed[cols], tmp_bed)
+        self._tmp_files.append(tmp_bed)
+        self.gene_bed = tmp_bed
+
+        overlap_total = len(tfs & expression_genes & bed_genes) / len(tfs)
+        logger.info(
+            f"{int(100 * overlap_total)}% of TFs found in both BED and expression file(s)"
+        )
+        if overlap_total <= backup_overlap_total:
+            overlap_total = backup_overlap_total
+            expression = backup_expression
+            self.gene_bed = backup_gene_bed
+
+        if overlap_total > 0:
+            if overlap_total <= cutoff:
+                logger.warning(
+                    "Are TFs, expression and gene_bed using the same symbols?"
+                )
+            return expression
+        incompatible_gene_error()
 
     def __del__(self):
         if not hasattr(self, "_tmp_files"):
@@ -710,51 +799,161 @@ class Network(object):
                 shutil.rmtree(fname, ignore_errors=True)
 
 
-def region_gene_overlap(
-    region_pr,
-    gene_bed,
-    up=100_000,
-    down=100_000,
-):
-    """
-    Couple enhancers to genes.
+def incompatible_gene_error():
+    msg = [
+        "If you have human data, please make sure you use HGNC symbols (gene names) in the BED and expression file(s).",
+        "If you have non-human data, you have to create a custom motif to gene mapping.",
+        "  See this link for one possibility to create this file: ",
+        "  https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors",
+        "If you use a custom motif mapping, you will also have (re)run `ananse binding` with this file.",
+    ]
+    for line in msg:
+        logger.error(line)
+    sys.exit(1)
 
-    Parameters
-    ----------
-    region_pr : PyRanges object
-        PyRanges object with enhancer regions.
-    gene_bed : str
-        gene_bed
-    up : int, optional
-        Upstream maximum distance, by default 100kb.
-    down : int, optional
-        Upstream maximum distance, by default 100kb.
+
+def get_bed(gene_bed, genome):
+    out_bed = gene_bed
+    if out_bed is None:
+        if genome in ["hg38", "hg19"]:
+            out_bed = os.path.join(PACKAGE_DIR, "db", f"{genome}.genes.bed")
+        else:
+            gp = genomepy.Genome(genome)  # can raise descriptive FileNotFoundError
+            out_bed = gp.annotation_bed_file  # can return None
+    elif not os.path.exists(out_bed) or not out_bed.lower().endswith(".bed"):
+        # can raise descriptive FileNoTFoundError (in version >0.11.0)
+        gp = genomepy.Annotation(out_bed)  # can raise descriptive ValueError
+        out_bed = gp.annotation_bed_file  # can return None
+    if out_bed is None:
+        raise TypeError("Please provide a gene bed file with the -a argument.")
+    return out_bed
+
+
+def get_factors(binding: str = None, tfs: list = None):
+    """
+    Return a list of transcription factors in the binding or the database.
+    If TFs is given, this is used to filter the output list.
 
     Returns
     -------
-    pandas.DataFrame
-        DataFrame with enhancer regions, gene names, distance and weight.
+    list
+        of unique transcription factors
     """
-    genes = pr.read_bed(gene_bed)
-    # Convert to DataFrame & we don't need intron/exon information
-    genes = genes.as_df().iloc[:, :6]
+    if binding is None and tfs is None:
+        raise ValueError(
+            "A binding file, a list of transcription factors, or both is required!"
+        )
 
-    # Get the TSS only
-    genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
-        genes["Strand"] == "+", "Start"
-    ]
-    genes.loc[genes["Strand"] == "-", "Start"] = genes.loc[
-        genes["Strand"] == "-", "End"
-    ]
+    out_tfs = tfs
+    if binding is not None:
+        out_tfs = get_binding_tfs(binding)
+        if tfs is not None:
+            not_valid = set(tfs) - set(out_tfs)
+            if len(not_valid) > 0:
+                logger.warning(
+                    f"The following TFs are requested, but not found in {binding}:"
+                )
+                logger.warning(", ".join(not_valid))
+                logger.warning(
+                    "Perhaps an error occurred for these TFs in ananse binding."
+                )
+            out_tfs = set(tfs) & set(out_tfs)
 
-    # Extend up and down
-    genes.loc[genes["Strand"] == "+", "Start"] -= up
-    genes.loc[genes["Strand"] == "+", "End"] += down
-    genes.loc[genes["Strand"] == "-", "Start"] -= down
-    genes.loc[genes["Strand"] == "-", "End"] += up
+    if len(out_tfs) == 0:
+        raise ValueError(
+            "No transcription factor overlap between requested TFs and binding file! "
+            f"Use `ananse view --list-tfs {binding}` to inspect the TFs in the file."
+        )
+    return list(set(out_tfs))
 
-    # Perform the overlap
-    genes = pr.PyRanges(genes)
-    genes = genes.join(region_pr).as_df()
 
-    return genes
+def combine_expression_files(
+    fin_expression: Union[str, list], column: Union[str, list] = "tpm"
+):
+    """
+    Extract the index and one or more expression columns from one or more expression files.
+    We expect the index to be gene/transcript names/identifiers, and the expression to be TPMs.
+
+    Within each expression file, duplicate indexes are summed.
+    Between expression files, indexes are averaged.
+    NAs are dropped.
+
+    Parameters
+    ----------
+    fin_expression : str or list
+        One of more files that contains gene expression data.
+        First column should contain the gene/transcript names/identifiers.
+
+    column : str or list, optional
+        Column name that contains gene expression, 'tpm' by default (case insensitive).
+
+    Returns
+    -------
+    pd.DataFrame
+        a dataframe with one expression column and all unique indexes
+    """
+    # Convert to a list of filename(s)
+    if isinstance(fin_expression, str):
+        fin_expression = [fin_expression]
+
+    # Read all expression input files and take the mean expression per gene
+    expression = pd.DataFrame()
+    for f in fin_expression:
+        subdf = filter_expression_file(f, column)
+        expression = pd.concat([expression, subdf], axis=1)
+    expression = expression.mean(1).to_frame("expression")
+    return expression
+
+
+def filter_expression_file(fin_expression: str, columns: Union[str, list]):
+    """
+    Extract the index and one or more expression columns from a single expression file.
+    We expect the index to be gene/transcript names/identifiers, and the expression to be TPMs.
+
+    Duplicate genes are summed.
+    Between columns, expression is averaged,
+    NAs are dropped.
+
+    Parameters
+    ----------
+    fin_expression : str or list
+        One file that contains one or more columns with gene expression data.
+        First column should contain the gene/transcript names/identifiers.
+
+    columns : str, optional
+        Column name(s) that contains gene expression (case insensitive).
+
+    Returns
+    -------
+    pd.DataFrame
+        a dataframe with one expression column and all unique indexes
+    """
+    if isinstance(columns, str):
+        columns = [columns]
+
+    # case insensitive column extraction
+    cols = "|".join(columns)
+    re_column = re.compile(rf"^{cols}$", re.IGNORECASE)
+    df = pd.read_table(fin_expression, index_col=0, sep="\t").filter(regex=re_column)
+    # average columns
+    df = df.mean(1).to_frame("expression")
+    # sum duplicate rows
+    df = df.groupby(by=df.index, dropna=True).sum()
+    # remove NaNs
+    df.dropna(inplace=True)
+    return df
+
+
+def load_expression(fin_expression, column):
+    logger.info("Loading expression data")
+    if isinstance(fin_expression, str):
+        fin_expression = [fin_expression]
+    if isinstance(column, str):
+        column = [column]
+
+    # expression dataframe with transcription factors as index
+    if len(fin_expression) == 1:
+        expression = filter_expression_file(fin_expression[0], column)
+    else:
+        expression = combine_expression_files(fin_expression, column)
+    return expression

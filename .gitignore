@@ -10,6 +10,7 @@ site/
 __pycache__
 **/.ipynb_checkpoints/
 dask-worker-space/
+ananse/db/remap*
 *egg-info
 bld.bat
 build.sh

@@ -4,10 +4,16 @@ To run ANANSE you need the following data:
 
 * A genome with a matching gene annotation
 * For `ananse binding`: enhancer regions (optional for `hg38`)
-* For `ananse binding`: enhancer activity:
-    *  indexed ATAC-seq BAM file(s) and/or
-    *  indexed H3K27ac ChIP-seq BAM files(s) 
-* For `ananse network`: gene expression quantification (TPM)
+* For `ananse binding`: enhancer activity from either/both:
+    * ATAC-seq data
+        * one or more indexed BAM file(s) or
+        * one counts table with reads for each peak per sample
+    * H3K27ac ChIP-seq data
+        * one or more indexed BAM files(s) or
+        * one counts table with reads per peak
+* For `ananse network`: gene expression quantification from either:
+    * one or more quantification files with one TPM column
+    * one counts/TPM table with expression for each gene per sample
 * For `ananse influence`: gene differential expression (DESeq2 output)
 * A Motif database
 
@@ -17,12 +23,13 @@ To run `ANANSE` on your sample(s), a matching genome and gene annotation is nece
 
 #### genomepy
 
-We recommand that you download these with [genomepy](https://github.com/vanheeringen-lab/genomepy).
+We recommend that you download these with [genomepy](https://github.com/vanheeringen-lab/genomepy).
 If you installed ANANSE with conda, genomepy is present in the ANANSE environment.
 
-To install a genome with `genomepy` you can use this command, which will download both the genome `FASTA` and the gene annotation `BED` file, and exports them to the PATH.
+To install a genome with `genomepy` you can use this command, 
+which will download both the genome `FASTA` and the gene annotation `BED` and `GTF` files.
 
-``` bash
+```shell
 # activate ananse environment
 conda activate ananse
 
@@ -47,14 +54,17 @@ Alternatively, you can specify the genome manually. In this case you'll need:
 You can then specify the genome as follows: `-g /path/to/genome.fa`.
 For `ananse network`, you need to add the annotation BED file with `-a /path/to/annotation.bed`.
 
+You can use genomepy to copy these files into a genomepy-install with
+```shell
+genomepy install -p local /path/to/genome.fa --Local-path-to-annotation /path/to/annotation.gtf
+```
+
 ### Enhancer regions
 
-The `ananse binding` command requires a database of putative enhancer regions.
-For human data (`hg38` only), ANANSE provides a [database of cis-regulatory regions](https://doi.org/10.5281/zenodo.4066424) (putative enhancers).
-Which is used by default.
+The `ananse binding` command requires a set of putative enhancer regions.
 
-Optionally, you can specify your own set of putative enhancers.
-This is **required** for genomes other than `hg38`.
+For human data (`hg38` only), ANANSE provides a [database of cis-regulatory regions](https://doi.org/10.5281/zenodo.4066424) (putative enhancers).
+Which is used by default. You can still specify your own set of putative enhancers.
 
 To define enhancer regions, you can use any type of genome-wide data that is associated with enhancers and *gives narrow peaks*.
 H3K27ac signal, for instance, would not work well, as peaks from a H3K27ac ChIP-seq experiment are too broad to provide a precise region for the motif analysis.
@@ -71,53 +81,107 @@ The (raw) ATAC-/ChIP-seq counts table can be used as input directly.
 
 ANANSE can use ATAC-seq and/or H3K27ac ChIP-seq data to predict binding.
 Using both will give the best performance, however, either one will also work well (see Fig. 3A in the ANANSE paper).
-These data should be in BAM format, mapped to the relevant genome, duplicates be marked (or removed), sorted and indexed.
-You can use [seq2science](https://github.com/vanheeringen-lab/seq2science) to map your own or publicly available data.
-For both types of data you can supply one or more files (replicates).
-Replicates will be averaged.
-The BAM file(s) should be indexed, for instance with `samtools index`.
+These data should be mapped to the relevant genome, with duplicates reads marked (or removed).
+For both types of data you can supply one or more files (replicates), which will be averaged.
+
+For each data type, enhancer activity can be given in two forms: one or more BAMs or one counts table.
+
+###### BAMs
+
+The BAM file(s) should be sorted indexed, for instance with `samtools sort` and `samtools index`.
+
+###### Counts
+
+A counts table must be a tab-separated file with peaks in the first column, and reads per peak for each sample.
+
+You can use [seq2science](https://github.com/vanheeringen-lab/seq2science) to map your data.
+The (raw) ATAC-seq counts table can be used as input directly.
+The (raw) H3K27Ac ChIP-seq counts table can also be used directly, but it is suggested that peaks are merged and centered on a 2000 bp window.
+This can be automated by adding the following options to the seq2science ChIP-seq config.yaml:
+```yaml
+# suggested H3K27Ac ChIP-seq settings:
+slop: 1000
+peak_windowsize: 1000
+```
+
+Example of a counts table:
+
+|               | sample1 | sample2 | sample3 |
+| -----------   | ------- | ------- | ------- |
+| 9:2802-3002   | 8.0     | 6.0     | 6.0     |
+| 9:3612-3812   | 5.0     | 12.0    | 5.0     |
+| 9:16114-16314 | 2.0     | 12.0    | 4.0     |
+
+You can specify which samples to use from this file with `--columns` (case-insensitive. By default, all columns are used). 
+For example: `--columns SAMPLE1 sample3` will use samples 1 and 3, but ignores sample 2.
 
 ### Expression data
 
-The expression data normally comes from an RNA-seq experiment.
-We use the **gene-level** `TPM` score to represent the gene expression in ANANSE.
-In the expression input file, the 1st column (named as `target_id`) should contain the **gene name**, and the second column should be named `tpm`.
-At the moment TFs are coupled to motifs by HGNC symbol, so all gene identifiers should be the approved HGNC gene names.
+Expression data normally comes from an RNA-seq experiment.
+The file(s) must be tab-separated, with genes in the first column.
+We suggest using `gene_name`s for genes, and expression scores in `TPM`.
 
-This is an example of the input expression file:
+Notes: 
 
-```
-target_id	tpm
-A1BG	9.579771
-A1CF	0.0223
-A2M	0.25458
-A2ML1	664.452
-A3GALT2	0.147194
-```
+* If you are using a genomepy genome, genes are automatically converted if required.
+  * So you could use genes described as `transcript_id`, `transcript_name` or `gene_id` as well.
 
-You can create this file with salmon or kallisto, followed by summing transcript-level TPMs to gene-level TPMS using [tximport](https://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html).
+Expression data can be given in two forms: one or more quantification files or one (TPM) counts table.
+
+###### Counts
+
+A counts table must be a tab-separated file with genes in the first column, and expression for each gene per sample.
+
+Example of a counts table:
+
+|        | sample1 | sample2 | sample3 |
+| -----  | ------- | ------- | ------- |
+| A1BG   | 8.0     | 6.0     | 6.0     |
+| A1CF   | 5.0     | 12.0    | 5.0     |
+| A2ML1  | 2.0     | 12.0    | 4.0     |
+
+You **must** specify which samples to use from this file with `--columns` (case-insensitive. By default, column `tpm` is used). 
+For example: `--columns SAMPLE1 sample3` will use samples 1 and 3, but ignores sample 2.
+
+###### quantification file(s)
+
+Quantification files are generated by pseudo-aligners such as salmon or kallisto, 
+followed by summing transcript-level TPMs to gene-level TPMS using [tximport](https://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html).
+
+Example of a quantification file:
+
+|           | tpm      |
+| --------- | -------- |
+| A1BG      | 9.579771 |
+| A1CF      | 0.0223   |
+| A2ML1     | 664.452  |
+
+If your files have a different column name for gene expression levels, you can specify this with `--columns` (case-insensitive. By default, column `tpm` is used). 
+For example: `--columns TpM` will use the `tpm` column. This may be useful if your files have a different column name (e.g. `counts`)
 
 ### Differential expression data
 
 The differential expression data normally comes from an RNA-seq experiment.
 This file can be created using, for instance, [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html).
-In the differential expression file, the 1st column (named as `resid`) should contain **gene name** (the HGNC symbol), the second column should be named as `log2FoldChange` which is **log2 FoldChange score** of gene, and the third column should be named as `padj`, which is the adjusted **p-value** of the differential gene expression test.
 
-This is an example of a differential expression input file:
+The file must be tab-separated, with genes (we suggest using `gene_name`s) in the first column, 
+a column named `padj` and a column named `log2FoldChange`.
+Column `log2FoldChange` is the **log2 of the fold change** of each gene between conditions.
+Column `padj` is the **adjusted p-value** of the differential gene expression test.
 
-```
-resid	log2FoldChange	padj
-ANPEP	7.44242618323665	0
-CD24	-8.44520139575174	0
-COL1A2	8.265875689393	0
-COL6A1	7.41947749996406	0
-COL6A2	9.62485194293185	0
-COL6A3	11.0553152937569	0
-DAB2	7.46610079411987	0
-DMKN	-11.6435948368453	0
-```
+Notes: 
 
-**Note:**  The `log2FoldChange` should be a **positive number** if this gene is upregulated from the source to the target cell type, and **negative number** if this gene is downregulated from the source to the target cell type.
+* If you are using a genomepy genome, genes are automatically converted if required.
+  * So you could use genes described as `transcript_id`, `transcript_name` or `gene_id` as well.
+* The `log2FoldChange` should be a **positive number** if this gene is upregulated from the source to the target cell type, and **negative number** if this gene is downregulated from the source to the target cell type.
+
+Example of a differential expression file:
+
+|           | log2FoldChange    | padj   |
+| --------- | ----------------- | ------ |
+| ANPEP     | 7.44242618323665  | 0.001  |
+| CD24      | -8.44520139575174 | 0      |
+| COL1A2    | 8.265875689393    | 0.0123 |
 
 ### Motif database
 

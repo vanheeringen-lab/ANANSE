@@ -29,13 +29,16 @@ The distance weight is based on a linear genomic distance between the enhancer a
 \begin{equation}
 w_k =
   \begin{cases}
-    0               & \quad k \in (\text{0kb,2kb}] \\\\
-    1               & \quad k \in (\text{2kb,5kb}] \\\\
+    1                                           & \quad k \in (\text{0kb,2kb}] \\\\
+    1                                           & \quad k \in (\text{2kb,5kb}] \\\\
     \frac{2e^{-\mu|k-t_r|}}{1+e^{-\mu|k-t_r|}}  & \quad k \in (\text{5kb,100kb}]
   \end{cases} \tag{2}
 \end{equation}
 
-where \\(t_r\\) is the genomic position of the TSS of gene s\\(r\\) and the parameter \\(\mu\\), which determines the decay rate as a function of distance from the TSS, is set such that an enhancer 10 kb from the TSS contributes one-half of that at the TSS. This distance weight calculation is similar to the method previously described in Wang et al., 2016, except that only signal in enhancers is used, enhancers within 2kb around TSS are removed and the weight of enhancers within 2kb to 5kb is set to 1.
+where enhancers within 2kb around TSS are considered promoters to the gene and are given a weight of 1 (or can be excluded, for a weight of 0). 
+Enhancers within 2kb to 5kb are given a weight of 1. 
+Enhancers beyond 5kb from the TSS, have their weight decay according to the given formula,
+where \\(t_r\\) is the genomic position of the TSS of gene s\\(r\\) and the parameter \\(\mu\\), which determines the decay rate as a function of distance from the TSS, is set such that an enhancer 10 kb from the TSS contributes one-half of that at the TSS. This distance weight calculation is similar to the method previously described in Wang et al., 2016.
 
 We scaled the expression level of the TF \\(E_x\\) and the target gene \\(E_r\\), expressed as transcripts per million (TPM), and the TF-gene binding score \\(B_{x,r}\\) we calculated in the first step from 0 to 1, with 1 being the highest and 0 the lowest. Combining the TF-gene binding score and TF and target expression scores by taking the mean, we obtained a TF-gene interaction score, \\(I_{x,r}\\):
 

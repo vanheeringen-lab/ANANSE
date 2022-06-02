@@ -3,14 +3,19 @@ import getpass
 import os
 import pwd
 import shutil
-import subprocess as sp
+import re
+import pandas as pd
 import tempfile
-import warnings
+from typing import Union
 
 import genomepy.utils
-from pybedtools import BedTool
-import pysam
-import pandas as pd
+from ananse.bed import CombineBedFiles
+
+
+def check_cores(ncore=None):
+    if ncore is None:
+        ncore = min(os.cpu_count(), 4)
+    return int(ncore)
 
 
 def check_path(arg, error_missing=True):
@@ -38,161 +43,12 @@ def cleanpath(path):
     )
 
 
-def shhh_bedtool(func):
-    """
-    Decorator that silences pybedtools RuntimeWarnings such as
-    `line buffering (buffering=1) isn't supported in binary mode`
-    """
-
-    def wrapper(*args, **kwargs):
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=RuntimeWarning)
-            func(*args, **kwargs)
-
-    return wrapper
-
-
-@shhh_bedtool
-def bed_sort(bed):
-    """
-    Sort a bed file.
-    """
-    tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
-    try:
-        tmpfile = os.path.join(tmpdir, os.path.basename(bed))
-        BedTool(bed).sort(output=tmpfile)
-        shutil.copy2(tmpfile, bed)
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
-
-
-@shhh_bedtool
-def bed_merge(list_of_beds, merged_bed):
-    """
-    merge any number of bed files (merges overlapping regions)
-    """
-    bed = BedTool(list_of_beds[0])
-    if list_of_beds[1:]:
-        bed = bed.cat(*list_of_beds[1:])
-    bed.saveas(merged_bed)
-
-
-@shhh_bedtool
-def count_reads(bams, peakfile, bed_output):
-    """
-    Count bam reads in putative enhancer regions
-    """
-    # replace with gimmemotifs.preprocessing.coverage_table()
-    bed = BedTool(peakfile)
-    bam_list = bams if isinstance(bams, list) else [bams]
-    bed.multi_bam_coverage(bams=bam_list, output=bed_output)
-
-
-def samc(ncore):
-    """set decent samtools range for samtools functions (1-5 total threads)"""
-    return max(0, min(ncore - 1, 4))
-
-
-def bam_index(bam, force=True, ncore=1):
-    if force or not os.path.exists(f"{bam}.bai"):
-        index_parameters = [f"-@ {samc(ncore)}", bam]
-        pysam.index(*index_parameters)  # noqa
-
-
-def bam_sort(bam, ncore=1):
-    tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
-    try:
-        sorted_bam = os.path.join(tmpdir, os.path.basename(bam))
-        sort_parameters = [f"-@ {samc(ncore)}", "-o", sorted_bam, bam]
-        pysam.sort(*sort_parameters)  # noqa: pysam bug
-
-        shutil.copy2(sorted_bam, bam)
-        bam_index(bam, force=True, ncore=ncore)
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
-
-
-def bam_merge(list_of_bams, merged_bam, ncore=1):
-    """
-    merge any number of (sorted) bam files
-    """
-    [bam_index(bam, force=False, ncore=ncore) for bam in list_of_bams]
-    if len(list_of_bams) > 1:
-        merge_parameters = ["-f", f"-@ {samc(ncore)}", merged_bam] + list_of_bams
-        pysam.merge(*merge_parameters)  # noqa: pysam bug
-        bam_index(merged_bam)
-    else:
-        # os.symlink() doesn't work with multi_bam_coverage()
-        bam = list_of_bams[0]
-        shutil.copy2(bam, merged_bam)
-        shutil.copy2(f"{bam}.bai", f"{merged_bam}.bai")
-
-
-def mosdepth(bed, bam, bed_output, ncore=1):
-    """
-    Count (median per base overlap of) bam reads in putative enhancer regions
-    """
-    ncore = min(4, ncore)
-    tmpdir = tempfile.mkdtemp(prefix="ANANSE_")
-    try:
-        prefix = os.path.join(tmpdir, "bam_coverage")
-        cmd = f"mosdepth -nxm -t {ncore} -b {bed} {prefix} {bam}"
-        sp.check_call(cmd, shell=True)
-
-        tmp_bed_output = f"{prefix}.regions.bed"
-        cmd = f"gunzip -f {tmp_bed_output}.gz"
-        sp.check_call(cmd, shell=True)
-
-        shutil.copy2(tmp_bed_output, bed_output)
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
-
-
-# def bed_sum_coverages(multi_bam_coverage, sum_bam_coverage):
-#     """
-#     MultiBamCov returns a BED3+n with one column per bam.
-#     This function sums up all bam counts and returns a BED3+1.
-#     """
-#     bed = pd.read_csv(multi_bam_coverage, header=None, sep="\t")
-#     columns = bed.shape[1]
-#     if columns != 4:
-#         bed3 = bed.iloc[:, :3]
-#         scores = bed.iloc[:, 3:].sum(axis=1)
-#         bed = pd.concat([bed3, scores], axis=1)
-#     bed.to_csv(sum_bam_coverage, sep="\t", header=False, index=False)
-
-
-# def non_empty_files(files, error_msg, size_threshold=10, verbose=True):
-#     """Check list of files for content
-#
-#     Args:
-#         files: list of filepaths
-#         error_msg: message for all empty files
-#         size_threshold: minimum size to be considered non-empty
-#         verbose: return warnings?
-#
-#     Returns:
-#         list of non-empty files
-#     """
-#     ret_files = []
-#     for file in files:
-#         if os.path.getsize(file) > size_threshold:
-#             ret_files.append(file)
-#         elif verbose:
-#             logger.warning(f"Empty file: '{os.path.basename(file)}'")
-#
-#     if not ret_files:
-#         logger.exception(error_msg)
-#         exit(1)
-#     return ret_files
-
-
 def mytmpdir():
     """
     returns a temp directory that is removed when the process is completed
     the directory is not removed if the process is killed by the user
     """
-    if not hasattr(mytmpdir, "dir") or not mytmpdir.dir:
+    if not hasattr(mytmpdir, "dir") or not os.path.exists(mytmpdir.dir):
         # can also be removed with clean_tmp()
         mytmpdir.dir = tempfile.mkdtemp(prefix=f"ANANSE_{os.getpid()}.")
         atexit.register(shutil.rmtree, mytmpdir.dir, ignore_errors=True)
@@ -231,76 +87,128 @@ def get_motif_factors(motif, indirect=True):
     return motif_factors
 
 
-def check_input_factors(factors):
-    """Check factors.
+def parse_input(
+    anything: Union[str, list] = None,
+    none_ok=True,
+    parse_list=lambda x: x,
+    parse_files=None,
+    *args,
+    **kwargs,
+) -> Union[None, list]:
+    if anything is None:
+        if not none_ok:
+            raise ValueError("Input was None")
+        return None
 
-    Factors can either be a list of transcription factors, or a filename of a
-    file that contains TFs. Returns a list of factors.
-
-    Returns
-    -------
-    list
-        List of TF names.
-    """
-    # Load factors
-    if factors is None:
-        return
-
-    # if factors is a string, assume it's a filename
-    if isinstance(factors, str):
-        fname = factors
-
-    # if factors is a list of 1, and it exists, assume it's a filename
-    elif isinstance(factors, list) and len(factors) == 1:
-        fname = factors[0]
-
-    # It's a list with more than one value, assuming it's a list of TF names.
-    else:
-        return factors
-
-    if not os.path.exists(fname):
-        raise ValueError(f"Factors file '{factors}' does not exist")
-
-    factors = [line.strip() for line in open(fname)]
-    return factors
-
-
-def view_h5(fname, tfs=None, fmt="wide"):
-    """Extract information from an ANANSE binding.h5 file.
-
-    Parameters
-    ----------
-    fname : str
-        File name (binding.h5).
-
-    tfs : list, optional
-        List of transcription factor names to extract. All TFs are used
-        by default.
-
-    fmt : str, optional
-        Return output in 'wide' or in 'long' format. Default is 'wide'.
-
-    Returns
-    -------
-    pandas.Dataframe
-    """
-    if fmt not in ["wide", "long"]:
-        raise ValueError("fmt should be either 'wide' or 'long'")
-
-    with pd.HDFStore(fname) as hdf:
-        if tfs is None:
-            tfs = [x for x in dir(hdf.root) if not x.startswith("_")]
-
-        idx = hdf.get("_index")
-
-        df = pd.DataFrame(index=idx.index)
-        for tf in tfs:
-            df[tf] = hdf.get(tf).values
-
-    if fmt == "long":
-        df.index.rename("loc", inplace=True)
-        df = df.reset_index().melt(
-            id_vars=["loc"], value_name="prob", var_name="factor"
+    if isinstance(anything, str):
+        anything = [anything]
+    elif not isinstance(anything, list):
+        raise ValueError(
+            f"Only None, string or list input accepted, received type {type(anything)}"
         )
 
-    return df
+    as_files = [cleanpath(a) for a in anything]
+    if not all(os.path.exists(f) for f in as_files):
+        # input is in list format
+        out = parse_list(anything)
+    else:
+        # input is in file format
+        out = parse_files(as_files, *args, **kwargs)
+    return sorted(set(out))
+
+
+def parse_tf_files(tf_files: list) -> list:
+    """convert one or more files with one element per line into a list of elements"""
+    out = []
+    for infile in tf_files:
+        for line in open(infile):
+            out.append(line.strip().strip(","))
+    return out
+
+
+def test_tfs(tfs: list) -> list:
+    # if it looks like it could be a list of files, check for file separators
+    # (those should never be in TFs right?)
+    if len(tfs) < 50:
+        for tf in tfs:
+            if os.sep in tf:
+                raise ValueError(
+                    f"Mixed input detected: some look like a file (e.g. {tf}), others do not."
+                )
+    return tfs
+
+
+def merge_regionfiles(regionfiles, genome, outdir):
+    cbed = CombineBedFiles(genome=genome, peakfiles=regionfiles)
+    combined_bed = os.path.join(outdir, "regions_combined.bed")
+    cbed.run(outfile=combined_bed, width=200, force=True)
+    return combined_bed
+
+
+def parse_regions(regionfiles, *args, **kwargs):
+    # combine bed files into one
+    infile = regionfiles[0]
+    if len(regionfiles) > 1:
+        infile = merge_regionfiles(regionfiles, *args, **kwargs)
+
+    df = pd.read_table(infile, header=None, sep="\t", comment="#", dtype=str)
+    # skip potential header line
+    test = str(df.at[0, 0] if len(df) == 1 else df.at[1, 0])
+    if bool(re.match(r"^.*:\d+-\d+$", test)):
+        # it's a regions list
+        # or it's a Seq2science counts table
+        regions = df.iloc[:, 0].tolist()
+
+    elif df.shape[1] >= 3:
+        # it's a BED file
+        regions = (
+            # For Ensembl genome names, make sure it's a string
+            df.iloc[:, 0].astype(str)
+            + ":"
+            + df.iloc[:, 1].astype(str)
+            + "-"
+            + df.iloc[:, 2].astype(str)
+        ).tolist()
+
+    else:
+        raise TypeError("Cannot identify regions file(s) type.")
+
+    # remove the header, if any.
+    if not bool(re.match(r"^.*:\d+-\d+$", str(regions[0]))) and len(regions) > 1:
+        regions = regions[1:]
+
+    return regions
+
+
+def test_regions(regions: list) -> list:
+    if not bool(re.match(r"^.*:\d+-\d+$", str(regions[0]))):
+        raise ValueError(
+            f"A region list should be formatted like 'chr1:100-200'. Received {regions[0]}"
+        )
+    return regions
+
+
+def load_tfs(tfs: Union[str, list] = None) -> list:
+    """
+    Unpacks a string or list of TFs or files with TFs
+    """
+    return parse_input(
+        tfs,
+        parse_list=test_tfs,
+        parse_files=parse_tf_files,
+    )
+
+
+def load_regions(
+    regions: Union[str, list] = None, genome: str = None, outdir: str = None
+) -> list:
+    """
+    Unpacks a string or list of regions or files with regions
+    """
+    return parse_input(
+        regions,
+        parse_list=test_regions,
+        parse_files=parse_regions,
+        genome=genome,
+        outdir=outdir,
+    )

@@ -79,7 +79,7 @@ Details for the different steps are described below.
 
 To predict TF binding, the main data that you'll need is ATAC-seq and/or H3K27ac ChIP-seq BAM files for all samples, conditions or cell types that you want to analyze. The TF binding prediction works best with both ATAC-seq and H3K27ac, but either of the two will still work.
 You can use any number of replicates. The data of different replicates will be combined.
-You can supply your own set of (putative) cis-regulatory regions (CREs), however, for this tutorial we will use a set of cis-regulatory regions that was created by combining all REMAP ChIP-seq peaks (see [here](ananse-cre.md)). Using this set of regions, the binding prediction will be more accurate.
+You can supply your own set of (putative) cis-regulatory regions (CREs), however, for this tutorial we will use a set of cis-regulatory regions that was created by combining all REMAP ChIP-seq peaks (see [here](command-line_reference.md)). Using this set of regions, the binding prediction will be more accurate.
 
 Let's create predict some binding!
 

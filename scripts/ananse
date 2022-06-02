@@ -1,13 +1,8 @@
 #!/usr/bin/env python
-# Copyright (c) 2013-2019 Quan Xu <qxuchn@gmail.com>
-#
-# This module is free software. You can redistribute it and/or modify it under
-# the terms of the MIT License, see the file COPYING included with this
-# distribution.
+
 import os
 import sys
 import argparse
-
 from genomepy import Genome
 from loguru import logger
 
@@ -32,7 +27,9 @@ if __name__ == "__main__":
         binding     predict TF binding sites in cis-regulatory region
         network     infer gene regulatory network
         influence   prioritize transcription factors
+        plot        plot influence result in dotplot and GRN network
         view        view binding file
+        
     """
     parser = argparse.ArgumentParser(
         usage=usage,
@@ -53,14 +50,14 @@ if __name__ == "__main__":
         "binding", add_help=False
     )  # help added manually (more control)
     subparser_dict["binding"] = p
-
     group = p.add_argument_group("Required arguments")
     group.add_argument(
         "-A",
         "--atac-bams",
         dest="atac_bams",
         metavar="BAM",
-        help="ATAC-seq input BAM file(s), can be used alone or in combination with the -H option",
+        help="ATAC-seq input BAM file(s) (or one counts table with reads per peak), "
+        "can be used alone or in combination with the -H option",
         default=None,
         nargs="+",
     )
@@ -69,9 +66,48 @@ if __name__ == "__main__":
         "--histone-bams",
         dest="histone_bams",
         metavar="BAM",
-        help="H3K27ac ChIP-seq input BAM file(s), can be used alone or in combibation with the -A option",
+        help="H3K27ac ChIP-seq input BAM file(s) (or one counts table with reads per peak), "
+        "can be used alone or in combination with the -A option",
         default=None,
         nargs="+",
+    )
+    group.add_argument(
+        "-C",
+        "--cage-tpms",
+        dest="cage_tpms",
+        help="CAGE-seq bidirectional regions (TPM) generated with CAGEfightR, "
+             "cannot be used in combination with the -A and/or -H options",
+        metavar="TPM",
+        default=None,
+    )
+    group.add_argument(
+        "-g",
+        "--genome",
+        dest="genome",
+        help="Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38)",
+        metavar="NAME",
+        default="hg38",
+    )
+    group = p.add_argument_group("Required arguments (optional for hg38)")
+    group.add_argument(
+        "-r",
+        "--regions",
+        dest="regions",
+        help="Regions to analyse. Can be "
+        "one or more BED format files (e.g. BED, narrowPeak, broadPeak) or "
+        "one file with one region per line (e.g. 'chr1:100-200') or "
+        "a space-separated list. Optional if a pfmscorefile is provided (used to filter those regions instead)",
+        metavar="FILE",
+        default=None,
+        nargs="*",
+    )
+    group.add_argument(
+        "-p",
+        "--pfmfile",
+        dest="pfmfile",
+        help="PFM file of the transcription factors to search for (default: gimme.vertebrate.v5.0)",
+        metavar="FILE",
+        default=None,
     )
     group = p.add_argument_group("Optional arguments")
     group.add_argument(
@@ -79,71 +115,61 @@ if __name__ == "__main__":
         "--outdir",
         dest="outdir",
         help="Directory where you wish to store the output (default: ./ANANSE_binding)",
-        metavar="",
+        metavar="DIR",
         default="./ANANSE_binding",
+    )
+    group.add_argument(
+        "-c",
+        "--columns",
+        dest="columns",
+        help="One or more (case insensitive) column names to extract "
+        "from the counts table(s) (default: all)",
+        metavar="COL",
+        default=None,
+        nargs="*",
     )
     group.add_argument(
         "-R",
         "--reference",
         dest="reference",
         help="Path to reference data directory",
-        metavar="PATH",
-    )
-    group.add_argument(
-        "-r",
-        "--regionfiles",
-        dest="regionfiles",
-        help="One or more BED format files with putative enhancer regions (e.g. BED, narrowPeak, broadPeak)",
-        metavar="",
-        nargs="+",  # >= 1 files
-    )
-    group.add_argument(
-        "-g",
-        "--genome",
-        dest="genome",
-        help="Genome name, as managed by genomepy, or path to the genome FASTA used to align the bams and peaks to",
-        metavar="GENOME",
-        default="hg38",
-    )
-    group.add_argument(
-        "-d",
-        "--dist-func",
-        dest="dist_func",
-        help="bam reads are normalized to the selected distribution (default: an empirical distribution)",
-        metavar="",
-        default="peak_rank_file_dist",
-    )
-    group.add_argument(
-        "-p",
-        "--pfmfile",
-        dest="pfmfile",
-        help="PFM file of the transcription factors to search for (default gimme.vertebrate.v5.0)",
-        metavar="",
+        metavar="DIR",
         default=None,
     )
     group.add_argument(
-        "-f",
-        "--factors",
-        dest="factors",
-        help="Transcription factors to use. Either a space-separated list or a file with one TF per line.",
+        "--pfmscorefile",
+        dest="pfmscorefile",
+        help="Use precomputed gimmemotifs scores (gimme scan -Tz --gc -g GENOME REGIONS > SCAN.tsv)",
+        metavar="FILE",
+        default=None,
+    )
+    group.add_argument(
+        "-t",
+        "--tfs",
+        dest="tfs",
+        help="Filter Transcription Factors to use (default: all in motif2factors.txt). "
+        "Either a space-separated list or one or more files with one TF per line",
         metavar="TF",
         default=None,
         nargs="*",
     )
     group.add_argument(
-        "-n",
-        "--ncpus",
-        dest="ncpus",
-        help="Number of processes to use for motif scanning",
-        type=int,
-        default=min(os.cpu_count(), 4),
+        "--jaccard-cutoff",
+        dest="jaccard_cutoff",
+        help="TFs with a jaccard motif similarity >= the cutoff can be used as backup model. "
+        "0: any similarity, 1: perfect similarity (default is 0.1)",
+        metavar="FLOAT",
+        type=float,
+        default=0.1,
     )
     group.add_argument(
-        "--pfmscorefile",
-        dest="pfmscorefile",
-        help="use precomputed gimmemotifs scores (gimme scan -T -g GENOME INPUTFILE)",
-        metavar="",
-        default=None,
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of cores to use.",
+        metavar="INT",
+        type=int,
+        default=min(os.cpu_count(), 4),
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
@@ -155,43 +181,35 @@ if __name__ == "__main__":
     subparser_dict["network"] = p
     group = p.add_argument_group("required arguments")
     group.add_argument(
-        "-b",
-        "--binding",
+        # "-b",
+        # "--binding",
         dest="binding",
-        help="TF binding prediction file (from ananse binding).",
+        help="TF binding prediction file (ANANSE binding output)",
         metavar="FILE",
-        required=True,
+        default=None,
+        # required=True,
     )
     group.add_argument(
         "-e",
         "--expression",
         dest="fin_expression",
-        help="Gene-level expression expression levels. The gene name (HGNC symbol in case of human) "
-             "should be present in the first column and there should be a column named tpm. "
-             "This file can be created by summarizing transcript-level TPMs "
-             "(the quant.sf from salmon or the abundances.tsv from kallisto) "
-             "to gene-level TPMs with tximeta.",
+        help="Gene expression file(s) with genes as first column and "
+        "expression column(s) in TPM values (column name(s) specified below). "
+        "Genes must be in HGNC symbols, unless a genomepy gene annotation is provided. "
+        "Files can include transcript-level TPMs "
+        "(the quant.sf from salmon or the abundances.tsv from kallisto), "
+        "or gene-level TPMs tables (summarized with e.g. tximeta). ",
         metavar="FILE",
         default=None,
-        required=True,
+        # required=True,
         nargs="+",
     )
-    group.add_argument(
-        "-o",
-        "--outfile",
-        dest="outfile",
-        help="Name of output file",
-        metavar="FILE",
-        default=None,
-        required=True,
-    )
-
-    group = p.add_argument_group("optional arguments")
+    group = p.add_argument_group("Required arguments (optional for hg38)")
     group.add_argument(
         "-g",
         "--genome",
         dest="genome",
-        help="Genome (genomepy name or FASTA file).",
+        help="Genome (genomepy name or FASTA file) used to align the BAMs and regions to (default: hg38)",
         metavar="NAME",
         default="hg38",
     )
@@ -199,34 +217,64 @@ if __name__ == "__main__":
         "-a",
         "--annotation",
         dest="annotation",
-        help="Gene annotation in BED12 format. Not necessary if you use a genome "
-             "that was installed using genomepy with the --annotation flag.",
+        help="Gene annotation (genomepy name or BED12 file) used to quantify expression levels. "
+        "Optional when a genomepy genome (with annotation) is providing.",
         metavar="BED",
+        default=None,
+    )
+    group = p.add_argument_group("optional arguments")
+    group.add_argument(
+        "-o",
+        "--outfile",
+        dest="outfile",
+        help="Name of the output network file (default: ./ANANSE_network.tsv)",
+        metavar="FILE",
+        default="./ANANSE_network.tsv",
     )
     group.add_argument(
-        "-n",
-        "--ncore",
-        dest="ncore",
-        help="Number of core used.",
-        type=int,
-        default=4,
+        "-t",
+        "--tfs",
+        dest="tfs",
+        help="Filter Transcription Factors to use (default: all in motif2factors.txt). "
+        "Either a space-separated list or one or more files with one TF per line",
+        metavar="TF",
+        default=None,
+        nargs="*",
     )
-    # group.add_argument(
-    #     "-m",
-    #     "--memory-limit",
-    #     dest="memory_limit",
-    #     help="Memory limit (default 24G). Regardless of this limit, "
-    #          "ANANSE will use at least ~12GB for a typical analysis of human networks. "
-    #          "Setting the memory limit higher will result in faster computation.",
-    #     type=str,
-    #     default='24GB',
-    # )
+    group.add_argument(
+        "-r",
+        "--regions",
+        dest="regions",
+        help="Filter regions to use (default: all in binding.h5). "
+        "Either one region/BED format file or a space-separated list.",
+        metavar="FILE",
+        default=None,
+        nargs="*",
+    )
+    group.add_argument(
+        "-c",
+        "--columns",
+        dest="column",
+        help="One or more (case insensitive) column names to extract "
+        "from the expression file(s) (default: tpm)",
+        metavar="COL",
+        default="tpm",
+        nargs="*",
+    )
+    group.add_argument(
+        "-f",
+        "--full-output",
+        dest="full_output",
+        help="Export the full GRN output to the output file",
+        action="store_true",
+        default=False,
+    )
     group.add_argument(
         "--include-promoter",
         "--exclude-promoter",
         default=True,
         help="Include or exclude promoter peaks (<= TSS +/- 2kb) in network inference. "
-             "By default promoter peaks are included.",
+        "By default promoter peaks are included.",
         dest="include_promoter",
         action=NegateAction,
         nargs=0,
@@ -236,10 +284,19 @@ if __name__ == "__main__":
         "--exclude-enhancer",
         default=True,
         help="Include or exclude enhancer peaks (> TSS +/- 2kb) in network inference. "
-             "By default enhancer peaks are included.",
+        "By default enhancer peaks are included.",
         dest="include_enhancer",
         action=NegateAction,
         nargs=0,
+    )
+    group.add_argument(
+        "-n",
+        "--ncore",
+        dest="ncore",
+        help="Number of cores to use.",
+        type=int,
+        metavar="INT",
+        default=min(os.cpu_count(), 4),
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
@@ -253,7 +310,7 @@ if __name__ == "__main__":
     group.add_argument(
         "-t",
         "--target",
-        dest="Gaf",
+        dest="target_file",
         help="Network of target cell type.",
         metavar="FILE",
         default=None,
@@ -263,43 +320,76 @@ if __name__ == "__main__":
         "-d",
         "--degenes",
         dest="expression",
-        help="File with differential gene expression (DEseq2 output file).",
+        help="File with differential gene expression (DEseq2 output file). "
+        "Genes must be in HGNC symbols, unless a genomepy gene annotation is provided. ",
         metavar="FILE",
-        required=True,
-    )
-    group.add_argument(
-        "-o",
-        "--outfile",
-        dest="outfile",
-        help="Output file.",
-        metavar="FILE",
-        default=None,
         required=True,
     )
     group = p.add_argument_group("optional arguments")
     group.add_argument(
         "-s",
         "--source",
-        dest="Gbf",
+        dest="source_file",
         help="Network of source cell type.",
         metavar="FILE",
         default=None,
     )
     group.add_argument(
-        "-i",
-        "--edges",
-        dest="edges",
-        help="Number of top edges used (default is 100,000).",
-        type=int,
-        default=100000,
+        "-o",
+        "--outfile",
+        dest="outfile",
+        help="Name of the output influence file (default: ./ANANSE_influence.tsv)",
+        metavar="FILE",
+        default="./ANANSE_influence.tsv",
     )
     group.add_argument(
-        "-p",
-        "--plot",
-        dest="plot",
-        help="Create influence score plot.",
+        "-f",
+        "--full-output",
+        dest="full_output",
+        help="Export the full GRN output to the output file",
         action="store_true",
         default=False,
+    )
+    group.add_argument(
+        "-a",
+        "--annotation",
+        dest="gene_gtf",
+        help="Gene annotation (genomepy name or GTF file) used to quantify expression levels.",
+        metavar="GTF",
+        default=None,
+    )
+    group.add_argument(
+        "-i",
+        "--interactions",
+        dest="edges",
+        help="Number of top TF-gene interactions used (default: 500.000).",
+        type=int,
+        metavar="INT",
+        default=500_000,
+    )
+    group.add_argument(
+        "--select-after-join",
+        dest="select_after_join",
+        help="Select top interactions on differential network, instead of input networks.",
+        default=False,
+        action="store_true",
+    )
+    group.add_argument(
+        "-j",
+        "--padj",
+        dest="padj_cutoff",
+        help="Adjusted p-value below which genes classify as differential (default: 0.05).",
+        type=float,
+        metavar="FLOAT",
+        default=0.05,
+    )
+    group.add_argument(
+        "-c",
+        "--column",
+        dest="sort_column",
+        help="Column of the network file(s) to select top interactions (default: prob).",
+        default="prob",
+        metavar="STR",
     )
     group.add_argument(
         "-n",
@@ -307,48 +397,178 @@ if __name__ == "__main__":
         dest="ncore",
         help="Number of cores to use.",
         type=int,
+        metavar="INT",
+        default=min(os.cpu_count(), 4),
     )
     group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.influence)
 
-
-    p = subparsers.add_parser("view", add_help=False)
+    # ananse View
+    p = subparsers.add_parser(
+        "view",
+        add_help=False,
+        description="Explore the contents of an ANANSE binding file.",
+    )
     subparser_dict["view"] = p
-    p.add_argument(
+    group = p.add_argument_group("required arguments")
+    group.add_argument(
         "infile",
-        help="input binding.h5 file",
+        help="TF binding prediction file (ANANSE binding output)",
         metavar="FILE",
     )
-    p.add_argument(
+    group = p.add_argument_group("optional arguments")
+    group.add_argument(
         "-o",
         "--outfile",
         dest="outfile",
-        help="outputfile (tab-separated text, default: stdout)",
+        help="Output file (tab-separated text, default: stdout)",
         metavar="FILE",
         default=None,
     )
-    p.add_argument(
-        "-f", "--factors",
-        dest="factors",
-        help="name(s) of transcription factors (default: all)",
+    group.add_argument(
+        "-t",
+        "--tfs",
+        dest="tfs",
+        help="Transcription factor(s) to display (default: all)",
         metavar="TF",
-        nargs='*',
+        default=None,
+        nargs="*",
     )
-    p.add_argument(
-        "-F", "--format",
+    group.add_argument(
+        "-r",
+        "--regions",
+        dest="regions",
+        help="Region(s) to display (default: all)",
+        metavar="REGION",
+        default=None,
+        nargs="*",
+    )
+    group.add_argument(
+        "-F",
+        "--format",
         dest="format",
         default="wide",
-        help="format: wide or long (default: wide)",
-        metavar="FORMAT",
+        help="Display format: wide (n columns) or long (3 columns) (default: wide)",
+    )
+    group.add_argument(
+        "-n",
+        dest="n",
+        metavar="INT",
+        help="Number of regions and tfs to display (default: all)",
+        default=None,
+    )
+    group.add_argument(
+        "-lr",
+        "--list-regions",
+        dest="list_regions",
+        help="Return a list of regions",
+        action="store_true",
+        default=False,
+    )
+    group.add_argument(
+        "-lt",
+        "--list-tfs",
+        dest="list_tfs",
+        help="Return a list of transcription factors",
+        action="store_true",
+        default=False,
+    )
+    group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.view)
 
+    # ananse plot
+    p = subparsers.add_parser("plot", add_help=False)
+    group = p.add_argument_group("required arguments")
+    group.add_argument(
+        # "-i",
+        # "--influence-file",
+        dest="infile",
+        help="TF influence file (ANANSE influence output)",
+        metavar="FILE",
+        # default=None,
+        # required=True,
+    )
+    group.add_argument(
+        "-d",
+        "--diff-network",
+        help="TF influence diffnetwork file (also ANANSE influence output)",
+        dest="GRN_file",
+        metavar="FILE",
+        # default=None,
+    )
+    group = p.add_argument_group("optional arguments")
+    group.add_argument(
+        "-o",
+        "--outdir",
+        dest="outdir",
+        help="Directory where you wish to store the output (default: ./ANANSE_plot)",
+        metavar="DIR",
+        default="./ANANSE_plot",
+    )
+    group.add_argument(
+        "--edge-info",
+        help="Column to use for edges of GRN, default: 'weight'. "
+        "When full_output is specified, options are 'wb_diff' ,'tf_act_diff', 'tf_expr_diff', 'tg_expr_diff'",
+        dest="edge_info",
+        type=str,
+        default="weight",
+    )
+    group.add_argument(
+        "--edge-min",
+        help="Minimum value for an edge to be included in the GRN image",
+        dest="edge_min",
+        type=float,
+        default=0.0,
+    )
+    group.add_argument(
+        "--node-placement",
+        help="pyviz cluster algorithm used for node placement, options include: neato, dot, fdp, twopi, sfdp, circo",
+        dest="network_algorithm",
+        type=str,
+        default="neato",
+    )
+    group.add_argument(
+        "--n-tfs",
+        help="Amount of TFs to plot in the GRN, default is top 20 differential TFs",
+        dest="n_TFs",
+        type=int,
+        default=20,
+    )
+    group.add_argument(
+        "-c",
+        "--cmap",
+        dest="cmap",
+        help="matlotlib colour library",
+        type=str,
+        default="viridis",
+    )
+    group.add_argument(
+        "-f",
+        "--full-output",
+        dest="full_output",
+        help="Select if the diffnetwork is a full output file",
+        action="store_true",
+        default=False,
+    )
+    group.add_argument(
+        "-t",
+        "--type",
+        dest="ftype",
+        help="Specify the output filetype (default: pdf)",
+        default="pdf",
+    )
+    group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
+    )
+    p.set_defaults(func=commands.plot)
 
     if len(sys.argv) == 1:
         parser.print_help()
-    if len(sys.argv) == 2 and sys.argv[-1] in subparser_dict:
+    elif len(sys.argv) == 2 and sys.argv[-1] in subparser_dict:
         subparser_dict[sys.argv[-1]].print_help()
     else:
         args = parser.parse_args()
@@ -356,12 +576,14 @@ if __name__ == "__main__":
             if args.genome is not None:
                 try:
                     Genome(args.genome)
-                except Exception:  # noqa
-                    logger.exception(
-                        f"Genome {args.genome} not found. Have you installed your genome with genomepy? "
+                except Exception as e:  # noqa
+                    logger.error(str(e))
+                    logger.error(
+                        "  Have you installed your genome with genomepy? "
                         "See https://github.com/vanheeringen-lab/genomepy for details. "
-                        "Alternatively, you can specify a FASTA file."
                     )
+                    logger.error("  Alternatively, you can specify a FASTA file.")
+                    sys.exit(0)
 
         if args.func.__name__.startswith("run_"):
             args.func(**vars(args))
