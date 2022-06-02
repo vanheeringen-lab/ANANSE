@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- CAGE-seq support!
+  - for more details, check out https://github.com/vanheeringen-lab/ANANSE-CAGE
 - `ananse.binding` can now optionally accept a raw counts file instead of BAM files.
   - `ananse.binding` now has a (case-insensitive) `--columns` argument to filter the counts table by.
 - `ananse.view` now optionally accepts `regions` and `tfs`, to filter the output.
