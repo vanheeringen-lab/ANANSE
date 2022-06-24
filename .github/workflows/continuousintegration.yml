@@ -32,7 +32,7 @@ jobs:
       with:
         # python-version: ${{ matrix.python-version }}
         mamba-version: "*"
-        channels: bioconda,conda-forge,defaults
+        channels: conda-forge,bioconda,defaults
         channel-priority: true
         activate-environment: ananse_dev
         environment-file: requirements.yaml
