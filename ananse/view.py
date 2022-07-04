@@ -35,6 +35,7 @@ def view_h5(
     n=None,
     list_regions=False,
     list_tfs=False,
+    activity=False,
 ):
     """Extract information from an ANANSE binding.h5 file.
 
@@ -55,29 +56,41 @@ def view_h5(
         Return a list of regions
     list_tfs : bool, optional
         Return a list of transcription factors
+    activity : bool, optional
+        Return activity scores of transcription factors
 
     Returns
     -------
     pandas.DataFrame
     """
+    if n:
+        n = int(n)
+
     if list_regions:
         reg = pd.read_hdf(fname, key="_index")
-        return pd.DataFrame({"region": list(set(reg.index))})
+        df = pd.DataFrame({"region": list(set(reg.index))})
+        if n:
+            return df.head(n)
+        return df
 
     if tfs is None:
         tfs = get_binding_tfs(fname)
+    if n:
+        tfs = tfs[: min(len(tfs), n)]
 
     if list_tfs:
         return pd.DataFrame({"factor": list(tfs)})
+
+    if activity:
+        df = pd.read_hdf(fname, key="_factor_activity").set_index("factor")
+        if n:
+            return df.head(n)
+        return df
 
     if fmt not in ["wide", "long"]:
         raise ValueError("fmt should be either 'wide' or 'long'")
 
     with pd.HDFStore(fname, "r") as hdf:
-        if n:
-            n = int(n)
-            tfs = tfs[: min(len(tfs), n)]
-
         idx = hdf.get("_index").index
         if n:
             rows = [True for _ in range(n)] + [False for _ in range(n, len(idx))]

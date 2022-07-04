@@ -11,6 +11,7 @@ def view(args):
         args.n,
         args.list_regions,
         args.list_tfs,
+        args.activity,
     )
 
     index = not (args.format == "long" or args.list_regions or args.list_tfs)

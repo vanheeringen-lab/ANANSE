@@ -476,6 +476,14 @@ if __name__ == "__main__":
         default=False,
     )
     group.add_argument(
+        "-a",
+        "--activity",
+        dest="activity",
+        help="Return activity scores of transcription factors",
+        action="store_true",
+        default=False,
+    )
+    group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
     p.set_defaults(func=commands.view)
