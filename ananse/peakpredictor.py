@@ -857,6 +857,7 @@ class PeakPredictor:
                     signal = pd.DataFrame({col: scale(signal)}, index=df.index)
                     # Run 3 times for more stable result
                     for i in range(3):
+                        logger.info(f"    Motif activity prediction on {col} data, run {i+1}/3")
                         if len(df) <= nregions:
                             signal.to_csv(f.name, sep="\t")
                         else:
@@ -1131,7 +1132,7 @@ def predict_peaks(
 
         logger.info("Predicting binding per TF:")
         proba = None
-        for factor in p.factors():
+        for factor in sorted(p.factors()):
             try:
                 proba = p.predict_proba(factor, jaccard_cutoff=jaccard_cutoff)
                 hdf.put(
