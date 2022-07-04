@@ -526,9 +526,10 @@ class Network(object):
         # This is necessary for dask, as dask cannot merge on a MultiIndex.
         # Otherwise, this would be an inefficient and unnecessary step.
         network["tf_target"] = network["tf"] + SEPARATOR + network["target"]
+        network = network.set_index("tf_target", sorted=True)
         network = network[
-            ["tf", "target", "tf_target", "tf_expression", "target_expression"]
-        ].set_index("tf_target")
+            ["tf", "target", "tf_expression", "target_expression"]
+        ]
 
         return network
 
@@ -609,6 +610,7 @@ class Network(object):
                 act = act.set_index("factor")
                 act.index.name = "tf"
                 act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
+                # act = dd.from_pandas(act, npartitions=3)
                 df_expression = df_expression.merge(
                     act, right_index=True, left_on="tf", how="left"
                 ).fillna(0.5)
