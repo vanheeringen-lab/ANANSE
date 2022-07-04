@@ -8,7 +8,7 @@ from loguru import logger
 @logger.catch
 def network(args):
     ncore = check_cores(args.ncore)
-    # memory_limit = "16GB"
+    memory_limit = "16GB"
     # if ncore == 1:
     #     # With one core more memory is needed
     #     memory_limit = "20GB"
@@ -26,7 +26,7 @@ def network(args):
         dashboard_address=None,  # noqa: disable dashboard
         n_workers=ncore,
         threads_per_worker=2,
-        # memory_limit=memory_limit,
+        memory_limit=memory_limit,
     )
     client = Client(cluster)
 
