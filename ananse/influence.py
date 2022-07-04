@@ -241,6 +241,9 @@ def difference(
 
     # Only keep edges that are higher in target network
     diff_network = diff_network[diff_network["weight"] > 0]
+    if len(diff_network) == 0:
+        logger.error("No differences between networks!")
+        sys.exit(1)
 
     if not full_output:
         diff_network.drop(columns=["weight_target", "weight_source"], inplace=True)
@@ -450,10 +453,6 @@ class Influence(object):
                 full_output,
                 select_after_join,
             )
-
-            if len(self.grn.edges) == 0:
-                logger.error("No differences between networks!")
-                sys.exit(1)
             logger.info(f"    Differential network has {len(self.grn.edges)} edges.")
 
         # Load expression file
