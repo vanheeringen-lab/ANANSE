@@ -272,7 +272,7 @@ def test_create_expression_network(network_obj):
     ).set_index(None)
     df = network_obj.create_expression_network(expression, tfs, column).compute()
     assert len(df) == len(tfs) * len(genes)
-    assert len(df.tf_target) == len(set(df.tf_target))
+    assert len(df.index) == len(set(df.index))
     assert int(df.tf_expression.min()) == 0
     assert int(df.tf_expression.max()) == 1
     assert int(df.target_expression.min()) == 0
@@ -290,8 +290,8 @@ def test_run_network(network_obj, outdir):
         tfs=["GATA3"],
         regions=["chr10:11716757-11716957"],
     )
-    assert df.index.name is None
-    assert sorted(df.columns) == sorted(["tf_target", "prob"])
+    assert df.index.name == "tf_target"
+    assert df.columns == ["prob"]
 
     # expression network (full)
     n.full_output = True
@@ -301,10 +301,8 @@ def test_run_network(network_obj, outdir):
         tfs=["GATA3"],
         regions=["chr10:11716757-11716957"],
     )
-    assert df.index.name is None
-    assert sorted(df.columns) == sorted(
-        ["tf_target", "prob", "tf_expression", "target_expression"]
-    )
+    assert df.index.name == "tf_target"
+    assert sorted(df.columns) == sorted(["prob", "tf_expression", "target_expression"])
 
     # binding network (minimal)
     n.full_output = False
@@ -314,8 +312,8 @@ def test_run_network(network_obj, outdir):
         tfs=["GATA3"],
         regions=["chr10:11716757-11716957"],
     )
-    assert df.index.name is None
-    assert sorted(df.columns) == sorted(["tf_target", "prob"])
+    assert df.index.name == "tf_target"
+    assert df.columns == ["prob"]
 
     # binding network (full)
     n.full_output = True
@@ -325,8 +323,8 @@ def test_run_network(network_obj, outdir):
         tfs=["GATA3"],
         regions=["chr10:11716757-11716957"],
     )
-    assert df.index.name is None
-    assert sorted(df.columns) == sorted(["tf_target", "prob", "weighted_binding"])
+    assert df.index.name == "tf_target"
+    assert sorted(df.columns) == sorted(["prob", "weighted_binding"])
 
     # expression-binding network (minimal)
     n.full_output = False
@@ -336,8 +334,8 @@ def test_run_network(network_obj, outdir):
         tfs=["GATA3"],
         regions=["chr10:11716757-11716957"],
     )
-    assert df.index.name is None
-    assert sorted(df.columns) == sorted(["tf_target", "prob"])
+    assert df.index.name == "tf_target"
+    assert df.columns == ["prob"]
 
     # expression-binding network (full)
     n.full_output = True
@@ -347,10 +345,9 @@ def test_run_network(network_obj, outdir):
         tfs=["GATA3"],
         regions=["chr10:11716757-11716957"],
     )
-    assert df.index.name is None
+    assert df.index.name == "tf_target"
     assert sorted(df.columns) == sorted(
         [
-            "tf_target",
             "prob",
             "tf_expression",
             "target_expression",
@@ -371,10 +368,10 @@ def test_run_network(network_obj, outdir):
         regions=["chr10:11716757-11716957"],
         outfile=outfile,
     )
-    df = pd.read_csv(outfile, sep="\t")
-    assert df.index.name is None
+    df = pd.read_csv(outfile, sep="\t", index_col=0)
+    assert df.index.name == "tf_target"
     assert sorted(df.columns) == sorted(
-        ["tf_target", "prob", "tf_expression", "target_expression", "activity"]
+        ["prob", "tf_expression", "target_expression", "activity"]
     )
 
 

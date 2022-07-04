@@ -516,7 +516,7 @@ class Influence(object):
             backup_pct_overlap = pct_overlap
             backup_df = df.copy()
 
-            gp = genomepy.Annotation(self.gene_gtf)
+            gp = genomepy.Annotation(self.gene_gtf, quiet=True)
             tid2gid = gp.gtf_dict("transcript_id", "gene_id")
             tid2name = gp.gtf_dict("transcript_id", "gene_name")
             gid2name = gp.gtf_dict("gene_id", "gene_name")

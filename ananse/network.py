@@ -14,7 +14,6 @@ from sklearn.preprocessing import minmax_scale
 import genomepy
 import dask.dataframe as dd
 from tempfile import NamedTemporaryFile, mkdtemp
-from dask.distributed import progress
 from loguru import logger
 from tqdm.auto import tqdm
 import pyranges as pr
@@ -462,6 +461,16 @@ class Network(object):
             raise ValueError("No genes found near the requested regions!")
 
         ddf = dd.read_csv(os.path.join(tmpdir, "*.csv")).set_index("tf_target")
+        # rankdata() requires all data to be loaded into memory
+        # TODO: update when dask can do this delayed
+        df = ddf.compute()
+        df["weighted_binding"] = minmax_scale(
+            rankdata(df["weighted_binding"], method="min")
+        )
+        # save the data to file to reduce RAM usage
+        tmpfile = os.path.join(tmpdir, "binding.csv")
+        df.to_csv(tmpfile)
+        ddf = dd.read_csv(tmpfile).set_index("tf_target")
         return ddf
 
     def _save_temp_expression(self, df, name, column="tpm"):
@@ -506,19 +515,20 @@ class Network(object):
         tf_expr = expression[expression.index.isin(tfs)]
         tf_fname = self._save_temp_expression(tf_expr, "tf", column)
         target_fname = self._save_temp_expression(expression, "target", column)
+
         # Read files (delayed) and merge on 'key' to create a Cartesian product
         # combining all TFs with all target genes.
-        a = dd.read_parquet(tf_fname)
-        b = dd.read_parquet(target_fname)
-        network = a.merge(b, how="outer")
+        tf_df = dd.read_parquet(tf_fname)
+        target_df = dd.read_parquet(target_fname)
+        network = tf_df.merge(target_df, how="outer")
 
         # Use one-column index that contains TF and target genes.
         # This is necessary for dask, as dask cannot merge on a MultiIndex.
-        # Otherwise this would be an inefficient and unnecessary step.
+        # Otherwise, this would be an inefficient and unnecessary step.
         network["tf_target"] = network["tf"] + SEPARATOR + network["target"]
         network = network[
             ["tf", "target", "tf_target", "tf_expression", "target_expression"]
-        ]
+        ].set_index("tf_target")
 
         return network
 
@@ -634,24 +644,12 @@ class Network(object):
             if df_expression is None:
                 logger.info("Processing binding network")
                 result = df_binding
-                result = result.reset_index()
             else:
                 logger.info("Processing expression-binding network")
                 result = df_expression.merge(
-                    df_binding, right_index=True, left_on="tf_target", how="left"
-                )
-                result = result.persist()
-                result = result.fillna(0)
-                # TODO: move client from commands.network into this module
-                if "client" in globals():
-                    progress(result)
-        # This is where the heavy lifting of all delayed computations gets done
-        result = result.compute()
+                    df_binding, right_index=True, left_index=True, how="left"
+                ).fillna(0)
 
-        if "weighted_binding" in result:
-            result["weighted_binding"] = minmax_scale(
-                rankdata(result["weighted_binding"], method="min")
-            )
         columns = [
             "tf_expression",
             "target_expression",
@@ -659,15 +657,14 @@ class Network(object):
             "activity",
         ]
         columns = [col for col in columns if col in result]
-        logger.debug(f"Using {', '.join(columns)}")
+        logger.debug(f"Using {', '.join(['tf_target'] + columns)}")
         # Combine the individual scores
         result["prob"] = result[columns].mean(1)
 
-        # filter output
-        columns = ["tf_target", "prob"]
+        # filter output (tf_target is always the index)
+        columns = ["prob"]
         if self.full_output:
             columns = [
-                "tf_target",
                 "prob",
                 "tf_expression",
                 "target_expression",
@@ -675,13 +672,14 @@ class Network(object):
                 "activity",
             ]
         output_cols = [c for c in columns if c in result.columns]
+        # This is where the heavy lifting of all delayed computations gets done
         if outfile:
             logger.info("Writing network")
             out_dir = os.path.abspath(os.path.dirname(outfile))
             os.makedirs(out_dir, exist_ok=True)
-            result[output_cols].to_csv(outfile, sep="\t", index=False)
+            result[output_cols].to_csv(outfile, sep="\t", index=True, single_file=True)
         else:
-            return result[output_cols]
+            return result[output_cols].compute()
 
     def gene_overlap(self, expression: pd.DataFrame, tfs: list):
         """
@@ -694,7 +692,7 @@ class Network(object):
         """
         cutoff = 0.6  # fraction of overlap that is "good enough"
         tfs = set(tfs)
-        gp = genomepy.Annotation(self.gene_bed)
+        gp = genomepy.Annotation(self.gene_bed, quiet=True)
         bed_genes = set(gp.genes("bed"))
         expression_genes = set(expression.index)
 
@@ -822,7 +820,9 @@ def get_bed(gene_bed, genome):
             out_bed = gp.annotation_bed_file  # can return None
     elif not os.path.exists(out_bed) or not out_bed.lower().endswith(".bed"):
         # can raise descriptive FileNoTFoundError (in version >0.11.0)
-        gp = genomepy.Annotation(out_bed)  # can raise descriptive ValueError
+        gp = genomepy.Annotation(
+            out_bed, quiet=True
+        )  # can raise descriptive ValueError
         out_bed = gp.annotation_bed_file  # can return None
     if out_bed is None:
         raise TypeError("Please provide a gene bed file with the -a argument.")
