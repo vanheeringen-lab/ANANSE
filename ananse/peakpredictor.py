@@ -857,7 +857,9 @@ class PeakPredictor:
                     signal = pd.DataFrame({col: scale(signal)}, index=df.index)
                     # Run 3 times for more stable result
                     for i in range(3):
-                        logger.info(f"    Motif activity prediction on {col} data, run {i+1}/3")
+                        logger.info(
+                            f"    Motif activity prediction on {col} data, run {i+1}/3"
+                        )
                         if len(df) <= nregions:
                             signal.to_csv(f.name, sep="\t")
                         else:
