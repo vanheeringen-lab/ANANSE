@@ -527,9 +527,7 @@ class Network(object):
         # Otherwise, this would be an inefficient and unnecessary step.
         network["tf_target"] = network["tf"] + SEPARATOR + network["target"]
         network = network.set_index("tf_target", sorted=True)
-        network = network[
-            ["tf", "target", "tf_expression", "target_expression"]
-        ]
+        network = network[["tf", "target", "tf_expression", "target_expression"]]
 
         return network
 
