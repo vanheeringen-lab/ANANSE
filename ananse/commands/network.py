@@ -1,8 +1,9 @@
 import os
 import ananse.network
-from ananse.utils import check_path, load_tfs, load_regions, check_cores, mytmpdir
+from ananse.utils import check_path, load_tfs, load_regions, check_cores
 from dask.distributed import Client, LocalCluster
 from loguru import logger
+from tempfile import gettempdir
 
 
 @logger.catch
@@ -22,10 +23,10 @@ def network(args):
     )
 
     cluster = LocalCluster(
-        local_directory=mytmpdir(),
+        local_directory=gettempdir(),
         dashboard_address=None,  # noqa: disable dashboard
         n_workers=ncore,
-        threads_per_worker=2,
+        threads_per_worker=1,
         memory_limit=memory_limit,
     )
     client = Client(cluster)
