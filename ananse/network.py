@@ -508,13 +508,13 @@ class Network(object):
         target_fname = self._save_temp_expression(expression, "target", column)
         # Read files (delayed) and merge on 'key' to create a Cartesian product
         # combining all TFs with all target genes.
-        a = dd.read_parquet(tf_fname)
-        b = dd.read_parquet(target_fname)
-        network = a.merge(b, how="outer")
+        tf_df = dd.read_parquet(tf_fname)
+        target_df = dd.read_parquet(target_fname)
+        network = tf_df.merge(target_df, how="outer")
 
         # Use one-column index that contains TF and target genes.
         # This is necessary for dask, as dask cannot merge on a MultiIndex.
-        # Otherwise this would be an inefficient and unnecessary step.
+        # Otherwise, this would be an inefficient and unnecessary step.
         network["tf_target"] = network["tf"] + SEPARATOR + network["target"]
         network = network[
             ["tf", "target", "tf_target", "tf_expression", "target_expression"]
@@ -694,7 +694,7 @@ class Network(object):
         """
         cutoff = 0.6  # fraction of overlap that is "good enough"
         tfs = set(tfs)
-        gp = genomepy.Annotation(self.gene_bed)
+        gp = genomepy.Annotation(self.gene_bed, quiet=True)
         bed_genes = set(gp.genes("bed"))
         expression_genes = set(expression.index)
 
@@ -821,8 +821,8 @@ def get_bed(gene_bed, genome):
             gp = genomepy.Genome(genome)  # can raise descriptive FileNotFoundError
             out_bed = gp.annotation_bed_file  # can return None
     elif not os.path.exists(out_bed) or not out_bed.lower().endswith(".bed"):
-        # can raise descriptive FileNoTFoundError (in version >0.11.0)
-        gp = genomepy.Annotation(out_bed)  # can raise descriptive ValueError
+        # can raise descriptive FileNoTFoundError (version >0.11.0)
+        gp = genomepy.Annotation(out_bed, quiet=True)
         out_bed = gp.annotation_bed_file  # can return None
     if out_bed is None:
         raise TypeError("Please provide a gene bed file with the -a argument.")
