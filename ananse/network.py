@@ -462,6 +462,16 @@ class Network(object):
             raise ValueError("No genes found near the requested regions!")
 
         ddf = dd.read_csv(os.path.join(tmpdir, "*.csv")).set_index("tf_target")
+        # rankdata() requires all data to be loaded into memory
+        # TODO: update when dask can do this delayed
+        df = ddf.compute()
+        df["weighted_binding"] = minmax_scale(
+            rankdata(df["weighted_binding"], method="min")
+        )
+        # save the data to file to reduce RAM usage
+        tmpfile = os.path.join(tmpdir, "binding.csv")
+        df.to_csv(tmpfile)
+        ddf = dd.read_csv(tmpfile).set_index("tf_target")
         return ddf
 
     def _save_temp_expression(self, df, name, column="tpm"):
@@ -648,10 +658,10 @@ class Network(object):
         # This is where the heavy lifting of all delayed computations gets done
         result = result.compute()
 
-        if "weighted_binding" in result:
-            result["weighted_binding"] = minmax_scale(
-                rankdata(result["weighted_binding"], method="min")
-            )
+        # if "weighted_binding" in result:
+        #     result["weighted_binding"] = minmax_scale(
+        #         rankdata(result["weighted_binding"], method="min")
+        #     )
         columns = [
             "tf_expression",
             "target_expression",
