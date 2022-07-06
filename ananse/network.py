@@ -14,7 +14,6 @@ from sklearn.preprocessing import minmax_scale
 import genomepy
 import dask.dataframe as dd
 from tempfile import NamedTemporaryFile, mkdtemp
-from dask.distributed import progress
 from loguru import logger
 from tqdm.auto import tqdm
 import pyranges as pr
@@ -471,7 +470,7 @@ class Network(object):
         # save the data to file to reduce RAM usage
         tmpfile = os.path.join(tmpdir, "binding.csv")
         df.to_csv(tmpfile)
-        ddf = dd.read_csv(tmpfile).set_index("tf_target")
+        ddf = dd.read_csv(tmpfile).set_index("tf_target", sorted=True)
         return ddf
 
     def _save_temp_expression(self, df, name, column="tpm"):
@@ -652,16 +651,10 @@ class Network(object):
                 )
                 result = result.persist()
                 result = result.fillna(0)
-                # TODO: move client from commands.network into this module
-                if "client" in globals():
-                    progress(result)
+
         # This is where the heavy lifting of all delayed computations gets done
         result = result.compute()
 
-        # if "weighted_binding" in result:
-        #     result["weighted_binding"] = minmax_scale(
-        #         rankdata(result["weighted_binding"], method="min")
-        #     )
         columns = [
             "tf_expression",
             "target_expression",
