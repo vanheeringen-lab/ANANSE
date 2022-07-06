@@ -468,6 +468,7 @@ class Network(object):
         df["weighted_binding"] = minmax_scale(
             rankdata(df["weighted_binding"], method="min")
         )
+        df["weighted_binding"] = df["weighted_binding"].astype(np.float32)
         # save the data to file to reduce RAM usage
         tmpfile = os.path.join(tmpdir, "binding.csv")
         df.to_csv(tmpfile)
