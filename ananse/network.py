@@ -446,6 +446,7 @@ class Network(object):
             tmp = tmp.reset_index().melt(
                 id_vars=tmp.index.name, var_name="tf", value_name="weighted_binding"
             )
+            tmp["weighted_binding"] = tmp["weighted_binding"].astype(np.float32)
 
             # Create dataframe with two columns: tf_gene and weighted_binding score
             tmp["tf_target"] = tmp["tf"] + SEPARATOR + tmp["gene"]
@@ -475,7 +476,7 @@ class Network(object):
 
     def _save_temp_expression(self, df, name, column="tpm"):
         tmp = df.rename(columns={column: f"{name}_expression"})
-        tmp[f"{name}_expression"] = minmax_scale(tmp[f"{name}_expression"].rank())
+        tmp[f"{name}_expression"] = minmax_scale(rankdata(tmp[f"{name}_expression"]))
         tmp.index.rename(name, inplace=True)
         tmp["key"] = None
         fname = NamedTemporaryFile(
@@ -510,7 +511,7 @@ class Network(object):
             Dask DataFrame with gene expression based values.
         """
         # log transform expression values
-        expression[column] = np.log2(expression[column] + 1e-5)
+        expression[column] = np.log2(expression[column] + 1e-5, dtype=np.float32)
 
         tf_expr = expression[expression.index.isin(tfs)]
         tf_fname = self._save_temp_expression(tf_expr, "tf", column)
@@ -606,6 +607,7 @@ class Network(object):
                 act = act.set_index("factor")
                 act.index.name = "tf"
                 act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
+                act["activity"] = act["activity"].astype(np.float32)
                 df_expression = df_expression.merge(
                     act, right_index=True, left_on="tf", how="left"
                 ).fillna(0.5)
@@ -662,7 +664,7 @@ class Network(object):
         columns = [col for col in columns if col in result]
         logger.debug(f"Using {', '.join(columns)}")
         # Combine the individual scores
-        result["prob"] = result[columns].mean(1)
+        result["prob"] = result[columns].mean(1).astype(np.float32)
 
         # filter output
         columns = ["tf_target", "prob"]

@@ -12,7 +12,7 @@ dependencies:
   - loguru
   - matplotlib-base >=3.3
   - networkx
-  - numpy
+  - numpy >=1.6
   - openpyxl
   - pandas
   - pybedtools
