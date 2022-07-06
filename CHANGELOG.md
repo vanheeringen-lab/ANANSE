@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - `anane view` can now return factory activity with `--activity`
 - `anane view` also accepts `-n` for all sub-option (list TFs, list regions and activity)
 
+### Changed
+- `ananse network` uses slightly less memory, and should now keep going unless all memory is used.
+
 ### Fixed
 - `ananse influence` now throws a descriptive error if source and target networks are identical
 

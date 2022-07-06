@@ -25,7 +25,7 @@ def test_get_bed(outdir):
     # accepts existing files only
     test_bed = os.path.join(outdir, "test.annotation.bed")
     assert not os.path.exists(test_bed)
-    with pytest.raises((ValueError, FileNotFoundError)):
+    with pytest.raises((ValueError, FileNotFoundError)):  # noqa
         cmd(test_bed, None)
 
     test_fa = os.path.join(outdir, "test.fa")
@@ -187,7 +187,7 @@ def test__load_pyranges(network_obj):
 
     n.gene_bed = "tests/data/GRCz11_chr9/GRCz11/GRCz11.annotation.bed"
     n._load_pyranges(up=50, down=10)
-    df = n.genes_pr.as_df()
+    df = n.genes_pr.as_df()  # noqa
 
     assert set(df["Chromosome"]) == {"9"}
 

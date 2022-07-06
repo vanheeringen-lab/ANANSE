@@ -1,27 +1,26 @@
 """Build gene regulatory network"""
-import os
 import math
+import os
 import re
 import shutil
 import sys
 import warnings
+from tempfile import NamedTemporaryFile, mkdtemp
 from typing import Union
 
+import dask.dataframe as dd
+import genomepy
 import numpy as np
 import pandas as pd
+import pyranges as pr
+from loguru import logger
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
-import genomepy
-import dask.dataframe as dd
-from tempfile import NamedTemporaryFile, mkdtemp
-from loguru import logger
 from tqdm.auto import tqdm
-import pyranges as pr
 
+from ananse import PACKAGE_DIR, SEPARATOR
 from ananse.utils import cleanpath
 from ananse.view import get_binding_tfs
-from . import SEPARATOR, PACKAGE_DIR
-
 
 warnings.filterwarnings("ignore")
 
@@ -32,7 +31,6 @@ class Network(object):
 
     def __init__(
         self,
-        ncore=1,
         genome="hg38",
         gene_bed=None,
         include_promoter=False,
@@ -44,8 +42,6 @@ class Network(object):
 
         Parameters
         ----------
-            ncore : int
-                Specifies the number of threads to use during analysis. (default: 1)
             genome : str
                 The genome that is used for the gene annotation and the enhancer location. (default: "hg38")
             gene_bed : str, optional
@@ -57,7 +53,6 @@ class Network(object):
             full_output : bool
                 export all variables to the GRN file or by default only the TF_target + prob score
         """
-        self.ncore = ncore
         self.gene_bed = get_bed(gene_bed, genome)
         self.include_promoter = include_promoter
         self.include_enhancer = include_enhancer
@@ -643,15 +638,12 @@ class Network(object):
         else:
             if df_expression is None:
                 logger.info("Processing binding network")
-                result = df_binding
-                result = result.reset_index()
+                result = df_binding.reset_index()
             else:
                 logger.info("Processing expression-binding network")
                 result = df_expression.merge(
                     df_binding, right_index=True, left_on="tf_target", how="left"
-                )
-                result = result.persist()
-                result = result.fillna(0)
+                ).fillna(0.0)
 
         # This is where the heavy lifting of all delayed computations gets done
         result = result.compute()
