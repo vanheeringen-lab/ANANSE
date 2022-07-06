@@ -477,7 +477,7 @@ class Network(object):
         tmp = df.rename(columns={column: f"{name}_expression"})
         tmp[f"{name}_expression"] = minmax_scale(tmp[f"{name}_expression"].rank())
         tmp.index.rename(name, inplace=True)
-        tmp["key"] = 0
+        tmp["key"] = None
         fname = NamedTemporaryFile(
             prefix="ananse.", suffix=f".{name}.parquet", delete=False
         ).name
@@ -525,9 +525,7 @@ class Network(object):
         # This is necessary for dask, as dask cannot merge on a MultiIndex.
         # Otherwise, this would be an inefficient and unnecessary step.
         network["tf_target"] = network["tf"] + SEPARATOR + network["target"]
-        network = network[
-            ["tf", "target", "tf_target", "tf_expression", "target_expression"]
-        ]
+        network = network[["tf", "tf_expression", "target_expression", "tf_target"]]
 
         return network
 
