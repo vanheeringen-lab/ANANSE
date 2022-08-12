@@ -204,7 +204,7 @@ You can already generate a motif database for e.g. zebrafish (danRer11 assembly)
 gimme motif2factors --new-reference danRer11 --outdir mynewdatabase
 ```
 
-Take a look at the [gimme motif2factors](https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors) docs for more options
+Take a look at the [gimme motif2factors](https://gimmemotifs.readthedocs.io/en/master/reference.html#command-gimme-motif2factors) docs for more options
 
 #### Motif file
 
