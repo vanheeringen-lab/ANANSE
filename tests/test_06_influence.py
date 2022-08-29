@@ -94,7 +94,7 @@ def test_run_target_score(outdir):
     assert os.path.exists(i.outfile)
     df = pd.read_table(i.outfile, index_col=0)
     assert df.loc["FOXK2"]["direct_targets"] == 10
-    assert round(df.loc["FOXK2"]["pval"], 2) == 0.15
+    assert round(df.loc["FOXK2"]["pval"], 2) == 0.18
 
     # same output with multiprocessing
     os.remove(i.outfile)

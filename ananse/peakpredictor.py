@@ -159,7 +159,7 @@ class PeakPredictor:
         if self.species == "human":
             valid_factors = _load_human_factors()
 
-        for name, motif in motifs.items():
+        for name, motif in motifs.items():  # noqa
             for factor in get_motif_factors(motif, indirect=indirect):
                 # filter for presence in factors
                 if factors is not None and factor not in factors:
@@ -449,7 +449,7 @@ class PeakPredictor:
             regionfile.flush()
 
             # only scan motifs for our factors
-            motifs = list(self.motifs.values())
+            motifs = list(self.motifs.values())  # noqa
             motif_df = scan_regionfile_to_table(
                 regionfile.name,
                 self.genome,
