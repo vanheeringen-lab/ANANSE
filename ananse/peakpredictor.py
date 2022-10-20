@@ -729,7 +729,7 @@ class PeakPredictor:
             # Using the fact here that mouse names are not all upper-case.
             # TODO: replace with a curated set of factors.
             return [f for f in self.f2m if f[1:].islower()]
-        return list(self.f2m.keys())
+        return sorted(self.f2m.keys())
 
     def predict_proba(self, factor=None, motifs=None, jaccard_cutoff=0.0):
         """Predict binding probability.
@@ -1134,7 +1134,7 @@ def predict_peaks(
 
         logger.info("Predicting binding per TF:")
         proba = None
-        for factor in sorted(p.factors()):
+        for factor in p.factors():
             try:
                 proba = p.predict_proba(factor, jaccard_cutoff=jaccard_cutoff)
                 hdf.put(
