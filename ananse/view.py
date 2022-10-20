@@ -24,7 +24,7 @@ def get_binding_tfs(binding, all_tfs=False):
         keys = hdf.root.__members__
         tfs = set(k for k in keys if not k.startswith("_"))
         hdf.close()
-    return list(tfs)
+    return sorted(tfs)
 
 
 def view_h5(
@@ -68,18 +68,19 @@ def view_h5(
 
     if list_regions:
         reg = pd.read_hdf(fname, key="_index")
-        df = pd.DataFrame({"region": list(set(reg.index))})
+        df = pd.DataFrame({"region": sorted(reg.index.unique())})
         if n:
             return df.head(n)
         return df
 
     if tfs is None:
         tfs = get_binding_tfs(fname)
+    tfs = list(tfs)
     if n:
         tfs = tfs[: min(len(tfs), n)]
 
     if list_tfs:
-        return pd.DataFrame({"factor": list(tfs)})
+        return pd.DataFrame({"factor": tfs})
 
     if activity:
         df = pd.read_hdf(fname, key="_factor_activity").set_index("factor")
@@ -97,7 +98,7 @@ def view_h5(
             idx = idx[: min(len(idx), n)]
         elif regions:
             rows = idx.isin(regions)
-            idx = set(regions) & set(idx)
+            idx = list(set(regions) & set(idx))
         else:
             rows = [True for _ in range(len(idx))]
         df = pd.DataFrame(index=idx)
