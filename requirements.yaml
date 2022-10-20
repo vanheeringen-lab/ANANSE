@@ -1,4 +1,4 @@
-name: ananse_dev
+name: ananse
 channels:
   - conda-forge
   - bioconda
@@ -7,8 +7,8 @@ dependencies:
   - python >=3.7
   - adjusttext
   - dask
-  - genomepy >=0.13.1
-  - gimmemotifs-minimal >=0.17.1
+  - genomepy >=0.14
+  - gimmemotifs-minimal >=0.17.2
   - loguru
   - matplotlib-base >=3.3
   - networkx
