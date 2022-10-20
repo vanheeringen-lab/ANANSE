@@ -354,9 +354,8 @@ def fold_change_scores(node, grn, expression_change):
     target_fc = [expression_change[t].absfc for t in direct_targets]
     non_target_fc = [expression_change[t].absfc for t in non_direct_targets]
     try:
-        # asymptotic method prevents recursion errors.
-        # TODO: review when scipy closes https://github.com/scipy/scipy/issues/14622
-        pval = mannwhitneyu(target_fc, non_target_fc, method="asymptotic")[1]
+        # auto method prevents recursion errors.
+        pval = mannwhitneyu(target_fc, non_target_fc, method="auto")[1]
     except (RecursionError, ValueError) as e:
         pval = np.NAN
         logger.warning(e)
@@ -412,7 +411,7 @@ class Influence(object):
         gene_gtf=None,
         grn_source_file=None,
         grn_target_file=None,
-        filter_tfs=False,  # TODO: variable not exposed in CLI
+        filter_tfs=False,  # variable not exposed in CLI
         edges=100_000,
         ncore=1,
         sort_by="prob",
@@ -539,7 +538,7 @@ class Influence(object):
             if pct_overlap <= backup_pct_overlap:
                 df = backup_df
 
-        # any gene names helped to determine compatibility, but NAs aren't needed.
+        # unnamed genes cannot be matched
         df.dropna(inplace=True)
         # merge duplicate genes
         dup_df = df[df.index.duplicated()]
@@ -596,7 +595,7 @@ class Influence(object):
             )
             sys.exit(1)
 
-        # TODO: should 'realfc' this not be 'score' (padj<cutoff), or even 'absfc'?
+        # TODO: should 'realfc' be 'score' (padj<cutoff), or even 'absfc'?
         de_tfs = set(tf for tf in de_tfs if self.expression_change[tf].realfc > 0)
         if len(de_tfs) == 0:
             # expression_change[tf].score > 0 == differentially expressed

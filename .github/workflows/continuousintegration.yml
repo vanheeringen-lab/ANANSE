@@ -43,7 +43,7 @@ jobs:
 
     - name: Code formatting (flake8) 🎱
       run: |
-        flake8 $(echo $TARGETS)
+        flake8 --ignore=W503,B950 $(echo $TARGETS)
 
     - name: Run tests 🧬
       run: |

@@ -21,7 +21,7 @@ dependencies:
   - pyranges
   - pytables                      # required for pandas.read_hfd()
   - scikit-learn
-  - scipy >=1.5
+  - scipy >=1.9                   # fix in mannwhitneyu
   - seaborn-base
   - tqdm
 
