@@ -66,21 +66,16 @@ def test_peakpredictor_init(peakpredictor):
     assert p.ncore == 1
 
     # set in test.motif2factors.txt
-    assert p.factors() == ["SOX12"]
     assert p.f2m == {"SOX12": ["GM.5.0.Sox.0001"]}
-    assert "GM.5.0.Sox.0001" in p.motifs
 
     # parsed from input
     assert p.regions == ["chr1:1010-1020"]
-    assert p.region_type == "custom"
-    assert p.species == "human"  # because hg38 is in the genome name
-
+    assert p.factor_model_db == "default"
     assert p.histone_data is None
     assert "chr1:1010-1020" in p.atac_data.index
-    assert p._X_columns == ["ATAC", "motif"]
-    assert p._model_type == "ATAC_motif"
 
-    # assert len(p.motif_graph) == 707
+    assert len(p.factor_models) > 0
+    assert len(p.motif_graph) > 0
 
 
 def test_load_counts(peakpredictor):
@@ -90,14 +85,14 @@ def test_load_counts(peakpredictor):
     regions = ananse.peakpredictor.load_regions(regionsfile)
     p.regions = regions
     countsfile = "tests/data/GRCz11_chr9/GRCz11_chr9_raw.tsv"
-    p.load_counts(countsfile, None, "ATAC")
+    p._load_counts(countsfile, None)
 
     assert len(p.atac_data) == len(regions)
 
     regions = ["9:2802-3002"]
     p.regions = regions
     countsfile = "tests/data/GRCz11_chr9/GRCz11_chr9_raw.tsv"
-    p.load_counts(countsfile, None, "ATAC")
+    p._load_counts(countsfile, None)
 
     assert len(p.atac_data) == len(regions)
 
@@ -105,8 +100,8 @@ def test_load_counts(peakpredictor):
 def test__scan_motifs(peakpredictor):
     region = "chr1:1010-1020"
     tf = "SOX12"
-    peakpredictor._scan_motifs([region], zscore=False, gc=False)
-    score = peakpredictor._motifs.at[region, tf]
+    peakpredictor._scan_motifs(zscore=False, gc=False)
+    score = peakpredictor.region_factor_df.at[region, tf]
     # rounding to reduce flakiness
     assert round(float(score), 2) == -0.99  # -0.86 new scores with gimme 0.17.0
 
@@ -114,7 +109,7 @@ def test__scan_motifs(peakpredictor):
 def test__load_prescanned_motifs(peakpredictor):
     region = "chr1:1010-1020"
     tf = "SOX12"
-    score = peakpredictor._motifs.at[region, tf]
+    score = peakpredictor.region_factor_df.at[region, tf]
     # rounding to reduce flakiness
     assert round(float(score), 2) == -0.99  # -0.86 new scores with gimme 0.17.0
 
@@ -173,29 +168,29 @@ def test__load_cage(outdir, peakpredictor):
 def test__load_reference_data(peakpredictor):
     p = deepcopy(peakpredictor)
     with pytest.raises(FileNotFoundError):
-        p._load_reference_data()
+        p._load_custom_data()
 
     # # TODO: nice tests based on the output of these properties
-    # print(p._motifs)
+    # print(p.region_factor_df)
     # print(p._avg)
     # print(p._dist)
     # print(p.regions)
     # exit(1)
 
 
-def test_factors(peakpredictor):
-    p = deepcopy(peakpredictor)
-    assert p.factors() == ["SOX12"]
-
-    # dynamically updated
-    p.species = None
-    p.f2m = {"whatever_I_want": []}
-    assert p.factors() == ["whatever_I_want"]
-
-    # filtered
-    p.species = "mouse"
-    p.f2m = {"mouse_gene": [], "HUMAN_GENE": []}
-    assert p.factors() == ["mouse_gene"]
+# def test_factors(peakpredictor):
+#     p = deepcopy(peakpredictor)
+#     assert p.factors() == ["SOX12"]
+#
+#     # dynamically updated
+#     p.species = None
+#     p.f2m = {"whatever_I_want": []}
+#     assert p.factors() == ["whatever_I_want"]
+#
+#     # filtered
+#     p.species = "mouse"
+#     p.f2m = {"mouse_gene": [], "HUMAN_GENE": []}
+#     assert p.factors() == ["mouse_gene"]
 
 
 def test__jaccard_motif_graph(peakpredictor):

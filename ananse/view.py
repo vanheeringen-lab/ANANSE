@@ -11,7 +11,7 @@ def get_binding_tfs(binding, all_tfs=False):
     The former contains all TFs from the motif2factors.txt, while the latter
     contains only those for which a binding probability was calculated.
 
-    The outersection of these sets had an error in "predict_proba()".
+    The outersection of these sets had an error in "predict_binding_probability()".
     """
     if all_tfs:
         # all TFs (from the motifs2factors.txt used in ananse binding)
