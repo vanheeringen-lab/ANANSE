@@ -163,9 +163,9 @@ class PeakPredictor:
         logger.info(f"  Using motifs for {n} factor{'' if n == 1 else 's'}")
 
         # load motif_graph
-        self._jaccard_motif_graph()  # indirect, factors)
+        self._jaccard_motif_graph()
 
-    def _jaccard_motif_graph(self):  # , indirect, factors):
+    def _jaccard_motif_graph(self):
         """
         Create a graph of TF nodes where edges are the Jaccard index of the motifs that they bind to.
         For instance, if TF1 binds motif A and B and TF2 binds motif B and C,
@@ -619,6 +619,7 @@ class PeakPredictor:
             mean_ref = pd.read_table(fname, comment="#", index_col=0)
             mean_ref = mean_ref.loc[df.index]
             # TODO: overwrite the original column instead (benchmark)
+            # TODO: test if this is OK, instead of the comment below
             df[f"{dtype}.relative"] = scale(df[dtype] - mean_ref["mean_ref"])
             self.all_data_columns.append(f"{dtype}.relative")
             # if mean_ref.shape[0] == df.shape[0]:
