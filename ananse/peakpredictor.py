@@ -39,12 +39,6 @@ BLACKLIST_TFS = [
 ]
 
 
-# 1: WHERE to look:    enhancer regions in ATAC/ChIP/CAGE input, filtered by regions
-# 2: WHAT to look for: transcription factors in pfmfile,         filtered by factors
-# SHORTCUT: give pfmscorefile containing 1+2 to save time,       filtered by regions and factors
-
-# 3: HOW to score factors: using binding models in the default/custom reference
-# For hg38, supply REMAP data with reference for 1,2 & 3
 class PeakPredictor:
     atac_data = None
     histone_data = None
@@ -61,7 +55,7 @@ class PeakPredictor:
     def __init__(
         self,
         reference=None,
-        genome="hg38",
+        genome=None,
         atac_bams=None,
         histone_bams=None,
         p300_bams=None,
