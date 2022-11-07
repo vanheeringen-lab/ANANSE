@@ -1232,7 +1232,7 @@ def predict_peaks(
             hdf.put(key="_h3k27ac", value=p.histone_data, format="table")
 
         if p.p300_data is not None:
-            hdf.put(key="_p300", value=p.histone_data, format="table")
+            hdf.put(key="_p300", value=p.p300_data, format="table")
 
         if p.cage_data is not None:
             hdf.put(key="_cage", value=p.cage_data, format="table")
