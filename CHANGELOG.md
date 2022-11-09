@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - `ananse influence` now throws a descriptive error if source and target networks are identical
 - `ananse influence` now uses scipy >=1.9, which fixes an error in `mannwhitneyu(method="auto")`
+- uploaded correct non-human CAGE-seq models
 
 ## [0.4.0] - 2022-06-02
 
