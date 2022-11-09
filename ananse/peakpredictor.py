@@ -26,6 +26,7 @@ from tqdm.auto import tqdm
 
 from ananse.bed import map_counts
 from ananse.utils import (
+    cleanpath,
     load_tfs,
     load_regions,
     get_motif_factors,
@@ -47,9 +48,7 @@ class PeakPredictor:
     _avg = None
     _dist = None
     all_data = None
-    all_data_columns = []
-
-    factor_model_db = "custom"
+    all_data_columns = ["motif"]
     factor_models = {}
 
     def __init__(
@@ -69,13 +68,9 @@ class PeakPredictor:
     ):
         # the reference data directory contains TF binding models,
         # and (optionally) a distribution to quantile normalize the enhancer data to.
-        if reference is None:
-            reference = os.path.join(PACKAGE_DIR, "db", "default_reference")
-            self.factor_model_db = "default"
-        if not os.path.exists(reference):
-            raise NotADirectoryError(f"Could not find {reference}")
-        self.data_dir = reference
+        self.reference_dir, self.reference_type = _set_reference(reference)
 
+        # (at least) one kind of enhancer data is required
         if all(b is None for b in [atac_bams, histone_bams, p300_bams, cage_tpms]):
             raise ValueError(
                 "Need either "
@@ -152,13 +147,8 @@ class PeakPredictor:
 
         # load factor2motifs
         self.f2m = read_factor2motifs(
-            pfmfile=self.pfmfile, indirect=indirect, factors=factors
+            self.pfmfile, self.genome, indirect, factors
         )
-
-        # The default motif db must be pruned
-        if self.pfmfile is None:
-            self.f2m = _prune_f2m(self.f2m, self.genome)
-
         n = len(self.f2m)
         logger.info(f"  Using motifs for {n} factor{'' if n == 1 else 's'}")
 
@@ -176,10 +166,7 @@ class PeakPredictor:
         self.motif_graph : nx.Graph
         """
         # load the complete (unfiltered) factor2motifs
-        complete_f2m = read_factor2motifs(self.pfmfile)
-        if self.pfmfile is None:
-            # The default motif db must be pruned
-            complete_f2m = _prune_f2m(complete_f2m, self.genome)
+        complete_f2m = read_factor2motifs(self.pfmfile, self.genome)
 
         # convert motif lists to sets
         for k, v in complete_f2m.items():
@@ -189,7 +176,7 @@ class PeakPredictor:
         # jaccard index to link the user's TFs to
         # ortholog TF models in the ananse reference database
         if self.pfmfile is not None:
-            reference_orthologs = _prune_f2m(read_factor2motifs(), "hg38")
+            reference_orthologs = read_factor2motifs(pfmfile=None, genome="hg38")
             for k, v in reference_orthologs.items():
                 if k in complete_f2m:
                     complete_f2m[k].update(set(v))
@@ -263,8 +250,9 @@ class PeakPredictor:
 
         # normalize & save TPMs
         logger.debug("Log transforming CAGE data")
+        # defaulting to log1p instead of qnorm
+        # target_distribution file not available for CAGE-seq
         data = np.log1p(data)
-        # data = qnorm.quantile_normalize(data)
         data.loc[:, :] = minmax_scale(data)
         self.cage_data = data
         self.all_data_columns.append("CAGE")
@@ -378,7 +366,7 @@ class PeakPredictor:
         Other datasets will need to mirror that dataset structure.
         """
         logger.info("Loading the custom reference data")
-        fpath = os.path.join(self.data_dir, "reference.factor.feather")
+        fpath = os.path.join(self.reference_dir, "reference.factor.feather")
         if not os.path.exists(fpath):
             raise FileNotFoundError(
                 f"{fpath} not found. For hg38, download the REMAP "
@@ -393,7 +381,7 @@ class PeakPredictor:
         self.regions = self.region_factor_df.index.tolist()
 
         # Read average coverage
-        fname = f"{self.data_dir}/reference.coverage.txt"
+        fname = f"{self.reference_dir}/reference.coverage.txt"
         if os.path.exists(fname):
             self._avg = pd.read_table(
                 fname,
@@ -407,7 +395,7 @@ class PeakPredictor:
             self.all_data_columns.append("average")
 
         # Read distance to TSS
-        fname = f"{self.data_dir}/reference.dist_to_tss.txt"
+        fname = f"{self.reference_dir}/reference.dist_to_tss.txt"
         if os.path.exists(fname):
             self._dist = pd.read_table(
                 fname,
@@ -451,7 +439,7 @@ class PeakPredictor:
 
         data = self._normalize_reads(dtype, data, target_distribution)
 
-        if self.factor_model_db == "custom":
+        if self.reference_type == "custom":
             data = self._load_custom_enhancer_data(dtype, data, target_distribution)
 
         self.all_data_columns.append(dtype)
@@ -587,7 +575,7 @@ class PeakPredictor:
             Distribution to quantile normalize to
             (options: ["ATAC", "H3K27ac"])
         """
-        fname = f"{self.data_dir}/{target_distribution}.qnorm.ref.txt.gz"
+        fname = f"{self.reference_dir}/{target_distribution}.qnorm.ref.txt.gz"
         if os.path.exists(fname):
             logger.debug(f"Quantile normalizing {dtype} data")
             qnorm_ref = pd.read_table(fname, comment="#", index_col=0)[
@@ -613,7 +601,7 @@ class PeakPredictor:
 
     def _load_custom_enhancer_data(self, dtype, df, target_distribution):
         # optional: add a column with relative activity
-        fname = f"{self.data_dir}/{target_distribution}.mean.ref.txt.gz"
+        fname = f"{self.reference_dir}/{target_distribution}.mean.ref.txt.gz"
         if os.path.exists(fname):
             logger.debug(f"Adding relative {dtype} data")
             mean_ref = pd.read_table(fname, comment="#", index_col=0)
@@ -642,7 +630,7 @@ class PeakPredictor:
         """
         model_dir = self._model_input()
         logger.debug(f"Loading {model_dir} models")
-        for fname in glob(os.path.join(self.data_dir, model_dir, "*.pkl")):
+        for fname in glob(os.path.join(self.reference_dir, model_dir, "*.pkl")):
             factor = os.path.basename(fname).replace(".pkl", "")
             self.factor_models[factor] = joblib.load(fname)
         logger.debug(f"  Using {len(self.factor_models)} models")
@@ -656,7 +644,8 @@ class PeakPredictor:
         default_reference model directories:
           - ATAC_motif              2 columns
           - H3K27ac_motif           2 columns
-          - CAGE_average_motif      3 columns
+          - CAGE_motif              2 columns
+          - CAGE_average_motif      3 columns (hg19/hg38 only)
           - ATAC_H3K27ac_motif      3 columns
 
         REMAP reference model directories:
@@ -676,13 +665,11 @@ class PeakPredictor:
             "motif",
         ]
         for col in column_order.copy():
-            if col not in self.all_data_columns + ["motif"]:
+            if col not in self.all_data_columns:
                 column_order.remove(col)
         self.all_data_columns = column_order
 
         model_dir = "_".join(column_order)
-        # TODO: Branco, does this always assume the hg19/hg38-specific self._avg data?
-        model_dir = model_dir.replace("CAGE_motif", "CAGE_average_motif")
         model_dir = model_dir.replace("p300", "H3K27ac")
         return model_dir
 
@@ -849,65 +836,54 @@ class PeakPredictor:
         return factor_activity
 
 
-def read_factor2motifs(pfmfile=None, indirect=True, factors=None):
+def _set_reference(reference=None):
+    """
+    Set the reference data directory & check for its existence.
+    If the reference data directory is not the same as the default directory,
+    mark this so ANANSE can look for additional data files.
+    """
+    default_reference = os.path.join(PACKAGE_DIR, "db", "default_reference")
+    if reference is None:
+        reference = default_reference
+    reference = cleanpath(reference)
+    if not os.path.exists(reference):
+        raise NotADirectoryError(f"Could not find {reference}")
+
+    reference_type = "default" if reference == default_reference else "custom"
+    return reference, reference_type
+
+
+def read_factor2motifs(pfmfile=None, genome="hg38", indirect=True, factors=None):
+    # The default motif db must be pruned
+    species = _get_species(genome)
+    human_factors = [] if species != "human" else _load_human_factors()
+    whitelist_tfs = [] if factors is None else factors
+
     motifs = read_motifs(pfmfile, as_dict=True)
     f2m = {}
     for name, motif in motifs.items():
         for factor in get_motif_factors(motif, indirect=indirect):
-            # user specified filter
-            if factors is not None and factor not in factors:
+            if factor not in whitelist_tfs:
                 continue
-
+            if factor in BLACKLIST_TFS:
+                continue
+            if species == "human":
+                # Extend human motifs with mouse ortholog motifs
+                factor = factor.upper()
+                # Remove invalid factors
+                if factor not in human_factors:
+                    continue
+            if species == "mouse":
+                # Remove human factors
+                if not factor[1:].islower():
+                    continue
             f2m.setdefault(factor, []).append(name)
-
-    # remove blacklisted TFs
-    for tf in BLACKLIST_TFS:
-        if tf in f2m:
-            del f2m[tf]
 
     if len(f2m) == 0:
         raise ValueError(
             "Zero factors remain after filtering the motif2factors.txt associated with pfmfile!"
         )
     return f2m
-
-
-def _prune_f2m(f2m, genome):
-    """
-    The default motif db contains human and mouse factors.
-    Here we filter for the correct factors, and
-    give a warning if you do not (seem to) have human or mouse data.
-    """
-    pruned_f2m = {}
-    # check if the genome is human, mouse or something else
-    species = _get_species(genome)
-    if species == "human":
-        # 1) ignore invalid human factors and all mouse factors
-        # 2) make sure all factors are upper case (should not be needed)
-        # 3) extend valid human factors with valid mouse ortholog motifs
-        valid = _load_human_factors()
-        for k, v in f2m.items():
-            k = k.upper()
-            if k in valid:
-                pruned_f2m.setdefault(k, []).extend(v)
-    elif species == "mouse":
-        # Remove human factors
-        for k, v in f2m.items():
-            if k[1:].islower():
-                pruned_f2m[k] = v
-    else:
-        warnings = [
-            f"The genome '{genome}' is not recognized as human or mouse.",
-            "If you do have another species, the motif file likely needs to be adapted.",
-            "Currently mouse and human gene names are used to link motif to TFs.",
-            "If your gene symbols are different, then you will need to create a new mapping",
-            "and use the `-p` argument. For a possible method to do this, see here:",
-            "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors",
-        ]
-        for warn in warnings:
-            logger.warning(warn)
-        pruned_f2m = f2m
-    return pruned_f2m
 
 
 def _get_species(genome):
@@ -917,9 +893,9 @@ def _get_species(genome):
     # Try to get taxonomy id for genomepy managed genome.
     # If there is a taxonomy id, we can be really sure about the species.
     # If genome doesn't have a tax_id, then it will be 'na'.
+    species = None
     try:
         tax_id = Genome(genome).tax_id
-        species = None
         if tax_id == 9606:
             species = "human"
         elif tax_id == 10090:
@@ -946,6 +922,18 @@ def _get_species(genome):
         if name in base_genome:
             return species
 
+    # assume this is non-human and give a warning
+    warnings = [
+        f"The genome '{base_genome}' is not recognized as human or mouse.",
+        "If you do have another species, the motif file likely needs to be adapted.",
+        "Currently mouse and human gene names are used to link motif to TFs.",
+        "If your gene symbols are different, then you will need to create a new mapping",
+        "and use the `-p` argument. For a possible method to do this, see here:",
+        "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors",
+    ]
+    for warn in warnings:
+        logger.warning(warn)
+
 
 def _load_human_factors():
     tf_xlsx = os.path.join(PACKAGE_DIR, "db", "lovering.tfs.xlsx")
@@ -957,7 +945,7 @@ def _load_human_factors():
     valid_factors = valid_factors.loc[
         valid_factors["Pseudogene"].isnull(), "HGNC approved gene symbol"
     ].values
-    valid_factors = list(set(valid_factors) - {"EP300"})
+    valid_factors = sorted(set(valid_factors) - {"EP300"})
     return valid_factors
 
 
