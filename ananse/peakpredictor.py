@@ -146,11 +146,10 @@ class PeakPredictor:
             logger.info(f"Loading specified motif file: {self.pfmfile}")
 
         # load factor2motifs
-        self.f2m = read_factor2motifs(
-            self.pfmfile, self.genome, indirect, factors
-        )
+        self.f2m = read_factor2motifs(self.pfmfile, self.genome, indirect, factors)
         n = len(self.f2m)
-        logger.info(f"  Using motifs for {n} factor{'' if n == 1 else 's'}")
+        m = len(set([m for motifs in self.f2m.values() for m in motifs]))
+        logger.info(f"  Using {m} motifs for {n} factors")
 
         # load motif_graph
         self._jaccard_motif_graph()
@@ -172,12 +171,13 @@ class PeakPredictor:
         for k, v in complete_f2m.items():
             complete_f2m[k] = set(v)
 
-        # if an alternative motif2factors is used, we can use the
-        # jaccard index to link the user's TFs to
-        # ortholog TF models in the ananse reference database
+        # if an alternative motif2factors is used, we use the jaccard index
+        # to link the user's TFs to human ortholog TF models in the ANANSE
+        # reference data directory.
+        # TODO: if self.pfmfile is not None and self.reference_type == "default":
         if self.pfmfile is not None:
-            reference_orthologs = read_factor2motifs(pfmfile=None, genome="hg38")
-            for k, v in reference_orthologs.items():
+            human_f2m = read_factor2motifs(pfmfile=None, genome="hg38")
+            for k, v in human_f2m.items():
                 if k in complete_f2m:
                     complete_f2m[k].update(set(v))
                 else:
@@ -286,7 +286,7 @@ class PeakPredictor:
             self.region_factor_df = self._scan_motifs()
         else:
             # assume regions, region_factor_df (and maybe more) is
-            # included in the custom reference data.
+            # included in the custom reference data directory.
             self._load_custom_data()
         logger.info(f"  Using {len(self.regions)} regions")
 
@@ -437,6 +437,7 @@ class PeakPredictor:
         else:
             data = self._load_bams(infiles, window)
 
+        # TODO: debug flag: no randomness
         data = self._normalize_reads(dtype, data, target_distribution)
 
         if self.reference_type == "custom":
@@ -855,15 +856,26 @@ def _set_reference(reference=None):
 
 def read_factor2motifs(pfmfile=None, genome="hg38", indirect=True, factors=None):
     # The default motif db must be pruned
+    # TODO: species = _get_species(genome) if pfmfile is None and reference_type == "default" else "N/A"
     species = _get_species(genome)
+    if species is None and pfmfile is None:
+        warnings = [
+            f"The genome '{genome}' is not recognized as human or mouse.",
+            "If you do have another species, the motif file likely needs to be adapted.",
+            "Currently mouse and human gene names are used to link motif to TFs.",
+            "If your gene symbols are different, then you will need to create a new mapping",
+            "and use the `-p` argument. For a possible method to do this, see here:",
+            "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors",
+        ]
+        for warn in warnings:
+            logger.warning(warn)
     human_factors = [] if species != "human" else _load_human_factors()
-    whitelist_tfs = [] if factors is None else factors
 
     motifs = read_motifs(pfmfile, as_dict=True)
     f2m = {}
     for name, motif in motifs.items():
         for factor in get_motif_factors(motif, indirect=indirect):
-            if factor not in whitelist_tfs:
+            if factors is not None and factor not in factors:
                 continue
             if factor in BLACKLIST_TFS:
                 continue
@@ -921,18 +933,6 @@ def _get_species(genome):
     for name, species in mapping.items():
         if name in base_genome:
             return species
-
-    # assume this is non-human and give a warning
-    warnings = [
-        f"The genome '{base_genome}' is not recognized as human or mouse.",
-        "If you do have another species, the motif file likely needs to be adapted.",
-        "Currently mouse and human gene names are used to link motif to TFs.",
-        "If your gene symbols are different, then you will need to create a new mapping",
-        "and use the `-p` argument. For a possible method to do this, see here:",
-        "https://gimmemotifs.readthedocs.io/en/stable/reference.html#command-gimme-motif2factors",
-    ]
-    for warn in warnings:
-        logger.warning(warn)
 
 
 def _load_human_factors():
@@ -1126,7 +1126,7 @@ def predict_peaks(
         BED file or text file with regions, or a list of BED, narrowPeak or
         broadPeak files If None, then the reference regions are used.
     reference : str, optional
-        Directory name to a reference.
+        Path to a custom reference data directory.
     factors : list, optional
         List of TF names or file with TFs, one per line. If None (default),
         then all TFs are used.
@@ -1181,7 +1181,7 @@ def predict_peaks(
 
     if reference is not None:
         if not os.path.exists(reference):
-            logger.error(f"Reference directory {reference} does not exist!")
+            logger.error(f"Reference data directory {reference} does not exist!")
             sys.exit(1)
 
     ncore = check_cores(ncore)
