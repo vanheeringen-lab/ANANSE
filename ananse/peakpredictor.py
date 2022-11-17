@@ -1078,6 +1078,7 @@ def predict_peaks(
     pfmscorefile=None,
     jaccard_cutoff=0.0,
     ncore=4,
+    debug=False
 ):
     """Predict binding in a set of genomic regions.
 
@@ -1211,6 +1212,7 @@ def predict_peaks(
         factors=factors,
         pfmscorefile=pfmscorefile,
         ncore=ncore,
+        debug=debug,
     )
 
     outfile = os.path.join(outdir, "binding.h5")
