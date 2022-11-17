@@ -820,7 +820,19 @@ class PeakPredictor:
                                     method="bayesianridge",
                                     pfmfile=self.pfmfile,
                                     ncpus=self.ncore,
-                                    random_state=state,  # TODO: gimme on passer only
+                                    random_state=state,  # gimme PR 283
+                                ),
+                                how="outer",
+                                rsuffix=f"_{i}",
+                            )
+                        except TypeError:
+                            activity = activity.join(
+                                moap(
+                                    f.name,
+                                    genome=self.genome,
+                                    method="bayesianridge",
+                                    pfmfile=self.pfmfile,
+                                    ncpus=self.ncore,
                                 ),
                                 how="outer",
                                 rsuffix=f"_{i}",
@@ -864,7 +876,6 @@ def _set_reference(reference=None):
 
 def read_factor2motifs(pfmfile=None, genome="hg38", indirect=True, factors=None):
     # The default motif db must be pruned
-    # TODO: species = _get_species(genome) if pfmfile is None and reference_type == "default" else "N/A"
     species = _get_species(genome)
     if species is None and pfmfile is None:
         warnings = [
