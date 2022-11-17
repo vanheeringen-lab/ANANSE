@@ -65,6 +65,7 @@ class PeakPredictor:
         pfmfile=None,
         pfmscorefile=None,
         ncore=4,
+        debug=False,
     ):
         # the reference data directory contains TF binding models,
         # and (optionally) a distribution to quantile normalize the enhancer data to.
@@ -87,6 +88,7 @@ class PeakPredictor:
         self.genome = genome
         self.pfmfile = pfmfile
         self.ncore = ncore
+        self._debug = debug
 
         # load factor2motifs (f2m) and motif_graph
         self._load_factor2motifs(factors=factors)
@@ -437,7 +439,6 @@ class PeakPredictor:
         else:
             data = self._load_bams(infiles, window)
 
-        # TODO: debug flag: no randomness
         data = self._normalize_reads(dtype, data, target_distribution)
 
         if self.reference_type == "custom":
@@ -577,7 +578,8 @@ class PeakPredictor:
             (options: ["ATAC", "H3K27ac"])
         """
         fname = f"{self.reference_dir}/{target_distribution}.qnorm.ref.txt.gz"
-        if os.path.exists(fname):
+        # debug mode: use log1p to make the output deterministic
+        if os.path.exists(fname) and self._debug is False:
             logger.debug(f"Quantile normalizing {dtype} data")
             qnorm_ref = pd.read_table(fname, comment="#", index_col=0)[
                 "qnorm_ref"
@@ -813,6 +815,7 @@ class PeakPredictor:
                                     method="bayesianridge",
                                     pfmfile=self.pfmfile,
                                     ncpus=self.ncore,
+                                    random_state=state  # TODO: gimme on passer only
                                 ),
                                 how="outer",
                                 rsuffix=f"_{i}",

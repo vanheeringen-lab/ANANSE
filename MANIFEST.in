@@ -1,10 +1,11 @@
 include README.md
 include LICENSE
 include scripts/**
-graft ananse/db/**
+graft ananse/db/default_reference/**
+include ananse/db/default_reference/ATAC.qnorm.ref.txt.gz
+include ananse/db/default_reference/H3K27ac.qnorm.ref.txt.gz
 include ananse/db/tfs.txt
 include ananse/db/hg38.genes.bed
 include ananse/db/hg19.genes.bed
 include ananse/db/lovering.tfs.xlsx
 include versioneer.py
-include ananse/_version.py

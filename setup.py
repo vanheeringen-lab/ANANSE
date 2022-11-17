@@ -1,7 +1,8 @@
-from setuptools import setup, find_packages
+from setuptools import setup  # , find_packages
 from io import open
 import versioneer
 
+VERSION = versioneer.get_version()
 DESCRIPTION = (
     "ANANSE: Prediction of key transcription factors in cell fate "
     "determination using enhancer networks"
@@ -12,17 +13,16 @@ with open("README.md", encoding="utf-8") as f:
 
 setup(
     name="ananse",
-    version=versioneer.get_version(),
+    version=VERSION,
     long_description=long_description,
     long_description_content_type="text/markdown",
     description=DESCRIPTION,
     author="Quan Xu, Georgios Georgiou, Siebren Frölich, Maarten van der Sande, Jos Smits, Simon van Heeringen",
     author_email="simon.vanheeringen@gmail.com",
     url="https://github.com/vanheeringen-lab/ananse/",
-    download_url="https://github.com/vanheeringen-lab/ananse/"
-    + versioneer.get_version(),
+    download_url=f"https://github.com/vanheeringen-lab/ananse/{VERSION}",
     license="MIT",
-    packages=find_packages(),
+    packages=['ananse', 'ananse.commands'],  # find_packages(),
     scripts=["scripts/ananse"],
     include_package_data=True,
     zip_safe=False,  # This is necessary, otherwise files won't be installed
