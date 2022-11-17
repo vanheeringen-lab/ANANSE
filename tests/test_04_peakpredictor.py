@@ -13,57 +13,17 @@ from ananse.commands import binding
 from tests import write_file
 
 
-def test_read_factor2motifs():
-    f2m = ananse.peakpredictor.read_factor2motifs(
-        "tests/data/GRCz11_chr9/GRCz11_chr9.pfm"
-    )
-    assert len(f2m) == 4
-    assert len(f2m["pou3f3a"]) == 18
+def test__set_reference():
+    ref_dir, ref_type = ananse.peakpredictor._set_reference()
+    assert ref_dir.endswith("db/default_reference")
+    assert ref_type == "default"
 
-    with pytest.raises(ValueError):
-        ananse.peakpredictor.read_factor2motifs(
-            "tests/data/GRCz11_chr9/GRCz11_chr9.pfm", indirect=False
-        )
+    ref_dir, ref_type = ananse.peakpredictor._set_reference("tests/data")
+    assert ref_dir.endswith("tests/data")
+    assert ref_type == "custom"
 
-    f2m = ananse.peakpredictor.read_factor2motifs(
-        "tests/data/GRCz11_chr9/GRCz11_chr9.pfm", factors=["pou3f3a"]
-    )
-    assert len(f2m) == 1
-
-
-def test__prune_f2m():
-    f2m = ananse.peakpredictor.read_factor2motifs()
-
-    mouse_myc = ["GM.5.0.bHLH.0008"]
-    assert f2m["Myc"] == mouse_myc
-
-    human_myx = [
-        "GM.5.0.bZIP.0004",
-        "GM.5.0.bHLH.0008",
-        "GM.5.0.bHLH.0008",
-        "GM.5.0.C2H2_ZF.0024",
-        "GM.5.0.bHLH.0026",
-        "GM.5.0.bHLH.0030",
-        "GM.5.0.bHLH.0037",
-        "GM.5.0.bHLH.0052",
-        "GM.5.0.bHLH.0058",
-        "GM.5.0.bHLH.0079",
-        "GM.5.0.bHLH.0101",
-        "GM.5.0.bHLH.0114",
-        "GM.5.0.bHLH.0117",
-        "GM.5.0.bHLH.0122",
-        "GM.5.0.bHLH.0131",
-        "GM.5.0.bHLH.0138",
-    ]
-    assert f2m["MYC"] == human_myx
-
-    pruned_f2m = ananse.peakpredictor._prune_f2m(f2m, "mm10")
-    assert "MYC" not in pruned_f2m
-    assert pruned_f2m["Myc"] == mouse_myc
-
-    pruned_f2m = ananse.peakpredictor._prune_f2m(f2m, "hg38")
-    assert "Myc" not in pruned_f2m
-    assert set(pruned_f2m["MYC"]).__eq__(set(mouse_myc + human_myx))
+    with pytest.raises(NotADirectoryError):
+        ananse.peakpredictor._set_reference("tests/NOTADIRECTORY")
 
 
 def test__get_species():
@@ -80,6 +40,29 @@ def test__load_human_factors():
     # assert isinstance(valid_factors, list)
     assert "TP53" in valid_factors
     assert all([tf not in ascii_lowercase for tf in valid_factors])
+
+
+def test_read_factor2motifs():
+    f2m = ananse.peakpredictor.read_factor2motifs(
+        "tests/data/GRCz11_chr9/GRCz11_chr9.pfm",
+        "GRCz11",
+    )
+    assert len(f2m) == 4
+    assert len(f2m["pou3f3a"]) == 18
+
+    with pytest.raises(ValueError):
+        ananse.peakpredictor.read_factor2motifs(
+            "tests/data/GRCz11_chr9/GRCz11_chr9.pfm",
+            "GRCz11",
+            indirect=False,
+        )
+
+    f2m = ananse.peakpredictor.read_factor2motifs(
+        "tests/data/GRCz11_chr9/GRCz11_chr9.pfm",
+        "GRCz11",
+        factors=["pou3f3a"],
+    )
+    assert len(f2m) == 1
 
 
 def test__remove_invalid_regions():
@@ -120,6 +103,7 @@ def test__load_cage_tpm(outdir):
 
 
 def test__load_cage_remap_data():
+    # ananse.peakpredictor._load_cage_remap_data()
     pass  # TODO
 
 
@@ -154,7 +138,8 @@ def test_peakpredictor_init(peakpredictor):
     p = peakpredictor  # initialized in conftest.py
 
     # boring stuff
-    assert p.data_dir == os.path.abspath("ananse/db/default_reference")
+    assert p.reference_dir == os.path.abspath("ananse/db/default_reference")
+    assert p.reference_type == "default"
     assert p.genome == "tests/data/binding/hg38_testgenome.fa"
     assert p.pfmfile == "tests/data/binding/test.pfm"
     assert p.ncore == 1
@@ -164,7 +149,6 @@ def test_peakpredictor_init(peakpredictor):
 
     # parsed from input
     assert p.regions == ["chr1:1010-1020"]
-    assert p.factor_model_db == "default"
     assert "chr1:1010-1020" in p.atac_data.index
     assert p.histone_data is None
     assert p.p300_data is None
@@ -286,18 +270,20 @@ def test__load_reference_data(peakpredictor):
 
 
 def test__model_input(peakpredictor):
-    mi = peakpredictor._model_input()
-    assert mi == "ATAC_motif"
-
     p = deepcopy(peakpredictor)
+    mi = p._model_input()
+    assert mi == "ATAC_motif"
+    assert p.all_data_columns == ["ATAC", "motif"]
+
     p.all_data_columns = ["p300", "dist", "CAGE"]
     mi = p._model_input()
-    assert mi == "CAGE_H3K27ac_dist_motif"
-    assert p.all_data_columns == ["CAGE", "p300", "dist", "motif"]
+    assert mi == "CAGE_H3K27ac_dist"
+    assert p.all_data_columns == ["CAGE", "p300", "dist"]
 
-    p.all_data_columns = ["CAGE", "motif"]
+    p.all_data_columns = ["motif", "CAGE"]
     mi = p._model_input()
-    assert mi == "CAGE_average_motif"
+    assert mi == "CAGE_motif"
+    assert p.all_data_columns == ["CAGE", "motif"]
 
 
 def test_predict_binding_probability(peakpredictor):
