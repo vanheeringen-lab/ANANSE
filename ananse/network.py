@@ -458,7 +458,7 @@ class Network(object):
 
         ddf = dd.read_csv(os.path.join(tmpdir, "*.csv")).set_index("tf_target")
         # rankdata() requires all data to be loaded into memory
-        # TODO: update when dask can do this delayed
+        # TODO: update when dask can do this delayed https://github.com/dask/dask/issues/8658
         df = ddf.compute()
         df["weighted_binding"] = minmax_scale(
             rankdata(df["weighted_binding"], method="min")
@@ -817,7 +817,6 @@ def get_bed(gene_bed, genome):
             gp = genomepy.Genome(genome)  # can raise descriptive FileNotFoundError
             out_bed = gp.annotation_bed_file  # can return None
     elif not os.path.exists(out_bed) or not out_bed.lower().endswith(".bed"):
-        # can raise descriptive FileNoTFoundError (version >0.11.0)
         gp = genomepy.Annotation(out_bed, quiet=True)
         out_bed = gp.annotation_bed_file  # can return None
     if out_bed is None:
