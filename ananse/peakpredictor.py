@@ -176,7 +176,6 @@ class PeakPredictor:
         # if an alternative motif2factors is used, we use the jaccard index
         # to link the user's TFs to human ortholog TF models in the ANANSE
         # reference data directory.
-        # TODO: if self.pfmfile is not None and self.reference_type == "default":
         if self.pfmfile is not None:
             human_f2m = read_factor2motifs(pfmfile=None, genome="hg38")
             for k, v in human_f2m.items():
@@ -283,7 +282,7 @@ class PeakPredictor:
             self.region_factor_df = self._load_prescanned_motifs(pfmscorefile, regions)
             self.regions = self.region_factor_df.index.tolist()
         elif regions is not None:
-            # if we have custom regions we have to scan for motifs.
+            # if we have custom regions we have to scan for factor motifs.
             self.regions = regions
             self.region_factor_df = self._scan_motifs()
         else:
@@ -607,19 +606,17 @@ class PeakPredictor:
         fname = f"{self.reference_dir}/{target_distribution}.mean.ref.txt.gz"
         if os.path.exists(fname):
             logger.debug(f"Adding relative {dtype} data")
+            # TODO: overwrite the dtype column instead of adding an additional column? Benchmark this!
             mean_ref = pd.read_table(fname, comment="#", index_col=0)
-            mean_ref = mean_ref.loc[df.index]
-            # TODO: overwrite the original column instead (benchmark)
-            # TODO: test if this is OK, instead of the comment below
-            df[f"{dtype}.relative"] = scale(df[dtype] - mean_ref["mean_ref"])
-            self.all_data_columns.append(f"{dtype}.relative")
-            # if mean_ref.shape[0] == df.shape[0]:
-            #     mean_ref.index = df.index
-            #     df[f"{dtype}.relative"] = scale(df[dtype] - mean_ref["mean_ref"])
-            #     self.all_data_columns.append(f"{dtype}.relative")
-            # else:
-            #     logger.debug(f"Regions of {fname} are not the same as input regions.")
-            #     logger.debug("Skipping calculation of relative values.")
+            if all(df.index.isin(mean_ref.index)):
+                mean_ref = mean_ref.loc[df.index]
+                df[f"{dtype}.relative"] = scale(df[dtype] - mean_ref["mean_ref"])
+                self.all_data_columns.append(f"{dtype}.relative")
+            else:
+                logger.warning(
+                    f"Regions of {fname} are not the same as input regions. "
+                    "Skipping calculation of relative values."
+                )
         return df
 
     def _load_models(self):

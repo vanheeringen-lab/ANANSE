@@ -22,7 +22,7 @@ setup(
     url="https://github.com/vanheeringen-lab/ananse/",
     download_url=f"https://github.com/vanheeringen-lab/ananse/{VERSION}",
     license="MIT",
-    packages=['ananse', 'ananse.commands'],  # find_packages(),
+    packages=["ananse", "ananse.commands"],  # find_packages(),
     scripts=["scripts/ananse"],
     include_package_data=True,
     zip_safe=False,  # This is necessary, otherwise files won't be installed
