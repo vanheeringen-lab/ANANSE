@@ -107,7 +107,7 @@ class PeakPredictor:
         # load ATAC-seq, p300 and/or H3K27ac ChIP-seq data
         if atac_bams is not None:
             self.atac_data = self._load_enhancer_data(
-                "ATAC", atac_bams, columns, window=200
+                "ATAC", atac_bams, columns, "ATAC", window=200
             )
 
         if histone_bams is not None:
@@ -116,7 +116,7 @@ class PeakPredictor:
             )
         elif p300_bams is not None:
             self.p300_data = self._load_enhancer_data(
-                "p300", p300_bams, columns, window=500
+                "p300", p300_bams, columns, "ATAC", window=500
             )
 
         # load models
@@ -636,6 +636,10 @@ class PeakPredictor:
         for fname in glob(os.path.join(self.reference_dir, model_dir, "*.pkl")):
             factor = os.path.basename(fname).replace(".pkl", "")
             self.factor_models[factor] = joblib.load(fname)
+        if len(self.factor_models) == 0:
+            raise FileNotFoundError(
+                f"Could not find any models in {os.path.join(self.reference_dir, model_dir)}"
+            )
         logger.debug(f"  Using {len(self.factor_models)} models")
 
     def _model_input(self):
@@ -661,7 +665,7 @@ class PeakPredictor:
             "ATAC",
             "ATAC.relative",
             "CAGE",
-            "H3k27ac",
+            "H3K27ac",
             "p300",
             "average",
             "dist",
