@@ -640,6 +640,10 @@ class PeakPredictor:
             raise FileNotFoundError(
                 f"Could not find any models in {os.path.join(self.reference_dir, model_dir)}"
             )
+        if "general" not in self.factor_models:
+            raise FileNotFoundError(
+                f"Could not find {os.path.join(self.reference_dir, model_dir, 'general.pkl')}"
+            )
         logger.debug(f"  Using {len(self.factor_models)} models")
 
     def _model_input(self):
@@ -819,7 +823,7 @@ class PeakPredictor:
                                     method="bayesianridge",
                                     pfmfile=self.pfmfile,
                                     ncpus=self.ncore,
-                                    random_state=state  # TODO: gimme on passer only
+                                    random_state=state,  # TODO: gimme on passer only
                                 ),
                                 how="outer",
                                 rsuffix=f"_{i}",
@@ -1082,7 +1086,7 @@ def predict_peaks(
     pfmscorefile=None,
     jaccard_cutoff=0.0,
     ncore=4,
-    debug=False
+    debug=False,
 ):
     """Predict binding in a set of genomic regions.
 
