@@ -3,7 +3,7 @@
 To run ANANSE you need the following data:
 
 * A genome with a matching gene annotation
-* For `ananse binding`: enhancer regions (optional for `hg38`)
+* For `ananse binding`: enhancer regions (optional for `hg38` and not necessary when using CAGE-seq data)
 * For `ananse binding`: enhancer activity from either/both:
     * ATAC-seq data
         * one or more indexed BAM file(s) or
@@ -11,6 +11,8 @@ To run ANANSE you need the following data:
     * H3K27ac ChIP-seq data
         * one or more indexed BAM files(s) or
         * one counts table with reads per peak
+    * Or only CAGE-seq data
+        * one table with enhancer (bidirectional) regions with (average) TPM score       
 * For `ananse network`: gene expression quantification from either:
     * one or more quantification files with one TPM column
     * one counts/TPM table with expression for each gene per sample
@@ -233,3 +235,7 @@ GM.5.0.Sox.0001	SOX9	ChIP-seq	Y
 GM.5.0.Sox.0001	Sox9	ChIP-seq	N
 GM.5.0.Sox.0001	SRY	SELEX	Y
 ```
+
+### CAGE-seq
+
+ANANSE can also use CAGE-seq to predict key TFs. Have a look at these simple [examples](https://github.com/vanheeringen-lab/ANANSE-CAGE) to know how to do this.
