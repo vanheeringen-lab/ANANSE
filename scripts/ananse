@@ -72,6 +72,15 @@ if __name__ == "__main__":
         nargs="+",
     )
     group.add_argument(
+        "-P",
+        "--p300-counts",
+        dest="p300_bams",
+        metavar="CTS",
+        help="Experimental: p300 ChIP-seq counts table with reads per peak",
+        default=None,
+        # nargs="+",
+    )
+    group.add_argument(
         "-C",
         "--cage-tpms",
         dest="cage_tpms",

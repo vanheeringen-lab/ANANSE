@@ -45,6 +45,7 @@ BLACKLIST_TFS = [
 class PeakPredictor:
     atac_data = None
     histone_data = None
+    p300_data = None
     cage_data = None
     factor_models = {}
 
@@ -53,6 +54,7 @@ class PeakPredictor:
         reference=None,
         atac_bams=None,
         histone_bams=None,
+        p300_bams=None,
         cage_tpms=None,
         columns=None,
         regions=None,
@@ -116,6 +118,12 @@ class PeakPredictor:
                 self.load_counts(histone_bams, columns, "H3K27ac")
             else:
                 self.load_histone(histone_bams, update_models=False)
+        # load p300 ChIP-seq data
+        if p300_bams is not None:
+            if _istable(p300_bams):
+                self.load_counts(p300_bams, columns, "p300")
+            else:
+                raise NotImplementedError
 
         self._set_model_type()
 
@@ -594,11 +602,11 @@ class PeakPredictor:
             (default: all columns)
         attribute : str, optional
             data type contained in the counts table
-            (options: ["ATAC", "H3K27ac"], default: "ATAC")
+            (options: ["ATAC", "H3K27ac", "p300"], default: "ATAC")
         """
         # error checking
-        if attribute not in ["ATAC", "H3K27ac"]:
-            raise ValueError("Attribute must be either ATAC or H3K27ac!")
+        if attribute not in ["ATAC", "H3K27ac", "p300"]:
+            raise ValueError("Attribute must be either ATAC, H3K27ac or p300!")
         logger.info(f"Loading {attribute} data")
         if isinstance(table, list):
             table = table[0]
@@ -656,6 +664,8 @@ class PeakPredictor:
             self.atac_data = self._normalize_reads(df, attribute)
         elif attribute == "H3K27ac":
             self.histone_data = self._normalize_reads(df, attribute)
+        elif attribute == "p300":
+            self.p300_data = self._normalize_reads(df, attribute)
 
     def load_atac(self, bams, update_models=True):
         """Load ATAC-seq counts from BAM files.
@@ -701,6 +711,9 @@ class PeakPredictor:
                 cols += ["ATAC.relative"]
         if self.histone_data is not None:
             cols += ["H3K27ac"]
+        if self.p300_data is not None:
+            # no p300 models available
+            cols += ["H3K27ac"]
         if self.cage_data is not None:
             cols += ["CAGE"]
             if self.region_type == "CAGE":
@@ -709,8 +722,23 @@ class PeakPredictor:
             cols += ["average", "dist"]
         cols = sorted(cols)
         logger.info(f"  Columns being used for model type: {cols}")
-        self._X_columns = cols
         self._model_type = "_".join(cols)
+
+        if self.p300_data is not None:
+            if (
+                self.histone_data is not None
+                or self.atac_data is not None
+                or self.cage_data is not None
+            ):
+                raise NotImplementedError("no idea how to combine these data types")
+
+            # The prediction models expect dataframe columns in a certain order
+            # since we use h3k27ac models for p300 data,
+            # make sure it is in the right place
+            i = cols.index("H3K27ac")
+            cols[i] = "p300"
+
+        self._X_columns = cols
 
         # Load models
         logger.info("Loading models")
@@ -775,6 +803,8 @@ class PeakPredictor:
             tmp = tmp.join(self.atac_data)
         if self.histone_data is not None:
             tmp = tmp.join(self.histone_data)
+        if self.p300_data is not None:
+            tmp = tmp.join(self.p300_data)
         if self.cage_data is not None:
             tmp = tmp.join(self.cage_data)
 
@@ -847,7 +877,7 @@ class PeakPredictor:
 
         activity = pd.DataFrame()
         state = np.random.RandomState(567)  # Consistently select same regions
-        for df in (self.atac_data, self.histone_data, self.cage_data):
+        for df in (self.atac_data, self.histone_data, self.p300_data, self.cage_data):
             if df is None:
                 continue
 
@@ -975,6 +1005,7 @@ def predict_peaks(
     outdir,
     atac_bams=None,
     histone_bams=None,
+    p300_bams=None,
     cage_tpms=None,
     columns=None,
     regions=None,
@@ -1105,9 +1136,10 @@ def predict_peaks(
     p = PeakPredictor(
         reference=reference,
         atac_bams=atac_bams,
-        columns=columns,
         histone_bams=histone_bams,
+        p300_bams=p300_bams,
         cage_tpms=cage_tpms,
+        columns=columns,
         regions=regions,
         genome=genome,
         pfmfile=pfmfile,
@@ -1124,6 +1156,9 @@ def predict_peaks(
 
         if p.histone_data is not None:
             hdf.put(key="_h3k27ac", value=p.histone_data, format="table")
+
+        if p.p300_data is not None:
+            hdf.put(key="_p300", value=p.p300_data, format="table")
 
         if p.cage_data is not None:
             hdf.put(key="_cage", value=p.cage_data, format="table")
