@@ -20,6 +20,11 @@ ANANSE is free and open source research software. If you find it useful please c
 
 !!! note "Citation"
     > Quan Xu, Georgios Georgiou, Siebren Frölich, Maarten van der Sande, Gert Jan C Veenstra, Huiqing Zhou, Simon J van Heeringen, **ANANSE: an enhancer network-based computational approach for predicting key transcription factors in cell fate determination**, Nucleic Acids Research, Volume 49, Issue 14, 20 August 2021, Pages 7966–7985, [https://doi.org/10.1093/nar/gkab598](https://doi.org/10.1093/nar/gkab598)
+    
+ANANSE can also be useful when using CAGE-seq data. If you used this tool with CAGE-seq data, please cite:
+
+!!! note "Citation"
+    > Heuts BMH, Arza-Apalategi S, Frölich S, Bergevoet SM, van den Oever SN, van Heeringen SJ, et al. **Identification of transcription factors dictating blood cell development using a bidirectional transcription network-based computational framework**. Scientific Reports 2022 12:1 [Internet]. 2022 Nov 4 [cited 2022 Dec 6];12(1):1–12. Available from: https://www.nature.com/articles/s41598-022-21148-w
 
 ### Getting started
 
@@ -50,6 +55,7 @@ ANANSE is free and open source research software. If you find it useful please c
     - [Enhancer activity](input_data/#enhancer-activity)
     - [Expression data](input_data/#expression-data)
     - [Differential expression data](input_data/#differential-expression-data)
+    - [CAGE-seq](input_data/#CAGE-seq)
 * [Command-line reference](command-line_reference.md)
     - [Command: ananse binding](command-line_reference/#ananse-binding)
     - [Command: ananse network](command-line_reference/#ananse-network)
