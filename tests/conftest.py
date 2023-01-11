@@ -60,7 +60,7 @@ def bed2(outdir):
 @pytest.fixture(scope="package")
 def peakpredictor():
     pp = ananse.peakpredictor.PeakPredictor(
-        reference="ananse/db/default_reference",
+        # reference="ananse/db/default_reference",
         atac_bams=["tests/data/binding/bam1.bam"],
         regions=["chr1:1010-1020"],  # 1 (tiny) region
         genome="tests/data/binding/hg38_testgenome.fa",  # 1 chr

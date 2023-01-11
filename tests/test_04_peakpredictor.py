@@ -1,4 +1,4 @@
-from collections import namedtuple
+from types import SimpleNamespace
 from copy import deepcopy
 import os
 import pytest
@@ -11,6 +11,100 @@ import ananse.peakpredictor
 from ananse.view import view_h5
 from ananse.commands import binding
 from tests import write_file
+
+
+def test__set_reference():
+    ref_dir, ref_type = ananse.peakpredictor._set_reference()
+    assert ref_dir.endswith("db/default_reference")
+    assert ref_type == "default"
+
+    ref_dir, ref_type = ananse.peakpredictor._set_reference("tests/data")
+    assert ref_dir.endswith("tests/data")
+    assert ref_type == "custom"
+
+    with pytest.raises(NotADirectoryError):
+        ananse.peakpredictor._set_reference("tests/NOTADIRECTORY")
+
+
+def test__get_species():
+    s = ananse.peakpredictor._get_species("hg38")
+    assert s == "human"
+    s = ananse.peakpredictor._get_species("mm9")
+    assert s == "mouse"
+    s = ananse.peakpredictor._get_species("GRCz11")
+    assert s is None
+
+
+def test__load_human_factors():
+    valid_factors = ananse.peakpredictor._load_human_factors()
+    # assert isinstance(valid_factors, list)
+    assert "TP53" in valid_factors
+    assert all([tf not in ascii_lowercase for tf in valid_factors])
+
+
+def test_read_factor2motifs():
+    f2m = ananse.peakpredictor.read_factor2motifs(
+        "tests/data/GRCz11_chr9/GRCz11_chr9.pfm",
+        "GRCz11",
+    )
+    assert len(f2m) == 4
+    assert len(f2m["pou3f3a"]) == 18
+
+    with pytest.raises(ValueError):
+        ananse.peakpredictor.read_factor2motifs(
+            "tests/data/GRCz11_chr9/GRCz11_chr9.pfm",
+            "GRCz11",
+            indirect=False,
+        )
+
+    f2m = ananse.peakpredictor.read_factor2motifs(
+        "tests/data/GRCz11_chr9/GRCz11_chr9.pfm",
+        "GRCz11",
+        factors=["pou3f3a"],
+    )
+    assert len(f2m) == 1
+
+
+def test__remove_invalid_regions():
+    r_in = ["1", "2", "3"]
+    other = ["1", "2", "3"]
+    regions = ananse.peakpredictor._remove_invalid_regions(r_in, other)
+    assert regions == r_in
+
+    r_in = ["1", "2"]
+    other = ["1", "2", "3"]
+    regions = ananse.peakpredictor._remove_invalid_regions(r_in, other)
+    assert regions == r_in
+
+    r_in = ["1", "2", "3"]
+    other = ["1", "2"]
+    regions = ananse.peakpredictor._remove_invalid_regions(r_in, other)
+    assert regions == other
+
+
+def test__load_cage_tpm(outdir):
+    cage_tpms = os.path.join(outdir, "cage.tsv")
+    pd.DataFrame(
+        {
+            "regions": [
+                "chr1:600-930",
+                "chr1:610-920",
+                "chr1:1010-1020",
+                "chr1:1200-1400",
+            ],
+            "TPM": [10, 20, 0, 0],
+        }
+    ).to_csv(cage_tpms, sep="\t", index=False)
+
+    df = ananse.peakpredictor._load_cage_tpm(cage_tpms)
+    assert df.shape == (3, 1)
+    assert df.index.to_list() == ["chr1:1200-1400", "chr1:665-865", "chr1:915-1115"]
+    assert df.at["chr1:665-865", "CAGE"] == 15
+
+
+def test__load_cage_remap_data():
+    # ananse.peakpredictor._load_cage_remap_data()
+    pass  # TODO
 
 
 def test__istable():
@@ -37,22 +131,6 @@ def test__check_input_files():
     _ = ananse.peakpredictor._check_input_files(present_files)
 
 
-def test__get_species():
-    s = ananse.peakpredictor._get_species("hg38")
-    assert s == "human"
-    s = ananse.peakpredictor._get_species("mm9")
-    assert s == "mouse"
-    s = ananse.peakpredictor._get_species("GRCz11")
-    assert s is None
-
-
-def test__load_human_factors():
-    valid_factors = ananse.peakpredictor._load_human_factors()
-    # assert isinstance(valid_factors, list)
-    assert "TP53" in valid_factors
-    assert all([tf not in ascii_lowercase for tf in valid_factors])
-
-
 def test_peakpredictor_init(peakpredictor):
     with pytest.raises(ValueError):
         ananse.peakpredictor.PeakPredictor(reference="ananse/db/default_reference")
@@ -60,53 +138,62 @@ def test_peakpredictor_init(peakpredictor):
     p = peakpredictor  # initialized in conftest.py
 
     # boring stuff
-    assert p.data_dir == "ananse/db/default_reference"
+    assert p.reference_dir == os.path.abspath("ananse/db/default_reference")
+    assert p.reference_type == "default"
     assert p.genome == "tests/data/binding/hg38_testgenome.fa"
     assert p.pfmfile == "tests/data/binding/test.pfm"
     assert p.ncore == 1
 
     # set in test.motif2factors.txt
-    assert p.factors() == ["SOX12"]
     assert p.f2m == {"SOX12": ["GM.5.0.Sox.0001"]}
-    assert "GM.5.0.Sox.0001" in p.motifs
 
     # parsed from input
     assert p.regions == ["chr1:1010-1020"]
-    assert p.region_type == "custom"
-    assert p.species == "human"  # because hg38 is in the genome name
-
-    assert p.histone_data is None
     assert "chr1:1010-1020" in p.atac_data.index
-    assert p._X_columns == ["ATAC", "motif"]
-    assert p._model_type == "ATAC_motif"
+    assert p.histone_data is None
+    assert p.p300_data is None
+    assert p.cage_data is None
+    assert p._avg is None
+    assert p._dist is None
+    assert p.all_data is None
+    assert p.all_data_columns == ["ATAC", "motif"]
 
-    # assert len(p.motif_graph) == 707
+    assert len(p.factor_models) > 0, "factor_models"
+    assert len(p.motif_graph) > 0, "motif_graph"
 
 
-def test_load_counts(peakpredictor):
+def test__jaccard_motif_graph(peakpredictor):
+    factor = "SOX12"
+    tfs = nx.single_source_dijkstra_path_length(peakpredictor.motif_graph, factor, 1)
+    assert tfs[factor] == 0
+    assert "SOX7" in tfs
+    assert tfs["SOX7"] == 0.75
+
+
+def test__load_counts(peakpredictor):
     p = deepcopy(peakpredictor)
 
     regionsfile = "tests/data/GRCz11_chr9/GRCz11_chr9_regions.bed"
     regions = ananse.peakpredictor.load_regions(regionsfile)
     p.regions = regions
     countsfile = "tests/data/GRCz11_chr9/GRCz11_chr9_raw.tsv"
-    p.load_counts(countsfile, None, "ATAC")
+    df = p._load_counts(countsfile)
 
-    assert len(p.atac_data) == len(regions)
+    assert len(df) == len(regions)
 
     regions = ["9:2802-3002"]
     p.regions = regions
     countsfile = "tests/data/GRCz11_chr9/GRCz11_chr9_raw.tsv"
-    p.load_counts(countsfile, None, "ATAC")
+    df = p._load_counts(countsfile)
 
-    assert len(p.atac_data) == len(regions)
+    assert len(df) == len(regions)
 
 
 def test__scan_motifs(peakpredictor):
     region = "chr1:1010-1020"
     tf = "SOX12"
-    peakpredictor._scan_motifs([region], zscore=False, gc=False)
-    score = peakpredictor._motifs.at[region, tf]
+    peakpredictor._scan_motifs(zscore=False, gc=False)
+    score = peakpredictor.region_factor_df.at[region, tf]
     # rounding to reduce flakiness
     assert round(float(score), 2) == -0.99  # -0.86 new scores with gimme 0.17.0
 
@@ -114,7 +201,7 @@ def test__scan_motifs(peakpredictor):
 def test__load_prescanned_motifs(peakpredictor):
     region = "chr1:1010-1020"
     tf = "SOX12"
-    score = peakpredictor._motifs.at[region, tf]
+    score = peakpredictor.region_factor_df.at[region, tf]
     # rounding to reduce flakiness
     assert round(float(score), 2) == -0.99  # -0.86 new scores with gimme 0.17.0
 
@@ -173,118 +260,75 @@ def test__load_cage(outdir, peakpredictor):
 def test__load_reference_data(peakpredictor):
     p = deepcopy(peakpredictor)
     with pytest.raises(FileNotFoundError):
-        p._load_reference_data()
+        p._load_custom_data()
 
     # # TODO: nice tests based on the output of these properties
-    # print(p._motifs)
+    # print(p.region_factor_df)
     # print(p._avg)
     # print(p._dist)
     # print(p.regions)
-    # exit(1)
 
 
-def test_factors(peakpredictor):
+def test__model_input(peakpredictor):
     p = deepcopy(peakpredictor)
-    assert p.factors() == ["SOX12"]
+    mi = p._model_input()
+    assert mi == "ATAC_motif"
+    assert p.all_data_columns == ["ATAC", "motif"]
 
-    # dynamically updated
-    p.species = None
-    p.f2m = {"whatever_I_want": []}
-    assert p.factors() == ["whatever_I_want"]
+    p.all_data_columns = ["p300", "dist", "CAGE"]
+    mi = p._model_input()
+    assert mi == "CAGE_H3K27ac_dist"
+    assert p.all_data_columns == ["CAGE", "p300", "dist"]
 
-    # filtered
-    p.species = "mouse"
-    p.f2m = {"mouse_gene": [], "HUMAN_GENE": []}
-    assert p.factors() == ["mouse_gene"]
+    p.all_data_columns = ["motif", "CAGE"]
+    mi = p._model_input()
+    assert mi == "CAGE_motif"
+    assert p.all_data_columns == ["CAGE", "motif"]
 
 
-def test__jaccard_motif_graph(peakpredictor):
-    factor = "SOX12"
-    tfs = nx.single_source_dijkstra_path_length(peakpredictor.motif_graph, factor, 1)
-    assert tfs[factor] == 0
-    assert "SOX7" in tfs
-    assert tfs["SOX7"] == 0.75
+def test_predict_binding_probability(peakpredictor):
+    pred = peakpredictor.predict_binding_probability("SOX12")
+    assert round(pred.at["chr1:1010-1020", 0], 0) == round(1.0, 0)
+    assert peakpredictor.all_data.shape == (1, 1)
+
+
+def test_predict_factor_activity(peakpredictor):
+    act = peakpredictor.predict_factor_activity(1)
+    assert act.columns.tolist() == ["factor", "activity"]
+    assert act.shape == (1, 2)
+
+
+def test_predict_peaks():
+    pass  # TODO
 
 
 def test_command_binding(outdir, genome):
-    Args = namedtuple(
-        "args",
-        "outdir atac_bams histone_bams cage_tpms columns regions reference tfs genome pfmfile pfmscorefile jaccard_cutoff ncore",
-    )
     out_dir = os.path.join(outdir, "binding")
     bed = os.path.join(outdir, "bed3.bed")
+    regions = ["9:2802-3002", "9:3612-3812"]
+    tfs = ["pou2f1b", "pou1f1", "pou3f3a"]
+    write_file(bed, regions)
 
-    # # hg38
-    # write_file(
-    #     bed,
-    #     [
-    #         "chr1\t50\t250\n",  # regions encompasses the bam reads
-    #         "chr1\t70\t300\n",
-    #         "chr1\t450\t500\n",
-    #     ],
-    # )
-    # scorefile = os.path.join(outdir, "scorefile.tsv")
-    # write_file(
-    #     scorefile,
-    #     [
-    #         "\tGM.5.0.Sox.0001\n",
-    #         "chr1:50-250\t0.2\n",
-    #         "chr1:70-300\t0.0\n",
-    #         "chr1:450-500\t-0.2\n",
-    #     ],
-    # )
-    # args = Args(
-    #     outdir=out_dir,
-    #     atac_bams=["tests/data/binding/bam1.bam"],  # chr 1, 3 reads
-    #     histone_bams=None,
-    #     regions=[bed],
-    #     reference=None,
-    #     tfs=None,
-    #     genome="tests/data/binding/hg38_testgenome.fa",  # chr 1 (fake)
-    #     pfmfile="tests/data/binding/test.pfm",  # 1 motif (GM.5.0.Sox.0001), 1 factor (SOX12)
-    #     pfmscorefile=scorefile,
-    #     jaccard_cutoff=0.1,
-    #     ncore=1,
-    # )
-    # binding(args)
-    #
-    # bindingfile = os.path.join(out_dir, "binding.h5")
-    # assert os.path.exists(bindingfile)
-    # df = view_h5(bindingfile)
-    # # regions overlapping between bam files, regionfiles and pfmscorefile
-    # assert set(df.index) == {"chr1:50-250", "chr1:70-300", "chr1:450-500"}
-    # # TFs overlapping between factors and pfmfile's motif2factors.txt
-    # assert set(df.columns) == {"SOX12"}
-
-    # GRCz11
-    write_file(
-        bed,
-        [
-            "9:2802-3002\n",
-            "9:3612-3812\n",
-        ],
-    )
-    args = Args(
-        outdir=out_dir,
-        atac_bams=["tests/data/GRCz11_chr9/chr9.bam"],
-        histone_bams=None,
-        cage_tpms=None,
-        columns=None,
-        regions=[bed],  # ["tests/data/GRCz11_chr9/GRCz11_chr9_regions.bed"],
-        reference=None,
-        tfs=["pou2f1b", "pou1f1", "pou3f3a"],
-        genome="tests/data/GRCz11_chr9/GRCz11/GRCz11.fa",
-        pfmfile="tests/data/GRCz11_chr9/GRCz11_chr9.pfm",
-        pfmscorefile="tests/data/GRCz11_chr9/GRCz11_chr9_scan.bed",
-        jaccard_cutoff=0.1,
-        ncore=1,
-    )
+    args = SimpleNamespace()  # mimic argparse layer
+    args.outdir = out_dir
+    args.atac_bams = ["tests/data/GRCz11_chr9/chr9.bam"]
+    args.histone_bams = None
+    args.cage_tpms = None
+    args.columns = None
+    args.regions = [bed]  # ["tests/data/GRCz11_chr9/GRCz11_chr9_regions.bed"],
+    args.reference = None
+    args.tfs = tfs
+    args.genome = "tests/data/GRCz11_chr9/GRCz11/GRCz11.fa"
+    args.pfmfile = "tests/data/GRCz11_chr9/GRCz11_chr9.pfm"
+    args.pfmscorefile = "tests/data/GRCz11_chr9/GRCz11_chr9_scan.bed"
+    args.jaccard_cutoff = 0.1
+    args.ncore = 1
     binding(args)
 
     bindingfile = os.path.join(out_dir, "binding.h5")
     assert os.path.exists(bindingfile)
     df = view_h5(bindingfile)
     # regions overlapping between bam files, regionfiles and pfmscorefile
-    assert len(df.index) == 2
+    assert len(df.index) == len(regions)
     # TFs overlapping between factors and pfmfile's motif2factors.txt
-    assert len(df.columns) == 3
+    assert len(df.columns) == len(tfs)
