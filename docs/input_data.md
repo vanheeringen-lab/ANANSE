@@ -3,18 +3,22 @@
 To run ANANSE you need the following data:
 
 * A genome with a matching gene annotation
-* For `ananse binding`: enhancer regions (optional for `hg38`)
-* For `ananse binding`: enhancer activity from either/both:
+* For `ananse binding`: enhancer regions (optional for `hg38` or CAGE-seq data)
+* For `ananse binding`: enhancer activity from
     * ATAC-seq data
         * one or more indexed BAM file(s) or
         * one counts table with reads for each peak per sample
+        * can be combined with H3K27ac ChIP-seq data
     * H3K27ac ChIP-seq data
         * one or more indexed BAM files(s) or
         * one counts table with reads per peak
+        * can be combined with ATAC-seq data
+    * CAGE-seq data
+        * one table with enhancer (bidirectional) regions with (average) TPM score       
 * For `ananse network`: gene expression quantification from either:
     * one or more quantification files with one TPM column
     * one counts/TPM table with expression for each gene per sample
-* For `ananse influence`: gene differential expression (DESeq2 output)
+* For `ananse influence`: differential gene expression (DESeq2 output)
 * A Motif database
 
 ### Genome
@@ -79,12 +83,15 @@ The (raw) ATAC-/ChIP-seq counts table can be used as input directly.
 
 ### Enhancer activity
 
-ANANSE can use ATAC-seq and/or H3K27ac ChIP-seq data to predict binding.
-Using both will give the best performance, however, either one will also work well (see Fig. 3A in the ANANSE paper).
+ANANSE can use ATAC-seq and/or H3K27ac ChIP-seq, or CAGE-seq data to predict binding.
 These data should be mapped to the relevant genome, with duplicates reads marked (or removed).
-For both types of data you can supply one or more files (replicates), which will be averaged.
 
-For each data type, enhancer activity can be given in two forms: one or more BAMs or one counts table.
+##### ATAC-seq and/or H3K27ac ChIP-seq
+
+Using both ATAC- and H3K27ac ChIP-seq will give the better performance than either alone (see Fig. 3A in the ANANSE paper).
+
+Enhancer activity can be given in two forms: one or more BAMs or one counts table (per data type).
+Multiple BAM files or counts table column names are considered replicates (their values averaged).
 
 ###### BAMs
 
@@ -114,6 +121,11 @@ Example of a counts table:
 
 You can specify which samples to use from this file with `--columns` (case-insensitive. By default, all columns are used). 
 For example: `--columns SAMPLE1 sample3` will use samples 1 and 3, but ignores sample 2.
+
+##### CAGE-seq
+
+ANANSE can use CAGE-seq to predict key TFs. 
+Have a look at these simple [examples](https://github.com/vanheeringen-lab/ANANSE-CAGE) to learn more.
 
 ### Expression data
 

@@ -1,3 +1,4 @@
+from glob import glob
 import urllib.request
 import pandas as pd
 import numpy as np
@@ -5,6 +6,8 @@ import re
 import sys
 import os
 from loguru import logger
+import seaborn as sns
+from sklearn.metrics import roc_auc_score, average_precision_score
 
 import ananse
 from . import SEPARATOR
@@ -57,15 +60,18 @@ def fix_columns(df):
     )
 
     if "tf_target" in df.columns:
-        df[["tf", "target"]] = (
-            df["tf_target"].str.split(SEPARATOR, expand=True).iloc[:, :2]
-        )
+        for sep in [SEPARATOR, "_", "-"]:
+            if df["tf_target"].head(100).str.contains(sep).sum() == 100:
+                break
+
+        df[["tf", "target"]] = df["tf_target"].str.split(sep, expand=True).iloc[:, :2]
         df = df.drop(columns=["tf_target"])
 
     if "tf" not in df.columns:
         raise ValueError("Expect a column named 'source' or 'tf'")
     if "target" not in df.columns:
         raise ValueError("Expect a column named 'target' or 'target_gene'")
+
     return df
 
 
@@ -280,6 +286,9 @@ def read_network(fname, name=None):
     else:
         df = pd.read_table(network)
     df = fix_columns(df)
+
+    # Make sure there are no duplicate interactions
+    df.drop_duplicates(subset=["tf", "target"], inplace=True)
     df = df.set_index(["tf", "target"])
 
     # Assuming last column is the edge weight
@@ -297,9 +306,7 @@ def _read_correlation_reference(network, corCutoff=0.6):
 
     edb["iscorrelation"] = [1 if i > corCutoff else 0 for i in edb["correlationRank"]]
 
-    edb[["tf", "target"]] = (
-        edb["source_target"].str.split(SEPARATOR, expand=True).iloc[:, :2]
-    )
+    edb[["tf", "target"]] = edb["source_target"].str.split("_", expand=True).iloc[:, :2]
     edb = edb.drop(
         columns=["source_target", "ocorrelation", "correlation", "correlationRank"]
     )
@@ -396,3 +403,144 @@ def read_networks(network_dict, ignore_missing=False):
             df = df.join(tmp, how="outer")
 
     return df
+
+
+class NetworkBenchmark:
+    def __init__(self, ref_dir, outdir):
+        logger.info("Reading reference networks")
+        self.dorothea = read_reference(
+            "dorothea", fname=f"{ref_dir}/dorothea/entire_database.txt"
+        )
+        self.perturb = read_reference("perturbation")
+        self.trrust = read_reference("trrust", fname=f"{ref_dir}/trrust.txt")
+
+        self.references = [
+            [self.dorothea, "dorothea", "is_evidence_curated"],
+            [self.perturb, "TF perturbations", "interaction"],
+            [self.trrust, "TRRUST", "interaction"],
+        ]
+        self.outdir = outdir
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+
+        self.benchmark_results = []
+
+    def _merge_files(self):
+        for network in self.networks:
+            outfile = f"{self.outdir}/{network}.feather"
+
+            if os.path.exists(outfile):
+                continue
+
+            logger.info(f"Creating merged file for {network} networks.")
+            network_dfs = []
+            fnames = glob(self.network_files[network])
+            for fname in fnames:
+                name = fname
+                for part in self.network_files[network].split("*"):
+                    name = name.replace(part, "")
+                logger.info(fname)
+                df = read_network(fname)
+                df.columns = [f"{network}.{name}"]
+                network_dfs.append(df)
+
+            logger.info("Concatenating...")
+            df = pd.concat(network_dfs, axis=1)
+            df.reset_index().to_feather(outfile)
+            logger.info("Done.")
+
+    def benchmark(self, network_files):
+        self.network_files = network_files
+        self.networks = list(self.network_files.keys())
+
+        # Create a feather file with all individual GRNs merged
+        # Saves time if (part of) the benchmark needs to be rerun
+        self._merge_files()
+
+        for network in self.networks:  # networks:
+            fname = f"{self.outdir}/{network}.feather"
+            logger.info(f"reading {fname}")
+            df = pd.read_feather(fname)
+            logger.info("done")
+            df.set_index(df.columns[:2].tolist(), inplace=True)
+            cols = df.columns
+            min_value = df.min().min() - 1
+
+            for ref_network, name, ref_col in self.references:
+                logger.info(f"joining {name}")
+                test_network = ref_network.join(df)
+                logger.info("done")
+                test_network = test_network.fillna(min_value)
+
+                for col in cols:
+                    pr_auc = average_precision_score(
+                        test_network[ref_col], test_network[col]
+                    )
+                    roc_auc = roc_auc_score(test_network[ref_col], test_network[col])
+                    exp_name = os.path.splitext(os.path.basename(col))[0]
+                    logger.info(
+                        f"{name}\t{network}\t{exp_name}\t{pr_auc:0.5f}\t{roc_auc:0.2f}"
+                    )
+                    self.benchmark_results.append(
+                        [name, network, exp_name, pr_auc, roc_auc]
+                    )
+
+    def plot(self, outname=None):
+        bench_df = pd.DataFrame(
+            [row[:2] + [row[2][-1]] + row[3:] for row in self.benchmark_results],
+            columns=["reference", "network", "tissue", "pr_auc", "roc_auc"],
+        )
+
+        for metric in ["pr_auc", "roc_auc"]:
+            sns.set_context(
+                "paper",
+                rc={
+                    "font.size": 16,
+                    "axes.titlesize": 16,
+                    "axes.labelsize": 16,
+                    "xtick.labelsize": 16,
+                    "ytick.labelsize": 16,
+                },
+            )
+            order = (
+                bench_df[bench_df["network"] != "baseline"]
+                .groupby("network")
+                .mean()[metric]
+                .sort_values()
+                .index[::-1]
+            )
+
+            g = sns.catplot(
+                data=bench_df[bench_df["network"] != "baseline"],
+                y="network",
+                x=metric,
+                col="reference",
+                kind="box",
+                order=order,
+                fliersize=0,
+                boxprops={"alpha": 0.5},
+                sharex=False,
+                aspect=1.3,
+            )
+
+            for subplot in g.axes:
+                for ax in subplot:
+                    for line in ax.lines:
+                        line.set_alpha(0.3)
+
+            g.map(
+                sns.stripplot,
+                metric,
+                "network",
+                color="black",
+                # data=bench_df[bench_df["network"] != "baseline"],
+                s=8,
+                jitter=0.25,
+                alpha=0.7,
+                order=order,
+            )
+            # g.set_xticklabels(rotation=30)
+
+            if outname:
+                extension = os.path.splitext(outname)[1]
+                g.savefig(outname.replace(extension, f".{metric}{extension}"))
