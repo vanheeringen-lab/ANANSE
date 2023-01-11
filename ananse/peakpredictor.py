@@ -874,7 +874,7 @@ class PeakPredictor:
                                     method="bayesianridge",
                                     pfmfile=self.pfmfile,
                                     ncpus=self.ncore,
-                                    random_state=state,  # gimme >= 0.18
+                                    random_state=state,
                                 ),
                                 how="outer",
                                 rsuffix=f"_{i}",

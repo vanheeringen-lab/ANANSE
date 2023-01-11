@@ -8,7 +8,7 @@ dependencies:
   - adjusttext
   - dask
   - genomepy >=0.14
-  - gimmemotifs-minimal >=0.17.2
+  - gimmemotifs-minimal >=0.18.0
   - loguru
   - matplotlib-base >=3.3
   - networkx
@@ -35,8 +35,3 @@ dependencies:
   # Docs
   - mkdocs  # test docs with `mkdocs serve`
   - mkdocs-material
-
-  # TODO: remove with gimmemotifs-minimal =0.18.0
-  - pip
-  - pip:
-      - git+https://github.com/vanheeringen-lab/gimmemotifs.git@44122e0992cd514f67ebe72d41a0f9835c1163c9
