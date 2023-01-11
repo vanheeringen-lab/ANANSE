@@ -59,7 +59,7 @@ def test_view_h5():
 def test_command_view(outdir):
     Args = namedtuple(
         "args",
-        "infile outfile tfs regions format n list_regions list_tfs",
+        "infile outfile tfs regions format n list_regions list_tfs activity",
     )
     outfile = os.path.join(outdir, "view.tsv")
     tfs = ["NFKB2", "KLF6"]
@@ -76,6 +76,7 @@ def test_command_view(outdir):
         n=None,
         list_regions=False,
         list_tfs=False,
+        activity=False,
     )
     view(args)
 

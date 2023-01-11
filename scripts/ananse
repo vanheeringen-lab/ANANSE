@@ -72,6 +72,15 @@ if __name__ == "__main__":
         nargs="+",
     )
     group.add_argument(
+        "-C",
+        "--cage-tpms",
+        dest="cage_tpms",
+        help="CAGE-seq bidirectional regions (TPM) generated with CAGEfightR, "
+             "cannot be used in combination with the -A and/or -H options",
+        metavar="TPM",
+        default=None,
+    )
+    group.add_argument(
         "-g",
         "--genome",
         dest="genome",
@@ -463,6 +472,14 @@ if __name__ == "__main__":
         "--list-tfs",
         dest="list_tfs",
         help="Return a list of transcription factors",
+        action="store_true",
+        default=False,
+    )
+    group.add_argument(
+        "-a",
+        "--activity",
+        dest="activity",
+        help="Return activity scores of transcription factors",
         action="store_true",
         default=False,
     )

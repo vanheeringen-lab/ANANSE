@@ -32,9 +32,9 @@ jobs:
       with:
         # python-version: ${{ matrix.python-version }}
         mamba-version: "*"
-        channels: bioconda,conda-forge,defaults
+        channels: conda-forge,bioconda,defaults
         channel-priority: true
-        activate-environment: ananse_dev
+        activate-environment: ananse
         environment-file: requirements.yaml
 
     - name: Code formatting (black) 🖤
@@ -43,11 +43,11 @@ jobs:
 
     - name: Code formatting (flake8) 🎱
       run: |
-        flake8 $(echo $TARGETS)
+        flake8 --ignore=W503,B950 $(echo $TARGETS)
 
     - name: Run tests 🧬
       run: |
-        pytest -vv --disable-pytest-warnings \
+        pytest -vvv --disable-pytest-warnings \
         --cov=./ --cov-report=xml
 
     - name: Upload code coverage ☂️

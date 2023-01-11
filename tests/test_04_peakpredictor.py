@@ -4,6 +4,7 @@ import os
 import pytest
 from string import ascii_lowercase
 
+import pandas as pd
 import networkx as nx
 
 import ananse.peakpredictor
@@ -107,7 +108,7 @@ def test__scan_motifs(peakpredictor):
     peakpredictor._scan_motifs([region], zscore=False, gc=False)
     score = peakpredictor._motifs.at[region, tf]
     # rounding to reduce flakiness
-    assert round(float(score), 2) == -0.86  # -0.99  new scores with gimme 0.17.0
+    assert round(float(score), 2) == -0.99  # -0.86 new scores with gimme 0.17.0
 
 
 def test__load_prescanned_motifs(peakpredictor):
@@ -115,7 +116,58 @@ def test__load_prescanned_motifs(peakpredictor):
     tf = "SOX12"
     score = peakpredictor._motifs.at[region, tf]
     # rounding to reduce flakiness
-    assert round(float(score), 2) == -0.86  # -0.99  new scores with gimme 0.17.0
+    assert round(float(score), 2) == -0.99  # -0.86 new scores with gimme 0.17.0
+
+
+def test__load_cage(outdir, peakpredictor):
+    # create some cage data
+    cage_tpms = os.path.join(outdir, "cage.tsv")
+    pd.DataFrame(
+        {
+            "regions": [
+                "chr1:10-20",  # not matching regions
+                "chr1:610-920",  # not matching regions, raw window size
+                "chr1:1010-1020",
+                "chr1:1200-1400",  # not matching pfmscorefile
+            ],
+            "TPM": [12.3, 4.56, 7.89, 0],
+        }
+    ).to_csv(cage_tpms, sep="\t", index=False)
+
+    pfmscorefile = os.path.join(outdir, "pfmscorefile.tsv")
+    pd.DataFrame(
+        {
+            "": ["chr1:10-20", "chr1:760-770", "chr1:1010-1020"],
+            "GM.5.0.Sox.0001": [12.3, 4.56, 7.89],
+        }
+    ).to_csv(pfmscorefile, sep="\t", index=False)
+
+    p = deepcopy(peakpredictor)
+    p.genome = "asd"  # we dont want to download 750 MB
+
+    # only pfmfile (with 3 normalized regions)
+    p._load_cage(
+        cage_tpms=cage_tpms, regions=None, pfmscorefile=pfmscorefile, window=10
+    )
+    # all regions in the pfmscore file match (after normalizing the tpm regions)
+    assert sorted(p.regions) == ["chr1:10-20", "chr1:1010-1020", "chr1:760-770"]
+    # CAGE TPM values scaled and ordered correctly
+    assert round(p.cage_data.at["chr1:760-770", "CAGE"], 1) == 0.0
+    assert round(p.cage_data.at["chr1:1010-1020", "CAGE"], 1) == 0.5
+    assert round(p.cage_data.at["chr1:10-20", "CAGE"], 1) == 1.0
+
+    # pfmfile and regions (with 1 matching normalized region)
+    p._load_cage(
+        cage_tpms=cage_tpms,
+        regions=[
+            "chr1:1010-1020",
+            "chr1:1234-1245",  # invalid
+        ],
+        pfmscorefile=pfmscorefile,
+        window=10,
+    )
+    # only overlapping regions kept
+    assert p.regions == ["chr1:1010-1020"]
 
 
 def test__load_reference_data(peakpredictor):
@@ -157,7 +209,7 @@ def test__jaccard_motif_graph(peakpredictor):
 def test_command_binding(outdir, genome):
     Args = namedtuple(
         "args",
-        "outdir atac_bams histone_bams columns regions reference tfs genome pfmfile pfmscorefile jaccard_cutoff ncore",
+        "outdir atac_bams histone_bams cage_tpms columns regions reference tfs genome pfmfile pfmscorefile jaccard_cutoff ncore",
     )
     out_dir = os.path.join(outdir, "binding")
     bed = os.path.join(outdir, "bed3.bed")
@@ -216,6 +268,7 @@ def test_command_binding(outdir, genome):
         outdir=out_dir,
         atac_bams=["tests/data/GRCz11_chr9/chr9.bam"],
         histone_bams=None,
+        cage_tpms=None,
         columns=None,
         regions=[bed],  # ["tests/data/GRCz11_chr9/GRCz11_chr9_regions.bed"],
         reference=None,

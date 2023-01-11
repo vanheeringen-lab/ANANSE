@@ -241,6 +241,9 @@ def difference(
 
     # Only keep edges that are higher in target network
     diff_network = diff_network[diff_network["weight"] > 0]
+    if len(diff_network) == 0:
+        logger.error("No differences between networks!")
+        sys.exit(1)
 
     if not full_output:
         diff_network.drop(columns=["weight_target", "weight_source"], inplace=True)
@@ -351,9 +354,8 @@ def fold_change_scores(node, grn, expression_change):
     target_fc = [expression_change[t].absfc for t in direct_targets]
     non_target_fc = [expression_change[t].absfc for t in non_direct_targets]
     try:
-        # asymptotic method prevents recursion errors.
-        # TODO: review when scipy closes https://github.com/scipy/scipy/issues/14622
-        pval = mannwhitneyu(target_fc, non_target_fc, method="asymptotic")[1]
+        # auto method prevents recursion errors.
+        pval = mannwhitneyu(target_fc, non_target_fc, method="auto")[1]
     except (RecursionError, ValueError) as e:
         pval = np.NAN
         logger.warning(e)
@@ -409,7 +411,7 @@ class Influence(object):
         gene_gtf=None,
         grn_source_file=None,
         grn_target_file=None,
-        filter_tfs=False,  # TODO: variable not exposed in CLI
+        filter_tfs=False,  # variable not exposed in CLI
         edges=100_000,
         ncore=1,
         sort_by="prob",
@@ -450,10 +452,6 @@ class Influence(object):
                 full_output,
                 select_after_join,
             )
-
-            if len(self.grn.edges) == 0:
-                logger.error("No differences between networks!")
-                sys.exit(1)
             logger.info(f"    Differential network has {len(self.grn.edges)} edges.")
 
         # Load expression file
@@ -499,11 +497,14 @@ class Influence(object):
                     f"Column '{col}' not in differential gene expression file!"
                 )
                 sys.exit(1)
-        df = df[["log2FoldChange", "padj"]].dropna()  # removes unneeded data
-        df = df.astype(float)
+        df = df[["log2FoldChange", "padj"]].astype(float)
 
+        # convert to gene names if overlap is poor
         network_genes = set(self.grn.nodes)
-        pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
+        df_genes = set(df.index)
+        pct_overlap = len(network_genes & df_genes) / min(
+            len(network_genes), len(df_genes)
+        )
         logger.debug(
             f"{int(100 * pct_overlap)}% of genes found in DE genes and network(s)"
         )
@@ -514,7 +515,7 @@ class Influence(object):
             backup_pct_overlap = pct_overlap
             backup_df = df.copy()
 
-            gp = genomepy.Annotation(self.gene_gtf)
+            gp = genomepy.Annotation(self.gene_gtf, quiet=True)
             tid2gid = gp.gtf_dict("transcript_id", "gene_id")
             tid2name = gp.gtf_dict("transcript_id", "gene_name")
             gid2name = gp.gtf_dict("gene_id", "gene_name")
@@ -527,12 +528,26 @@ class Influence(object):
             # take the most significant gene per duplicate (if applicable)
             df = df.groupby("index").min("padj")
 
-            pct_overlap = len(network_genes & set(df.index)) / len(network_genes)
+            df_genes = set(df.index)
+            pct_overlap = len(network_genes & df_genes) / min(
+                len(network_genes), len(df_genes)
+            )
             logger.debug(
                 f"{int(100 * pct_overlap)}% of genes found in DE genes and network(s)"
             )
             if pct_overlap <= backup_pct_overlap:
                 df = backup_df
+
+        # unnamed genes cannot be matched
+        df.dropna(inplace=True)
+        # merge duplicate genes
+        dup_df = df[df.index.duplicated()]
+        if len(dup_df) > 0:
+            logger.warning(
+                "Duplicated gene names detected in differential expression file e.g. "
+                f"'{str(dup_df.index[0])}'. Averaging values for duplicated genes..."
+            )
+            df = df.groupby(by=df.index, dropna=True).mean(0)
 
         overlap = len(network_genes & set(df.index))
         if overlap == 0:
@@ -542,24 +557,13 @@ class Influence(object):
             )
             if self.gene_gtf is None:
                 logger.info(
-                    "If you provide a GTF file we can try to convert "
-                    "the gene expression file to HGNC names."
+                    "If you provide a GTF file we can try to convert genes to HGNC symbols"
                 )
             sys.exit(1)
         logger.debug(
             f"{overlap} genes overlap between the "
             "differential expression file and the network file(s)"
         )
-
-        # check for duplicated index rows and return an error (but continue running)
-        dup_df = df[df.index.duplicated()]
-        if len(dup_df) > 0:
-            dupped_gene = str(dup_df.index[0])
-            logger.warning(
-                f"Duplicated gene names detected in differential expression file e.g. '{dupped_gene}'. "
-                "Averaging values for duplicated genes..."
-            )
-            df = df.groupby(by=df.index, dropna=True).mean(0)
 
         # absolute fold change
         df["fc"] = df["log2FoldChange"].abs()
@@ -591,7 +595,7 @@ class Influence(object):
             )
             sys.exit(1)
 
-        # TODO: should 'realfc' this not be 'score' (padj<cutoff), or even 'absfc'?
+        # TODO: should 'realfc' be 'score' (padj<cutoff), or even 'absfc'?
         de_tfs = set(tf for tf in de_tfs if self.expression_change[tf].realfc > 0)
         if len(de_tfs) == 0:
             # expression_change[tf].score > 0 == differentially expressed

@@ -1,28 +1,26 @@
 """Build gene regulatory network"""
-import os
 import math
+import os
 import re
 import shutil
 import sys
 import warnings
+from tempfile import NamedTemporaryFile, mkdtemp
 from typing import Union
 
+import dask.dataframe as dd
+import genomepy
 import numpy as np
 import pandas as pd
+import pyranges as pr
+from loguru import logger
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
-import genomepy
-import dask.dataframe as dd
-from tempfile import NamedTemporaryFile, mkdtemp
-from dask.distributed import progress
-from loguru import logger
 from tqdm.auto import tqdm
-import pyranges as pr
 
+from ananse import PACKAGE_DIR, SEPARATOR
 from ananse.utils import cleanpath
 from ananse.view import get_binding_tfs
-from . import SEPARATOR, PACKAGE_DIR
-
 
 warnings.filterwarnings("ignore")
 
@@ -33,7 +31,6 @@ class Network(object):
 
     def __init__(
         self,
-        ncore=1,
         genome="hg38",
         gene_bed=None,
         include_promoter=False,
@@ -45,8 +42,6 @@ class Network(object):
 
         Parameters
         ----------
-            ncore : int
-                Specifies the number of threads to use during analysis. (default: 1)
             genome : str
                 The genome that is used for the gene annotation and the enhancer location. (default: "hg38")
             gene_bed : str, optional
@@ -58,7 +53,6 @@ class Network(object):
             full_output : bool
                 export all variables to the GRN file or by default only the TF_target + prob score
         """
-        self.ncore = ncore
         self.gene_bed = get_bed(gene_bed, genome)
         self.include_promoter = include_promoter
         self.include_enhancer = include_enhancer
@@ -84,6 +78,9 @@ class Network(object):
         genes.columns = [col.capitalize() for col in genes.columns]
         # Convert to DataFrame & we don't need intron/exon information
         genes = genes.as_df().iloc[:, :6]
+
+        # Drop genes found on >1 contig
+        genes = genes.drop_duplicates(subset=["Name"], keep=False)
 
         # Get the TSS only
         genes.loc[genes["Strand"] == "+", "End"] = genes.loc[
@@ -444,6 +441,7 @@ class Network(object):
             tmp = tmp.reset_index().melt(
                 id_vars=tmp.index.name, var_name="tf", value_name="weighted_binding"
             )
+            tmp["weighted_binding"] = tmp["weighted_binding"].astype(np.float32)
 
             # Create dataframe with two columns: tf_gene and weighted_binding score
             tmp["tf_target"] = tmp["tf"] + SEPARATOR + tmp["gene"]
@@ -459,13 +457,24 @@ class Network(object):
             raise ValueError("No genes found near the requested regions!")
 
         ddf = dd.read_csv(os.path.join(tmpdir, "*.csv")).set_index("tf_target")
+        # rankdata() requires all data to be loaded into memory
+        # TODO: update when dask can do this delayed https://github.com/dask/dask/issues/8658
+        df = ddf.compute()
+        df["weighted_binding"] = minmax_scale(
+            rankdata(df["weighted_binding"], method="min")
+        )
+        df["weighted_binding"] = df["weighted_binding"].astype(np.float32)
+        # save the data to file to reduce RAM usage
+        tmpfile = os.path.join(tmpdir, "binding.csv")
+        df.to_csv(tmpfile)
+        ddf = dd.read_csv(tmpfile).set_index("tf_target", sorted=True)
         return ddf
 
     def _save_temp_expression(self, df, name, column="tpm"):
         tmp = df.rename(columns={column: f"{name}_expression"})
-        tmp[f"{name}_expression"] = minmax_scale(tmp[f"{name}_expression"].rank())
+        tmp[f"{name}_expression"] = minmax_scale(rankdata(tmp[f"{name}_expression"]))
         tmp.index.rename(name, inplace=True)
-        tmp["key"] = 0
+        tmp["key"] = None
         fname = NamedTemporaryFile(
             prefix="ananse.", suffix=f".{name}.parquet", delete=False
         ).name
@@ -498,24 +507,22 @@ class Network(object):
             Dask DataFrame with gene expression based values.
         """
         # log transform expression values
-        expression[column] = np.log2(expression[column] + 1e-5)
+        expression[column] = np.log2(expression[column] + 1e-5, dtype=np.float32)
 
         tf_expr = expression[expression.index.isin(tfs)]
         tf_fname = self._save_temp_expression(tf_expr, "tf", column)
         target_fname = self._save_temp_expression(expression, "target", column)
         # Read files (delayed) and merge on 'key' to create a Cartesian product
         # combining all TFs with all target genes.
-        a = dd.read_parquet(tf_fname)
-        b = dd.read_parquet(target_fname)
-        network = a.merge(b, how="outer")
+        tf_df = dd.read_parquet(tf_fname)
+        target_df = dd.read_parquet(target_fname)
+        network = tf_df.merge(target_df, how="outer")
 
         # Use one-column index that contains TF and target genes.
         # This is necessary for dask, as dask cannot merge on a MultiIndex.
-        # Otherwise this would be an inefficient and unnecessary step.
+        # Otherwise, this would be an inefficient and unnecessary step.
         network["tf_target"] = network["tf"] + SEPARATOR + network["target"]
-        network = network[
-            ["tf", "target", "tf_target", "tf_expression", "target_expression"]
-        ]
+        network = network[["tf", "tf_expression", "target_expression", "tf_target"]]
 
         return network
 
@@ -596,6 +603,7 @@ class Network(object):
                 act = act.set_index("factor")
                 act.index.name = "tf"
                 act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
+                act["activity"] = act["activity"].astype(np.float32)
                 df_expression = df_expression.merge(
                     act, right_index=True, left_on="tf", how="left"
                 ).fillna(0.5)
@@ -630,25 +638,16 @@ class Network(object):
         else:
             if df_expression is None:
                 logger.info("Processing binding network")
-                result = df_binding
-                result = result.reset_index()
+                result = df_binding.reset_index()
             else:
                 logger.info("Processing expression-binding network")
                 result = df_expression.merge(
                     df_binding, right_index=True, left_on="tf_target", how="left"
-                )
-                result = result.persist()
-                result = result.fillna(0)
-                # TODO: move client from commands.network into this module
-                if "client" in globals():
-                    progress(result)
+                ).fillna(0.0)
+
         # This is where the heavy lifting of all delayed computations gets done
         result = result.compute()
 
-        if "weighted_binding" in result:
-            result["weighted_binding"] = minmax_scale(
-                rankdata(result["weighted_binding"], method="min")
-            )
         columns = [
             "tf_expression",
             "target_expression",
@@ -658,7 +657,7 @@ class Network(object):
         columns = [col for col in columns if col in result]
         logger.debug(f"Using {', '.join(columns)}")
         # Combine the individual scores
-        result["prob"] = result[columns].mean(1)
+        result["prob"] = result[columns].mean(1).astype(np.float32)
 
         # filter output
         columns = ["tf_target", "prob"]
@@ -691,8 +690,8 @@ class Network(object):
         """
         cutoff = 0.6  # fraction of overlap that is "good enough"
         tfs = set(tfs)
-        gp = genomepy.Annotation(self.gene_bed)
-        bed_genes = set(gp.genes())
+        gp = genomepy.Annotation(self.gene_bed, quiet=True)
+        bed_genes = set(gp.genes("bed"))
         expression_genes = set(expression.index)
 
         # overlap_tf_exp = len(expression_genes & tfs) / len(tfs)
@@ -753,6 +752,10 @@ class Network(object):
         for col in drop_cols:
             bed[col] = 0
         bed.drop_duplicates(inplace=True, ignore_index=True)
+        # exclude genes found on >1 contig
+        bed.drop_duplicates(
+            subset=["name"], keep=False, inplace=True, ignore_index=True
+        )
         # metrics
         bed_genes = set(bed.name)
         overlap_tf_bed = len(bed_genes & tfs) / len(tfs)
@@ -814,8 +817,7 @@ def get_bed(gene_bed, genome):
             gp = genomepy.Genome(genome)  # can raise descriptive FileNotFoundError
             out_bed = gp.annotation_bed_file  # can return None
     elif not os.path.exists(out_bed) or not out_bed.lower().endswith(".bed"):
-        # can raise descriptive FileNoTFoundError (in version >0.11.0)
-        gp = genomepy.Annotation(out_bed)  # can raise descriptive ValueError
+        gp = genomepy.Annotation(out_bed, quiet=True)
         out_bed = gp.annotation_bed_file  # can return None
     if out_bed is None:
         raise TypeError("Please provide a gene bed file with the -a argument.")

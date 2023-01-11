@@ -4,6 +4,7 @@ import re
 import sys
 from glob import glob
 from tempfile import NamedTemporaryFile
+from urllib.request import urlretrieve
 
 import joblib
 import networkx as nx
@@ -15,6 +16,7 @@ from genomepy import Genome
 from gimmemotifs.moap import moap
 from gimmemotifs.motif import read_motifs
 from gimmemotifs.scanner import scan_regionfile_to_table
+from gimmemotifs.preprocessing import coverage_table
 from loguru import logger
 from pandas import HDFStore
 from pyfaidx import FastaIndexingError
@@ -23,7 +25,13 @@ from sklearn.preprocessing import minmax_scale, scale
 from tqdm.auto import tqdm
 
 from ananse.bed import map_counts
-from ananse.utils import load_tfs, load_regions, get_motif_factors, check_cores
+from ananse.utils import (
+    load_tfs,
+    load_regions,
+    get_motif_factors,
+    check_cores,
+    mytmpdir,
+)
 from . import PACKAGE_DIR
 
 # This motif file is not created by default
@@ -37,6 +45,7 @@ BLACKLIST_TFS = [
 class PeakPredictor:
     atac_data = None
     histone_data = None
+    cage_data = None
     factor_models = {}
 
     def __init__(
@@ -44,6 +53,7 @@ class PeakPredictor:
         reference=None,
         atac_bams=None,
         histone_bams=None,
+        cage_tpms=None,
         columns=None,
         regions=None,
         genome="hg38",
@@ -58,8 +68,12 @@ class PeakPredictor:
             raise NotADirectoryError(f"Could not find {reference}")
         self.data_dir = reference
 
-        if atac_bams is None and histone_bams is None:
-            raise ValueError("Need either ATAC-seq or H3K27ac BAM file(s).")
+        if atac_bams is None and histone_bams is None and cage_tpms is None:
+            raise ValueError(
+                "Need either ATAC-seq and/or H3K27ac BAM file(s), "
+                "ATAC-seq and/or H3K27ac coverage table(s), "
+                "or a CAGE bidirectional sites TPM file."
+            )
 
         if genome is None:
             logger.warning("Assuming genome is hg38")
@@ -83,8 +97,13 @@ class PeakPredictor:
         self.pfmfile = pfmfile
         # load motifs, f2m and motif_graph
         self._load_motifs(factors=factors)
+
+        # load CAGE bidirectional sites data and regions
+        if cage_tpms is not None:
+            self._load_cage(cage_tpms, regions, pfmscorefile)
         # load regions, _motifs and region_type
-        self._load_regions(regions, pfmscorefile)
+        else:
+            self._load_regions(regions, pfmscorefile)
         # load ATAC data
         if atac_bams is not None:
             if _istable(atac_bams):
@@ -140,7 +159,7 @@ class PeakPredictor:
         if self.species == "human":
             valid_factors = _load_human_factors()
 
-        for name, motif in motifs.items():
+        for name, motif in motifs.items():  # noqa
             for factor in get_motif_factors(motif, indirect=indirect):
                 # filter for presence in factors
                 if factors is not None and factor not in factors:
@@ -207,6 +226,139 @@ class PeakPredictor:
                 jaccard = i / u
                 self.motif_graph.add_edge(tf1, tf2, weight=1 - jaccard)
 
+    def _load_cage(self, cage_tpms, regions=None, pfmscorefile=None, window=200):
+        """Load CAGE data: Bidirectional regions and TPMs
+
+        The CAGE file needs to contain two columns:
+            1. regions in chr:start-end format
+            2. TPMs
+
+        Sets the following attributes:
+
+        * self.regions : Bidirectional regions are loaded.
+        * self._motifs : Bidirectional regions are scanned for motifs.
+        * self.cage_data : CAGE TPMs are log transformed and quantile normalized.
+        * self._avg : Bidirectional regions are used to determine ReMap 2022 ChIP-seq coverage
+          (Only hg19 or hg38 supported).
+        * self.region_type: a str for selecting model types.
+
+        Parameters
+        ----------
+        cage_tpms : str
+            CAGE-seq output with bidirectional regions and TPMs
+        regions : list, optional
+            list of regions to filter the CAGE bidirectional regions/pfmscorefile by
+        pfmscorefile : str, optional
+            pre-scanned gimmemotifs scores file of the CAGE bidirectional regions
+        window : int, optional
+            scanning window around the center of each region to scan for motifs
+        """
+        # load cage tpms
+        if not os.path.exists(cage_tpms):
+            raise FileNotFoundError(f"Could not find {cage_tpms}")
+        data = pd.read_table(cage_tpms, comment="#", dtype=str)
+        if len(data.columns) != 2:
+            raise ValueError(
+                "For the CAGE TPM file, please give only two columns: regions and TPMs"
+            )
+        if len(data) == 0:
+            raise ValueError("CAGE TPM file is empty.")
+        data.columns = ["regions", "CAGE"]
+        data["CAGE"] = data["CAGE"].astype(np.float32)
+
+        # Normalize regions to the window size
+        regions_split = data["regions"].str.split("[:-]", expand=True)
+        regions_split.columns = ["chrom", "start", "end"]
+        regions_split["start"] = regions_split["start"].astype(int)
+        regions_split["end"] = regions_split["end"].astype(int)
+        center = (regions_split["start"] + regions_split["end"]) // 2
+        regions_split["start"] = center - window // 2
+        regions_split["end"] = center + window // 2
+
+        # Merge normalized regions into chr:start-end format
+        data["regions"] = (
+            regions_split["chrom"]
+            + ":"
+            + regions_split["start"].astype(str)
+            + "-"
+            + regions_split["end"].astype(str)
+        )
+        data.set_index("regions", inplace=True)
+        if any(data.index.duplicated()):
+            logger.info("  Averaging TPMs for duplicate regions in CAGE file")
+            data = data.groupby(data.index).mean(1)
+
+        # Get the overlap of normalized regions between
+        # 1) CAGE data, 2) regions and 3) pfmscorefile.
+        # Then get their motif scores
+        if regions is None:
+            regions = list(set(data.index))
+        else:
+            # warn if regions are not found in the CAGE file (likely a typo/later addition)
+            invalid = set(regions) - set(data.index)
+            if len(invalid) > 0:
+                logger.warning(f"{len(invalid)} regions not found in the CAGE file:")
+                logger.warning(", ".join(list(invalid)))
+                logger.warning("These regions will be ignored.")
+                regions = list(set(regions) - invalid)
+        if pfmscorefile is not None:
+            # if we have a pre-scanned file,
+            # use regions from the index (optionally filtered by regions)
+            self._load_prescanned_motifs(pfmscorefile, regions)
+            self.regions = list(self._motifs.index)
+        else:
+            # Scan for motifs
+            self._scan_motifs(regions)
+            self.regions = regions
+
+        logger.info(f"  Using {len(self.regions)} regions")
+        if len(self.regions) != len(data):
+            data = data.loc[self.regions]
+
+        # Determine average ReMap coverage (Currently only for genome = "hg19" or "hg38")
+        if "hg19" in self.genome or "hg38" in self.genome:
+            self.region_type = "CAGE"  # Used later for selecting model type
+
+            genome = "hg19" if "hg19" in self.genome else "hg38"
+            link = f"https://zenodo.org/record/6404593/files/remap2022.{genome}.w50.bw"
+            coverage_bw_path = os.path.join(
+                PACKAGE_DIR, "db", f"remap2022.{genome}.w50.bw"
+            )
+            if not os.path.exists(coverage_bw_path):
+                logger.info("Downloading bigwig...")
+                _ = urlretrieve(link, coverage_bw_path)
+
+            # Create a regions file from CAGE input
+            regions_bed = os.path.join(mytmpdir(), "regions.bed")
+            data.index.to_series().str.split("[:-]", expand=True).to_csv(
+                regions_bed, header=False, index=False, sep="\t"
+            )
+
+            logger.info("Determining average peak coverage")
+            remap_cov = coverage_table(
+                peakfile=regions_bed,
+                datafiles={coverage_bw_path},
+                window=window,
+                ncpus=self.ncore,
+            )
+            remap_cov = remap_cov.set_index(data.index)
+            remap_cov.rename(columns={remap_cov.columns[0]: "average"}, inplace=True)
+            self._avg = remap_cov
+            self._avg.columns = ["average"]
+            self._avg["average"] = self._avg["average"] / self._avg["average"].max()
+        else:
+            logger.warning(
+                "   Skipping ReMap coverage. Currently, only genome hg19 and hg38 supported."
+            )
+            self.region_type = "custom"
+
+        # normalize & save TPMs
+        # logger.info("   Transformation and normalization.")
+        data = np.log1p(data)
+        # data = qnorm.quantile_normalize(data)
+        data.loc[:, :] = minmax_scale(data)
+        self.cage_data = data
+
     def _load_regions(self, regions=None, pfmscorefile=None):
         """
         loads
@@ -239,7 +391,7 @@ class PeakPredictor:
 
         Parameters
         ----------
-        pfmscorefile : str/file
+        pfmscorefile : str
             pre-scanned gimmemotifs scores file
 
         regions : list, optional
@@ -297,7 +449,7 @@ class PeakPredictor:
             regionfile.flush()
 
             # only scan motifs for our factors
-            motifs = list(self.motifs.values())
+            motifs = list(self.motifs.values())  # noqa
             motif_df = scan_regionfile_to_table(
                 regionfile.name,
                 self.genome,
@@ -455,7 +607,7 @@ class PeakPredictor:
 
         # load & filter df
         df = pd.read_table(table, sep="\t", comment="#", index_col=0)
-        if any(df.duplicated()):
+        if any(df.index.duplicated()):
             logger.info(
                 f"  Averaging counts for duplicate regions in {os.path.basename(table)}"
             )
@@ -549,9 +701,14 @@ class PeakPredictor:
                 cols += ["ATAC.relative"]
         if self.histone_data is not None:
             cols += ["H3K27ac"]
+        if self.cage_data is not None:
+            cols += ["CAGE"]
+            if self.region_type == "CAGE":
+                cols += ["average"]
         if self.region_type == "reference":
             cols += ["average", "dist"]
         cols = sorted(cols)
+        logger.info(f"  Columns being used for model type: {cols}")
         self._X_columns = cols
         self._model_type = "_".join(cols)
 
@@ -572,14 +729,15 @@ class PeakPredictor:
             # Using the fact here that mouse names are not all upper-case.
             # TODO: replace with a curated set of factors.
             return [f for f in self.f2m if f[1:].islower()]
-        return list(self.f2m.keys())
+        return sorted(self.f2m.keys())
 
     def predict_proba(self, factor=None, motifs=None, jaccard_cutoff=0.0):
         """Predict binding probability.
 
         Predict binding probability for either a TF (factor) or a set of
         motifs. Prediction will be based on the data that been loaded,
-        either ATAC-seq or H3K27ac data or both.
+        either ATAC-seq, H3K27ac ChIP-seq, ATAC-seq and H3K27ac ChIP-seq
+        or CAGE-seq bidirectional regions.
 
         Parameters
         ----------
@@ -617,10 +775,14 @@ class PeakPredictor:
             tmp = tmp.join(self.atac_data)
         if self.histone_data is not None:
             tmp = tmp.join(self.histone_data)
+        if self.cage_data is not None:
+            tmp = tmp.join(self.cage_data)
 
         if self.region_type == "reference":
             tmp = tmp.join(self._avg)
             tmp = tmp.join(self._dist)
+        if self.region_type == "CAGE":
+            tmp = tmp.join(self._avg)
         tmp = tmp.dropna()
         return tmp[self._X_columns]
 
@@ -666,7 +828,7 @@ class PeakPredictor:
 
         return model, factor
 
-    def predict_factor_activity(self, nregions=20_000):
+    def predict_factor_activity(self, nregions=50_000):
         """Predict TF activity.
 
         Predicted based on motif activity using ridge regression.
@@ -674,39 +836,50 @@ class PeakPredictor:
         Parameters
         ----------
         """
-        # Run ridge regression using motif score to predict (relative) ATAC/H3K27ac signal
+        # Run ridge regression using motif score to predict (relative) ATAC/H3K27ac/CAGE signal
         try:
             nregions = int(nregions)
         except ValueError:
-            logger.warning("nregions is not an integer, using default number of 20_000")
-            nregions = 20_000
+            nregions = 50_000
+            logger.warning(
+                f"nregions is not an integer, using default number of {nregions}"
+            )
 
         activity = pd.DataFrame()
-        for df in (self.atac_data, self.histone_data):
+        state = np.random.RandomState(567)  # Consistently select same regions
+        for df in (self.atac_data, self.histone_data, self.cage_data):
             if df is None:
                 continue
 
             for col in df.columns:
                 with NamedTemporaryFile() as f:
-                    # float16 will give NaN's
-                    signal = df[col].astype("float32")
+                    signal = df[col].astype("float32")  # float16 will give NaN's
                     signal = pd.DataFrame({col: scale(signal)}, index=df.index)
-                    if df.shape[0] < nregions:
-                        signal.to_csv(f.name, sep="\t")
-                    else:
-                        signal.sample(nregions).to_csv(f.name, sep="\t")
-                    try:
-                        activity = activity.join(
-                            moap(
-                                f.name,
-                                genome=self.genome,
-                                method="bayesianridge",
-                                pfmfile=self.pfmfile,
-                            ),
-                            how="outer",
+                    # Run 3 times for more stable result
+                    for i in range(3):
+                        logger.info(
+                            f"    Motif activity prediction on {col} data, run {i+1}/3"
                         )
-                    except Exception as e:
-                        print(e)
+                        if len(df) <= nregions:
+                            signal.to_csv(f.name, sep="\t")
+                        else:
+                            signal.sample(nregions, random_state=state).to_csv(
+                                f.name, sep="\t"
+                            )
+                        try:
+                            activity = activity.join(
+                                moap(
+                                    f.name,
+                                    genome=self.genome,
+                                    method="bayesianridge",
+                                    pfmfile=self.pfmfile,
+                                    ncpus=self.ncore,
+                                ),
+                                how="outer",
+                                rsuffix=f"_{i}",
+                            )
+                        except Exception as e:
+                            print(e)
 
         # Rank aggregation
         for col in activity:
@@ -802,6 +975,7 @@ def predict_peaks(
     outdir,
     atac_bams=None,
     histone_bams=None,
+    cage_tpms=None,
     columns=None,
     regions=None,
     reference=None,
@@ -819,7 +993,11 @@ def predict_peaks(
     on the input data. The most accurate model will be the one that uses the
     references regions in combination with both ATAC-seq and H3K27ac ChIP-seq.
 
-    The result will will be saved to an outputfile called `binding.tsv` in the
+    In addition, CAGE-seq bidirectional sites (TPM) can be used as a proxy for
+    cis-regulatory elements. The most accurate model uses ReMap2022 TF peak data.
+    (Currently, only hg19 and hg38 have been taken along)
+
+    The result will be saved to an output file called `binding.h5` in the
     output directory, specified by the `outdir` argument. This file wil contain
     three columns: factor, enhancer and binding. The binding columns represents
     the binding probability.
@@ -846,6 +1024,9 @@ def predict_peaks(
     histone_bams : list, optional
         List of H3K27ac ChIP-seq BAM files
         (or one counts table with reads per peak), by default None
+    cage_tpms : str, optional
+        table with bidirectional regions chr:start-end (=columns 1)
+        and TPM values (=column 2) generated with CAGEfightR, by default None
     columns : list, optional
         List of count table columns to use, by default all columns are used.
     regions : str or list, optional
@@ -868,7 +1049,13 @@ def predict_peaks(
     ncore : int, optional
         Number of threads to use. Default is 4.
     """
-    if reference is None and regions is None and pfmscorefile is None:
+
+    if (
+        reference is None
+        and regions is None
+        and pfmscorefile is None
+        and cage_tpms is None
+    ):
         warnings = [
             "Need either 1) a `reference` directory, 2) one or more `regionfiles`, "
             "or 3) a `pfmscorefile` (a set of pre-scanned regions)!",
@@ -894,7 +1081,7 @@ def predict_peaks(
         sys.exit(1)
 
     # Check if all specified BAM files exist
-    _check_input_files(atac_bams, histone_bams)
+    _check_input_files(atac_bams, histone_bams, cage_tpms)
 
     # Check genome, will fail if it is not a correct genome name or file
     Genome(genome)
@@ -920,6 +1107,7 @@ def predict_peaks(
         atac_bams=atac_bams,
         columns=columns,
         histone_bams=histone_bams,
+        cage_tpms=cage_tpms,
         regions=regions,
         genome=genome,
         pfmfile=pfmfile,
@@ -936,6 +1124,9 @@ def predict_peaks(
 
         if p.histone_data is not None:
             hdf.put(key="_h3k27ac", value=p.histone_data, format="table")
+
+        if p.cage_data is not None:
+            hdf.put(key="_cage", value=p.cage_data, format="table")
 
         logger.info("Predicting TF activity")
         factor_activity = p.predict_factor_activity()

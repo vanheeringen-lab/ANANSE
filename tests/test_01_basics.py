@@ -17,5 +17,5 @@ def test_black_linting():
 
 
 def test_flake8_linting():
-    ret = sp.check_call(" ".join(["flake8"] + targets), shell=True)
+    ret = sp.check_call(" ".join(["flake8 --ignore=W503,B950"] + targets), shell=True)
     assert ret == 0
