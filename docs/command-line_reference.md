@@ -38,6 +38,7 @@ Notes:
 * For other genomes, a genome fasta with matching annotation is required.
     * [please see here](../input_data/#genome) for more info.
     * for other genomes, **additional steps are required** (see below)
+* If you are using CAGE-seq data, head over to [here](https://github.com/vanheeringen-lab/ANANSE-CAGE) for more information.
 
 #### Human (hg38) only: REMAP data
 
