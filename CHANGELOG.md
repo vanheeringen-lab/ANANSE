@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2023-01-12
+
 ### Added
 - experimental p300 ChIP-seq input (using H3K27ac models) for `ananse binding`
 - `anane view` can now return factory activity with `--activity`
