@@ -40,7 +40,7 @@ setup(
         "adjusttext",
         "dask",
         "genomepy >=0.14",
-        "gimmemotifs >=0.17",
+        "gimmemotifs >=0.18",
         "loguru",
         "matplotlib >=3.3",
         "networkx",
