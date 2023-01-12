@@ -68,11 +68,14 @@ class PeakPredictor:
             raise NotADirectoryError(f"Could not find {reference}")
         self.data_dir = reference
 
-        if atac_bams is None and histone_bams is None and cage_tpms is None:
+        if all(b is None for b in [atac_bams, histone_bams, p300_bams, cage_tpms]):
             raise ValueError(
-                "Need either ATAC-seq and/or H3K27ac BAM file(s), "
-                "ATAC-seq and/or H3K27ac coverage table(s), "
-                "or a CAGE bidirectional sites TPM file."
+                "Need either "
+                "- ATAC-seq, p300 or H3K27ac ChIP-seq BAM file(s), "
+                "- ATAC-seq or H3K27ac ChIP-seq coverage table(s), "
+                "- a CAGE bidirectional sites TPM table, "
+                "- a combination of ATAC and H3K27ac data. "
+                "See the documentation for examples."
             )
 
         if genome is None:
