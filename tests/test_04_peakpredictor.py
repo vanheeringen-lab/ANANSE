@@ -108,7 +108,7 @@ def test__scan_motifs(peakpredictor):
     peakpredictor._scan_motifs([region], zscore=False, gc=False)
     score = peakpredictor._motifs.at[region, tf]
     # rounding to reduce flakiness
-    assert round(float(score), 2) == -0.86  # -0.99  new scores with gimme 0.17.0
+    assert round(float(score), 2) == -0.99  # -0.86 new scores with gimme 0.17.0
 
 
 def test__load_prescanned_motifs(peakpredictor):
@@ -116,7 +116,7 @@ def test__load_prescanned_motifs(peakpredictor):
     tf = "SOX12"
     score = peakpredictor._motifs.at[region, tf]
     # rounding to reduce flakiness
-    assert round(float(score), 2) == -0.86  # -0.99  new scores with gimme 0.17.0
+    assert round(float(score), 2) == -0.99  # -0.86 new scores with gimme 0.17.0
 
 
 def test__load_cage(outdir, peakpredictor):

@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2023-01-12
+
+### Added
+- `anane view` can now return factory activity with `--activity`
+- `anane view` also accepts `-n` for all sub-option (list TFs, list regions and activity)
+
+### Changed
+- `ananse network` uses slightly less memory, and should now keep going unless all memory is used.
+
+### Fixed
+- `ananse influence` now throws a descriptive error if source and target networks are identical
+- `ananse influence` now uses scipy >=1.9, which fixes an error in `mannwhitneyu(method="auto")`
+- uploaded correct non-human CAGE-seq models
 
 ## [0.4.0] - 2022-06-02
 

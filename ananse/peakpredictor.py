@@ -6,20 +6,20 @@ from glob import glob
 from tempfile import NamedTemporaryFile
 from urllib.request import urlretrieve
 
-import joblib
+import joblib  # noqa
 import networkx as nx
 import numpy as np
 import pandas as pd
-import qnorm
-from fluff.fluffio import load_heatmap_data
+import qnorm  # noqa
+from fluff.fluffio import load_heatmap_data  # noqa
 from genomepy import Genome
-from gimmemotifs.moap import moap
+from gimmemotifs.maelstrom import moap
 from gimmemotifs.motif import read_motifs
 from gimmemotifs.scanner import scan_regionfile_to_table
 from gimmemotifs.preprocessing import coverage_table
 from loguru import logger
 from pandas import HDFStore
-from pyfaidx import FastaIndexingError
+from pyfaidx import FastaIndexingError  # noqa
 from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale, scale
 from tqdm.auto import tqdm
@@ -33,9 +33,6 @@ from ananse.utils import (
     mytmpdir,
 )
 from . import PACKAGE_DIR
-
-# This motif file is not created by default
-#   * f"{self.data_dir}/reference.factor.feather"
 
 BLACKLIST_TFS = [
     "NO ORTHOLOGS FOUND",  # gimme motif2factors artifact
@@ -61,6 +58,7 @@ class PeakPredictor:
         factors=None,
         pfmscorefile=None,
         ncore=4,
+        debug=False,
     ):
         if reference is None:
             reference = os.path.join(PACKAGE_DIR, "db", "default_reference")
@@ -95,6 +93,7 @@ class PeakPredictor:
 
         self.ncore = ncore
         self.pfmfile = pfmfile
+        self._debug = debug
         # load motifs, f2m and motif_graph
         self._load_motifs(factors=factors)
 
@@ -159,7 +158,7 @@ class PeakPredictor:
         if self.species == "human":
             valid_factors = _load_human_factors()
 
-        for name, motif in motifs.items():
+        for name, motif in motifs.items():  # noqa
             for factor in get_motif_factors(motif, indirect=indirect):
                 # filter for presence in factors
                 if factors is not None and factor not in factors:
@@ -449,7 +448,7 @@ class PeakPredictor:
             regionfile.flush()
 
             # only scan motifs for our factors
-            motifs = list(self.motifs.values())
+            motifs = list(self.motifs.values())  # noqa
             motif_df = scan_regionfile_to_table(
                 regionfile.name,
                 self.genome,
@@ -550,7 +549,8 @@ class PeakPredictor:
 
     def _normalize_reads(self, tmp, title):
         fname = f"{self.data_dir}/{title}.qnorm.ref.txt.gz"
-        if os.path.exists(fname):
+        # debug mode: use log1p to make the output deterministic
+        if os.path.exists(fname) and self._debug is False:
             logger.debug(f"Quantile normalization for {title}")
             qnorm_ref = pd.read_table(fname, index_col=0)["qnorm_ref"].values
             if len(self.regions) != len(qnorm_ref):
@@ -729,7 +729,7 @@ class PeakPredictor:
             # Using the fact here that mouse names are not all upper-case.
             # TODO: replace with a curated set of factors.
             return [f for f in self.f2m if f[1:].islower()]
-        return list(self.f2m.keys())
+        return sorted(self.f2m.keys())
 
     def predict_proba(self, factor=None, motifs=None, jaccard_cutoff=0.0):
         """Predict binding probability.
@@ -857,6 +857,9 @@ class PeakPredictor:
                     signal = pd.DataFrame({col: scale(signal)}, index=df.index)
                     # Run 3 times for more stable result
                     for i in range(3):
+                        logger.info(
+                            f"    Motif activity prediction on {col} data, run {i+1}/3"
+                        )
                         if len(df) <= nregions:
                             signal.to_csv(f.name, sep="\t")
                         else:
@@ -871,6 +874,7 @@ class PeakPredictor:
                                     method="bayesianridge",
                                     pfmfile=self.pfmfile,
                                     ncpus=self.ncore,
+                                    random_state=state,
                                 ),
                                 how="outer",
                                 rsuffix=f"_{i}",
@@ -982,6 +986,7 @@ def predict_peaks(
     pfmscorefile=None,
     jaccard_cutoff=0.0,
     ncore=4,
+    debug=False,
 ):
     """Predict binding in a set of genomic regions.
 
@@ -1045,6 +1050,8 @@ def predict_peaks(
         0: any shared motifs, 1: all motifs shared. Default is 0.
     ncore : int, optional
         Number of threads to use. Default is 4.
+    debug : bool, optional
+        Make ANANSE deterministic. This may affect accuracy.
     """
 
     if (
@@ -1111,6 +1118,7 @@ def predict_peaks(
         factors=factors,
         pfmscorefile=pfmscorefile,
         ncore=ncore,
+        debug=debug,
     )
 
     outfile = os.path.join(outdir, "binding.h5")

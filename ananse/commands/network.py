@@ -1,17 +1,20 @@
 import os
-import ananse.network
-from ananse.utils import check_path, load_tfs, load_regions, check_cores
-from dask.distributed import Client, LocalCluster
+from tempfile import gettempdir
+
+from dask.distributed import Client, LocalCluster, system
+from dask.utils import parse_bytes
 from loguru import logger
+
+import ananse.network
+from ananse.utils import check_cores, check_path, load_regions, load_tfs
 
 
 @logger.catch
 def network(args):
     ncore = check_cores(args.ncore)
-    memory_limit = "16GB"
-    if ncore == 1:
-        # With one core more memory is needed
-        memory_limit = "20GB"
+    # actual memory usage depends on the input data
+    memory_limit = parse_bytes("20GB")
+    memory_limit = max(system.MEMORY_LIMIT, memory_limit)
 
     b = ananse.network.Network(
         genome=args.genome,  # checked in CLI
@@ -22,9 +25,9 @@ def network(args):
     )
 
     cluster = LocalCluster(
-        local_directory=os.environ.get("TMP", None),
+        local_directory=gettempdir(),
         scheduler_port=0,
-        dashboard_address=None,  # noqa
+        dashboard_address=None,  # noqa: disable dashboard
         n_workers=ncore,
         threads_per_worker=2,
         memory_limit=memory_limit,
