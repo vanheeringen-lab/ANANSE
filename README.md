@@ -38,6 +38,16 @@ For documentation on the **development version** see [here](https://anansepy.rea
 
 * The preferred way to get support is through the [Github issues page](https://github.com/vanheeringen-lab/ANANSE/issues).
 
+## scANANSE: Gene regulatory network and motif analysis of single-cell clusters
+
+Recently a pipeline was developed to run ANANSE using single-cell RNA- sequencing data and single-cell ATAC-sequencing data. It consists of packages to export single-cell cluster data from Seurat or Scanpy objects, and a snakemake workflow. Afterwards, results can be imported back into your single-cell object.
+
+For more info on this implementation  check out the
+* [scANANSE workflow](https://doi.org/10.12688/f1000research.130530.1)
+* [Python package for Scanpy objects](https://github.com/Arts-of-coding/AnanseScanpy)
+* [R package for Seurat objects](https://github.com/JGASmits/AnanseSeurat)
+* [ANANSE snakemake workflow](https://github.com/vanheeringen-lab/anansnake)
+
 ## License
 
   - **[MIT license](http://opensource.org/licenses/mit-license.php)** [![Anaconda-Server Badge](https://anaconda.org/qxuchn/ananse/badges/license.svg)](https://anaconda.org/qxuchn/ananse)
