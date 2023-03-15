@@ -39,7 +39,7 @@ For documentation on the **development version** see [here](https://anansepy.rea
 
 scANANSE is a pipeline developed for single-cell RNA-sequencing data and single-cell ATAC-sequencing data. It can export single-cell cluster data from both Seurat or Scanpy objects, and runs the clusters through ANANSE using a snakemake workflow to significantly simplify the process. Afterwards, results can be imported back into your single-cell object.
 
-For more info on this implementation  check out the
+For more info on this implementation check out the
 * [scANANSE workflow](https://doi.org/10.12688/f1000research.130530.1)
 * [Python package for Scanpy objects](https://github.com/Arts-of-coding/AnanseScanpy)
 * [R package for Seurat objects](https://github.com/JGASmits/AnanseSeurat)
