@@ -10,7 +10,7 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/maintainability)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/875df8c40fec66d68b1f/test_coverage)](https://codeclimate.com/github/vanheeringen-lab/ANANSE/test_coverage)
 
-### Prediction of key transcription factors in cell fate determination using enhancer networks
+## Prediction of key transcription factors in cell fate determination using enhancer networks
 ANANSE is a computational approach to infer enhancer-based gene regulatory networks (GRNs) and to identify key transcription factors between two GRNs. You can use it to study transcription regulation during development and differentiation, or to generate a shortlist of transcription factors for trans-differentiation experiments. 
 
 ANANSE is written in Python and comes with a command-line interface that includes 3 main commands: `ananse binding`, `ananse network`, and `ananse influence`. A graphical overview of the tools is shown below.
@@ -27,6 +27,7 @@ Check out the **[ANANSE documentation](https://anansepy.readthedocs.io/en/master
  
 For documentation on the **development version** see [here](https://anansepy.readthedocs.io/en/develop/).
 
+
 ## Citation
 
 > ANANSE: an enhancer network-based computational approach for predicting key transcription factors in cell fate determination 
@@ -34,19 +35,21 @@ For documentation on the **development version** see [here](https://anansepy.rea
 > Nucleic Acids Research, gkab598, https://doi.org/10.1093/nar/gkab598
 
 
-## Help and Support
-
-* The preferred way to get support is through the [Github issues page](https://github.com/vanheeringen-lab/ANANSE/issues).
-
 ## scANANSE: Gene regulatory network and motif analysis of single-cell clusters
 
-Recently a pipeline was developed to run ANANSE using single-cell RNA- sequencing data and single-cell ATAC-sequencing data. It consists of packages to export single-cell cluster data from Seurat or Scanpy objects, and a snakemake workflow. Afterwards, results can be imported back into your single-cell object.
+scANANSE is a pipeline developed for single-cell RNA-sequencing data and single-cell ATAC-sequencing data. It can export single-cell cluster data from both Seurat or Scanpy objects, and runs the clusters through ANANSE using a snakemake workflow to significantly simplify the process. Afterwards, results can be imported back into your single-cell object.
 
 For more info on this implementation  check out the
 * [scANANSE workflow](https://doi.org/10.12688/f1000research.130530.1)
 * [Python package for Scanpy objects](https://github.com/Arts-of-coding/AnanseScanpy)
 * [R package for Seurat objects](https://github.com/JGASmits/AnanseSeurat)
-* [ANANSE snakemake workflow](https://github.com/vanheeringen-lab/anansnake)
+* [anansnake package for automating multiple ANANSE analyses](https://github.com/vanheeringen-lab/anansnake)
+
+
+## Help and Support
+
+* The preferred way to get support is through the [Github issues page](https://github.com/vanheeringen-lab/ANANSE/issues).
+
 
 ## License
 
