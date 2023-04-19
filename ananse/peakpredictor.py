@@ -71,8 +71,8 @@ class PeakPredictor:
         if all(b is None for b in [atac_bams, histone_bams, p300_bams, cage_tpms]):
             raise ValueError(
                 "Need either "
-                "- ATAC-seq, p300 or H3K27ac ChIP-seq BAM file(s), "
-                "- ATAC-seq or H3K27ac ChIP-seq coverage table(s), "
+                "- ATAC-seqor H3K27ac ChIP-seq BAM file(s), "
+                "- ATAC-seq, p300 or H3K27ac ChIP-seq coverage table(s), "
                 "- a CAGE bidirectional sites TPM table, "
                 "- a combination of ATAC and H3K27ac data. "
                 "See the documentation for examples."
