@@ -510,7 +510,6 @@ class PeakPredictor:
         tmp = pd.DataFrame(index=self.regions)
         n_regions = len(self.regions)
         with NamedTemporaryFile(mode="w") as f_out:
-
             for region in self.regions:
                 print("{}\t{}\t{}".format(*re.split("[:-]", region)), file=f_out)
             f_out.flush()
@@ -1123,7 +1122,6 @@ def predict_peaks(
 
     outfile = os.path.join(outdir, "binding.h5")
     with HDFStore(outfile, "w", complib="lzo", complevel=9) as hdf:
-
         if p.atac_data is not None:
             hdf.put(key="_atac", value=p.atac_data, format="table")
 

@@ -36,6 +36,7 @@ GRN_COLUMNS = {
     "activity": "tf_activity",
 }
 
+
 # This piece of code is adapted from the networkx code licensed under a 3-clause license:
 # https://networkx.org/documentation/networkx-2.7/#license
 def dijkstra_prob_length(G, source, weight, cutoff=None, target=None):  # noqa
@@ -704,7 +705,6 @@ class Influence(object):
             )
 
     def run_influence(self, fin_expression=None):
-
         logger.info("Calculating target scores.")
         self.run_target_score()
 

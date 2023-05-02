@@ -26,9 +26,9 @@ dependencies:
   - tqdm
 
   # Testing
-  - black
-  - flake8
-  - flake8-bugbear
+  - black =23.3
+  - flake8 =6.0
+  - flake8-bugbear =23.3
   - pytest
   - pytest-cov
 
