@@ -1,17 +1,16 @@
-from glob import glob
-import urllib.request
-import pandas as pd
-import numpy as np
+import os
 import re
 import sys
-import os
-from loguru import logger
+import urllib.request
+from glob import glob
+
+import numpy as np
+import pandas as pd
 import seaborn as sns
-from sklearn.metrics import roc_auc_score, average_precision_score
+from loguru import logger
+from sklearn.metrics import average_precision_score, roc_auc_score
 
 import ananse
-from . import SEPARATOR
-
 
 logger.remove()
 logger.add(
@@ -60,7 +59,7 @@ def fix_columns(df):
     )
 
     if "tf_target" in df.columns:
-        for sep in [SEPARATOR, "_", "-"]:
+        for sep in [ananse.SEPARATOR, "_", "-"]:
             if df["tf_target"].head(100).str.contains(sep).sum() == 100:
                 break
 

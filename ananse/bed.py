@@ -1,11 +1,11 @@
 import os
-import tempfile
 import shutil
+import tempfile
 import warnings
 
 import genomepy
-from loguru import logger
 import pandas as pd
+from loguru import logger
 from pybedtools import BedTool
 
 
