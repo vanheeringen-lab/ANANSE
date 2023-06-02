@@ -1,5 +1,6 @@
-from ananse.view import view_h5
 import sys
+
+from ananse.view import view_h5
 
 
 def view(args):

@@ -15,8 +15,8 @@ from fluff.fluffio import load_heatmap_data  # noqa
 from genomepy import Genome
 from gimmemotifs.maelstrom import moap
 from gimmemotifs.motif import read_motifs
-from gimmemotifs.scanner import scan_regionfile_to_table
 from gimmemotifs.preprocessing import coverage_table
+from gimmemotifs.scanner import scan_regionfile_to_table
 from loguru import logger
 from pandas import HDFStore
 from pyfaidx import FastaIndexingError  # noqa
@@ -24,15 +24,15 @@ from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale, scale
 from tqdm.auto import tqdm
 
+from ananse import PACKAGE_DIR
 from ananse.bed import map_counts
 from ananse.utils import (
-    load_tfs,
-    load_regions,
-    get_motif_factors,
     check_cores,
+    get_motif_factors,
+    load_regions,
+    load_tfs,
     mytmpdir,
 )
-from . import PACKAGE_DIR
 
 BLACKLIST_TFS = [
     "NO ORTHOLOGS FOUND",  # gimme motif2factors artifact
@@ -285,7 +285,7 @@ class PeakPredictor:
         data.set_index("regions", inplace=True)
         if any(data.index.duplicated()):
             logger.info("  Averaging TPMs for duplicate regions in CAGE file")
-            data = data.groupby(data.index).mean(1)
+            data = data.groupby(data.index).mean(axis=1)
 
         # Get the overlap of normalized regions between
         # 1) CAGE data, 2) regions and 3) pfmscorefile.
@@ -610,7 +610,7 @@ class PeakPredictor:
             logger.info(
                 f"  Averaging counts for duplicate regions in {os.path.basename(table)}"
             )
-            df = df.groupby(df.index).mean(1)
+            df = df.groupby(df.index).mean(axis=1)
         if len(set(self.regions) & set(df.index)) != len(self.regions):
             logger.debug("  Mapping to regions")
             df = map_counts(self.regions, df)
