@@ -33,4 +33,4 @@ SEPARATOR = "—"
 
 PACKAGE_DIR = os.path.dirname(__file__)
 
-from . import influence, network, peakpredictor, plot, utils, view  # noqa
+from ananse import influence, network, peakpredictor, plot, utils, view  # noqa: load module in API

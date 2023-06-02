@@ -26,8 +26,13 @@ from tqdm.auto import tqdm
 
 from ananse import PACKAGE_DIR
 from ananse.bed import map_counts
-from ananse.utils import (check_cores, get_motif_factors, load_regions,
-                          load_tfs, mytmpdir)
+from ananse.utils import (
+    check_cores,
+    get_motif_factors,
+    load_regions,
+    load_tfs,
+    mytmpdir,
+)
 
 BLACKLIST_TFS = [
     "NO ORTHOLOGS FOUND",  # gimme motif2factors artifact
