@@ -6,7 +6,7 @@ import argparse
 from genomepy import Genome
 from loguru import logger
 
-from ananse import commands, __version__
+from ananse import commands, __version__, SEPARATOR
 
 logger.remove()
 logger.add(
@@ -382,6 +382,16 @@ if __name__ == "__main__":
         help="Select top interactions on differential network, instead of input networks.",
         default=False,
         action="store_true",
+    )
+    group.add_argument(
+        "-w",
+        "--whitelist",
+        dest="whitelist",
+        help="Include these genes/interactions after filtering top interactions. "
+             f"Either a space-separated list or a file with one TF/gene/TF{SEPARATOR}gene interaction per line.",
+        metavar="",
+        default=None,
+        nargs="*",
     )
     group.add_argument(
         "-j",

@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `ananse influence` now accepts a whitelist of genes and/or interactions from the network
+  - these will be added back into the influence network after selecting top edges.
 - experimental p300 ChIP-seq input (using H3K27ac models) for `ananse binding`
 
 ## [0.4.1] - 2023-01-12

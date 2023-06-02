@@ -2,13 +2,14 @@ import atexit
 import getpass
 import os
 import pwd
-import shutil
 import re
-import pandas as pd
+import shutil
 import tempfile
 from typing import Union
 
 import genomepy.utils
+import pandas as pd
+
 from ananse.bed import CombineBedFiles
 
 
@@ -212,3 +213,20 @@ def load_regions(
         genome=genome,
         outdir=outdir,
     )
+
+
+def load_whitelist(whitelist):
+    """
+    Unpacks a string, list or file with
+      - TFs
+      - target genes
+      - TF—target gene interactions
+
+    Note: interactions are TF and target genes joined by ananse.SEPARATOR
+    """
+    whitelist = parse_input(
+        whitelist,
+        parse_list=test_tfs,
+        parse_files=parse_tf_files,
+    )
+    return tuple(whitelist)

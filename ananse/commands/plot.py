@@ -2,7 +2,7 @@ import os
 
 from loguru import logger
 
-from ananse.plot import plot_influence, plot_grn
+from ananse.plot import plot_grn, plot_influence
 
 
 @logger.catch

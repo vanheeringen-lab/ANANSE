@@ -1,8 +1,10 @@
-from ._version import get_versions
 import os
 import sys
-from tqdm.auto import tqdm
+
 from loguru import logger
+from tqdm.auto import tqdm
+
+from ._version import get_versions
 
 # Remove default logger
 logger.remove()
@@ -30,3 +32,12 @@ del get_versions
 SEPARATOR = "—"
 
 PACKAGE_DIR = os.path.dirname(__file__)
+
+from ananse import (  # noqa: load modules in the API
+    influence,
+    network,
+    peakpredictor,
+    plot,
+    utils,
+    view,
+)
