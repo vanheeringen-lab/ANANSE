@@ -6,7 +6,7 @@ channels:
 dependencies:
   - python >=3.7
   - adjusttext
-  - dask
+  - dask <=2023.9.1              # pyarrow compatibility issues (in network)
   - genomepy >=0.14
   - gimmemotifs-minimal >=0.18.0
   - loguru
@@ -14,7 +14,7 @@ dependencies:
   - networkx
   - numpy >=1.6
   - openpyxl
-  - pandas
+  - pandas <2                     # not sure if compatible with the new version
   - pybedtools
   - pydot >=1.4.1                 # required for networkx plots
   - pygraphviz >=1.7              # required for networkx plots

@@ -296,7 +296,7 @@ class PeakPredictor:
         data.set_index("regions", inplace=True)
         if any(data.index.duplicated()):
             logger.info("  Averaging TPMs for duplicate regions in CAGE file")
-            data = data.groupby(data.index).mean(axis=1)
+            data = data.groupby(data.index).mean()
 
         # Get the overlap of normalized regions between
         # 1) CAGE data, 2) regions and 3) pfmscorefile.
@@ -621,7 +621,7 @@ class PeakPredictor:
             logger.info(
                 f"  Averaging counts for duplicate regions in {os.path.basename(table)}"
             )
-            df = df.groupby(df.index).mean(axis=1)
+            df = df.groupby(df.index).mean()
         if len(set(self.regions) & set(df.index)) != len(self.regions):
             logger.debug("  Mapping to regions")
             df = map_counts(self.regions, df)
