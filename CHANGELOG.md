@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2023-10-15
+
 ### Added
 - `ananse influence` now accepts a whitelist of genes and/or interactions from the network
   - these will be added back into the influence network after selecting top edges.
