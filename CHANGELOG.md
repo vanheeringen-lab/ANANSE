@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 ### Added
 - `ananse influence` now accepts a whitelist of genes and/or interactions from the network
   - these will be added back into the influence network after selecting top edges.
+- experimental p300 ChIP-seq input (using H3K27ac models) for `ananse binding`
 
 ### Fixed
 - No region overlap (pandas str.replace() no longer uses regex by default)
