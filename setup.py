@@ -38,7 +38,7 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "adjusttext",
-        "dask",
+        "dask <=2023.9.1",
         "genomepy >=0.14",
         "gimmemotifs >=0.18",
         "loguru",
@@ -46,7 +46,7 @@ setup(
         "networkx",
         "numpy >=1.6",
         "openpyxl",
-        "pandas",
+        "pandas <2",
         "pybedtools",
         "pydot >=1.4.1",
         "pygraphviz >=1.7",
