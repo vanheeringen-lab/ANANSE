@@ -1,25 +1,24 @@
 """Predict TF influence score"""
-from heapq import heappush, heappop
-from itertools import count
+import multiprocessing as mp
 import os
 import shutil
 import sys
 import warnings
-import genomepy
-from typing import Union
 from collections import namedtuple
-from loguru import logger
-from tqdm.auto import tqdm
+from typing import Union
+
+import genomepy
+import networkx as nx
 import numpy as np
 import pandas as pd
-import networkx as nx
-import multiprocessing as mp
+from loguru import logger
+from scipy.stats import mannwhitneyu, rankdata
 from sklearn.preprocessing import minmax_scale
-from scipy.stats import rankdata, mannwhitneyu
+from tqdm.auto import tqdm
 
-from . import SEPARATOR
-from .utils import mytmpdir
-
+from ananse import SEPARATOR
+from ananse.nx import dijkstra_prob_length
+from ananse.utils import load_whitelist, mytmpdir
 
 warnings.filterwarnings("ignore")
 
@@ -36,110 +35,14 @@ GRN_COLUMNS = {
     "activity": "tf_activity",
 }
 
-# This piece of code is adapted from the networkx code licensed under a 3-clause license:
-# https://networkx.org/documentation/networkx-2.7/#license
-def dijkstra_prob_length(G, source, weight, cutoff=None, target=None):  # noqa
-    """Uses Dijkstra's algorithm to find shortest weighted paths
 
-    Parameters
-    ----------
-    G : NetworkX graph
-    source : node
-        Starting node for paths.
-    weight: string
-        Name of attribute that contains weight (as a probability between 0 and 1,
-        where 0 is the minimum and 1 the maximum).
-    target : node label, optional
-        Ending node for path. Search is halted when target is found.
-    cutoff : integer or float, optional
-        Minimum combined, weighted probability.
-        If cutoff is provided, only return paths with summed weight >= cutoff.
-
-    Returns
-    -------
-    paths, distance : dictionaries
-        Dictionary of shortest paths keyed by target, and
-        a mapping from node to shortest distance to that node from one
-        of the source nodes.
-
-    Raises
-    ------
-    NodeNotFound
-        If the `source` is not in `G`.
-    """
-    # cumulative weight function for values < 1
-    weight_function = lambda u, v, data: -np.log10(data[weight])  # noqa
-    paths = {source: [source]}
-
-    if cutoff == 0:
-        cutoff = None
-    if cutoff is not None:
-        if cutoff < 0 or cutoff > 1:
-            raise ValueError(
-                "cutoff (combined, weighted probability) should be between 0 and 1"
-            )
-        cutoff = -np.log10(cutoff)
-
-    G_succ = G._succ if G.is_directed() else G._adj  # noqa
-
-    push = heappush
-    pop = heappop
-    dist = {}  # dictionary of final distances
-    seen = {}
-    # fringe is heapq with 3-tuples (distance,c,node)
-    # use the count c to avoid comparing nodes (may not be able to)
-    c = count()
-    fringe = []
-
-    seen[source] = 0
-    push(fringe, (0, next(c), source))
-    while fringe:
-        (d, _, v) = pop(fringe)
-        if v in dist:
-            continue  # already searched this node.
-        dist[v] = d
-        if v == target:
-            break
-        for u, e in G_succ[v].items():
-            cost = weight_function(v, u, e)
-            if cost is None:
-                continue
-
-            # This is the major difference, both probability and length are taken
-            # into account
-            length = len(paths[v])
-            vu_dist = dist[v] + cost - np.log10(1 / length)  # noqa
-            if length > 1:
-                vu_dist = vu_dist + np.log10(1 / (length - 1))
-
-            if cutoff is not None:
-                if vu_dist > cutoff:
-                    continue
-            if u in dist:
-                u_dist = dist[u]
-                if vu_dist < u_dist:
-                    raise ValueError("Contradictory paths found:", "negative weights?")
-            elif u not in seen or vu_dist < seen[u]:
-                seen[u] = vu_dist
-                push(fringe, (vu_dist, next(c), u))
-                if paths is not None:
-                    paths[u] = paths[v] + [u]  # noqa
-
-    paths = {k: v for k, v in paths.items() if len(v) > 1}
-    dist = {k: 10**-v for k, v in dist.items() if k in paths}
-    return paths, dist
-
-
-def read_network(fname, full_output=False):
+def _read_network(fname, full_output=False):
     """
     Read a network file and return a DataFrame.
 
-    Subsets the graph to interactions if given, else to the number top interactions given by edges.
-    If both interactions and edges are none, return the whole graph.
-
-    Peak memory usage is about ~5GB per million edges (tested with 0.1m, 1m and 10m edges)
+    Peak memory usage is about ~5GB per million edges
+    (tested with 0.1m, 1m and 10m edges).
     """
-    # read GRN files
     data_columns = ["tf_target", "prob"]
     if full_output:
         data_columns = [
@@ -150,48 +53,43 @@ def read_network(fname, full_output=False):
             "weighted_binding",
             "activity",
         ]
-    # read the GRN file
-    rnet = pd.read_csv(
-        fname,
-        sep="\t",
-        usecols=data_columns,
-        dtype="float64",
-        converters={"tf_target": str},
-        index_col="tf_target",
-    )
-
+    with warnings.catch_warnings():
+        warnings.simplefilter(action="ignore", category=pd.errors.ParserWarning)
+        rnet = pd.read_csv(
+            fname,
+            sep="\t",
+            usecols=data_columns,
+            dtype="float64",
+            converters={"tf_target": str},
+            index_col="tf_target",
+        )
+    rnet.rename(columns=GRN_COLUMNS, inplace=True)
     return rnet
 
 
 def read_network_to_graph(
     fname,
-    edges: Union[int, None] = 100_000,
-    interactions=None,
     sort_by="prob",
+    edges: Union[int, None] = 100_000,
+    whitelist=None,
+    interactions=None,
     full_output=False,
 ):
     """
     Read a network file and return a networkx DiGraph.
 
     Subsets the graph to interactions if given, else to the number top interactions given by edges.
-    If both interactions and edges are none, return the whole graph.
+    Optionally accepts a list of genes or TF—target interactions to include with the top edges.
 
-    Peak memory usage is about ~5GB per million edges (tested with 0.1m, 1m and 10m edges)
+    If both interactions and edges are none, return the whole graph.
     """
-    rnet = read_network(fname, full_output)
+    rnet = _read_network(fname, full_output)
     if interactions is not None:
         rnet = rnet[rnet.index.isin(interactions)]
-    elif edges is not None:
-        rnet = rnet.sort_values(sort_by).tail(edges)
+    if edges is not None:
+        rnet = _filter_network_edges(rnet, sort_by, edges, whitelist)
 
-    # split the transcription factor and target gene into 2 columns
-    rnet[["source", "target"]] = rnet.index.to_series().str.split(
-        SEPARATOR, expand=True
-    )
-    rnet.reset_index(drop=True, inplace=True)
-
-    # rename the columns
-    rnet.rename(columns=GRN_COLUMNS, inplace=True)
+    rnet = _separate_index(rnet)
 
     # load into a network with TFs and TGs as nodes, and the interaction scores as edges
     grn = nx.from_pandas_edgelist(rnet, edge_attr=True, create_using=nx.DiGraph)
@@ -202,34 +100,33 @@ def read_network_to_graph(
 def difference(
     grn_source,
     grn_target,
-    outfile=None,
-    edges=100_000,
     sort_by="prob",
-    full_output=False,
+    edges=100_000,
     select_after_join=False,
+    whitelist=None,
+    full_output=False,
+    outfile=None,
 ):
     """
-    Calculate the network different between two GRNs.
+    Calculate the network differences between two GRNs.
 
     First take the nodes from both networks, and add
     edges from the target network that are missing in the source network.
     Then add edges present in both but with a higher interaction
     score in the target network.
     """
-
     # read GRN files
     logger.info("Loading source network.")
-    source = read_network(grn_source, full_output)
+    source = _read_network(grn_source, full_output)
     if edges and not select_after_join:
-        source = source.sort_values(sort_by).tail(edges)
-    source.rename(columns=GRN_COLUMNS, inplace=True)
+        source = _filter_network_edges(source, sort_by, edges, whitelist)
 
     logger.info("Loading target network.")
-    target = read_network(grn_target, full_output)
+    target = _read_network(grn_target, full_output)
     if edges and not select_after_join:
-        logger.info(f"    Selecting top {edges} edges before calculating difference")
-        target = target.sort_values(sort_by).tail(edges)
-    target.rename(columns=GRN_COLUMNS, inplace=True)
+        target = _filter_network_edges(target, sort_by, edges, whitelist)
+        n = max(len(source), len(target))
+        logger.info(f"    Selected top {n} edges before calculating difference")
 
     # Calculate difference
     logger.info("Calculating differential network.")
@@ -241,6 +138,14 @@ def difference(
 
     # Only keep edges that are higher in target network
     diff_network = diff_network[diff_network["weight"] > 0]
+    # if whitelist is None:
+    #     diff_network = diff_network[diff_network["weight"] > 0]
+    # else:
+    #     tfs = set(diff_network.index.str.startswith(whitelist).index)
+    #     targets = set(diff_network.index.str.endswith(whitelist).index)
+    #     weights = set(diff_network[diff_network["weight"] > 0].index)
+    #     diff_network = diff_network[diff_network.index.isin(tfs | targets | weights)]
+    #
     if len(diff_network) == 0:
         logger.error("No differences between networks!")
         sys.exit(1)
@@ -250,23 +155,17 @@ def difference(
 
     # Only keep top edges
     if edges and select_after_join:
-        logger.info(f"    Selecting top {edges} edges after calculating difference")
-        sort_by = GRN_COLUMNS.get(sort_by, sort_by)
-        if sort_by != "weight":
+        if sort_by not in ["weight", "prob"]:
+            sort_by = GRN_COLUMNS.get(sort_by, sort_by)
             diff_network[sort_by] = (
                 diff_network[f"{sort_by}_target"] - diff_network[f"{sort_by}_source"]
             )
-        diff_network = diff_network.sort_values(sort_by).tail(edges)
+        diff_network = _filter_network_edges(diff_network, sort_by, edges, whitelist)
+        logger.info(
+            f"    Selected top {len(diff_network)} edges after calculating difference"
+        )
 
-    # split the transcription factor and target gene into 2 columns, make sure they end up
-    # in the first columns
-    source_target = (
-        diff_network.index.to_series()
-        .str.split(SEPARATOR, expand=True)
-        .rename(columns={0: "source", 1: "target"})
-    )
-    diff_network = pd.concat((source_target, diff_network), axis=1)
-    diff_network.reset_index(drop=True, inplace=True)
+    diff_network = _separate_index(diff_network)
 
     if outfile:
         logger.info("Saving differential network.")
@@ -276,6 +175,39 @@ def difference(
     grn = nx.from_pandas_edgelist(diff_network, edge_attr=True, create_using=nx.DiGraph)
 
     return grn
+
+
+def _filter_network_edges(df, sort_by: str, n_edges: int, whitelist: tuple = None):
+    """
+    sort a dataframe by a column and filter to a number of edges.
+    Optionally accepts a list of TFs, targets or TF—target interactions
+    (present in the index) to include in the final network.
+    """
+    sort_by = GRN_COLUMNS.get(sort_by, sort_by)
+    if whitelist is None:
+        df = df.sort_values(sort_by).tail(n_edges)
+    else:
+        df.sort_values(sort_by, inplace=True)
+        tfs = set(df.index.str.startswith(whitelist).index)
+        targets = set(df.index.str.endswith(whitelist).index)
+        tail = set(df.tail(n_edges).index)
+        df = df[df.index.isin(tfs | targets | tail)]
+    return df
+
+
+def _separate_index(df):
+    """
+    split the df index into 2 columns (source and target),
+    returns a df starting with these columns
+    """
+    source_target = (
+        df.index.to_series()
+        .str.split(SEPARATOR, expand=True)
+        .rename(columns={0: "source", 1: "target"})
+    )
+    df = pd.concat((source_target, df), axis=1)
+    df.reset_index(drop=True, inplace=True)
+    return df
 
 
 def target_score(expression_change, targets):
@@ -359,51 +291,48 @@ def fold_change_scores(node, grn, expression_change):
     except (RecursionError, ValueError) as e:
         pval = np.NAN
         logger.warning(e)
-        # logger.warning(
-        #     f"Could not calculate p-val (target vs non-target fold-change) for {node}, "
-        #     f"targets = {len(target_fc)}, non-target = {len(non_target_fc)}."
-        # )
-        # logger.warning(f"targets = {target_fc[0:min(5, len(target_fc))]}...")
-        # logger.warning(f"non_target = {non_target_fc[0:min(5, len(non_target_fc))]}...")
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
     return pval, target_fc_diff
 
 
-def filter_tf(scores_df, network=None, tpmfile=None, tpm=20, overlap=0.98):
-    """Filter TFs:
-    1) it have high expression in origin cell type;
-    2) 98% of its target genes are also regulated by previous TFs.
-    """
-
-    tpmscore = {}
-    with open(tpmfile) as tpf:
-        next(tpf)
-        for line in tpf:
-            tpmscore[line.split()[0]] = float(line.split()[1])
-
-    tftarget = {}
-    for tf in scores_df.index:
-        tftarget[tf] = set(network[tf]) if tf in network else set()
-
-    ltf = list(scores_df.index)
-
-    keeptf = []
-    for i in ltf:
-        passtf = []
-        if len(tftarget[i]) > 0:
-            for j in ltf[: ltf.index(i)]:
-                if len(tftarget[i] & tftarget[j]) / len(tftarget[i]) > overlap:
-                    break
-                else:
-                    passtf.append(j)
-            if passtf == ltf[: ltf.index(i)] and i in tpmscore and tpmscore[i] < tpm:
-                keeptf.append(i)
-    scores_df = scores_df.loc[keeptf]
-    scores_df.sort_values("sumScaled", inplace=True, ascending=False)
-    return scores_df
+# def filter_tf(scores_df, network=None, tpmfile=None, tpm=20, overlap=0.98):
+#     """Filter TFs:
+#     1) it have high expression in origin cell type;
+#     2) 98% of its target genes are also regulated by previous TFs.
+#     """
+#
+#     tpmscore = {}
+#     with open(tpmfile) as tpf:
+#         next(tpf)
+#         for line in tpf:
+#             tpmscore[line.split()[0]] = float(line.split()[1])
+#
+#     tftarget = {}
+#     for tf in scores_df.index:
+#         tftarget[tf] = set(network[tf]) if tf in network else set()
+#
+#     ltf = list(scores_df.index)
+#
+#     keeptf = []
+#     for i in ltf:
+#         passtf = []
+#         if len(tftarget[i]) > 0:
+#             for j in ltf[: ltf.index(i)]:
+#                 if len(tftarget[i] & tftarget[j]) / len(tftarget[i]) > overlap:
+#                     break
+#                 else:
+#                     passtf.append(j)
+#             if passtf == ltf[: ltf.index(i)] and i in tpmscore and tpmscore[i] < tpm:
+#                 keeptf.append(i)
+#     scores_df = scores_df.loc[keeptf]
+#     scores_df.sort_values("sumScaled", inplace=True, ascending=False)
+#     return scores_df
 
 
 class Influence(object):
+    grn = None
+    expression_change = None
+
     def __init__(
         self,
         outfile,
@@ -411,34 +340,62 @@ class Influence(object):
         gene_gtf=None,
         grn_source_file=None,
         grn_target_file=None,
-        filter_tfs=False,  # variable not exposed in CLI
-        edges=100_000,
-        ncore=1,
         sort_by="prob",
-        padj_cutoff=0.05,
-        full_output=False,
+        edges=100_000,
+        whitelist=None,
         select_after_join=False,
+        padj_cutoff=0.05,
+        ncore=1,
+        full_output=False,
+        # filter_tfs=False,  # variable not exposed in CLI
     ):
         self.ncore = ncore
-        self.gene_gtf = gene_gtf
         self.full_output = full_output
         self.outfile = outfile
-        self.filter_tfs = filter_tfs
+        # self.filter_tfs = filter_tfs
 
-        # Load GRNs
         if grn_target_file is None:
             logger.error("You should provide at least an ANANSE target network file!")
             sys.exit(1)
 
-        logger.info(f"Loading network data, using the top {edges} edges")
         if edges and not full_output and sort_by != "prob":
             logger.error(
                 f"Sorting by column '{sort_by}' is not possible without the full output!"
             )
             sys.exit(1)
+
+        # Load self.grn
+        self.read_networks(
+            grn_source_file,
+            grn_target_file,
+            sort_by,
+            edges,
+            select_after_join,
+            whitelist,
+        )
+
+        # Load self.expression_change
+        self.read_expression(degenes, padj_cutoff, gene_gtf)
+
+    def read_networks(
+        self,
+        grn_source_file,
+        grn_target_file,
+        sort_by,
+        edges,
+        select_after_join,
+        whitelist,
+    ):
+        if whitelist is not None:
+            whitelist = load_whitelist(whitelist)
+
+        logger.info(f"Loading network data, using the top {edges} edges")
         if grn_source_file is None:
             self.grn = read_network_to_graph(
-                grn_target_file, edges=edges, sort_by=sort_by
+                grn_target_file,
+                sort_by,
+                edges,
+                whitelist,
             )
             logger.warning("You only provided the target network!")
         else:
@@ -446,18 +403,16 @@ class Influence(object):
             self.grn = difference(
                 grn_source_file,
                 grn_target_file,
-                outfile,
-                edges,
                 sort_by,
-                full_output,
+                edges,
                 select_after_join,
+                whitelist,
+                self.full_output,
+                outfile,
             )
             logger.info(f"    Differential network has {len(self.grn.edges)} edges.")
 
-        # Load expression file
-        self.expression_change = self.read_expression(degenes, padj_cutoff)
-
-    def read_expression(self, fname, padj_cutoff=0.05):
+    def read_expression(self, fname, padj_cutoff=0.05, gene_gtf=None):
         """
         Read differential gene expression analysis output,
         return dictionary with namedtuples of scores, absolute fold
@@ -474,6 +429,10 @@ class Influence(object):
 
         padj_cutoff: float, optional
             cutoff below which genes are flagged as differential, default is 0.05
+
+        gene_gtf: str, optional
+            GTF file used to convert gene IDs to gene names.
+            Only used if the overlap between DE genes and the network genes is low.
 
         Returns
         -------
@@ -508,14 +467,14 @@ class Influence(object):
         logger.debug(
             f"{int(100 * pct_overlap)}% of genes found in DE genes and network(s)"
         )
-        if pct_overlap < cutoff and self.gene_gtf is not None:
+        if pct_overlap < cutoff and gene_gtf is not None:
             logger.warning(
                 "Converting genes in differential expression table to HGNC symbols"
             )
             backup_pct_overlap = pct_overlap
             backup_df = df.copy()
 
-            gp = genomepy.Annotation(self.gene_gtf, quiet=True)
+            gp = genomepy.Annotation(gene_gtf, quiet=True)
             tid2gid = gp.gtf_dict("transcript_id", "gene_id")
             tid2name = gp.gtf_dict("transcript_id", "gene_name")
             gid2name = gp.gtf_dict("gene_id", "gene_name")
@@ -555,7 +514,7 @@ class Influence(object):
                 "Gene names don't overlap between the "
                 "differential gene expression file and network file(s)!"
             )
-            if self.gene_gtf is None:
+            if gene_gtf is None:
                 logger.info(
                     "If you provide a GTF file we can try to convert genes to HGNC symbols"
                 )
@@ -576,7 +535,7 @@ class Influence(object):
             expression_change[k] = Expression(
                 score=row.score, absfc=row.fc, realfc=row.log2FoldChange
             )
-        return expression_change
+        self.expression_change = expression_change
 
     def run_target_score(self):
         """Run target score for all TFs."""
@@ -663,24 +622,21 @@ class Influence(object):
                 sys.exit(1)
             raise e
 
-    def run_influence_score(self, influence_file, fin_expression=None):
+    def run_influence_score(self):  # , influence_file, fin_expression=None):
         """Calculate influence score from target score and gscore"""
 
-        scores_df = pd.read_table(influence_file, index_col="factor")
-        scores_df["target_score_scaled"] = minmax_scale(
-            rankdata(scores_df["target_score"], method="dense")
+        df = pd.read_table(self.outfile, index_col="factor")  # influence_file
+        df["target_score_scaled"] = minmax_scale(
+            rankdata(df["target_score"], method="dense")
         )
-        scores_df["G_score_scaled"] = minmax_scale(
-            rankdata(scores_df["G_score"], method="dense")
+        df["G_score_scaled"] = minmax_scale(rankdata(df["G_score"], method="dense"))
+        df["influence_score_raw"] = df.target_score + df.G_score
+        df["influence_score"] = minmax_scale(
+            rankdata(df.target_score_scaled + df.G_score_scaled, method="dense")
         )
-        scores_df["influence_score_raw"] = scores_df.target_score + scores_df.G_score
-        scores_df["influence_score"] = minmax_scale(
-            rankdata(
-                scores_df.target_score_scaled + scores_df.G_score_scaled, method="dense"
-            )
-        )
-        scores_df.sort_values("influence_score", inplace=True, ascending=False)
-        scores_df = scores_df[
+
+        df.sort_values("influence_score", inplace=True, ascending=False)
+        df = df[
             [
                 "influence_score",
                 "influence_score_raw",
@@ -692,21 +648,19 @@ class Influence(object):
                 "factor_fc",
             ]
         ]
+        df.to_csv(self.outfile, sep="\t")
 
-        scores_df.to_csv(self.outfile, sep="\t")
+        # if self.filter_tfs:
+        #     df2 = filter_tf(
+        #         network=self.grn, scores_df=df, tpmfile=fin_expression
+        #     )
+        #     df2.to_csv(
+        #         ".".join(self.outfile.split(".")[:-1]) + "_filtered.txt", sep="\t"
+        #     )
 
-        if self.filter_tfs:
-            scores_df2 = filter_tf(
-                network=self.grn, scores_df=scores_df, tpmfile=fin_expression
-            )
-            scores_df2.to_csv(
-                ".".join(self.outfile.split(".")[:-1]) + "_filtered.txt", sep="\t"
-            )
-
-    def run_influence(self, fin_expression=None):
-
+    def run_influence(self):  # , fin_expression=None):
         logger.info("Calculating target scores.")
         self.run_target_score()
 
         logger.info("Calculating influence scores.")
-        self.run_influence_score(self.outfile, fin_expression)
+        self.run_influence_score()  # self.outfile, fin_expression)

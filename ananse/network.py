@@ -349,7 +349,7 @@ class Network(object):
 
         # Read enhancer regions
         enhancers = hdf.get(key="_index")
-        chroms = set(enhancers.index.str.replace(":.*", ""))
+        chroms = set(enhancers.index.str.replace(":.*", "", regex=True))
         if regions is None:
             logger.info(f"Using all {len(set(enhancers.index))} regions.")
         else:

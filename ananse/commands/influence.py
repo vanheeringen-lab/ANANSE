@@ -18,5 +18,6 @@ def influence(args):
         gene_gtf=check_path(args.gene_gtf),
         edges=args.edges,
         select_after_join=args.select_after_join,
+        whitelist=args.whitelist,
     )
     a.run_influence()

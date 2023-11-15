@@ -1,12 +1,12 @@
-from loguru import logger
+import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 import pandas as pd
-import networkx as nx
-from sklearn.preprocessing import minmax_scale
-from adjustText import adjust_text
-import matplotlib.pyplot as plt
 import seaborn as sns
+from adjustText import adjust_text
+from loguru import logger
 from matplotlib.lines import Line2D
+from sklearn.preprocessing import minmax_scale
 
 
 def plot_influence(infile, outfile):
