@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+- ANANSE plot ValueError: Unable to determine Axes to steal space for Colorbar.
+
 ## [0.5.0] - 2023-10-15
 
 ### Added
