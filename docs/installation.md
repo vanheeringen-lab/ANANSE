@@ -11,7 +11,6 @@ Activate the [bioconda](https://bioconda.github.io/) channel if you haven't used
 You only have to do this once.
 
 ``` bash
-$ conda config --add channels defaults
 $ conda config --add channels bioconda
 $ conda config --add channels conda-forge
 ```
