@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - ANANSE influence (with whitelists) AttributeError: 'numpy.ndarray' object has no attribute 'index'
 - ANANSE plot ValueError: Unable to determine Axes to steal space for Colorbar.
+- ANANSE network pandas.iloc[] deprecationWarning
 
 ## [0.5.0] - 2023-10-15
 
