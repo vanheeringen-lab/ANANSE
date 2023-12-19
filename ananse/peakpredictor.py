@@ -1142,7 +1142,9 @@ def predict_peaks(
                 proba = p.predict_proba(factor, jaccard_cutoff=jaccard_cutoff)
                 hdf.put(
                     key=factor,
-                    value=proba.iloc[:, -1].reset_index(drop=True).astype(np.float16),
+                    value=proba[proba.columns[-1]]
+                    .reset_index(drop=True)
+                    .astype(np.float16),
                     format="table",
                 )
             except ValueError as e:

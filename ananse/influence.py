@@ -188,8 +188,8 @@ def _filter_network_edges(df, sort_by: str, n_edges: int, whitelist: tuple = Non
         df = df.sort_values(sort_by).tail(n_edges)
     else:
         df.sort_values(sort_by, inplace=True)
-        tfs = set(df.index.str.startswith(whitelist).index)
-        targets = set(df.index.str.endswith(whitelist).index)
+        tfs = set(df[df.index.str.startswith(whitelist)].index)
+        targets = set(df[df.index.str.endswith(whitelist)].index)
         tail = set(df.tail(n_edges).index)
         df = df[df.index.isin(tfs | targets | tail)]
     return df
