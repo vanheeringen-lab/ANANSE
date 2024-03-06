@@ -25,6 +25,10 @@ from ananse.view import get_binding_tfs
 warnings.filterwarnings("ignore")
 
 
+# for ALBERTO:
+ROUND_DATA = False
+
+
 class Network(object):
     _tmp_files = []
     genes_pr = None
@@ -444,7 +448,9 @@ class Network(object):
             tmp = tmp.reset_index().melt(
                 id_vars=tmp.index.name, var_name="tf", value_name="weighted_binding"
             )
-            tmp["weighted_binding"] = tmp["weighted_binding"].astype(np.float32)
+
+            if ROUND_DATA:
+                tmp["weighted_binding"] = tmp["weighted_binding"].astype(np.float32)
 
             # Create dataframe with two columns: tf_gene and weighted_binding score
             tmp["tf_target"] = tmp["tf"] + SEPARATOR + tmp["gene"]
@@ -466,7 +472,10 @@ class Network(object):
         df["weighted_binding"] = minmax_scale(
             rankdata(df["weighted_binding"], method="min")
         )
-        df["weighted_binding"] = df["weighted_binding"].astype(np.float32)
+
+        if ROUND_DATA:
+            df["weighted_binding"] = df["weighted_binding"].astype(np.float32)
+
         # save the data to file to reduce RAM usage
         tmpfile = os.path.join(tmpdir, "binding.csv")
         df.to_csv(tmpfile)
@@ -510,7 +519,10 @@ class Network(object):
             Dask DataFrame with gene expression based values.
         """
         # log transform expression values
-        expression[column] = np.log2(expression[column] + 1e-5, dtype=np.float32)
+        if ROUND_DATA:
+            expression[column] = np.log2(expression[column] + 1e-5, dtype=np.float32)
+        else:
+            expression[column] = np.log2(expression[column] + 1e-5)
 
         tf_expr = expression[expression.index.isin(tfs)]
         tf_fname = self._save_temp_expression(tf_expr, "tf", column)
@@ -606,7 +618,8 @@ class Network(object):
                 act = act.set_index("factor")
                 act.index.name = "tf"
                 act["activity"] = minmax_scale(rankdata(act["activity"], method="min"))
-                act["activity"] = act["activity"].astype(np.float32)
+                if ROUND_DATA:
+                    act["activity"] = act["activity"].astype(np.float32)
                 df_expression = df_expression.merge(
                     act, right_index=True, left_on="tf", how="left"
                 ).fillna(0.5)
@@ -660,7 +673,10 @@ class Network(object):
         columns = [col for col in columns if col in result]
         logger.debug(f"Using {', '.join(columns)}")
         # Combine the individual scores
-        result["prob"] = result[columns].mean(1).astype(np.float32)
+        if ROUND_DATA:
+            result["prob"] = result[columns].mean(1).astype(np.float32)
+        else:
+            result["prob"] = result[columns].mean(1)
 
         # filter output
         columns = ["tf_target", "prob"]
