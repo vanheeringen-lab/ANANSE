@@ -186,7 +186,7 @@ def plot_grn(
     )
     # plot the node colour legend:
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=vmin, vmax=vmax))
-    cbar = plt.colorbar(sm)
+    cbar = plt.colorbar(sm, ax=plt.gca())
     cbar.ax.set_ylabel("outdegree (regulation other TFs)", rotation=270, labelpad=25)
     # plot the TF-TF edges:
     nx.draw_networkx_edges(

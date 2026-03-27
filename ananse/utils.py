@@ -158,19 +158,18 @@ def parse_regions(regionfiles, *args, **kwargs):
     if bool(re.match(r"^.*:\d+-\d+$", test)):
         # it's a regions list
         # or it's a Seq2science counts table
-        regions = df.iloc[:, 0].tolist()
+        regions = df[df.columns[0]].astype(str).tolist()
 
     elif df.shape[1] >= 3:
         # it's a BED file
         regions = (
             # For Ensembl genome names, make sure it's a string
-            df.iloc[:, 0].astype(str)
+            df[df.columns[0]].astype(str)
             + ":"
-            + df.iloc[:, 1].astype(str)
+            + df[df.columns[1]].astype(str)
             + "-"
-            + df.iloc[:, 2].astype(str)
+            + df[df.columns[2]].astype(str)
         ).tolist()
-
     else:
         raise TypeError("Cannot identify regions file(s) type.")
 

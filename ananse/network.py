@@ -76,8 +76,11 @@ class Network(object):
         """
         genes = pr.read_bed(self.gene_bed)
         genes.columns = [col.capitalize() for col in genes.columns]
-        # Convert to DataFrame & we don't need intron/exon information
-        genes = genes.as_df().iloc[:, :6]
+        # Convert to DataFrame
+        genes = genes.as_df()
+
+        # Drop intron/exon information
+        genes = genes[genes.columns[:6]]
 
         # Drop genes found on >1 contig
         genes = genes.drop_duplicates(subset=["Name"], keep=False)
