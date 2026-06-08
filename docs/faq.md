@@ -29,3 +29,18 @@ Large-scale benchmarks using ChIP-seq peaks show that this database shows good p
 This motif database should be fine for human or mouse data. 
 Currently, you have to provide the motif database for other species. 
 The detailed description of the required format of the motif database can be found in this section: [Motif database](input_data.md#motif-database).
+
+### Help! I'm getting a CondaVerificationError and/or ClobberError
+
+The errors:
+```
+CondaVerificationError: The package for XXX located at YYY appears to be corrupted. 
+The path 'ZZZ' specified in the package manifest cannot be found.
+```
+and/or
+```
+ClobberError: This transaction has incompatible packages due to a shared path.
+packages: XXX, YYY
+path: 'ZZZ'
+```
+can be fixed with `conda clean -faqy` (this will delete all cached packages).
