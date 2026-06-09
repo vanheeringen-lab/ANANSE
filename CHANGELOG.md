@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- experimental p300 ChIP-seq input (using H3K27ac models) for `ananse binding`
+
 ## [0.5.1] - 2023-12-19
 
 ### Fixed
