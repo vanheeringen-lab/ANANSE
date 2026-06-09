@@ -1,6 +1,7 @@
 tests/data/
 tests/output/
 tests/**/*pyc
+test*
 .cache/
 .idea/
 .vscode/
