@@ -42,7 +42,6 @@ setup(
         "genomepy >=0.16.3",
         "gimmemotifs >=0.18.3",
         "loguru",
-        "python-lzo",  # lzo on conda
         "matplotlib >=3.3",
         "networkx",
         "numpy >=1.6",

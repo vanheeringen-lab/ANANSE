@@ -9,7 +9,6 @@ dependencies:
   - genomepy >=0.16.3
   - gimmemotifs-minimal >=0.18.3
   - loguru
-  - lzo
   - matplotlib-base >=3.3
   - networkx
   - numpy >=1.6
@@ -20,7 +19,7 @@ dependencies:
   - pygraphviz >=1.7              # required for networkx plots
   - pyranges
   - pytables <=3.9                # required for pandas.read_hfd()
-  - scikit-learn
+  - scikit-learn >=0.24.1         # models were made using version 0.24.1
   - scipy >=1.9                   # fix in mannwhitneyu
   - seaborn-base
   - tqdm
