@@ -7,7 +7,7 @@ dependencies:
   - adjusttext
   - dask
   - genomepy >=0.16.3
-  - gimmemotifs-minimal >=0.18.2
+  - gimmemotifs-minimal >=0.18.3
   - loguru
   - lzo
   - matplotlib-base >=3.3
