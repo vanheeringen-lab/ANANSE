@@ -1,13 +1,14 @@
 name: continuous-integration
 
-# run on any PR + push to develop/master
+# run on any PR to develop + push to develop/master
 on:
   push:
     branches:
       - master
       - develop
-      - gp  # TODO: rm
-  pull_request:
+  pull_request_target:
+    branches:
+      - develop
 
 jobs:
   test:
