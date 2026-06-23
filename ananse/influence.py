@@ -278,10 +278,10 @@ def fold_change_scores(node, grn, expression_change):
     """
     direct_targets = set(grn[node]) & set(expression_change)
     if len(direct_targets) == 0:
-        return np.NAN, np.NAN
+        return np.nan, np.nan
     non_direct_targets = (set(grn.nodes) & set(expression_change)) - direct_targets
     if len(non_direct_targets) == 0:
-        return np.NAN, np.NAN
+        return np.nan, np.nan
 
     target_fc = [expression_change[t].absfc for t in direct_targets]
     non_target_fc = [expression_change[t].absfc for t in non_direct_targets]
@@ -289,7 +289,7 @@ def fold_change_scores(node, grn, expression_change):
         # auto method prevents recursion errors.
         pval = mannwhitneyu(target_fc, non_target_fc, method="auto")[1]
     except (RecursionError, ValueError) as e:
-        pval = np.NAN
+        pval = np.nan
         logger.warning(e)
     target_fc_diff = np.mean(target_fc) - np.mean(non_target_fc)
     return pval, target_fc_diff
